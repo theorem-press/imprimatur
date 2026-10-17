@@ -79,6 +79,12 @@ structure Config where
   trustedPrefixes : Array String := #["Mathlib", "Std", "Batteries", "Lean", "Init"]
   /-- Comparator manifests: paths, with `*` allowed in the file name. -/
   comparator : Array String := #[]
+  /-- Notation packs (DESIGN §7.5); `none` means the extractor's default. -/
+  notationPacks : Option (Array String) := none
+  /-- Notation modules, as files, for external mode (DESIGN §6.2, §6.3 A). -/
+  notationFiles : Array String := #[]
+  /-- The line width of rendered views, if not the extractor's default. -/
+  width : Option Nat := none
   deriving Repr
 
 /-- The alias for an environment name, if any. -/
@@ -93,7 +99,7 @@ def Config.profile? (c : Config) (name : String) : Option SourceLinks :=
 `requests.json`, or (for later milestones) accepts and ignores them. -/
 private def extractorKeys : List String :=
   ["lean_project", "mode", "imports", "notation", "strip_namespaces", "open_scoped",
-   "notation_packs"]
+   "notation_packs", "width"]
 
 private def expectStr (where_ : String) : Toml → Except String String
   | .str s => .ok s
@@ -203,6 +209,10 @@ def Config.parse (text : String) : Except String Config := do
   for k in extractorKeys do
     if let some v := root.find? k then
       match k with
+      | "width" =>
+        match v with
+        | .int n => if n ≥ 20 then cfg := { cfg with width := some n.toNat } else throw "width must be at least 20"
+        | _ => throw s!"width must be a number, not {v.typeName}"
       | "lean_project" => cfg := { cfg with leanProject := ← expectStr k v }
       | "mode" =>
         let m ← expectStr k v
@@ -212,6 +222,13 @@ def Config.parse (text : String) : Except String Config := do
       | "imports" => cfg := { cfg with imports := ← expectStrs k v }
       | "open_scoped" => cfg := { cfg with openScoped := ← expectStrs k v }
       | "strip_namespaces" => cfg := { cfg with stripNamespaces := ← expectStrs k v }
+      | "notation_packs" =>
+        let ps ← expectStrs k v
+        for p in ps do
+          unless ["core", "logic", "sets", "order"].contains p do
+            throw s!"notation_packs: unknown pack {repr p}; the packs are core, logic, sets and order"
+        cfg := { cfg with notationPacks := some ps }
+      | "notation" => cfg := { cfg with notationFiles := ← expectStrs k v }
       | _ => discard <| expectStrs k v
   return cfg
 

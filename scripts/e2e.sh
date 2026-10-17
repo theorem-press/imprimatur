@@ -42,6 +42,7 @@ normalise() {  # pdftotext output, independent of small TeX differences
 # One test per example, named so docs/TESTING.md can refer to it. An example
 # without a name here is an error, so none is skipped by accident.
 TESTS=(e2e/external e2e/minimal e2e/sidecar)
+# And one test that is not an example: e2e/fixture-views, below.
 
 # External mode needs an extractor built for the examples' toolchain. It goes in
 # a cache inside e2e-out, so the run touches nothing outside the repository.
@@ -100,5 +101,31 @@ for dir in examples/*/; do
     compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
+# e2e/fixture-views: every math and prose view of the Notation fixture's
+# golden bundle, which uses every pack rule, typesets with both engines.
+echo "== e2e/fixture-views"
+views="e2e-out/fixture-views"; rm -rf "$views"; mkdir -p "$views"
+python3 - extract/test/golden/Notation.bundle.json "$views/paper.tex" <<'PY'
+import json, sys
+b = json.load(open(sys.argv[1]))["entries"]
+out = [r"\documentclass{article}", r"\usepackage{amsthm}", r"\usepackage{imprimatur}",
+       r"\newcommand\lub[1]{\bigsqcup\{#1\}}", r"\begin{document}"]
+for key, e in sorted(b.items()):
+    for view in sorted(e["views"]):
+        if view.startswith(("math", "prose")):
+            out.append(r"\paragraph{%s, %s.}" % (key.replace("_", r"\_"), view))
+            out.append(e["views"][view])
+out.append(r"\end{document}")
+open(sys.argv[2], "w").write("\n".join(out) + "\n")
+PY
+for engine in pdflatex lualatex; do
+  flag=$([ $engine = pdflatex ] && echo -pdf || echo -lualatex)
+  if ! (cd "$views" && latexmk $flag -interaction=nonstopmode -halt-on-error -outdir=out-$engine paper.tex > latexmk-$engine.log 2>&1); then
+    echo "  FAIL: $engine"; grep -A3 '^!' "$views/out-$engine/paper.log" | head -20 | sed 's/^/    /'; status=1
+  elif grep -E 'Undefined control sequence|Missing character' "$views/out-$engine/paper.log" > /dev/null; then
+    echo "  FAIL: $engine log has undefined macros or missing glyphs"; status=1
+  fi
+done
+
 [ $status = 0 ] && echo "e2e: all examples passed"
 exit $status

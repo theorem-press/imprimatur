@@ -393,12 +393,20 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
 ```
 
 - **Pattern.** The left-hand side is a pattern whose head is a constant, with
-  nested patterns allowed up to two levels deep. Pattern variables bind
-  explicit arguments. Implicit and instance arguments are hidden unless the
-  pattern names them.
+  nested patterns allowed. Pattern variables bind explicit arguments.
+  Implicit and instance arguments are hidden unless the pattern names them,
+  in `@` form. For example, `@LE.le (Set _) _ a b` matches `≤` only on sets.
+  - **As implemented (M4).** The pattern is elaborated as an ordinary term.
+    Each identifier that names no constant is bound as a pattern variable of
+    unknown type, so notation such as `=` and `¬` works in patterns.
+  - **`hide x := v`.** `v` is itself a pattern, so `Fin.elim0` matches
+    whatever its implicit arguments are.
 - **Template.** `#x` inserts the rendering of a pattern variable, as with
   K's positional placeholders and Ott's homomorphisms.
-- **`prec`** sets the precedence of the result when nested.
+- **`prec`** sets the precedence of the result when nested. A variable inside
+  braces, or in an atomic template, needs no parentheses. A variable at the
+  top level needs the rule's precedence, with operators associating to the
+  left. Pack rules also set their associativity.
 - **`width`** is the rendered width in characters, which the line breaker
   uses instead of the length of the LaTeX source. Without it, long macro
   names cause premature line breaks; this is a lesson from HOL4's munger.

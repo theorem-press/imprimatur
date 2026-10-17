@@ -1,0 +1,3 @@
+scan
+apply --bundle demo.bundle.json
+--config bad-pack.toml scan

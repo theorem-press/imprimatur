@@ -1,0 +1,18 @@
+{
+ "schema": "imprimatur-bundle/1",
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "entries": {
+  "Demo.thm": {
+   "kind": "theorem",
+   "decl": "Demo.thm",
+   "views": {
+    "math": "\\LeanMath{2n = n + n}",
+    "math:named": "\\LeanMath{\\mathrm{dbl}(n) = n + n}",
+    "prose": "\\LeanProse{Let $n \\in \\mathbb{N}$. Then $2n = n + n$.}"
+   }
+  }
+ }
+}

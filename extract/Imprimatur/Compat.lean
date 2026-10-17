@@ -36,4 +36,17 @@ unsafe def importPrivate (modules : Array Name) : IO Environment := do
 def moduleName? (env : Environment) (idx : ModuleIdx) : Option Name :=
   env.header.moduleNames[idx.toNat]?
 
+/-- Elaborate a notation file in-process (DESIGN §6.3 A, spike S1), after
+`import` lines for `modules`. The environment it returns holds the imported
+modules at the `private` level, and the file's notation. -/
+unsafe def elaborateNotation (path : System.FilePath) (modules : Array Name) : IO Environment := do
+  let text ← IO.FS.readFile path
+  let header := String.join (modules.toList.map fun m => s!"import {m}\n")
+  enableInitializersExecution
+  let some env ← Elab.runFrontend (header ++ text) {} path.toString `_imprimatur_notation
+    | throw (IO.userError s!"{path} has errors (shown above)")
+  -- From v4.31, `runFrontend` turns initializer execution off (spike S1).
+  enableInitializersExecution
+  return env
+
 end Imprimatur.Compat

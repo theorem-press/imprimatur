@@ -2,7 +2,7 @@ schema = 1
 main = "paper.tex"
 lean_project = "lean"
 mode = "in-project"
-imports = ["Minimal"]
+imports = ["Minimal", "Minimal.Notation"]
 strip_namespaces = ["Minimal"]
 
 [aliases]

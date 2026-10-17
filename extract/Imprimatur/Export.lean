@@ -38,7 +38,11 @@ def challengeSuffix : String := "@challenge"
 /-- Render an entry for each request from `env`. The declaration is the key,
 less any `@challenge` suffix. -/
 def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
-    (reqs : Array Request) (verbose : Bool := false) : IO (Array (String × J) × Array String) := do
+    (reqs : Array Request) (verbose : Bool := false) (used : Option (IO.Ref (Array String)) := none) :
+    IO (Array (String × J) × Array String) := do
+  let used ← match used with
+    | some u => pure u
+    | none => IO.mkRef #[]
   let mut entries : Array (String × J) := #[]
   let mut warnings : Array String := #[]
   -- Lean's default limit of 200000 heartbeats per entry. Heartbeats count
@@ -57,7 +61,7 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
         continue
     let act : CoreM J := do
       for ns in s.openScoped do activateScoped ns
-      (entryFor root s r c).run' {} {}
+      (entryFor root s r c used).run' {} {}
     let t0 ← IO.monoMsNow
     try
       let (j, _) ← act.toIO coreCtx { env }
