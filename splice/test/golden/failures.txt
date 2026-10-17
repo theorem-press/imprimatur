@@ -1,0 +1,54 @@
+$ imprimatur-splice check --bundle demo.bundle.json --check-fail-msg "Run make imprimatur to fix this."
+main.tex:1:1: error[missing-key]: no entry for No.such.key in the bundle (is the name right, and was the extractor asked for it?)
+main.tex:3:1: error[missing-view]: the bundle has no prose view for Demo.thm
+main.tex:5:1: error[missing-view]: the math view of Bad.render failed to render: no notation for Foo.bar
+main.tex:7:1: error[broken-ref]: Gone.away has no entry in the bundle
+main.tex:8:1: error[untrusted]: Uses.sorry depends on sorry
+main.tex:8:1: error[stale]: the generated content of Uses.sorry is out of date
+main.tex:9:1: error[untrusted]: Uses.axiom uses axioms outside allowed_axioms: Trust.custom_axiom
+main.tex:9:1: error[stale]: the generated content of Uses.axiom is out of date
+main.tex:10:1: error[untrusted]: Weak.cone has untrusted constants in its dependency cone: Trust.collatz
+main.tex:10:1: error[stale]: the generated content of Weak.cone is out of date
+main.tex:11:1: error[bad-content]: the generated text for Breaks.braces would break the document (its braces don't balance)
+main.tex:12:1: error[bad-content]: the generated text for Ends.block would break the document (it contains \end{leanblock})
+main.tex:14:1: warning[missing-input]: does/not/exist.tex does not exist, so it was not scanned (it may be generated later)
+Run make imprimatur to fix this.
+check: 3 stale, 12 errors, 1 warning
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+main.tex:1:1: error[missing-key]: no entry for No.such.key in the bundle (is the name right, and was the extractor asked for it?)
+main.tex:3:1: error[missing-view]: the bundle has no prose view for Demo.thm
+main.tex:5:1: error[missing-view]: the math view of Bad.render failed to render: no notation for Foo.bar
+main.tex:11:1: error[bad-content]: the generated text for Breaks.braces would break the document (its braces don't balance)
+main.tex:12:1: error[bad-content]: the generated text for Ends.block would break the document (it contains \end{leanblock})
+main.tex:14:1: warning[missing-input]: does/not/exist.tex does not exist, so it was not scanned (it may be generated later)
+apply: nothing written; 5 errors, 1 warning
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --keep-stale
+main.tex:1:1: warning[missing-key]: no entry for No.such.key in the bundle; keeping the old content
+main.tex:3:1: error[missing-view]: the bundle has no prose view for Demo.thm
+main.tex:5:1: error[missing-view]: the math view of Bad.render failed to render: no notation for Foo.bar
+main.tex:11:1: error[bad-content]: the generated text for Breaks.braces would break the document (its braces don't balance)
+main.tex:12:1: error[bad-content]: the generated text for Ends.block would break the document (it contains \end{leanblock})
+main.tex:14:1: warning[missing-input]: does/not/exist.tex does not exist, so it was not scanned (it may be generated later)
+apply: nothing written; 4 errors, 2 warnings
+[exit 1]
+
+== main.tex
+\begin{leanblock}{No.such.key}{Missing}
+\end{leanblock}
+\begin{leanblock}[view=prose]{Demo.thm}{Missing view}
+\end{leanblock}
+\begin{leanblock}[view=math]{Bad.render}{Failed view}
+\end{leanblock}
+\leancheck{Demo.thm, Gone.away}
+\leaninline{Uses.sorry}{}
+\leaninline{Uses.axiom}{}
+\leaninline{Weak.cone}{}
+\leaninline{Breaks.braces}{}
+\begin{leanblock}{Ends.block}{Bad}
+\end{leanblock}
+\input{does/not/exist}
+

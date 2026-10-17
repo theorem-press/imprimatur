@@ -1,0 +1,6 @@
+apply --bundle v1.bundle.json
+!replace main.tex "a function" "a function, edited by its authors"
+!replace main.tex "a scalar" "a scalar constant"
+check --bundle v1.bundle.json
+check --bundle v2.bundle.json --diff
+apply --bundle v2.bundle.json --rename-slot Expr.scalar=Expr.const

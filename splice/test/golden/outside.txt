@@ -1,0 +1,39 @@
+$ imprimatur-splice scan
+doc/main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so it was not followed (use a path relative to the main file)
+{
+  "schema": "imprimatur-requests/1",
+  "requests": {
+    "X": {"views": []}
+  }
+}
+[exit 0]
+
+$ (in doc) imprimatur-splice --main main.tex scan
+main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so it was not followed (use a path relative to the main file)
+{
+  "schema": "imprimatur-requests/1",
+  "requests": {
+    "X": {"views": []}
+  }
+}
+[exit 0]
+
+$ (in doc) imprimatur-splice --main main.tex strip -o stripped
+main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so it was not followed (use a path relative to the main file)
+warning[outside-project]: ../shared/part.tex is outside the project, so it was not stripped
+strip: wrote 1 file to stripped
+[exit 0]
+
+== doc/main.tex
+Main.
+\input{../shared/part}
+\input{/etc/passwd}
+
+== doc/stripped/main.tex
+Main.
+\input{../shared/part}
+\input{/etc/passwd}
+
+== shared/part.tex
+Shared \leancheck{X}.
+

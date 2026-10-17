@@ -1,0 +1,5 @@
+schema = 1
+main = "main.tex"
+
+[aliases]
+leangrammar = { view = "grammar", slots = { macros = ["\\entry", "\\defentry", "\\Category"], arg = 2, id = "arg1" } }

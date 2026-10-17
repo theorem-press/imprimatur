@@ -1,0 +1,28 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "requests": {
+    "Demo.c": {"views": ["lean"]}
+  }
+}
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 1 item updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+% \begin{leanblock}{Commented.out}{x}
+% \end{leanblock}
+Text 50\% done. \verb|\begin{leanblock}{Fake}{x}| and \verb*+\leaninline{Fake}{x}+.
+\begin{verbatim}
+\begin{leanblock}{In.verbatim}{x}
+\end{leanblock}
+\end{verbatim}
+\begin{lstlisting}
+\leaninline{In.listing}{x}
+\end{lstlisting}
+\begin{leanblock}[sum=_0ewUIQDey]{Demo.c}{Real}% a comment after the header
+\LeanConst{Demo.c}
+\end{leanblock}
+

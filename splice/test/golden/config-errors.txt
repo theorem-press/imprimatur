@@ -1,0 +1,51 @@
+$ imprimatur-splice --config unknown-key.toml scan
+error: unknown-key.toml: unknown key 'mian' in the top-level table; expected one of schema, main, default_profile, profile, aliases, trust, manifests, verbatim_envs, lean_project, mode, notation, strip_namespaces, open_scoped, notation_packs
+[exit 2]
+
+$ imprimatur-splice --config bad-alias.toml scan
+error: bad-alias.toml: [aliases].leanlemma needs a view
+[exit 2]
+
+$ imprimatur-splice --config bad-syntax.toml scan
+error: bad-syntax.toml: line 2: newline in string (multi-line strings are not supported)
+[exit 2]
+
+$ imprimatur-splice --config bad-profile.toml scan
+error: bad-profile.toml: default_profile "camera-ready" is not a profile
+[exit 2]
+
+$ imprimatur-splice --config missing.toml scan
+error: missing.toml not found (give --config or --main)
+[exit 2]
+
+$ imprimatur-splice --main main.tex apply
+error: apply needs --bundle FILE
+[exit 2]
+
+$ imprimatur-splice --main main.tex frobnicate
+error: unknown command frobnicate
+[exit 2]
+
+$ imprimatur-splice --main main.tex check --bundle nope.json --frobnicate
+error: unknown or incomplete option --frobnicate
+
+usage: imprimatur-splice [--config FILE | --main FILE.tex] COMMAND [OPTIONS]
+
+commands:
+  scan [-o requests.json]      list the keys and views the document asks for
+  apply --bundle B.json        regenerate blocks from a bundle
+      [--force KEY]... [--keep-stale] [--rename-slot OLD=NEW]...
+      [--profile P] [--commit SHA]
+  check --bundle B.json        report, without writing, what apply would change
+      [--diff] [--check-fail-msg MSG] [--keep-stale] [--profile P]
+  strip -o DIR                 write a copy with imprimatur's markers removed
+  migrate-slots --bundle B.json
+                               rewrite slots declared by position as \leanslot
+
+The configuration is imprimatur.toml in the current directory, unless
+--config or --main is given.
+[exit 2]
+
+== main.tex
+\leaninline{Demo.c}{}
+

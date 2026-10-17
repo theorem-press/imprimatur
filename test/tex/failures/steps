@@ -1,0 +1,3 @@
+check --bundle demo.bundle.json --check-fail-msg "Run make imprimatur to fix this."
+apply --bundle demo.bundle.json
+apply --bundle demo.bundle.json --keep-stale

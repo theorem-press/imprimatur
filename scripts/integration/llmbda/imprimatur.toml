@@ -1,0 +1,14 @@
+# imprimatur configuration for llmbda's oopsla2027/paper.tex (PLAN M1 gate;
+# M5 completes the migration). The environments keep their names (DESIGN §9.2).
+schema = 1
+main = "paper.tex"
+
+[aliases]
+leangrammar     = { view = "grammar", slots = { macros = ["\\entry", "\\defentry", "\\Category"], arg = 2, id = "arg1" } }
+leanrules       = { view = "rules" }
+leantheorem     = { view = "math", wrap = "theorem" }
+leancorollary   = { view = "math", wrap = "corollary" }
+leanlemma       = { view = "math", wrap = "lemma" }
+leandef         = { view = "math", wrap = "definition" }
+leanconventions = { view = "llmbda.conventions" }
+leantranslation = { view = "llmbda.translation" }

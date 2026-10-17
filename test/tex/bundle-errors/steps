@@ -1,0 +1,4 @@
+--main main.tex check --bundle schema2.bad.json
+--main main.tex check --bundle abspath.bad.json
+--main main.tex check --bundle noviews.bad.json
+--main main.tex check --bundle notjson.bad.json

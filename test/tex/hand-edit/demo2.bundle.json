@@ -1,0 +1,43 @@
+{
+ "entries": {
+  "Demo.c": {
+   "decl": "Demo.c",
+   "kind": "definition",
+   "views": {
+    "lean": "\\LeanConst{Demo.c'}"
+   }
+  },
+  "Demo.nested": {
+   "decl": "Demo.nested",
+   "kind": "theorem",
+   "views": {
+    "lean": "new nested content"
+   }
+  },
+  "Demo.thm": {
+   "axioms": [],
+   "cone": {
+    "size": 1,
+    "untrusted": []
+   },
+   "decl": "Demo.thm",
+   "kind": "theorem",
+   "sorry": false,
+   "source": {
+    "line": 12,
+    "path": "Demo/Basic.lean"
+   },
+   "views": {
+    "lean": "\\LeanKeyword{theorem} \\LeanConst{Demo.thm} : \\LeanConst{True}",
+    "math": "$\\top$"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

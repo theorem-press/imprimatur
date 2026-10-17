@@ -6,7 +6,8 @@
 Fails if a numbered section of DESIGN.md has no row, if a row names a section
 that DESIGN.md doesn't have, or if a row names a test that no test source
 defines. A test is defined when its name appears as a double-quoted string in
-a Lean test source, or as `lint/...` in a script under scripts/.
+a Lean test source, or as `lint/...` or `integration/...` in a script under
+scripts/.
 """
 import pathlib
 import re
@@ -50,9 +51,9 @@ def defined_tests():
             continue
         if "test" in path.parts or path.parts[-2:-1] == ("testkit",) or "testkit" in path.parts:
             names.update(re.findall(r'"([a-z0-9-]+/[a-z0-9/-]+)"', path.read_text(encoding="utf-8")))
-    for path in (ROOT / "scripts").iterdir():
+    for path in (ROOT / "scripts").rglob("*"):
         if path.is_file():
-            names.update(re.findall(r"\b(lint/[a-z0-9/-]+)", path.read_text(encoding="utf-8")))
+            names.update(re.findall(r"\b((?:lint|integration)/[a-z0-9/-]+)", path.read_text(encoding="utf-8")))
     return names
 
 

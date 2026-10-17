@@ -1,0 +1,6 @@
+schema = 1
+main = "main.tex"
+
+[profile.camera-ready]
+source_links = "url"
+url_template = "https://example.org/repo/blob/{commit}/{path}#L{line}"

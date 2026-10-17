@@ -1,0 +1,2 @@
+scan
+apply --bundle demo.bundle.json
