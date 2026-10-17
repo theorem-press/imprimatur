@@ -1,0 +1,43 @@
+$ imprimatur-splice apply --bundle v1.bundle.json
+apply: 1 item updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+! replace in main.tex: a function => a function, edited by its authors
+
+! replace in main.tex: a scalar => a scalar constant
+
+$ imprimatur-splice check --bundle v1.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle v2.bundle.json --diff
+main.tex:1:1: warning[orphan-slot]: slot Expr.scalar of Core.Expr is no longer generated, so its text is dropped:
+  a scalar constant
+  If the slot was renamed, rerun with --rename-slot Expr.scalar=NEW.
+main.tex:1:1: warning[orphan-slot]: slot Expr.num of Core.Expr is no longer generated, so its text is dropped:
+  a number
+  If the slot was renamed, rerun with --rename-slot Expr.num=NEW.
+main.tex:1:1: error[stale]: the generated content of Core.Expr is out of date
+  --- current
+  +++ regenerated
+  -\entry{v ::= \lambda x.\, e}{\leanslot{Expr.lam}{a function, edited by its authors}}\\
+  -\entry{\mid c}{\leanslot{Expr.scalar}{a scalar constant}}\\
+  -\entry{\mid n}{\leanslot{Expr.num}{a number}}
+  +\entry{v ::= \lambda y.\, e}{\leanslot{Expr.lam}{a function, edited by its authors}}\\
+  +\entry{\mid k}{\leanslot{Expr.const}{a constant}}
+check: 1 stale, 1 error, 2 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle v2.bundle.json --rename-slot Expr.scalar=Expr.const
+main.tex:1:1: warning[orphan-slot]: slot Expr.num of Core.Expr is no longer generated, so its text is dropped:
+  a number
+  If the slot was renamed, rerun with --rename-slot Expr.num=NEW.
+apply: 1 item updated in 1 file; 0 errors, 1 warning
+[exit 0]
+
+== main.tex
+\begin{leanblock}[view=grammar, sum=52F9p7Ls8K]{Core.Expr}{Values}
+\entry{v ::= \lambda y.\, e}{\leanslot{Expr.lam}{a function, edited by its authors}}\\
+\entry{\mid k}{\leanslot{Expr.const}{a scalar constant}}
+\end{leanblock}
+

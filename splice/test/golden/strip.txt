@@ -1,0 +1,32 @@
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 4 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice strip -o stripped
+strip: wrote 1 file to stripped
+[exit 0]
+
+== main.tex
+Before.
+\begin{leantheorem}[label=thm:sound, sum=G_fgbXQSE1]{Demo.thm}{Soundness}
+$\top$
+\end{leantheorem}
+Between \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}} and \leanref{Demo.c}{Demo/Basic.lean:7}.
+\leancheck{Demo.thm}
+Inline check \leancheck{Demo.c} stays in its sentence.
+\begin{leanrules}[sum=KfjcoB50Rl]{Rules}{Some rules}%
+\inferrule{A}{B} \leanslot{R.one}{the first rule}
+\end{leanrules}
+\leanindex
+After.
+
+== stripped/main.tex
+Before.
+\begin{theorem}[Soundness]\label{thm:sound}
+$\top$
+\end{theorem}
+Between \LeanConst{Demo.c} and Demo/Basic.lean:7.
+Inline check  stays in its sentence.
+\inferrule{A}{B} the first rule
+After.
+

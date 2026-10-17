@@ -1,0 +1,6 @@
+schema = 1
+main = "main.tex"
+
+[aliases]
+leantheorem = { view = "math", wrap = "theorem" }
+leanrules = { view = "rules" }

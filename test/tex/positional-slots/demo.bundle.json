@@ -1,0 +1,18 @@
+{
+ "entries": {
+  "Lambda": {
+   "decl": "Lambda",
+   "kind": "inductive",
+   "views": {
+    "grammar": "\\Category{e}{expressions}\\\\\n\\entry{x}{variable}\\\\\n\\entry{\\lambda x.\\, e}{abstraction}\\\\\n\\entry{e_1\\; e_2}{application}\\\\\n\\entry{\\syn{recv}}{an extra form}"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

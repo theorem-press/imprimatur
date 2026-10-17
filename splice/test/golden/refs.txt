@@ -1,0 +1,29 @@
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile none
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready
+main.tex:1:12: error[bad-ref]: the url profile needs a commit (--commit)
+main.tex:1:41: error[bad-ref]: the url profile needs a commit (--commit)
+apply: nothing written; 2 errors, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready --commit 0123abc
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile nonesuch
+error: no profile named nonesuch
+[exit 2]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+Defined at \leanref{Demo.c}{Demo/Basic.lean:7}; see also \leanref{Under_score.x}{Odd\_dir/A\&B.lean:3}.
+

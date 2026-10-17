@@ -1,0 +1,4 @@
+schema = 1
+main = "main.tex"
+[aliases]
+leanlemma = { wrap = "lemma" }

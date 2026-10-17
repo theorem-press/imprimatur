@@ -1,0 +1,7 @@
+apply --bundle demo.bundle.json
+!replace main.tex "over two lines" "over two lines, edited by hand"
+!replace main.tex "{Demo.c}{\LeanConst{Demo.c}}" "{Demo.c}{\LeanConst{Demo.c} (edited)}"
+check --bundle demo2.bundle.json
+apply --bundle demo2.bundle.json
+apply --bundle demo2.bundle.json --force Demo.nested --force Demo.c
+check --bundle demo2.bundle.json

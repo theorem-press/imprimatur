@@ -1,0 +1,57 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "requests": {
+    "Demo.c": {"views": ["lean"]},
+    "Demo.nested": {"views": ["lean"]},
+    "Demo.thm": {"views": ["lean", "math"]}
+  }
+}
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 6 items updated in 3 files; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 0 items updated in 0 files; 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\documentclass{article}
+\usepackage{imprimatur}
+\begin{document}
+\section{Intro}
+The constant \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}} is defined at \leanref{Demo.c}{Demo/Basic.lean:7}.
+\begin{leanblock}[view=lean, sum=wTRE7H6mZF]{Demo.thm}{Soundness}
+\LeanKeyword{theorem} \LeanConst{Demo.thm} : \LeanConst{True}
+\end{leanblock}
+\begin{leantheorem}[sum=G_fgbXQSE1]{Demo.thm}{Soundness}
+$\top$
+\end{leantheorem}
+\input{sections/body}
+\include{sections/appendix}
+\subfile{sections/sub.tex}
+\end{document}
+
+== sections/appendix.tex
+We checked \leancheck{Demo.thm, Demo.c} by hand.
+\leanindex
+
+== sections/body.tex
+\subsection{Body}
+\input{sections/nested}
+
+== sections/nested.tex
+\begin{leanblock}[sum=LeYzekMTql]{Demo.nested}{Nested}
+nested content
+over two lines
+\end{leanblock}
+
+== sections/sub.tex
+In a subfile: \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}}.
+

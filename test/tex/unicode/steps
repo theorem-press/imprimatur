@@ -1,0 +1,4 @@
+apply --bundle demo.bundle.json
+!replace main.tex "glöss ✓" "édité ✓"
+check --bundle demo.bundle.json
+apply --bundle demo.bundle.json

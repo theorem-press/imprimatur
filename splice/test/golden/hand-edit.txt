@@ -1,0 +1,38 @@
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+! replace in main.tex: over two lines => over two lines, edited by hand
+
+! replace in main.tex: {Demo.c}{\LeanConst{Demo.c}} => {Demo.c}{\LeanConst{Demo.c} (edited)}
+
+$ imprimatur-splice check --bundle demo2.bundle.json
+main.tex:1:1: error[hand-edit]: the generated content of Demo.nested was edited by hand, so it was not regenerated.
+  Move the edit into Lean or into a slot, or rerun with --force Demo.nested to overwrite it.
+main.tex:5:1: error[hand-edit]: the generated content of Demo.c was edited by hand, so it was not regenerated.
+  Move the edit into Lean or into a slot, or rerun with --force Demo.c to overwrite it.
+check: 0 stale, 2 errors, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo2.bundle.json
+main.tex:1:1: error[hand-edit]: the generated content of Demo.nested was edited by hand, so it was not regenerated.
+  Move the edit into Lean or into a slot, or rerun with --force Demo.nested to overwrite it.
+main.tex:5:1: error[hand-edit]: the generated content of Demo.c was edited by hand, so it was not regenerated.
+  Move the edit into Lean or into a slot, or rerun with --force Demo.c to overwrite it.
+apply: nothing written; 2 errors, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo2.bundle.json --force Demo.nested --force Demo.c
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo2.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\begin{leanblock}[sum=OcD5LlYjsl]{Demo.nested}{Edited}
+new nested content
+\end{leanblock}
+\leaninline[sum=-t7kC4NsU8]{Demo.c}{\LeanConst{Demo.c'}}
+

@@ -1,0 +1,3 @@
+check --bundle demo.bundle.json --diff
+apply --bundle demo.bundle.json
+check --bundle demo.bundle.json

@@ -1,0 +1,115 @@
+/-
+Copyright (c) 2026 The imprimatur authors.
+Released under Apache 2.0 license as described in the file LICENSE.
+-/
+import Splice.Scan
+
+/-!
+# Documents
+
+A document is the main file and every file it reaches through `\input`,
+`\include` and `\subfile` (DESIGN §10.1). As in LaTeX, input paths are
+relative to the directory of the main file. Loading is generic in how files
+are read, so tests can load documents held in memory.
+-/
+
+namespace Splice
+
+/-- A file of a document, with what scanning it found. -/
+structure SourceFile where
+  /-- The text. -/
+  src : Src
+  /-- What the scanner found. -/
+  scan : ScanResult
+
+/-- A loaded document. -/
+structure Doc where
+  /-- The configuration. -/
+  cfg : Config
+  /-- The files, the main file first, then in the order they were reached.
+  Files that failed to scan are left out. -/
+  files : Array SourceFile
+  /-- Problems found while loading. -/
+  diags : Array Diag
+
+/-- Normalise a `/`-separated relative path: drop `.` and empty components,
+and resolve `..` where possible. -/
+def normPath (p : String) : String := Id.run do
+  let mut out : Array String := #[]
+  for c in p.splitOn "/" do
+    if c == "" || c == "." then continue
+    if c == ".." && !out.isEmpty && out.back! != ".." then
+      out := out.pop
+    else
+      out := out.push c
+  return "/".intercalate out.toList
+
+/-- The directory part of a relative path (`""` for the top). -/
+def dirOf (p : String) : String :=
+  match p.splitOn "/" with
+  | [] | [_] => ""
+  | parts => "/".intercalate parts.dropLast
+
+/-- The paths LaTeX tries for an input, most likely first. -/
+def inputCandidates (mainDir macroName path : String) : List String :=
+  let base := normPath (if mainDir.isEmpty then path else mainDir ++ "/" ++ path)
+  if macroName == "include" then [base ++ ".tex"]
+  else if base.endsWith ".tex" then [base]
+  else [base ++ ".tex", base]
+
+/-- Load a document, reading files with `read` (which returns `none` for a
+missing file). Paths are relative to the project root. -/
+def Doc.load {m : Type → Type} [Monad m] (cfg : Config) (read : String → m (Option String)) :
+    m Doc := do
+  let main := normPath cfg.main
+  let mainDir := dirOf main
+  let mut files : Array SourceFile := #[]
+  let mut diags : Array Diag := #[]
+  let mut seen : Array String := #[main]
+  let mut queue : Array (String × String) := #[(main, "")]
+  let mut qi := 0
+  while h : qi < queue.size do
+    let (path, from_) := queue[qi]
+    qi := qi + 1
+    let some text ← read path
+      | if from_.isEmpty then
+          diags := diags.push (Diag.err "missing-main" "" s!"the main file {path} does not exist")
+        else
+          diags := diags.push (Diag.warn "missing-input" from_
+            s!"{path} does not exist, so it was not scanned (it may be generated later)")
+        continue
+    let src := Src.ofString path text
+    match scanSrc cfg src with
+    | .error d => diags := diags.push d
+    | .ok scan =>
+      files := files.push { src, scan }
+      for (macroName, p, pos) in scan.inputs do
+        if p.startsWith "/" || p.startsWith "\\" || (p.toList.getD 1 ' ') == ':' then
+          let d := Diag.warn "absolute-input" (src.locString pos)
+            s!"{p} is an absolute path, so it was not followed (use a path relative to the main file)"
+          diags := diags.push d
+          continue
+        let cands := inputCandidates mainDir macroName p
+        -- Prefer a candidate that exists.
+        let mut chosen := cands.headD p
+        for c in cands do
+          if (← read c).isSome then chosen := c; break
+        unless seen.contains chosen do
+          seen := seen.push chosen
+          queue := queue.push (chosen, src.locString pos)
+  return { cfg, files, diags }
+
+/-- Load a document from disk; paths are relative to `root`. -/
+def Doc.loadIO (cfg : Config) (root : System.FilePath) : IO Doc :=
+  Doc.load cfg fun p => do
+    let f := root / p
+    if ← f.pathExists then
+      if ← f.isDir then return none
+      return some (← IO.FS.readFile f)
+    else return none
+
+/-- Load a document held in memory as `(path, text)` pairs. -/
+def Doc.ofFiles (cfg : Config) (files : Array (String × String)) : Doc :=
+  Id.run <| Doc.load cfg fun p => pure ((files.find? (·.1 == p)).map (·.2))
+
+end Splice

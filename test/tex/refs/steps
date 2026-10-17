@@ -1,0 +1,6 @@
+apply --bundle demo.bundle.json
+apply --bundle demo.bundle.json --profile none
+apply --bundle demo.bundle.json --profile camera-ready
+apply --bundle demo.bundle.json --profile camera-ready --commit 0123abc
+apply --bundle demo.bundle.json --profile nonesuch
+apply --bundle demo.bundle.json

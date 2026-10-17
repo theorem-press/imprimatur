@@ -1,0 +1,16 @@
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 1 item updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+Windows line endings.␍
+\begin{leanblock}[sum=LeYzekMTql]{Demo.nested}{CRLF}␍
+nested content␍
+over two lines␍
+\end{leanblock}␍
+Trailing   ␍
+

@@ -1,0 +1,8 @@
+--config unknown-key.toml scan
+--config bad-alias.toml scan
+--config bad-syntax.toml scan
+--config bad-profile.toml scan
+--config missing.toml scan
+--main main.tex apply
+--main main.tex frobnicate
+--main main.tex check --bundle nope.json --frobnicate
