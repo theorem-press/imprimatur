@@ -1,0 +1,6 @@
+schema = 1
+main = "main.tex"
+lean_project = "lean"
+imports = ["Demo", "Demo.More"]
+strip_namespaces = ["Demo"]
+open_scoped = ["Topology"]

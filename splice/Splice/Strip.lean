@@ -118,7 +118,11 @@ def requests (doc : Doc) : String := Id.run do
   let q (t : String) : String := (Json.str t).compress
   let lines := (keys.qsort (·.1 < ·.1)).map fun (k, vs) =>
     s!"    {q k}: \{\"views\": [{", ".intercalate ((vs.qsort (· < ·)).map q).toList}]}"
-  return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n  \"requests\": \{\n\
+  let list (xs : Array String) : String := "[" ++ ", ".intercalate (xs.map q).toList ++ "]"
+  let c := doc.cfg
+  let config := s!"  \"config\": \{\"imports\": {list c.imports}, \
+    \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces}},\n"
+  return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n{config}  \"requests\": \{\n\
     {",\n".intercalate lines.toList}\n  }\n}\n"
 
 end Splice

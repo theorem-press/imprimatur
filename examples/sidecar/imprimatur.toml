@@ -1,0 +1,6 @@
+schema = 1
+main = "paper.tex"
+lean_project = "tex-lean"
+mode = "sidecar"
+imports = ["Host"]
+strip_namespaces = ["Host"]

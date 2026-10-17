@@ -1,0 +1,33 @@
+\documentclass{article}
+\usepackage{amsthm}
+\usepackage{imprimatur}
+\newtheorem{theorem}{Theorem}
+\leanblockalias{leantheorem}{theorem}
+\begin{document}
+
+\section{A tiny formalisation}
+
+We define \leaninline[sum=KesAorWDx0]{Minimal.double}{\LeanCode{%
+\LeanKeyword{def} \LeanConst{double} (\LeanBound{n} : \LeanConst{Nat}) : \LeanConst{Nat}}} and prove that it distributes over
+addition; the proof is at \leanref{Minimal.double_add}{Minimal/Basic.lean:9}.
+
+\begin{leantheorem}[label=thm:add, sum=G-gZR8ivWY]{Minimal.double_add}{Distributivity}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{double\_add} (\LeanBound{m} \LeanBound{n} : \LeanConst{Nat}) : \LeanConst{double} (\LeanBound{m} + \LeanBound{n}) = \LeanConst{double} \LeanBound{m} + \LeanConst{double} \LeanBound{n}}
+\end{leantheorem}
+
+Theorem~\ref{thm:add} has an injective companion:
+\begin{leanblock}[view=lean, sum=JqxfkWqw5B]{Minimal.double_injective}{Injectivity}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{double\_injective} \{\LeanBound{m} \LeanBound{n} : \LeanConst{Nat}\} (\LeanBound{h} : \LeanConst{double} \LeanBound{m} = \LeanConst{double} \LeanBound{n}) : \LeanBound{m} = \LeanBound{n}}
+\end{leanblock}
+
+\begin{leanblock}[view=meta, sum=ceeOUnoXBZ]{Minimal.double_injective}{Provenance}
+\LeanMeta{\leanmetasource{Minimal/Basic.lean:15}}{Quot.sound, propext}{\LeanSorryFree}{Doubling is injective, for all \LeanCodeInline{m} and \LeanCodeInline{n}: if \LeanCodeInline{double m = double n} then
+\LeanCodeInline{m = n}.}
+\end{leanblock}
+
+Both results are checked \leancheck{Minimal.double_add, Minimal.double_injective}
+against Lean.
+
+\end{document}

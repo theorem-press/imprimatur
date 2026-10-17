@@ -19,6 +19,9 @@ path = ".."
 name = "imprimatur-testkit"
 path = "../../testkit"
 
+[[lean_lib]]
+name = "ExtractTest"
+
 [[lean_exe]]
 name = "tests"
 root = "ExtractTests"

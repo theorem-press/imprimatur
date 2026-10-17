@@ -1,0 +1,13 @@
+1
+
+Reversal with an accumulator
+
+The function def revAcc {α : Type} : List α  List α  List α reverses a list onto
+an accumulator.
+theorem revAcc_eq {α : Type} (xs acc : List α) : revAcc xs acc = xs.reverse ++
+acc
+
+Lean: Host/Lists.lean:11. Axioms: propext; sorry-free. revAcc agrees with List.reverse.
+
+1
+

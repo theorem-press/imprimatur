@@ -1,5 +1,5 @@
 $ imprimatur-splice --config unknown-key.toml scan
-error: unknown-key.toml: unknown key 'mian' in the top-level table; expected one of schema, main, default_profile, profile, aliases, trust, manifests, verbatim_envs, lean_project, mode, notation, strip_namespaces, open_scoped, notation_packs
+error: unknown-key.toml: unknown key 'mian' in the top-level table; expected one of schema, main, default_profile, profile, aliases, trust, manifests, verbatim_envs, lean_project, mode, imports, notation, strip_namespaces, open_scoped, notation_packs
 [exit 2]
 
 $ imprimatur-splice --config bad-alias.toml scan

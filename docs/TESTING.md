@@ -10,7 +10,8 @@ file says how to run them and keeps the traceability matrix.*
 | everything CI runs | `scripts/test-all.sh` | repository root |
 | integration with the real projects (not in CI) | `scripts/integration.sh` | repository root |
 | the test harness's own tests | `lake test` | `testkit/` |
-| extractor tests | `lake test` | `extract/test/` |
+| extractor tests (build the fixtures first) | `lake test` | `extract/test/` |
+| end-to-end examples (needs TeX Live) | `scripts/e2e.sh` | repository root |
 | splicer tests | `lake test` | `splice/test/` |
 | the extractor on another toolchain | `scripts/test-all.sh --toolchain v4.31.0` | repository root |
 | lint (links, schema, this matrix) | `scripts/lint.sh` | repository root |
@@ -40,7 +41,13 @@ Every check has a name of the form `package/area/what`, for example
 `splice/prop/idempotence`. The matrix below refers to tests by these names,
 and `scripts/check-traceability.py` checks that every name in it appears as a
 string literal in a test source. Checks done by scripts are named
-`lint/…` (in `scripts/`) or `integration/…` (in `scripts/integration.sh`).
+`lint/…` (in `scripts/`), `integration/…` (in `scripts/integration.sh`) or
+`e2e/…` (in `scripts/e2e.sh`).
+
+**Golden bundles of the extractor.** `extract/test/golden/<fixture>.bundle.json`
+holds the bundle of each fixture under `test/fixtures/`, with the toolchain in
+`producer.lean` masked as `v4.x`. The same golden files must hold on every
+toolchain in the CI matrix.
 
 **Golden tests of the splicer.** Each directory under `test/tex/` is a case:
 a document, its configuration and bundles, and a `steps` file of commands.
@@ -64,23 +71,23 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§1 | goals and non-goals | — | n/a |
 | D§2 | motivating projects | — | n/a |
 | D§3 | prior art | — | n/a |
-| D§4 | (1) the extractor builds and runs on every supported toolchain | `extract/version/lean` | M0 |
+| D§4 | (1) the extractor builds and runs on every supported toolchain | `extract/version/lean`, `extract/golden/Basic` | M0 |
 | D§4 | (2) the splicer imports nothing from Lean but `Lean.Data.Json` | `lint/splice-imports` | M1 |
 | D§4 | (3) a notation rule naming a missing constant fails at build time | — | M4 |
-| D§4 | (4) every declaration has a default rendering | — | M2 |
+| D§4 | (4) every declaration has a default rendering (the `lean` view) | `extract/golden/Basic`, `integration/projb-lean-view`, `integration/math-lean-view` | M2 |
 | D§4 | (5) external mode changes nothing in the host project | — | M3 |
 | D§4 | (6) shipped packages have no Lake dependencies | `lint/no-deps` | M0 (lint) |
-| D§4 | (7) environments are imported at `private` level | — | M2 |
+| D§4 | (7) environments are imported at `private` level | `extract/modules/private-sorry-seen`, `extract/modules/sorry-through-import-all`, `extract/golden/ModuleSys` | M2 |
 | D§5 | extractor and splicer communicate only through the bundle | `splice/version/schema`, `extract/version/schema` | M1 |
-| D§5 | `imprimatur build` runs scan, export, apply; `check` writes nothing | — | M2 |
+| D§5 | `imprimatur build` runs scan, export, apply; `check` passes after it | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§6.1 | `imprimatur.toml` is parsed; unknown keys and bad values are reported | `splice/toml/parses`, `splice/toml/duplicate-key`, `splice/toml/error-line`, `splice/config/parses`, `splice/config/unknown-key`, `splice/config/alias-needs-view`, `splice/config/url-needs-template`, `splice/golden/config-errors` | M1 |
 | D§6.2 | the notation module is elaborated and its names resolved | — | M4 |
-| D§6.3 | sidecar and in-project modes | — | M2 |
+| D§6.3 | sidecar and in-project modes | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§6.3 | external mode | — | M3 |
 | D§7.1 | `Doc` emitter: escaping, parenthesisation, line breaking | — | M4 |
 | D§7.2 | notation matches `Expr`; unmatched subterms are delaborated | — | M4 |
-| D§7.3 | `lean` view, with semantic token macros | — | M2 |
-| D§7.3 | `meta` view | — | M2 |
+| D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic`, `integration/projb-lean-view` | M2 |
+| D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
 | D§7.3 | `math` and `prose` views | — | M4 |
 | D§7.3 | `rules` and `grammar` views | — | M5 |
 | D§7.3 | custom views through `@[latex_view]` | — | M5 |
@@ -88,20 +95,20 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.5 | notation rules: patterns, templates, `prec`, `width`, `hide`, `variant`, `flatten`, lookup order, metavariables | — | M4 |
 | D§7.5 | the bundle records the macros each rendering uses | — | M4 |
 | D§7.6 | premise conventions | — | M5 |
-| D§7.7 | axioms and `sorry` | — | M2 |
+| D§7.7 | axioms and `sorry` | `extract/trust/direct-sorry`, `extract/trust/custom-axiom`, `extract/trust/classical-axioms`, `extract/trust/sorry-in-proof-chain`, `extract/trust/sorry-in-statement`, `extract/trust/custom-axiom-trust`, `extract/modules/private-sorry-seen` | M2 |
 | D§7.7 | dependency cone up to `trusted_prefixes` | — | M3 |
 | D§7.7 | `stmtHash`: insensitive to binder and universe names, sensitive to meaning, stable across toolchains | — | M3 |
 | D§7.7 | `sigHash` change alone is a warning | — | M3 |
-| D§8 | bundles are deterministic: sorted keys, no timestamps | — | M2 |
-| D§8 | bundles contain no absolute paths, user names, URLs or commit hashes | — | M2 |
+| D§8 | bundles are deterministic: sorted keys, no timestamps; the same on every toolchain | `extract/json/sorted`, `extract/golden/Basic`, `extract/golden/ModuleSys`, `extract/golden/Trust` | M2 |
+| D§8 | bundles contain no absolute paths, user names, URLs or commit hashes | `extract/golden/Basic`, `splice/bundle/absolute-path` | M2 |
 | D§8 | bundles are read and checked against the rules of `schema/bundle.schema.json`; golden bundles validate against the schema | `splice/bundle/parses`, `splice/bundle/schema-version`, `splice/bundle/absolute-path`, `splice/bundle/missing-views`, `splice/golden/bundle-errors`, `lint/bundle-schema` | M1 |
-| D§8 | a view that fails to render is an error only if requested | — | M2 |
+| D§8 | a view that fails to render is recorded in `errors`, and is an error only if requested | `extract/golden/Basic`, `splice/golden/failures` | M2 |
 | D§9.1 | `leanblock`, `\leaninline`, `\leanref`, `\leancheck`, `\leanindex` are recognised | `splice/scan/forms`, `splice/scan/options`, `splice/scan/check-keys`, `splice/golden/basic` | M1 |
 | D§9.1 | block options, including `include`/`exclude`, `show`/`hide` and theorem modifiers | — | M5 |
 | D§9.2 | aliases map existing environments onto `leanblock` | `splice/config/alias-slots`, `splice/golden/basic`, `splice/golden/positional-slots` | M1 |
 | D§9.3 | blueprint `\lean{…}` read as check-only references; `\leanok` cross-checked | — | M3 |
 | D§9.3 | `--blueprint-compat` writes `\lean{…}` | — | M6 |
-| D§9.4 | a document compiles with `imprimatur.sty` and shows the spliced content | — | M2 |
+| D§9.4 | a document compiles with `imprimatur.sty` (pdflatex and lualatex) and shows the spliced content | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§9.5 | slots keep their text by id; slot edits are not hand edits | `splice/slots/merge`, `splice/checksum/ignores-slot-text`, `splice/prop/slot-preservation`, `splice/prop/edit-detection`, `splice/golden/slots`, `splice/golden/unicode` | M1 |
 | D§9.5 | orphaned slots are dropped with their text printed; `--rename-slot` | `splice/slots/orphans`, `splice/slots/rename`, `splice/golden/slots` | M1 |
 | D§9.5 | slots declared by position; `migrate-slots` | `splice/slots/found`, `splice/slots/outer`, `splice/golden/positional-slots`, `splice/golden/migrate-slots` | M1 |
@@ -119,10 +126,11 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§10.3 | `check` exit codes: non-zero on anything but warnings | `splice/golden/failures`, `splice/golden/config-errors`, `splice/golden/slots` | M1 |
 | D§10.4 | `strip` removes markers and keeps generated content | `splice/slots/unwrap`, `splice/prop/strip`, `splice/golden/strip` | M1 |
 | D§10.5 | comparator manifests, including `@challenge` entries | — | M3 |
-| D§11 | profiles `relative` (default), `url`, `none` for `\leanref` | `splice/tex-escape`, `splice/config/url-needs-template`, `splice/golden/refs` | M1 |
+| D§11 | profiles `relative` (default), `url`, `none` for `\leanref` and the `meta` view | `splice/tex-escape`, `splice/config/url-needs-template`, `splice/golden/refs`, `splice/golden/meta-source` | M1 |
 | D§11 | `check --anonymous` | — | M6 |
 | D§12 | every command in the table exists and prints usage | — | M6 |
 | D§13 | the supported toolchain range is documented and enforced | — | M6 |
+| D§13 | the same fixture gives the same bundle on every toolchain, apart from `producer` | `extract/golden/Basic`, `extract/golden/ModuleSys`, `extract/golden/Trust` | M2 |
 | D§13 | the same declaration has the same `stmtHash` on every toolchain | — | M3 |
 | D§13 | the splicer accepts the current and previous bundle schema | `splice/version/schema`, `splice/bundle/schema-version` | M1 |
 | D§14 | testing (this file) | — | n/a |

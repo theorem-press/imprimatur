@@ -2,7 +2,7 @@
 # internals, so it pins its own toolchain and has no Lake dependencies.
 name = "imprimatur-splice"
 version = "0.0.0"
-defaultTargets = ["Splice", "imprimatur-splice"]
+defaultTargets = ["Splice", "imprimatur-splice", "imprimatur"]
 
 [leanOptions]
 autoImplicit = false
@@ -15,3 +15,7 @@ name = "Splice"
 [[lean_exe]]
 name = "imprimatur-splice"
 root = "Main"
+
+[[lean_exe]]
+name = "imprimatur"
+root = "SpliceWrapper"

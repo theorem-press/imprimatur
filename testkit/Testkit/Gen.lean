@@ -95,9 +95,7 @@ def listOf {α : Type} (g : Gen α) : Gen (List α) := do
 
 /-- A string of up to `size` characters drawn from `chars`. -/
 def stringOf (chars : Array Char) : Gen String := do
-  -- `String.mk` is deprecated in later toolchains and `String.ofList` is
-  -- missing from earlier ones, so build the string by pushing.
-  return (← listOf (elem chars)).foldl String.push ""
+  return String.ofList (← listOf (elem chars))
 
 end Gen
 

@@ -1,6 +1,7 @@
 $ imprimatur-splice scan
 {
   "schema": "imprimatur-requests/1",
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": []},
   "requests": {
     "Demo.c": {"views": ["lean"]}
   }

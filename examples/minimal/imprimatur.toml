@@ -1,0 +1,9 @@
+schema = 1
+main = "paper.tex"
+lean_project = "lean"
+mode = "in-project"
+imports = ["Minimal"]
+strip_namespaces = ["Minimal"]
+
+[aliases]
+leantheorem = { view = "lean", wrap = "theorem" }

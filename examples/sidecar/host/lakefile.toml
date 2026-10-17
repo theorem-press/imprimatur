@@ -1,0 +1,6 @@
+# A host project that knows nothing of imprimatur (DESIGN §6.3 B).
+name = "host"
+defaultTargets = ["Host"]
+
+[[lean_lib]]
+name = "Host"

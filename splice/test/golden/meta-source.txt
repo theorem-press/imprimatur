@@ -1,0 +1,32 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": ["Demo", "Demo.More"], "open_scoped": ["Topology"], "strip_namespaces": ["Demo"]},
+  "requests": {
+    "Demo.thm": {"views": ["meta"]}
+  }
+}
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile none
+apply: 1 item updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+main.tex:1:1: error[stale]: the generated content of Demo.thm is out of date
+check: 1 stale, 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 1 item updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\begin{leanblock}[view=meta, sum=iop8w7PHfO]{Demo.thm}{Provenance}
+\LeanMeta{\leanmetasource{Demo/Basic.lean:12}}{propext}{\LeanSorryFree}{A theorem.}
+\end{leanblock}
+

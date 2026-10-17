@@ -1,0 +1,20 @@
+{
+ "schema": "imprimatur-bundle/1",
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "entries": {
+  "Demo.thm": {
+   "kind": "theorem",
+   "decl": "Demo.thm",
+   "source": {
+    "path": "Demo/Basic.lean",
+    "line": 12
+   },
+   "views": {
+    "meta": "\\LeanMeta{\\leanmetasource{}}{propext}{\\LeanSorryFree}{A theorem.}"
+   }
+  }
+ }
+}
