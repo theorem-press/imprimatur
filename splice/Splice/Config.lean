@@ -75,6 +75,10 @@ structure Config where
   openScoped : Array String := #[]
   /-- Namespaces left out of rendered names. -/
   stripNamespaces : Array String := #[]
+  /-- Module prefixes whose declarations end a dependency cone (DESIGN §7.7). -/
+  trustedPrefixes : Array String := #["Mathlib", "Std", "Batteries", "Lean", "Init"]
+  /-- Comparator manifests: paths, with `*` allowed in the file name. -/
+  comparator : Array String := #[]
   deriving Repr
 
 /-- The alias for an environment name, if any. -/
@@ -186,12 +190,12 @@ def Config.parse (text : String) : Except String Config := do
     if let some ax := t.find? "allowed_axioms" then
       cfg := { cfg with allowedAxioms := ← expectStrs "[trust].allowed_axioms" ax }
     if let some tp := t.find? "trusted_prefixes" then
-      discard <| expectStrs "[trust].trusted_prefixes" tp
+      cfg := { cfg with trustedPrefixes := ← expectStrs "[trust].trusted_prefixes" tp }
   if let some m := root.find? "manifests" then
     let mk ← expectTable "[manifests]" m
     checkKeys "[manifests]" mk ["comparator", "blueprint"]
     if let some c := m.find? "comparator" then
-      discard <| expectStrs "[manifests].comparator" c
+      cfg := { cfg with comparator := ← expectStrs "[manifests].comparator" c }
     if let some b := m.find? "blueprint" then
       cfg := { cfg with blueprint := ← expectBool "[manifests].blueprint" b }
   if let some v := root.find? "verbatim_envs" then

@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Apply
+import Splice.Sha256
 
 /-!
 # Checking a document
@@ -25,10 +26,41 @@ namespace Splice
 def Item.allKeys (it : Item) : Array String :=
   match it.kind with
   | .check => it.keys
-  | .index => #[]
+  | .index | .leanok => #[]
   | _ => #[it.key]
 
-/-- Broken references and trust problems. -/
+/-- The `stmt=` and `sig=` values for a `\leancheck` of `keys`: the first 12
+hexadecimal digits of the key's hashes, or, for several keys, of the hash of
+their hashes joined by commas. `none` if a key is missing or has no hash. -/
+def checkHashes (bundle : Bundle) (keys : Array String) : Option (String × String) := do
+  let es ← keys.mapM bundle.find?
+  let stmts ← es.mapM (·.stmtHash)
+  let sigs ← es.mapM (·.sigHash)
+  let short (hs : Array String) : String :=
+    let h := if hs.size == 1 then hs[0]! else Sha256.hexOf (",".intercalate hs.toList)
+    String.ofList (h.toList.take 12)
+  return (short stmts, short sigs)
+
+/-- Problems with an entry's trust, checked against `allowed` axioms. -/
+def trustProblems (allowed : Array String) (e : Entry) : Array String := Id.run do
+  let mut out := #[]
+  if e.usesSorry then out := out.push s!"{e.key} depends on sorry"
+  -- `sorryAx` is reported above, as `sorry`.
+  let bad := e.axioms.filter (fun a => a != "sorryAx" && !allowed.contains a)
+  unless bad.isEmpty do
+    out := out.push s!"{e.key} uses axioms outside the allowed ones: {", ".intercalate bad.toList}"
+  let mut cone : Array String := #[]
+  for n in e.untrusted do
+    let why := ((e.reasons.find? (·.1 == n)).map (·.2)).getD #[]
+    -- An axiom in the cone is fine if it is allowed.
+    let why := why.filter (fun w => !(w == "axiom" && allowed.contains n))
+    if !why.isEmpty || e.reasons.isEmpty then
+      cone := cone.push (if why.isEmpty then n else s!"{n} ({", ".intercalate why.toList})")
+  unless cone.isEmpty do
+    out := out.push s!"{e.key} has untrusted constants in its dependency cone: {", ".intercalate cone.toList}"
+  return out
+
+/-- Broken references, trust problems, drift and blueprint `\leanok`s. -/
 def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
   let mut ds := #[]
   for f in doc.files do
@@ -41,17 +73,50 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
           if it.kind == .check then
             ds := ds.push (Diag.err "broken-ref" loc s!"{key} has no entry in the bundle")
         | some e =>
-          if e.usesSorry then
-            ds := ds.push (Diag.err "untrusted" loc s!"{key} depends on sorry")
-          -- `sorryAx` is reported above, as `sorry`.
-          let bad := e.axioms.filter (fun a => a != "sorryAx" && !doc.cfg.allowedAxioms.contains a)
-          unless bad.isEmpty do
-            ds := ds.push (Diag.err "untrusted" loc
-              s!"{key} uses axioms outside allowed_axioms: {", ".intercalate bad.toList}")
-          unless e.untrusted.isEmpty do
-            ds := ds.push (Diag.err "untrusted" loc
-              s!"{key} has untrusted constants in its dependency cone: \
-                {", ".intercalate e.untrusted.toList}")
+          -- A blueprint `\lean{…}` without `\leanok` is work in progress, so
+          -- only `\leanok` nodes are checked for trust (below).
+          unless it.name == "lean" do
+            for p in trustProblems doc.cfg.allowedAxioms e do
+              ds := ds.push (Diag.err "untrusted" loc p)
+      -- Drift (DESIGN §10.3): the hashes recorded when the prose was checked.
+      if it.kind == .check && it.name == "leancheck" then
+        match it.opt? "stmt", checkHashes bundle it.keys with
+        | some recorded, some (stmt, sig) =>
+          let keys := ", ".intercalate it.keys.toList
+          if recorded != stmt then
+            ds := ds.push (Diag.err "drift" loc
+              s!"the statement of {keys}, or something it depends on, has changed since the prose \
+                was last checked against it (stmt={recorded}, now {stmt}).\n\
+                Re-read the prose, then run: imprimatur accept {" ".intercalate it.keys.toList}")
+          else if (it.opt? "sig").any (· != sig) then
+            ds := ds.push (Diag.warn "sig-changed" loc
+              s!"the signature of {keys} reads differently (binder names or notation), \
+                but its meaning is unchanged; run imprimatur accept to record it")
+        | some _, none =>
+          if it.keys.all (bundle.find? · |>.isSome) then
+            ds := ds.push (Diag.err "no-hash" loc
+              s!"the bundle has no statement hash for {", ".intercalate it.keys.toList}; \
+                rebuild it with imprimatur-export 0.2 or later")
+        | none, _ => pure ()
+    -- Blueprint (DESIGN §9.3): a node marked \leanok must not depend on sorry.
+    for ok in f.scan.items.filter (·.kind == .leanok) do
+      if ok.env == 0 then continue
+      for it in f.scan.items.filter (fun i => i.name == "lean" && i.env == ok.env) do
+        for key in it.keys do
+          if let some e := bundle.find? key then
+            unless (trustProblems doc.cfg.allowedAxioms e).isEmpty do
+              ds := ds.push (Diag.err "leanok-untrusted" (f.src.locString ok.start)
+                s!"this node is marked \\leanok, but {key} is not trusted: \
+                  {"; ".intercalate (trustProblems doc.cfg.allowedAxioms e).toList}")
+  -- Comparator manifests (DESIGN §10.5).
+  for m in doc.manifests do
+    let allowed := m.permittedAxioms.getD doc.cfg.allowedAxioms
+    for key in m.theorems do
+      match bundle.find? key with
+      | none => ds := ds.push (Diag.err "broken-ref" m.path s!"{key} has no entry in the bundle")
+      | some e =>
+        for p in trustProblems allowed e do
+          ds := ds.push (Diag.err "untrusted" m.path p)
   return ds
 
 /-- A line diff of `a` against `b` (longest common subsequence), as lines

@@ -1,0 +1,23 @@
+{
+ "entries": {
+  "Demo.lemma": {
+   "decl": "Demo.lemma",
+   "kind": "theorem",
+   "sigHash": "2222222222222222222222222222222222222222222222222222222222222222",
+   "stmtHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "views": {
+    "lean": "Demo.lemma"
+   }
+  },
+  "Demo.main": {
+   "decl": "Demo.main",
+   "kind": "theorem",
+   "views": {}
+  }
+ },
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

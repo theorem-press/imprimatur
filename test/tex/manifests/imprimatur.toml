@@ -1,0 +1,6 @@
+schema = 1
+main = "main.tex"
+imports = ["Paper"]
+
+[manifests]
+comparator = ["challenges/*.json", "missing/*.json"]

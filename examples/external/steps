@@ -1,0 +1,5 @@
+# The host is built by its owners; imprimatur only reads it.
+!(cd host && lake build -q)
+build
+accept --all
+check

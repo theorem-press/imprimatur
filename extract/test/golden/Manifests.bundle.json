@@ -1,0 +1,79 @@
+{
+  "entries": {
+    "Cat.IsEven": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Cat.IsEven",
+      "doc": "Evenness, as the challenge defines it.",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "cc0afa152852c0b99e58cfa13eec9048b400635f4d002ae11c0a8d25ea93b88a",
+      "sorry": false,
+      "source": {
+        "line": 11,
+        "path": "Manifests/Solution.lean"
+      },
+      "stmtHash": "dfaa326e1653f830e5c1c89e0109d65cf3c974efe73293cbb9cbbedd22b0dc59",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{IsEven} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanSort{Prop}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Evenness, as the challenge defines it.}"
+      }
+    },
+    "Cat.classical": {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
+      "decl": "Cat.classical",
+      "doc": "A second theorem, proved with classical logic.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "8f382a08eee0fbea34cbfa462f522620f2217023769020af1a7567ce69c9212e",
+      "sorry": false,
+      "source": {
+        "line": 20,
+        "path": "Manifests/Solution.lean"
+      },
+      "stmtHash": "e336700b3d061020ebf2060fcebd87cf730ea8876cf0485f02cab204edf17375",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{classical} (\\LeanBound{p} : \\LeanSort{Prop}) : \\LeanBound{p} ∨ ¬\\LeanBound{p}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Classical.choice, Quot.sound, propext}{\\LeanSorryFree}{A second theorem, proved with classical logic.}"
+      }
+    },
+    "Cat.main": {
+      "axioms": ["Quot.sound", "propext"],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Cat.main",
+      "doc": "The challenge's main theorem, proved.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "30f9143b9f1987398ac7bc1e295322c62e1b7100dd13d2edcae08ffd690a4597",
+      "sorry": false,
+      "source": {
+        "line": 14,
+        "path": "Manifests/Solution.lean"
+      },
+      "stmtHash": "07538357e68811f85eb98410baf65c5412e93764dc2ce0521f0c6e289396fd96",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{main} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanConst{IsEven} (\\LeanNumber{2} * \\LeanBound{n})}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Quot.sound, propext}{\\LeanSorryFree}{The challenge's main theorem, proved.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

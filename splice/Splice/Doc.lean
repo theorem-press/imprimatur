@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Scan
+import Splice.Manifests
 
 /-!
 # Documents
@@ -31,6 +32,8 @@ structure Doc where
   files : Array SourceFile
   /-- Problems found while loading. -/
   diags : Array Diag
+  /-- Comparator manifests (DESIGN §10.5). -/
+  manifests : Array Manifest := #[]
 
 /-- Normalise a `/`-separated relative path: drop `.` and empty components,
 and resolve `..` where possible. -/
@@ -99,14 +102,17 @@ def Doc.load {m : Type → Type} [Monad m] (cfg : Config) (read : String → m (
           queue := queue.push (chosen, src.locString pos)
   return { cfg, files, diags }
 
-/-- Load a document from disk; paths are relative to `root`. -/
-def Doc.loadIO (cfg : Config) (root : System.FilePath) : IO Doc :=
-  Doc.load cfg fun p => do
+/-- Load a document, and its comparator manifests, from disk; paths are
+relative to `root`. -/
+def Doc.loadIO (cfg : Config) (root : System.FilePath) : IO Doc := do
+  let doc ← Doc.load cfg fun p => do
     let f := root / p
     if ← f.pathExists then
       if ← f.isDir then return none
       return some (← IO.FS.readFile f)
     else return none
+  let (manifests, ds) ← loadManifests cfg root
+  return { doc with manifests, diags := doc.diags ++ ds }
 
 /-- Load a document held in memory as `(path, text)` pairs. -/
 def Doc.ofFiles (cfg : Config) (files : Array (String × String)) : Doc :=

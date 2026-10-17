@@ -1,0 +1,8 @@
+{
+  "challenge_module": "ComparatorChallenges.Main",
+  "solution_module": "Manifests.Solution",
+  "theorem_names": ["Cat.main", "Cat.classical"],
+  "definition_names": [],
+  "permitted_axioms": ["propext", "Quot.sound"],
+  "enable_nanoda": false
+}

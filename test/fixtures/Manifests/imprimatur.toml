@@ -1,0 +1,8 @@
+schema = 1
+main = "blueprint.tex"
+lean_project = "."
+imports = ["Manifests"]
+
+[manifests]
+comparator = ["Main.json"]
+blueprint = true

@@ -13,7 +13,7 @@ Put `imprimatur.toml` next to the main `.tex` file:
 schema = 1
 main = "paper.tex"
 lean_project = "lean"            # the package that requires imprimatur
-mode = "in-project"              # or "sidecar"
+mode = "in-project"              # or "sidecar", or "external"
 imports = ["Minimal"]            # the modules declarations come from
 strip_namespaces = ["Minimal"]
 
@@ -26,14 +26,20 @@ for each alias `\leanblockalias{leantheorem}{theorem}`. Run
 `imprimatur build` after changing the Lean or the paper, and
 `imprimatur check` in CI.
 
-The Lean project must require imprimatur, in one of two ways:
+The Lean project is reached in one of three ways:
 
 - **In-project.** The project's own lakefile requires
   `imprimatur` (`subDir = "extract"`).
 - **Sidecar.** A small package next to the project requires both the project
   and `imprimatur`, so the project itself doesn't change.
 
-`examples/minimal` and `examples/sidecar` show both.
+- **External.** Nothing requires imprimatur. Run
+  `imprimatur toolchain install VERSION` once for the project's toolchain;
+  `imprimatur build` then reads the project, which must already be built,
+  without changing it.
+
+`examples/minimal`, `examples/sidecar` and `examples/external` show all
+three.
 
 ## Markup
 
@@ -136,6 +142,8 @@ position into `\leanslot` form. It matches each old slot to the new
 | `imprimatur-splice migrate-slots --bundle B` | see Slots above |
 | `imprimatur build` | `scan`, then `imprimatur-export` in `lean_project`, then `apply`; takes `apply`'s options |
 | `imprimatur check` | the same, with `check` instead of `apply`; writes only the bundle, in `.imprimatur/` |
+| `imprimatur accept KEY…` / `--all` | the same, then records the current statement hashes in `\leancheck` ([trust.md](trust.md)) |
+| `imprimatur toolchain install VERSION` | builds the extractor for a toolchain, for external mode |
 
 The configuration is `imprimatur.toml` in the current directory, or
 `--config FILE`. With `--main FILE.tex`, no configuration file is needed.
@@ -162,6 +170,12 @@ Every message has a stable code.
 | `bad-content` | error | generated text would break the document: unbalanced braces in an inline item, or `\end{env}` inside a block |
 | `broken-ref` | error | a `\leancheck` key has no entry in the bundle |
 | `untrusted` | error | the result depends on `sorry`, uses an axiom outside `allowed_axioms`, or has untrusted constants in its cone |
+| `drift` | error | a `\leancheck`'s statement changed since it was accepted ([trust.md](trust.md)) |
+| `sig-changed` | warning | a `\leancheck`'s statement reads differently but means the same |
+| `no-hash` | error | the bundle has no statement hash for a `\leancheck` key |
+| `not-checked` | warning | `accept` was given a key that no `\leancheck` mentions |
+| `leanok-untrusted` | error | a blueprint node marked `\leanok` depends on an untrusted declaration |
+| `bad-manifest`, `missing-manifest` | error, warning | a comparator manifest can't be read, or a pattern matches none |
 | `orphan-slot` | warning | a slot disappeared; its text is printed |
 | `missing-input` | warning | an `\input`ed file doesn't exist |
 | `absolute-input` | warning | an `\input` names an absolute path, which isn't followed |

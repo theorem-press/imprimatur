@@ -15,7 +15,9 @@ extractor reads only this file, so it needs no TOML parser.
 {
   "schema": "imprimatur-requests/1",
   "config": { "imports": ["MyPaper.Results"], "open_scoped": [],
-              "strip_namespaces": ["ProjB"] },
+              "strip_namespaces": ["ProjB"],
+              "trusted_prefixes": ["Init", "Lean", "Std", "Batteries", "Mathlib"],
+              "challenges": { "OAI.X.main": "ComparatorChallenges.X" } },
   "requests": { "MyPaper.Results.theorem1_main": { "views": ["lean"] } }
 }
 ```
@@ -36,6 +38,12 @@ structure Settings where
   /-- The line width of the `lean` view, in characters. 80 fits the text
   width of a one-column article in `\footnotesize` monospace. -/
   width : Nat := 80
+  /-- Modules whose declarations end a dependency cone (DESIGN §7.7). -/
+  trustedPrefixes : Array Name := #[`Init, `Lean, `Std, `Batteries, `Mathlib]
+  /-- For each comparator theorem, its challenge module (DESIGN §10.5). -/
+  challenges : Array (String × Name) := #[]
+  /-- The heartbeat limit per entry, in thousands, as Lean's `maxHeartbeats`. -/
+  maxHeartbeats : Nat := 200000
   deriving Repr
 
 /-- One requested key. -/
@@ -75,6 +83,18 @@ def parseRequests (text : String) : Except String (Settings × Array Request) :=
     openScoped := (← get "open_scoped").map toName
     stripNamespaces := (← get "strip_namespaces").map toName
     width := (cfg.getObjValAs? Nat "width").toOption.getD 80 }
+  let settings := match cfg.getObjVal? "trusted_prefixes" with
+    | .ok _ => { settings with trustedPrefixes := ((get "trusted_prefixes").toOption.getD #[]).map toName }
+    | .error _ => settings
+  let challenges : Array (String × Name) ← match cfg.getObjVal? "challenges" with
+    | .ok c => match c.getObj? with
+      | .ok kvs => kvs.toArray.mapM fun ⟨k, v⟩ => match v.getStr? with
+        | .ok m => pure (k, toName m)
+        | .error _ => throw s!"config.challenges.{k} must be a module name"
+      | .error _ => throw "config.challenges must be an object"
+    | .error _ => pure #[]
+  let maxHeartbeats := (cfg.getObjValAs? Nat "max_heartbeats").toOption.getD 200000
+  let settings := { settings with challenges, maxHeartbeats }
   let reqs ← match (j.getObjVal? "requests").toOption.bind (·.getObj?.toOption) with
     | some kvs => kvs.toArray.mapM fun ⟨k, v⟩ => do
         let views ← match v.getObjVal? "views" with

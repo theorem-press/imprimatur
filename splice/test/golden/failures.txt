@@ -5,7 +5,7 @@ main.tex:5:1: error[missing-view]: the math view of Bad.render failed to render:
 main.tex:7:1: error[broken-ref]: Gone.away has no entry in the bundle
 main.tex:8:1: error[untrusted]: Uses.sorry depends on sorry
 main.tex:8:1: error[stale]: the generated content of Uses.sorry is out of date
-main.tex:9:1: error[untrusted]: Uses.axiom uses axioms outside allowed_axioms: Trust.custom_axiom
+main.tex:9:1: error[untrusted]: Uses.axiom uses axioms outside the allowed ones: Trust.custom_axiom
 main.tex:9:1: error[stale]: the generated content of Uses.axiom is out of date
 main.tex:10:1: error[untrusted]: Weak.cone has untrusted constants in its dependency cone: Trust.collatz
 main.tex:10:1: error[stale]: the generated content of Weak.cone is out of date

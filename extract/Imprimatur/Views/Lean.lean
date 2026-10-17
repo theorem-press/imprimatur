@@ -199,6 +199,8 @@ def leanView (c : ConstantInfo) (strip : Array Name) (width : Nat) : MetaM Strin
   let fmt ← withTheReader Core.Context (fun ctx => { ctx with openDecls }) do
     PrettyPrinter.ppSignature c.name
   let text := fmt.fmt.pretty width
+  if (← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)) == some "1" then
+    IO.eprintln s!"imprimatur-export: {c.name}: printed {text.length} characters"
   let bound := boundNames c.type (c.levelParams.toArray.map (·.toString))
   let ctx : LeanCtx := { env, openDecls, bound }
   -- The printer writes the declaration's own name first; find how.

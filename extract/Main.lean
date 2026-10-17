@@ -20,7 +20,7 @@ open Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
-  "usage: imprimatur-export --requests requests.json --out bundle.json [--project NAME]\n\
+  "usage: imprimatur-export --requests requests.json --out bundle.json [--project NAME] [--verbose]\n\
    \x20      imprimatur-export --version"
 
 /-- Parse `--flag value` pairs. -/
@@ -45,17 +45,23 @@ unsafe def main (args : List String) : IO UInt32 := do
   if settings.imports.isEmpty then
     IO.eprintln "imprimatur-export: no modules to import; set imports in imprimatur.toml"
     return 2
-  Lean.initSearchPath (← Lean.findSysroot)
-  let env ← match ← (Compat.importPrivate settings.imports).toBaseIO with
-    | .ok env => pure env
+  -- The host's search path (from `lake env`), and this program's own library,
+  -- which a notation module may import (external mode, DESIGN §6.3 A).
+  Lean.initSearchPath (← Lean.findSysroot) [(← IO.appDir) / ".." / "lib" / "lean"]
+  let root ← IO.currentDir
+  let main := reqs.filter (!·.key.endsWith challengeSuffix)
+  let (entries, warnings) ← match ← (Compat.importPrivate settings.imports).toBaseIO with
+    | .ok env => exportEntries env root settings main (args.contains "--verbose")
     | .error e =>
       IO.eprintln s!"imprimatur-export: cannot import {settings.imports}: {e}\n\
         (is the Lean project built? run `lake build` in it)"
       return (1 : UInt32)
-  let r ← exportBundle env (← IO.currentDir) settings reqs (flag args "--project")
-  for w in r.warnings do IO.eprintln s!"imprimatur-export: warning: {w}"
+  -- The main environment is no longer used, so challenge modules don't add to it.
+  let (chEntries, chWarnings) ← exportChallenges root settings reqs
+  for w in warnings ++ chWarnings do IO.eprintln s!"imprimatur-export: warning: {w}"
+  let all := entries ++ chEntries
   let tmp := outPath ++ ".imprimatur-tmp"
-  IO.FS.writeFile tmp r.bundle
+  IO.FS.writeFile tmp (renderBundle all (flag args "--project"))
   IO.FS.rename tmp outPath
-  IO.println s!"imprimatur-export: {r.entries} entries written to {outPath}"
+  IO.println s!"imprimatur-export: {all.size} entries written to {outPath}"
   return 0

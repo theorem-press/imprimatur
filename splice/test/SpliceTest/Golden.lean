@@ -113,13 +113,17 @@ def transcript (name : String) : IO String := do
 so none is skipped by accident. -/
 def cases : Array String := #[
   "splice/golden/basic",
+  "splice/golden/blueprint",
   "splice/golden/bundle-errors",
   "splice/golden/comments-verbatim",
+  "splice/golden/cone",
   "splice/golden/config-errors",
   "splice/golden/crlf",
+  "splice/golden/drift",
   "splice/golden/failures",
   "splice/golden/hand-edit",
   "splice/golden/macro-args",
+  "splice/golden/manifests",
   "splice/golden/meta-source",
   "splice/golden/migrate-slots",
   "splice/golden/outside",

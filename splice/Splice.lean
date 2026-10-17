@@ -10,6 +10,7 @@ import Splice.Config
 import Splice.Bundle
 import Splice.Diag
 import Splice.Scan
+import Splice.Manifests
 import Splice.Doc
 import Splice.Slots
 import Splice.Apply

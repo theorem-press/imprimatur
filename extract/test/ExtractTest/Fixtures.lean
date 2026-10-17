@@ -34,6 +34,7 @@ structure Fixture where
   strip : Array Name
   /-- Keys to export. -/
   keys : Array String
+  deriving Inhabited
 
 /-- The fixtures and the keys exported from each. -/
 def fixtures : Array Fixture := #[
@@ -44,8 +45,11 @@ def fixtures : Array Fixture := #[
       "topLevel", "no_doc", "Basic.no_such_thing"] },
   { dir := "ModuleSys", module := `ModuleSys, strip := #[`ModuleSys],
     keys := #["ModuleSys.pub_thm", "ModuleSys.honest", "ModuleSys.via_all", "ModuleSys.plain_user"] },
+  { dir := "Manifests", module := `Manifests, strip := #[`Cat],
+    keys := #["Cat.main", "Cat.classical", "Cat.IsEven"] },
   { dir := "Trust", module := `Trust, strip := #[`Trust],
     keys := #["Trust.double_even", "Trust.double_even_renamed", "Trust.pairMap_fst",
+      "Trust.pairMap_fst_renamed",
       "Trust.halve_le", "Trust.direct_sorry", "Trust.uses_direct_sorry", "Trust.deep_sorry",
       "Trust.uses_custom_axiom", "Trust.uses_standard_axioms", "Trust.collatz_stmt",
       "Trust.uses_hyp", "Trust.Hyp"] }]
@@ -85,8 +89,71 @@ def axioms (bundle key : String) : Array String :=
 def usesSorry (bundle key : String) : Option Bool :=
   (entry? bundle key).bind (·.getObjValAs? Bool "sorry" |>.toOption)
 
+/-- A field of an entry, as a string. -/
+def field (bundle key f : String) : Option String :=
+  (entry? bundle key).bind (·.getObjValAs? String f |>.toOption)
+
+/-- Run `lake` in a fixture, failing loudly. The toolchain is inherited (CI
+sets `ELAN_TOOLCHAIN`). -/
+def lakeIn (dir : System.FilePath) (args : Array String) : IO Unit := do
+  let out ← IO.Process.output { cmd := "lake", args, cwd := dir }
+  if out.exitCode != 0 then
+    throw (IO.userError s!"lake {args} in {dir} failed:\n{out.stdout}{out.stderr}")
+
+/-- The `Trust` fixture's drift case (DESIGN §7.7, §10.3): `Trust.Hyp` is
+weakened to `True` by a build option. The statement of `Trust.uses_hyp`
+reads the same, so `sigHash` stays; its meaning changed, so `stmtHash` must
+change. The fixture is left in its default (strong) state. -/
+unsafe def driftTest : TestM Unit := group "drift" do
+  let dir := fixturesDir / "Trust"
+  let f := (fixtures.find? (·.dir == "Trust")).get!
+  let f := { f with keys := #["Trust.uses_hyp"] }
+  lakeIn dir #["build", "-q", "-R", "-Kweak=1"]
+  let weak ← exportFixture f
+  lakeIn dir #["build", "-q", "-R"]
+  let strong ← exportFixture f
+  let get (b : String) (k : String) := (field b "Trust.uses_hyp" k).getD "?"
+  check "extract/trust/weakened-hypothesis-drifts"
+    (get weak.bundle "stmtHash" != get strong.bundle "stmtHash")
+    s!"stmtHash is {get weak.bundle "stmtHash"} for both variants"
+  checkEq "extract/trust/weakened-hypothesis-same-signature"
+    (get weak.bundle "sigHash") (get strong.bundle "sigHash")
+
+/-- Comparator challenges (DESIGN §10.5): a challenge's statement is
+rendered from its own module, imported on its own. -/
+unsafe def challengeTest : TestM Unit := group "challenges" do
+  let f := (fixtures.find? (·.dir == "Manifests")).get!
+  let main ← exportFixture f
+  let challenges : Array (String × Name) :=
+    #[("Cat.main", `ComparatorChallenges.Main), ("Cat.classical", `ComparatorChallenges.Main)]
+  let s : Settings := { imports := #[f.module], stripNamespaces := f.strip, challenges }
+  let reqs : Array Request := #[{ key := "Cat.main@challenge", views := #["lean"] },
+    { key := "Cat.classical@challenge", views := #[] }, { key := "Cat.unknown@challenge", views := #[] }]
+  let (entries, warnings) ← exportChallenges (fixturesDir / f.dir) s reqs
+  let ch := renderBundle entries none
+  checkEq "extract/manifests/challenge-keys" (entries.map (·.1)) #["Cat.main@challenge", "Cat.classical@challenge"]
+  checkEq "extract/manifests/unknown-challenge" warnings
+    #["Cat.unknown@challenge: no comparator manifest names Cat.unknown"]
+  -- The challenge states what the solution proves: the same statement hash.
+  checkEq "extract/manifests/challenge-statement-matches"
+    (field ch "Cat.main@challenge" "stmtHash") (field main.bundle "Cat.main" "stmtHash")
+  checkEq "extract/manifests/challenge-is-sorry" (usesSorry ch "Cat.main@challenge") (some true)
+  checkEq "extract/manifests/solution-is-proved" (usesSorry main.bundle "Cat.main") (some false)
+
+/-- The untrusted members of an entry's cone, as `name: reason, …`. -/
+def untrustedOf (bundle key : String) : Array String :=
+  match (entry? bundle key).bind (·.getObjVal? "cone" |>.toOption) with
+  | some c =>
+    let names := (c.getObjValAs? (Array String) "untrusted").toOption.getD #[]
+    names.map fun n =>
+      let rs := ((c.getObjVal? "reasons" >>= (·.getObjValAs? (Array String) n)).toOption).getD #[]
+      s!"{n}: {", ".intercalate rs.toList}"
+  | none => #["(no cone)"]
+
 /-- Golden bundles, and trust checks on them. -/
 unsafe def tests : TestM Unit := group "fixtures" do
+  driftTest
+  challengeTest
   IO.FS.createDirAll "out"
   for f in fixtures do
     let r ← exportFixture f
@@ -107,6 +174,15 @@ unsafe def tests : TestM Unit := group "fixtures" do
       checkEq "extract/modules/sorry-through-import-all" (usesSorry r.bundle "ModuleSys.via_all") (some true)
       checkEq "extract/modules/honest" (axioms r.bundle "ModuleSys.honest") #[]
     | "Trust" =>
+      checkEq "extract/trust/same-hash-renamed-binder"
+        (field r.bundle "Trust.double_even" "stmtHash") (field r.bundle "Trust.double_even_renamed" "stmtHash")
+      checkEq "extract/trust/same-hash-renamed-universes"
+        (field r.bundle "Trust.pairMap_fst" "stmtHash") (field r.bundle "Trust.pairMap_fst_renamed" "stmtHash")
+      check "extract/trust/different-sig-renamed"
+        (field r.bundle "Trust.double_even" "sigHash" != field r.bundle "Trust.double_even_renamed" "sigHash")
+      checkEq "extract/trust/cone-sorry" (untrustedOf r.bundle "Trust.deep_sorry") #["Trust.Level3: sorry"]
+      checkEq "extract/trust/cone-partial" (untrustedOf r.bundle "Trust.collatz_stmt") #["Trust.collatz: partial"]
+      checkEq "extract/trust/cone-clean" (untrustedOf r.bundle "Trust.double_even") #[]
       checkEq "extract/trust/sorry-in-proof-chain" (usesSorry r.bundle "Trust.uses_direct_sorry") (some true)
       checkEq "extract/trust/sorry-in-statement" (usesSorry r.bundle "Trust.deep_sorry") (some true)
       checkEq "extract/trust/custom-axiom-trust" (axioms r.bundle "Trust.uses_custom_axiom")
