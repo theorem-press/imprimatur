@@ -63,9 +63,10 @@
 \NewDocumentCommand\leaninline{O{} m m}{#3}
 % \leanref[options]{key}{generated location}
 \NewDocumentCommand\leanref{O{} m m}{#3}
-% \leancheck[options]{key, ...}: ties prose to Lean; prints nothing, and
-% swallows the space after it.
-\NewDocumentCommand\leancheck{O{} m}{\ignorespaces}
+% \leancheck[options]{key, ...}: ties prose to Lean; prints nothing. It removes
+% the space before it, so both "checked \leancheck{k} against" and
+% "holds \leancheck{k}." read naturally.
+\NewDocumentCommand\leancheck{O{} m}{\unskip}
 % \leanindex: the table of every key used (generated from v0.5).
 \NewDocumentCommand\leanindex{}{}
 % \leanslot{id}{text}: text that belongs to the authors.

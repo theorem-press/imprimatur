@@ -85,7 +85,10 @@ def stripEdits (cfg : Config) (s : Src) (items : Array Item) : Array Edit := Id.
         edits := edits.push { start := it.regionEnd, stop := b, text := "" }
     | .inline | .ref =>
       edits := edits.push { start := it.start, stop := it.stop, text := region }
+    | .leanok => pure ()
     | .check | .index =>
+      -- Blueprint markup belongs to leanblueprint, so it stays.
+      if it.name == "lean" then continue
       let ls := s.lineStart it.start
       let le := Scan.lineEnd s it.stop
       if s.blankBetween ls it.start && s.blankBetween it.stop le then
@@ -114,14 +117,27 @@ def requests (doc : Doc) : String := Id.run do
           let (_, vs) := keys[i]!
           keys := keys.set! i (k, (vs ++ views.filter (!vs.contains ·)))
         | none => keys := keys.push (k, views)
+  -- Comparator manifests: check-only keys (DESIGN §10.5).
+  for m in doc.manifests do
+    for k in m.theorems do
+      unless keys.any (·.1 == k) do keys := keys.push (k, #[])
   -- Written by hand so that keys are sorted and each request is one line.
   let q (t : String) : String := (Json.str t).compress
   let lines := (keys.qsort (·.1 < ·.1)).map fun (k, vs) =>
     s!"    {q k}: \{\"views\": [{", ".intercalate ((vs.qsort (· < ·)).map q).toList}]}"
   let list (xs : Array String) : String := "[" ++ ", ".intercalate (xs.map q).toList ++ "]"
   let c := doc.cfg
-  let config := s!"  \"config\": \{\"imports\": {list c.imports}, \
-    \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces}},\n"
+  -- The extractor imports the manifests' solution modules too.
+  let imports := doc.manifests.foldl (fun acc m => match m.solutionModule with
+    | some sm => if acc.contains sm then acc else acc.push sm
+    | none => acc) c.imports
+  let challenges := doc.manifests.foldl (fun acc m => match m.challengeModule with
+    | some cm => acc ++ m.theorems.map (q · ++ ": " ++ q cm)
+    | none => acc) #[]
+  let config := s!"  \"config\": \{\"imports\": {list imports}, \
+    \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces},\n    \
+    \"trusted_prefixes\": {list c.trustedPrefixes}, \
+    \"challenges\": \{{", ".intercalate challenges.toList}}},\n"
   return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n{config}  \"requests\": \{\n\
     {",\n".intercalate lines.toList}\n  }\n}\n"
 

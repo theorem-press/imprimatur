@@ -6,6 +6,8 @@ import Imprimatur.Version
 import Imprimatur.Json
 import Imprimatur.TeX
 import Imprimatur.Compat
+import Imprimatur.Sha256
+import Imprimatur.Trust
 import Imprimatur.Requests
 import Imprimatur.Views.Lean
 import Imprimatur.Entry

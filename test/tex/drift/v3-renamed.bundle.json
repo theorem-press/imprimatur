@@ -1,0 +1,27 @@
+{
+ "entries": {
+  "Demo.lemma": {
+   "decl": "Demo.lemma",
+   "kind": "theorem",
+   "sigHash": "2222222222222222222222222222222222222222222222222222222222222222",
+   "stmtHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "views": {
+    "lean": "Demo.lemma"
+   }
+  },
+  "Demo.main": {
+   "decl": "Demo.main",
+   "kind": "theorem",
+   "sigHash": "3333333333333333333333333333333333333333333333333333333333333333",
+   "stmtHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "views": {
+    "lean": "Demo.main"
+   }
+  }
+ },
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

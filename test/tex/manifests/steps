@@ -1,0 +1,3 @@
+scan
+check --bundle demo.bundle.json
+--config good.toml scan

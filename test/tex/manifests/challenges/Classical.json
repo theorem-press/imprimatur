@@ -1,0 +1,12 @@
+{
+ "challenge_module": "Challenges.Classical",
+ "solution_module": "Cat.Classical",
+ "theorem_names": [
+  "Cat.classical"
+ ],
+ "permitted_axioms": [
+  "propext",
+  "Quot.sound",
+  "Classical.choice"
+ ]
+}

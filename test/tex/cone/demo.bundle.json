@@ -1,0 +1,93 @@
+{
+ "entries": {
+  "Demo.deep_sorry": {
+   "axioms": [
+    "sorryAx"
+   ],
+   "cone": {
+    "reasons": {
+     "Demo.Level3": [
+      "sorry"
+     ]
+    },
+    "size": 3,
+    "untrusted": [
+     "Demo.Level3"
+    ]
+   },
+   "decl": "Demo.deep_sorry",
+   "kind": "theorem",
+   "sigHash": "4444444444444444444444444444444444444444444444444444444444444444",
+   "sorry": true,
+   "stmtHash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+   "views": {
+    "lean": "Demo.deep_sorry"
+   }
+  },
+  "Demo.uses_allowed_axiom": {
+   "cone": {
+    "reasons": {
+     "Demo.trusted_axiom": [
+      "axiom"
+     ]
+    },
+    "size": 1,
+    "untrusted": [
+     "Demo.trusted_axiom"
+    ]
+   },
+   "decl": "Demo.uses_allowed_axiom",
+   "kind": "theorem",
+   "sigHash": "2222222222222222222222222222222222222222222222222222222222222222",
+   "stmtHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "views": {
+    "lean": "Demo.uses_allowed_axiom"
+   }
+  },
+  "Demo.uses_other_axiom": {
+   "cone": {
+    "reasons": {
+     "Demo.oracle": [
+      "axiom"
+     ]
+    },
+    "size": 1,
+    "untrusted": [
+     "Demo.oracle"
+    ]
+   },
+   "decl": "Demo.uses_other_axiom",
+   "kind": "theorem",
+   "sigHash": "3333333333333333333333333333333333333333333333333333333333333333",
+   "stmtHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "views": {
+    "lean": "Demo.uses_other_axiom"
+   }
+  },
+  "Demo.uses_partial": {
+   "cone": {
+    "reasons": {
+     "Demo.collatz": [
+      "partial"
+     ]
+    },
+    "size": 1,
+    "untrusted": [
+     "Demo.collatz"
+    ]
+   },
+   "decl": "Demo.uses_partial",
+   "kind": "theorem",
+   "sigHash": "1111111111111111111111111111111111111111111111111111111111111111",
+   "stmtHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "views": {
+    "lean": "Demo.uses_partial"
+   }
+  }
+ },
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

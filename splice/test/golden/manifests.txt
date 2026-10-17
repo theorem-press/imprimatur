@@ -1,0 +1,29 @@
+$ imprimatur-splice scan
+challenges/Broken.json: error[bad-manifest]: theorem_names is missing
+warning[missing-manifest]: no comparator manifest matches missing/*.json
+[exit 1]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+challenges/Broken.json: error[bad-manifest]: theorem_names is missing
+warning[missing-manifest]: no comparator manifest matches missing/*.json
+challenges/Constructive.json: error[untrusted]: Cat.constructive uses axioms outside the allowed ones: Classical.choice
+challenges/Constructive.json: error[broken-ref]: Cat.gone has no entry in the bundle
+check: 0 stale, 3 errors, 1 warning
+[exit 1]
+
+$ imprimatur-splice --config good.toml scan
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": ["Paper", "Cat.Classical", "Cat.Constructive"], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {"Cat.classical": "Challenges.Classical", "Cat.constructive": "Challenges.Constructive", "Cat.gone": "Challenges.Constructive"}},
+  "requests": {
+    "Cat.classical": {"views": []},
+    "Cat.constructive": {"views": []},
+    "Cat.gone": {"views": []}
+  }
+}
+[exit 0]
+
+== main.tex
+The catalogue entry \leancheck{Cat.classical}.
+

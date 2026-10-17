@@ -8,6 +8,7 @@ import Imprimatur.TeX
 import Imprimatur.Compat
 import Imprimatur.Requests
 import Imprimatur.Views.Lean
+import Imprimatur.Trust
 
 /-!
 # Bundle entries
@@ -91,6 +92,19 @@ def metaView (axioms : Array Name) (usesSorry : Bool) (doc : Option String) : St
   let docTeX := TeX.markdown (doc.getD "")
   s!"\\LeanMeta\{\\leanmetasource\{}}\{{ax}}\{{status}}\{{docTeX}}"
 
+/-- Run one stage of an entry with a fresh heartbeat budget. A failure,
+including running out of heartbeats (a runtime exception, which `try` alone
+doesn't catch), becomes an error message rather than ending the export. -/
+def guarded {α : Type} (x : MetaM α) : MetaM (Except String α) := do
+  let ctx ← read
+  let st ← get
+  let r : Except String (α × Meta.State) ← (Core.tryCatchRuntimeEx
+    (do return .ok (← withCurrHeartbeats (x.run ctx st)))
+    (fun e => do return .error (← e.toMessageData.toString)) : CoreM _)
+  match r with
+  | .ok (a, st') => set st'; return .ok a
+  | .error msg => return .error msg
+
 /-- Views this extractor renders. -/
 def knownViews : List String := ["lean", "meta"]
 
@@ -98,8 +112,16 @@ def knownViews : List String := ["lean", "meta"]
 def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : ConstantInfo) :
     MetaM J := do
   let env ← getEnv
+  -- IMPRIMATUR_TRACE=1 reports each stage, for finding what is slow.
+  let trace ← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)
+  let stage (what : String) : MetaM Unit := do
+    if trace == some "1" then IO.eprintln s!"imprimatur-export: {c.name}: {what} ({← IO.monoMsNow})"
+  stage "start"
   let doc := (← findDocString? env c.name).map (·.trimAscii.toString)
-  let axioms ← axiomsOf c.name
+  let axioms ← match ← guarded (axiomsOf c.name) with
+    | .ok ax => pure ax
+    | .error msg => throwError "collecting the axioms failed: {msg}"
+  stage "axioms"
   let usesSorry := axioms.contains ``sorryAx
   let src ← sourceOf root c.name
   let mut views : Array (String × J) := #[]
@@ -108,20 +130,42 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
   for v in wanted do
     match v with
     | "lean" =>
-      try
-        views := views.push ("lean", .str (← Views.leanView c s.stripNamespaces s.width))
-      catch e =>
-        errors := errors.push ("lean", .str s!"{← e.toMessageData.toString}")
+      match ← guarded (Views.leanView c s.stripNamespaces s.width) with
+      | .ok v => views := views.push ("lean", .str v); stage "lean view"
+      | .error msg => errors := errors.push ("lean", .str msg)
     | "meta" => views := views.push ("meta", .str (metaView axioms usesSorry doc))
     | other => errors := errors.push (other, .str s!"the {other} view is not implemented yet")
   let allTeX := String.join (views.toList.map fun (_, j) => match j with | .str t => t | _ => "")
+  stage "views"
+  -- The dependency cone and the hashes (DESIGN §7.7).
+  let coneR ← guarded (Trust.cone s.trustedPrefixes c)
+  stage "cone"
+  if let .error msg := coneR then errors := errors.push ("cone", .str msg)
+  let cone : Trust.Cone := match coneR with
+    | .ok k => k
+    | .error _ => { members := #[], issues := #[] }
+  let stmtHash := Trust.sha (Trust.stmtText c cone)
+  let leanText := match views.find? (·.1 == "lean") with
+    | some (_, .str t) => t
+    | _ => ""
+  let sigHash := Trust.sha leanText
+  let untrusted := cone.issues.map (·.1.toString) |>.foldl (fun a n => if a.contains n then a else a.push n) #[]
   let mut fields : Array (String × J) := #[
     ("kind", .str (kindOf env c)),
     ("decl", .str c.name.toString),
     ("axioms", .arr (axioms.map (.str ·.toString))),
     ("sorry", .bool usesSorry),
     ("macros", .arr ((macrosOf allTeX).map .str)),
-    ("views", .obj views)]
+    ("views", .obj views),
+    ("sigHash", .str sigHash),
+    ("cone", .obj #[
+      ("size", .num cone.members.size),
+      ("untrusted", .arr (untrusted.map .str)),
+      ("reasons", .obj (untrusted.map fun n =>
+        (n, .arr ((cone.issues.filter (·.1.toString == n)).map (.str ·.2.name)))))])]
+  -- Without a complete cone there is no statement hash: `\leancheck` then
+  -- reports `no-hash` rather than comparing against a partial one.
+  if coneR matches .ok _ then fields := fields.push ("stmtHash", .str stmtHash)
   if let some d := doc then fields := fields.push ("doc", .str d)
   if let some (path, line) := src then
     fields := fields.push ("source", .obj #[("path", .str path), ("line", .num line)])

@@ -4,7 +4,8 @@
 #
 # End-to-end tests (PLAN §2.1). For each project under examples/:
 #   1. copy it to e2e-out/ (the same depth, so its relative paths still work);
-#   2. `imprimatur build`, then `imprimatur check`, which must pass;
+#   2. run its steps (examples/X/steps, or `imprimatur build` then
+#      `imprimatur check`), which must all succeed;
 #   3. compare the spliced paper.tex with examples/X/expected/paper.tex;
 #   4. compile with pdflatex and with lualatex (latexmk); fail on errors,
 #      undefined control sequences or missing glyphs;
@@ -40,7 +41,14 @@ normalise() {  # pdftotext output, independent of small TeX differences
 
 # One test per example, named so docs/TESTING.md can refer to it. An example
 # without a name here is an error, so none is skipped by accident.
-TESTS=(e2e/minimal e2e/sidecar)
+TESTS=(e2e/external e2e/minimal e2e/sidecar)
+
+# External mode needs an extractor built for the examples' toolchain. It goes in
+# a cache inside e2e-out, so the run touches nothing outside the repository.
+export IMPRIMATUR_CACHE="$ROOT/e2e-out/cache"
+mkdir -p e2e-out
+echo "== installing the extractor for external mode"
+"$IMPRIMATUR" toolchain install "$(sed 's/.*://' examples/external/host/lean-toolchain)" | sed 's/^/  /' 
 shopt -s nullglob
 for dir in examples/*/; do
   ex=$(basename "$dir")
@@ -50,12 +58,32 @@ for dir in examples/*/; do
   echo "== e2e/$ex"
   work="e2e-out/$ex"
   rm -rf "$work"; mkdir -p "$work"
-  (cd "$dir" && tar --exclude=.lake --exclude=expected -cf - .) | (cd "$work" && tar -xf -)
-  if ! (cd "$work" && "$IMPRIMATUR" build > build.log 2>&1); then
-    echo "  FAIL: imprimatur build"; sed 's/^/    /' "$work/build.log"; status=1; continue
+  (cd "$dir" && tar --exclude=.lake --exclude=expected --exclude=steps -cf - .) | (cd "$work" && tar -xf -)
+  # The steps: examples/X/steps if there is one (a line starting with ! is a
+  # shell command), else `build` then `check`. Every step must succeed.
+  steps=$(if [ -f "$dir/steps" ]; then grep -v '^#' "$dir/steps"; else printf 'build\ncheck\n'; fi)
+  # In external mode the host must not change (DESIGN §4, constraint 5):
+  # fingerprint its files, apart from its build directory, before and after.
+  host=""
+  if grep -q 'mode = "external"' "$work/imprimatur.toml"; then
+    host="$work/$(sed -n 's/^lean_project = "\(.*\)"/\1/p' "$work/imprimatur.toml")"
+    fingerprint() { (cd "$host" && find . -path ./.lake -prune -o -type f -print | sort | xargs sha256sum); }
+    before=$(fingerprint)
   fi
-  if ! (cd "$work" && "$IMPRIMATUR" check > check.log 2>&1); then
-    echo "  FAIL: imprimatur check after build"; sed 's/^/    /' "$work/check.log"; status=1
+  failed=0
+  while IFS= read -r step; do
+    [ -z "$step" ] && continue
+    if [[ $step == !* ]]; then cmd=(bash -c "${step#!}"); else read -ra words <<< "$step"; cmd=("$IMPRIMATUR" "${words[@]}"); fi
+    if ! (cd "$work" && "${cmd[@]}" > step.log 2>&1); then
+      echo "  FAIL: $step"; sed 's/^/    /' "$work/step.log"; status=1; failed=1; break
+    fi
+    # A shell step stands for the host's owners (building it, say), so the
+    # host is fingerprinted again after it: only imprimatur's steps are judged.
+    if [ -n "$host" ] && [[ $step == !* ]]; then before=$(fingerprint); fi
+  done <<< "$steps"
+  [ $failed = 1 ] && continue
+  if [ -n "$host" ] && [ "$(fingerprint)" != "$before" ]; then
+    echo "  FAIL: external mode changed the host project"; status=1
   fi
   compare "$work/paper.tex" "$dir/expected/paper.tex" "spliced paper.tex"
   for engine in pdflatex lualatex; do

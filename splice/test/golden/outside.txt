@@ -2,7 +2,8 @@ $ imprimatur-splice scan
 doc/main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so it was not followed (use a path relative to the main file)
 {
   "schema": "imprimatur-requests/1",
-  "config": {"imports": [], "open_scoped": [], "strip_namespaces": []},
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
   "requests": {
     "X": {"views": []}
   }
@@ -13,7 +14,8 @@ $ (in doc) imprimatur-splice --main main.tex scan
 main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so it was not followed (use a path relative to the main file)
 {
   "schema": "imprimatur-requests/1",
-  "config": {"imports": [], "open_scoped": [], "strip_namespaces": []},
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
   "requests": {
     "X": {"views": []}
   }

@@ -30,6 +30,8 @@ commands:
   strip -o DIR                 write a copy with imprimatur's markers removed
   migrate-slots --bundle B.json
                                rewrite slots declared by position as \\leanslot
+  accept --bundle B.json KEY... | --all
+                               record the current statement hashes in \\leancheck
 
 The configuration is imprimatur.toml in the current directory, unless
 --config or --main is given."
@@ -60,6 +62,10 @@ structure Args where
   diff : Bool := false
   /-- `--check-fail-msg`. -/
   failMsg : Option String := none
+  /-- Keys given after the command (`accept`). -/
+  keys : Array String := #[]
+  /-- `--all` (`accept`). -/
+  all : Bool := false
 
 /-- Parse the arguments. -/
 partial def parseArgs (args : List String) (a : Args := {}) : Except String Args :=
@@ -79,9 +85,11 @@ partial def parseArgs (args : List String) (a : Args := {}) : Except String Args
   | "--commit" :: v :: rest => parseArgs rest { a with commit := some v }
   | "--diff" :: rest => parseArgs rest { a with diff := true }
   | "--check-fail-msg" :: v :: rest => parseArgs rest { a with failMsg := some v }
+  | "--all" :: rest => parseArgs rest { a with all := true }
   | arg :: rest =>
     if arg.startsWith "-" then .error s!"unknown or incomplete option {arg}"
     else if a.command.isEmpty then parseArgs rest { a with command := arg }
+    else if a.command == "accept" then parseArgs rest { a with keys := a.keys.push arg }
     else .error s!"unexpected argument {arg}"
 
 /-- Accumulated output. -/
@@ -165,6 +173,41 @@ def runIn (root : System.FilePath) (a : Args) : ExceptT String CliM UInt32 := do
       writeAtomic (root / path) text
     say s!"{a.command}: {o.changes.size} item{if o.changes.size == 1 then "" else "s"} updated in \
       {o.outputs.size} file{if o.outputs.size == 1 then "" else "s"}; {summary o.diags}"
+    return 0
+  | "accept" =>
+    let bundle ← loadBundle root a
+    if a.keys.isEmpty && !a.all then throw "accept needs the keys to accept, or --all"
+    let mut ds : Array Diag := doc.diags.filter (·.severity == .error)
+    let mut outputs : Array (String × String) := #[]
+    let mut accepted : Array String := #[]
+    let mut mentioned : Array String := #[]
+    for f in doc.files do
+      let mut edits : Array Edit := #[]
+      for it in f.scan.items do
+        unless it.kind == .check && it.name == "leancheck" do continue
+        unless a.all || it.keys.any (a.keys.contains ·) do continue
+        mentioned := mentioned ++ it.keys
+        match checkHashes bundle it.keys with
+        | none =>
+          let d := Diag.err "no-hash" (f.src.locString it.start)
+            s!"cannot accept {", ".intercalate it.keys.toList}: a key is missing from the bundle or has no hash"
+          ds := ds.push d
+        | some (stmt, sig) =>
+          edits := edits ++ optEdits f.src it #[("stmt", stmt), ("sig", sig)]
+          accepted := accepted ++ it.keys.filter (!accepted.contains ·)
+      unless edits.isEmpty do
+        outputs := outputs.push (f.src.path, applyEdits f.src edits)
+    for k in a.keys do
+      unless mentioned.contains k do
+        ds := ds.push (Diag.warn "not-checked" "" s!"no \\leancheck mentions {k}")
+    report ds
+    if hasErrors ds then
+      say "accept: nothing written"
+      return 1
+    for (path, text) in outputs do
+      writeAtomic (root / path) text
+    say s!"accept: recorded the hashes of {accepted.size} key{if accepted.size == 1 then "" else "s"} \
+      in {outputs.size} file{if outputs.size == 1 then "" else "s"}"
     return 0
   | "strip" =>
     let some dir := a.out | throw "strip needs -o DIR"

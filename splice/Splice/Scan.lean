@@ -34,6 +34,8 @@ inductive ItemKind where
   | check
   /-- `\leanindex`. -/
   | index
+  /-- Blueprint `\leanok` (DESIGN §9.3), read when `manifests.blueprint` is on. -/
+  | leanok
   deriving Repr, BEq, Inhabited
 
 /-- One `key=value` option, with the position of its value. -/
@@ -78,6 +80,9 @@ structure Item where
   regionEnd : Nat := 0
   /-- Index of `\end` (blocks). -/
   endStart : Nat := 0
+  /-- Which LaTeX environment the item is in: an id unique within the file,
+  or 0 outside every environment. Pairs blueprint `\leanok` with `\lean{…}`. -/
+  env : Nat := 0
   deriving Repr, Inhabited
 
 /-- The value of an option. -/
@@ -339,6 +344,9 @@ open Scan in
 def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult := do
   let mut r : ScanResult := {}
   let mut i := 0
+  -- Open environments (other than blocks and verbatim ones), innermost last.
+  let mut envs : Array Nat := #[]
+  let mut nextEnv := 1
   while i < s.size do
     let c := s.get i
     if c == '%' then
@@ -367,10 +375,15 @@ def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult := do
           | none => throw (Diag.err "parse-error" (s.locString i) s!"\\begin\{{env}} is never closed")
         else if (cfg.alias? env).isSome then
           let it ← block cfg s env i after
-          r := { r with items := r.items.push it }
+          r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }
           i := it.stop
         else
+          envs := envs.push nextEnv
+          nextEnv := nextEnv + 1
           i := after
+      | "end" =>
+        envs := envs.pop
+        i := j
       | "input" | "include" | "subfile" =>
         let g := skipSpaces s j
         if s.get g == '{' then
@@ -381,18 +394,24 @@ def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult := do
           i := j
       | "leaninline" | "leanref" =>
         match ← inlineItem s (if name == "leanref" then .ref else .inline) name i j with
-        | some it => r := { r with items := r.items.push it }; i := it.stop
+        | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }; i := it.stop
         | none => i := j
       | "leancheck" =>
         match ← checkItem s name i j with
-        | some it => r := { r with items := r.items.push it }; i := it.stop
+        | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }; i := it.stop
         | none => i := j
       | "lean" =>
         if cfg.blueprint then
           match ← checkItem s name i j with
-          | some it => r := { r with items := r.items.push it }; i := it.stop
+          | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }; i := it.stop
           | none => i := j
         else i := j
+      | "leanok" =>
+        if cfg.blueprint then
+          let it : Item := { kind := .leanok, name, start := i, stop := j, insertAt := j,
+                             regionStart := j, regionEnd := j, env := envs.back?.getD 0 }
+          r := { r with items := r.items.push it }
+        i := j
       | "leanindex" =>
         let it : Item := { kind := .index, name, start := i, stop := j, insertAt := j,
                            regionStart := j, regionEnd := j }

@@ -264,6 +264,9 @@ environment that contains the host's modules and the notation module.
   extra checkout of Mathlib. This is LeanInk's `--lake` pattern.
 - It suits all three motivating projects, and is the only mode the math
   catalogue needs.
+- **The cache (M3).** The extractor's cache is `IMPRIMATUR_CACHE`, or
+  `~/.cache/imprimatur`, with one directory per toolchain. External mode
+  never builds the host; the host's owners build it.
 
 **B. Sidecar package.** A small Lake package next to the host requires the
 host by path, plus `imprimatur`:
@@ -450,21 +453,43 @@ For every entry, the extractor imports the environment at `private` level
   starts with an entry of `trusted_prefixes`.
   - The test is on modules, not namespaces. Core constants such as `Nat.add`
     are declared in `Init.Prelude` but in no `Init` namespace.
-  - Definitions are followed through their equation lemmas
-    (`Meta.getEqnsFor?`), not their bodies, so matchers, `brecOn` and other
-    auxiliary constants never enter the cone. Each constant in the cone is itself checked for `sorry`,
+  - Recursive definitions (structural or well-founded) are followed through
+    their equation lemmas (`Meta.getEqnsFor?`), not their compiled bodies,
+    which differ between toolchains. Other definitions are followed through
+    their bodies, which are what the author wrote. Matchers and auxiliary
+    recursors count by their type only.
+  - M3 revised spike S2 here: generating equation lemmas for every
+    definition exhausted memory on a definition in the math catalogue, and
+    equations are only needed for recursion.
+  - For a theorem or an axiom, the walk starts from the type: the proof
+    doesn't count. For anything else, such as a definition or an inductive
+    type, the declaration is in its own cone, because its meaning includes
+    its definition. M3 found that without this, two definitions with the
+    same type had the same hash.
+  - `partial` means the kernel sees an `opaque` constant with an
+    `_unsafe_rec` implementation. Structural and well-founded recursion also
+    generate `_unsafe_rec` helpers, but stay definitions, so they don't count.
+  - The bundle records each untrusted member with its reasons (`sorry`,
+    `axiom`, `partial`, `unsafe`). The splicer then accepts axioms that
+    `allowed_axioms` (or a manifest's `permitted_axioms`) lists. Each constant in the cone is itself checked for `sorry`,
   for disallowed axioms, and for `unsafe` or `partial`.
   - Without this, someone could change a definition used in the hypotheses
     to `True`, and the theorem would become trivial while its own statement
     looked unchanged.
 - **`stmtHash`** is a SHA-256 hash of a canonical serialisation of the
-  declaration's type, together with each definition in its cone. A definition
-  is represented by its type and the statements of its equation lemmas.
-  - Bodies are not used, because their elaborated form changes between
-    toolchains. For example, structural recursion compiles differently in
-    v4.28 and v4.31. Equation lemmas were byte-identical from v4.28 to v4.35
-    in spike S2
+  declaration's type, together with each definition in its cone. A recursive
+  definition is represented by its type and the statements of its equation
+  lemmas; any other definition by its type and body.
+  - Compiled recursion is not used, because its elaborated form changes
+    between toolchains. For example, structural recursion compiles
+    differently in v4.28 and v4.31. Equation lemmas were byte-identical from
+    v4.28 to v4.35 in spike S2
     ([docs/spikes/S2-stable-hashing.md](docs/spikes/S2-stable-hashing.md)).
+  - The serialisation is a Merkle hash: each subterm is written in terms of
+    its children, and replaced by its own SHA-256 once longer than 64
+    characters. It is memoised on shared subterms, so its cost is linear in
+    the term as Lean stores it. The math catalogue has a definition of 3,813
+    shared nodes, which is more than 10^8 nodes as a tree.
   - Binder names are dropped and universe parameters are renamed to
     canonical names.
   - Every `sorryAx` application is serialised as one fixed token, because an
@@ -478,6 +503,10 @@ For every entry, the extractor imports the environment at `private` level
     changes.
 - **`sigHash`** is a hash of the `lean` view's text. A change in `sigHash`
   alone (a binder renamed, notation changed) produces a warning, not an error.
+- **`\leancheck` records 12 hexadecimal digits of each:** `stmt=` and `sig=`.
+  With several keys, they are digits of the hash of the keys' hashes joined
+  by commas. `imprimatur accept KEY…` (or `--all`) writes them. The
+  details for authors are in [docs/trust.md](docs/trust.md).
 
 ## 8. The bundle (`imprimatur-bundle/1`)
 
@@ -714,12 +743,16 @@ TeX or Lean:
 
 - **Comparator manifests** (`ComparatorChallenges/*.json`). Each
   `theorem_names` entry becomes a check-only key, and its `permitted_axioms`
-  tighten `allowed_axioms` for that key. Each manifest's
+  replace `allowed_axioms` for that key. The manifests' solution modules are
+  added to the extractor's imports. Each manifest's
   `challenge_module` statement is also offered as an entry with the suffix
   `@challenge`. It is a restatement that uses only Mathlib and has been
   audited by comparator, and is often the best thing to render in a
-  catalogue.
-- **Blueprint `\lean{…}`** (§9.3).
+  catalogue. A challenge module declares the same names as its solution, so
+  the extractor imports each challenge module in a separate environment,
+  after the main one is done with.
+- **Blueprint `\lean{…}`** (§9.3). Only nodes marked `\leanok` are checked
+  for trust; a bare `\lean{…}` marks work in progress.
 
 ## 11. Source links and anonymity
 
