@@ -17,8 +17,9 @@ with no preprocessor. The host Lean project doesn't need to change.
 
 ## Status
 
-Early development: the repository layout, test harness and CI exist, and
-nothing user-facing works yet. [PLAN.md](PLAN.md) gives the build order, and
+Early development. The splicer, `imprimatur-splice`, works from
+hand-written bundles; see [docs/blocks.md](docs/blocks.md). The extractor,
+which produces bundles from Lean, comes next. [PLAN.md](PLAN.md) gives the build order, and
 [CONTRIBUTING.md](CONTRIBUTING.md) explains how to work on the code. See
 [DESIGN.md](DESIGN.md) for:
 

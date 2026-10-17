@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
-"""Validate every golden bundle (`*.bundle.json` under extract/test,
+"""lint/bundle-schema: validate every golden bundle (`*.bundle.json` under extract/test,
 splice/test and test/) against schema/bundle.schema.json. Needs the
 `jsonschema` package, which is a test-only dependency."""
 import json

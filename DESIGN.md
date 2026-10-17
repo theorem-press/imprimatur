@@ -178,6 +178,8 @@ mode = "external"                         # external | sidecar | in-project (§6
 notation = ["tex/PaperTeX.lean"]          # notation modules
 strip_namespaces = ["Planet", "Planet.Paper"]
 open_scoped = []                          # e.g. ["Topology", "BigOperators"], for the lean view
+notation_packs = ["core", "logic"]        # §7.5
+verbatim_envs = []                        # extra environments the scanner skips (§10.1)
 default_profile = "submission"
 
 [profile.submission]
@@ -508,7 +510,7 @@ For every entry, the extractor imports the environment at `private` level
 \end{leanblock}
 
 \leaninline[sum=…]{SetFormula.choice}{…generated…}    % inline; regenerates arg 2
-\leanref{Planet.Paper.theorem1_main}                  % source location, per profile (§11)
+\leanref{Planet.Paper.theorem1_main}{…generated…}     % source location, per profile (§11)
 \leancheck[stmt=b41c]{Planet.Paper.theorem1_main, Planet.Paper.theorem1_inter}
 \leanindex                                            % table of every key used in the document
 ```
@@ -533,7 +535,9 @@ The options of `leanblock`:
 `\leanref`, `\leancheck` and `\leanindex`:
 
 - **`\leanref`** is expanded by the splicer according to the active profile
-  (§11).
+  (§11). Like `\leaninline`, it has a second argument that the splicer
+  fills; authors write `\leanref{key}{}`. It carries no checksum and is always
+  regenerated.
 - **`\leancheck`** generates nothing. It ties hand-written prose to Lean
   (§10.3). This is plectis's idea of a reviewed claim, kept inline in the
   paper.
@@ -645,7 +649,13 @@ to TeX environments.
 - **Missing keys.** A key with no entry in the bundle is an error.
   `--keep-stale` makes it a warning and leaves the old content.
 - **Rewrites files in place.** Writes are atomic, and every file keeps its
-  original line endings and encoding.
+  original line endings and encoding (UTF-8).
+- **All or nothing.** If anything is an error, `apply` writes no file at all,
+  so a run never leaves a document half updated.
+- **Where content goes.** A block's content starts on the line after its
+  header when the rest of the header line is blank or a comment, and ends at
+  the start of the `\end` line. The details are in
+  [docs/blocks.md](docs/blocks.md).
 
 ### 10.3 `check`
 
@@ -816,8 +826,10 @@ imprimatur/
     test/
   splice/                         Lake package "imprimatur-splice"
     lakefile.toml  lean-toolchain
-    Splice/Scan.lean  Splice/Blocks.lean  Splice/Apply.lean  Splice/Check.lean
-    Splice/Strip.lean  Splice/Manifests.lean  Splice/Config.lean  Splice/Bundle.lean
+    Splice/Text.lean  Splice/Sha256.lean  Splice/Toml.lean  Splice/Config.lean
+    Splice/Bundle.lean  Splice/Diag.lean  Splice/Scan.lean  Splice/Doc.lean
+    Splice/Slots.lean  Splice/Apply.lean  Splice/Check.lean  Splice/Strip.lean
+    Splice/Cli.lean  Splice/Manifests.lean (M3)
     Main.lean                     imprimatur-splice, imprimatur (wrapper)
     test/
   testkit/                        test-only package: harness, golden files, seeded generator

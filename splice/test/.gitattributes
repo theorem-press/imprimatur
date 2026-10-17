@@ -1,0 +1,2 @@
+# Golden transcripts keep their exact bytes.
+golden/** -text

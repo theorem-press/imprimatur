@@ -1,0 +1,18 @@
+{
+ "entries": {
+  "Core.Expr": {
+   "decl": "Core.Expr",
+   "kind": "inductive",
+   "views": {
+    "grammar": "\\entry{v ::= \\lambda y.\\, e}{\\leanslot{Expr.lam}{a function}}\\\\\n\\entry{\\mid k}{\\leanslot{Expr.const}{a constant}}"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

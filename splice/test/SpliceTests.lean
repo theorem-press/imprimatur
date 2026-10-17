@@ -2,7 +2,9 @@
 Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Splice
+import SpliceTest.Unit
+import SpliceTest.Golden
+import SpliceTest.Props
 import Testkit
 
 /-!
@@ -22,3 +24,6 @@ def testVersion : TestM Unit := group "version" do
 def main : IO UInt32 :=
   runSuite do
     testVersion
+    SpliceTest.Unit.tests
+    SpliceTest.Golden.tests
+    SpliceTest.Props.tests

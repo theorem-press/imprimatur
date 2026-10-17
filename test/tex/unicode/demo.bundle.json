@@ -1,0 +1,18 @@
+{
+ "entries": {
+  "Uni.α₁": {
+   "decl": "Uni.α₁",
+   "kind": "theorem",
+   "views": {
+    "lean": "Γ ⊢ λ x. e : τ₁ → τ₂ \\leanslot{α₁}{glöss ✓}"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

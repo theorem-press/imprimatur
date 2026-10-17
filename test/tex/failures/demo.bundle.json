@@ -1,0 +1,106 @@
+{
+ "entries": {
+  "Bad.render": {
+   "decl": "Bad.render",
+   "errors": {
+    "math": "no notation for Foo.bar"
+   },
+   "kind": "theorem",
+   "views": {
+    "lean": "x"
+   }
+  },
+  "Breaks.braces": {
+   "decl": "Breaks.braces",
+   "kind": "theorem",
+   "views": {
+    "lean": "oops }{"
+   }
+  },
+  "Demo.c": {
+   "decl": "Demo.c",
+   "kind": "definition",
+   "source": {
+    "line": 7,
+    "path": "Demo/Basic.lean"
+   },
+   "views": {
+    "lean": "\\LeanConst{Demo.c}"
+   }
+  },
+  "Demo.nested": {
+   "decl": "Demo.nested",
+   "kind": "theorem",
+   "views": {
+    "lean": "nested content\nover two lines"
+   }
+  },
+  "Demo.thm": {
+   "axioms": [],
+   "cone": {
+    "size": 1,
+    "untrusted": []
+   },
+   "decl": "Demo.thm",
+   "kind": "theorem",
+   "sorry": false,
+   "source": {
+    "line": 12,
+    "path": "Demo/Basic.lean"
+   },
+   "views": {
+    "lean": "\\LeanKeyword{theorem} \\LeanConst{Demo.thm} : \\LeanConst{True}",
+    "math": "$\\top$"
+   }
+  },
+  "Ends.block": {
+   "decl": "Ends.block",
+   "kind": "theorem",
+   "views": {
+    "lean": "early \\end{leanblock} end"
+   }
+  },
+  "Uses.axiom": {
+   "axioms": [
+    "propext",
+    "Trust.custom_axiom"
+   ],
+   "decl": "Uses.axiom",
+   "kind": "theorem",
+   "views": {
+    "lean": "a"
+   }
+  },
+  "Uses.sorry": {
+   "axioms": [
+    "sorryAx"
+   ],
+   "decl": "Uses.sorry",
+   "kind": "theorem",
+   "sorry": true,
+   "views": {
+    "lean": "s"
+   }
+  },
+  "Weak.cone": {
+   "cone": {
+    "size": 3,
+    "untrusted": [
+     "Trust.collatz"
+    ]
+   },
+   "decl": "Weak.cone",
+   "kind": "theorem",
+   "views": {
+    "lean": "w"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

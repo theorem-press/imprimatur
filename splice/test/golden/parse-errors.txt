@@ -1,0 +1,26 @@
+$ imprimatur-splice scan
+unclosed.tex:1:1: error[parse-error]: \begin{leanblock} is never closed by \end{leanblock}
+nested.tex:2:1: error[parse-error]: \begin{leanblock} inside \begin{leanblock} at nested.tex:1:1; blocks cannot nest, or that block is missing its \end{leanblock}
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+unclosed.tex:1:1: error[parse-error]: \begin{leanblock} is never closed by \end{leanblock}
+nested.tex:2:1: error[parse-error]: \begin{leanblock} inside \begin{leanblock} at nested.tex:1:1; blocks cannot nest, or that block is missing its \end{leanblock}
+apply: nothing written; 2 errors, 0 warnings
+[exit 1]
+
+== main.tex
+Fine.
+\input{unclosed}
+\input{nested}
+
+== nested.tex
+\begin{leanblock}{A}{x}
+\begin{leanblock}{B}{y}
+\end{leanblock}
+\end{leanblock}
+
+== unclosed.tex
+\begin{leanblock}{Demo.c}{Never closed}
+content
+

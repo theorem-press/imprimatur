@@ -1,0 +1,17 @@
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 3 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\fbox{\parbox{5cm}{%
+\begin{leanblock}[sum=wTRE7H6mZF]{Demo.thm}{In a box}
+\LeanKeyword{theorem} \LeanConst{Demo.thm} : \LeanConst{True}
+\end{leanblock}
+}}
+\textbf{bold \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}} text} and \footnote{see \leanref{Demo.c}{Demo/Basic.lean:7}}.
+\newcommand{\myref}{\leaninline}
+

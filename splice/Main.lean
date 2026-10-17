@@ -7,15 +7,11 @@ import Splice
 /-!
 # `imprimatur-splice`
 
-The splicer's command line (DESIGN §12). Only `--version` exists so far.
+The splicer's command line (DESIGN §10, §12). See `Splice.Cli`.
 -/
 
 /-- Entry point. -/
 def main (args : List String) : IO UInt32 := do
-  match args with
-  | ["--version"] =>
-    IO.println s!"imprimatur-splice {Splice.version}"
-    return 0
-  | _ =>
-    IO.eprintln "usage: imprimatur-splice --version"
-    return 2
+  let (code, out) ← Splice.Cli.run args (← IO.currentDir)
+  IO.print out
+  return code

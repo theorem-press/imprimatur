@@ -1,0 +1,18 @@
+{
+ "entries": {
+  "Lambda": {
+   "decl": "Lambda",
+   "kind": "inductive",
+   "views": {
+    "grammar": "\\entry{x}{\\leanslot{Expr.var}{variable}}\\\\\n\\entry{\\lambda x.\\, e}{\\leanslot{Expr.lam}{abstraction}}"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

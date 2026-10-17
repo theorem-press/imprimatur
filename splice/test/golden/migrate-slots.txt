@@ -1,0 +1,14 @@
+$ imprimatur-splice migrate-slots --bundle demo.bundle.json
+migrate-slots: 1 item updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\begin{leangrammar}[sum=Jlwze6tHHT]{Lambda}{Lambda:}
+\entry{x}{\leanslot{Expr.var}{a variable, in the authors' words}}\\
+\entry{\lambda x.\, e}{\leanslot{Expr.lam}{an abstraction}}
+\end{leangrammar}
+

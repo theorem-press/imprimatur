@@ -1,0 +1,19 @@
+$ imprimatur-splice --main main.tex check --bundle schema2.bad.json
+error: bundle schema2.bad.json: schema "imprimatur-bundle/2" is not one this splicer reads (imprimatur-bundle/1)
+[exit 2]
+
+$ imprimatur-splice --main main.tex check --bundle abspath.bad.json
+error: bundle abspath.bad.json: entries.Demo.c.source.path must be relative, not "/home/someone/Demo.lean"
+[exit 2]
+
+$ imprimatur-splice --main main.tex check --bundle noviews.bad.json
+error: bundle noviews.bad.json: entries.Demo.c: missing field 'views'
+[exit 2]
+
+$ imprimatur-splice --main main.tex check --bundle notjson.bad.json
+error: bundle notjson.bad.json: not valid JSON: offset 2: expected "
+[exit 2]
+
+== main.tex
+\leaninline{Demo.c}{}
+
