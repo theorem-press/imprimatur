@@ -1,0 +1,19 @@
+{
+  "entries": {
+    "Planet.Paper.theorem1_main": {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "cone": { "size": 14, "untrusted": [] },
+      "decl": "Planet.Paper.theorem1_main",
+      "doc": "**Theorem 1 (1).** If `main(x)` is derivable, ...",
+      "kind": "theorem",
+      "macros": ["\\judge"],
+      "sigHash": "07ae000000000000000000000000000000000000000000000000000000000000",
+      "sorry": false,
+      "source": { "line": 122, "path": "Planet/Paper.lean" },
+      "stmtHash": "b41c000000000000000000000000000000000000000000000000000000000000",
+      "views": { "lean": "…", "math": "…", "meta": "…", "prose": "…" }
+    }
+  },
+  "producer": { "lean": "v4.31.0", "project": "planet-lean", "tool": "imprimatur-export", "version": "0.3.0" },
+  "schema": "imprimatur-bundle/1"
+}

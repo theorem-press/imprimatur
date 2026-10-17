@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/theorem-press/imprimatur/schema/bundle.schema.json",
+  "title": "imprimatur bundle, schema 1 (DESIGN §8)",
+  "description": "Draft written in M0 from DESIGN §8; M1 settles it. Within a major version, fields are only added, so objects allow unknown properties.",
+  "type": "object",
+  "required": ["schema", "producer", "entries"],
+  "properties": {
+    "schema": { "const": "imprimatur-bundle/1" },
+    "producer": {
+      "type": "object",
+      "required": ["tool", "version"],
+      "properties": {
+        "tool": { "type": "string" },
+        "version": { "type": "string" },
+        "lean": { "type": "string", "pattern": "^v4\\." },
+        "project": { "type": "string" }
+      }
+    },
+    "entries": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "relativePath": {
+      "type": "string",
+      "not": { "pattern": "^(/|[A-Za-z]:|~)" }
+    },
+    "entry": {
+      "type": "object",
+      "required": ["kind", "decl", "views"],
+      "properties": {
+        "kind": {
+          "enum": ["theorem", "definition", "axiom", "opaque", "inductive",
+                   "constructor", "recursor", "quotient", "structure", "group",
+                   "challenge"]
+        },
+        "decl": { "type": "string" },
+        "source": {
+          "type": "object",
+          "required": ["path", "line"],
+          "properties": {
+            "path": { "$ref": "#/$defs/relativePath" },
+            "line": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "doc": { "type": "string" },
+        "axioms": { "type": "array", "items": { "type": "string" } },
+        "sorry": { "type": "boolean" },
+        "cone": {
+          "type": "object",
+          "required": ["size", "untrusted"],
+          "properties": {
+            "size": { "type": "integer", "minimum": 0 },
+            "untrusted": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "stmtHash": { "$ref": "#/$defs/hash" },
+        "sigHash": { "$ref": "#/$defs/hash" },
+        "macros": { "type": "array", "items": { "type": "string", "pattern": "^\\\\" } },
+        "views": { "type": "object", "additionalProperties": { "type": "string" } },
+        "errors": { "type": "object", "additionalProperties": { "type": "string" } }
+      }
+    }
+  }
+}
