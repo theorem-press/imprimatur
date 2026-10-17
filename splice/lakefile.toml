@@ -1,0 +1,17 @@
+# The splicer (DESIGN §5, §10). It edits text only and uses no Lean
+# internals, so it pins its own toolchain and has no Lake dependencies.
+name = "imprimatur-splice"
+version = "0.0.0"
+defaultTargets = ["Splice", "imprimatur-splice"]
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+linter.all = true
+
+[[lean_lib]]
+name = "Splice"
+
+[[lean_exe]]
+name = "imprimatur-splice"
+root = "Main"

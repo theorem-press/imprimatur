@@ -1,0 +1,107 @@
+# Continuous integration (PLAN §2.5). Jobs with nothing to test yet pass
+# trivially; each milestone fills them in.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Property tests: enough cases to catch regressions on every pull request.
+  # The M1 gate of 10,000 cases runs in the nightly schedule.
+  IMPRIMATUR_CASES: ${{ github.event_name == 'schedule' && '10000' || '300' }}
+
+jobs:
+  splice:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            testkit/.lake
+            splice/.lake
+            splice/test/.lake
+          key: splice-${{ hashFiles('splice/lean-toolchain', '**/lakefile.toml') }}-${{ github.sha }}
+          restore-keys: splice-${{ hashFiles('splice/lean-toolchain', '**/lakefile.toml') }}-
+      - name: Test harness
+        run: scripts/test-all.sh --only testkit
+      - name: Splicer
+        run: scripts/test-all.sh --only splice
+
+  extract:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # The three motivating projects' toolchains, plus the latest stable.
+        toolchain: [v4.28.0-rc1, v4.31.0, v4.34.1, v4.35.0]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            extract/.lake
+            extract/test/.lake
+          key: extract-${{ matrix.toolchain }}-${{ hashFiles('**/lakefile.toml') }}-${{ github.sha }}
+          restore-keys: extract-${{ matrix.toolchain }}-${{ hashFiles('**/lakefile.toml') }}-
+      - name: Extractor
+        run: scripts/test-all.sh --only extract --toolchain ${{ matrix.toolchain }}
+      - name: Upload bundles for the cross-toolchain comparison
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ matrix.toolchain }}
+          path: extract/test/out/**/*.bundle.json
+          if-no-files-found: ignore
+
+  cross-toolchain:
+    needs: extract
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bundles-*
+          path: bundles
+      - name: Compare bundles across toolchains
+        run: scripts/compare-bundles.py bundles
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # M2 adds TeX Live (pdflatex, lualatex, latexmk, pdftotext) here, with
+      # the first example.
+      - name: End-to-end
+        run: scripts/e2e.sh
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r scripts/requirements-test.txt
+      - name: Links, dependencies, traceability, bundle schema
+        run: scripts/lint.sh
