@@ -1,0 +1,35 @@
+{
+ "entries": {
+  "Cat.classical": {
+   "axioms": [
+    "Classical.choice",
+    "propext"
+   ],
+   "decl": "Cat.classical",
+   "kind": "theorem",
+   "sigHash": "1111111111111111111111111111111111111111111111111111111111111111",
+   "stmtHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "views": {
+    "lean": "Cat.classical"
+   }
+  },
+  "Cat.constructive": {
+   "axioms": [
+    "Classical.choice",
+    "propext"
+   ],
+   "decl": "Cat.constructive",
+   "kind": "theorem",
+   "sigHash": "2222222222222222222222222222222222222222222222222222222222222222",
+   "stmtHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "views": {
+    "lean": "Cat.constructive"
+   }
+  }
+ },
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

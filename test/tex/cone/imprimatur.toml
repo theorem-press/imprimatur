@@ -1,0 +1,5 @@
+schema = 1
+main = "main.tex"
+
+[trust]
+allowed_axioms = ["propext", "Classical.choice", "Quot.sound", "Demo.trusted_axiom"]

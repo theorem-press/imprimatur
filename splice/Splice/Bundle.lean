@@ -40,6 +40,13 @@ structure Entry where
   usesSorry : Bool := false
   /-- Untrusted constants in its dependency cone. -/
   untrusted : Array String := #[]
+  /-- Why each untrusted constant is untrusted (`sorry`, `axiom`, `partial`,
+  `unsafe`). -/
+  reasons : Array (String × Array String) := #[]
+  /-- The statement hash (DESIGN §7.7). -/
+  stmtHash : Option String := none
+  /-- The signature hash. -/
+  sigHash : Option String := none
   /-- Rendered views. -/
   views : Array (String × String) := #[]
   /-- Views that failed to render, with the reason. -/
@@ -113,10 +120,24 @@ private def entry (key : String) (j : Json) : Except String Entry := do
   let untrusted ← match j.getObjVal? "cone" with
     | .ok c => strs s!"{w}.cone.untrusted" (← field s!"{w}.cone" c "untrusted")
     | .error _ => pure #[]
+  let reasons ← match j.getObjVal? "cone" >>= (·.getObjVal? "reasons") with
+    | .ok r => match r.getObj? with
+      | .ok kvs => kvs.toArray.mapM fun ⟨k, v⟩ => do return (k, ← strs s!"{w}.cone.reasons.{k}" v)
+      | .error _ => throw s!"{w}.cone.reasons must be an object"
+    | .error _ => pure #[]
+  let hash (k : String) : Except String (Option String) :=
+    match j.getObjVal? k with
+    | .ok v => match v.getStr? with
+      | .ok h => if h.length == 64 && h.all (fun c => c.isDigit || ('a' ≤ c && c ≤ 'f')) then .ok (some h)
+                 else .error s!"{w}.{k} must be 64 hexadecimal digits"
+      | .error _ => .error s!"{w}.{k} must be a string"
+    | .error _ => .ok none
+  let stmtHash ← hash "stmtHash"
+  let sigHash ← hash "sigHash"
   let errors ← match j.getObjVal? "errors" with
     | .ok e => strMap s!"{w}.errors" e
     | .error _ => pure #[]
-  return { key, kind, source, axioms, usesSorry, untrusted, views, errors }
+  return { key, kind, source, axioms, usesSorry, untrusted, reasons, stmtHash, sigHash, views, errors }
 
 /-- Read a bundle from JSON text. -/
 def Bundle.parse (text : String) : Except String Bundle := do

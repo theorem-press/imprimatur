@@ -1,0 +1,40 @@
+{
+ "entries": {
+  "Bp.done": {
+   "decl": "Bp.done",
+   "kind": "theorem",
+   "sigHash": "1111111111111111111111111111111111111111111111111111111111111111",
+   "stmtHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "views": {
+    "lean": "Bp.done"
+   }
+  },
+  "Bp.helper": {
+   "decl": "Bp.helper",
+   "kind": "theorem",
+   "sigHash": "2222222222222222222222222222222222222222222222222222222222222222",
+   "stmtHash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "views": {
+    "lean": "Bp.helper"
+   }
+  },
+  "Bp.unfinished": {
+   "axioms": [
+    "sorryAx"
+   ],
+   "decl": "Bp.unfinished",
+   "kind": "theorem",
+   "sigHash": "3333333333333333333333333333333333333333333333333333333333333333",
+   "sorry": true,
+   "stmtHash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+   "views": {
+    "lean": "Bp.unfinished"
+   }
+  }
+ },
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

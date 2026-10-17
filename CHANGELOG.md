@@ -20,3 +20,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 - `imprimatur build` and `imprimatur check` run the whole flow in in-project
   and sidecar modes. `tex/imprimatur.sty` typesets the result with pdfLaTeX
   or LuaLaTeX. `examples/minimal` and `examples/sidecar` show both modes.
+- Trust checks (PLAN M3):
+  - dependency cones, `stmtHash` and `sigHash`, the same on every toolchain;
+  - `\leancheck[stmt=…, sig=…]` with drift detection, and `imprimatur accept`;
+  - comparator manifests, with `KEY@challenge` entries;
+  - blueprint `\lean{…}` and `\leanok`.
+
+  See [docs/trust.md](docs/trust.md).
+- External mode: `imprimatur toolchain install VERSION`, then
+  `mode = "external"` reads a host project without changing it.
+  `examples/external` shows it.

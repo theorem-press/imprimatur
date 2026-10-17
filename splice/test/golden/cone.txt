@@ -1,0 +1,14 @@
+$ imprimatur-splice check --bundle demo.bundle.json
+main.tex:1:1: error[untrusted]: Demo.uses_partial has untrusted constants in its dependency cone: Demo.collatz (partial)
+main.tex:3:1: error[untrusted]: Demo.uses_other_axiom has untrusted constants in its dependency cone: Demo.oracle (axiom)
+main.tex:4:1: error[untrusted]: Demo.deep_sorry depends on sorry
+main.tex:4:1: error[untrusted]: Demo.deep_sorry has untrusted constants in its dependency cone: Demo.Level3 (sorry)
+check: 0 stale, 4 errors, 0 warnings
+[exit 1]
+
+== main.tex
+\leancheck{Demo.uses_partial}
+\leancheck{Demo.uses_allowed_axiom}
+\leancheck{Demo.uses_other_axiom}
+\leancheck{Demo.deep_sorry}
+

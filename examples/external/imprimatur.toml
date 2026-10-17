@@ -1,0 +1,6 @@
+schema = 1
+main = "paper.tex"
+lean_project = "host"
+mode = "external"
+imports = ["Shapes"]
+strip_namespaces = ["Shapes"]

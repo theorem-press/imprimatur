@@ -32,6 +32,12 @@ inductive J where
   | obj (kvs : Array (String × J))
   deriving Inhabited, BEq, Repr
 
+/-- A field of an object. -/
+def J.field? (j : J) (k : String) : Option J :=
+  match j with
+  | .obj kvs => (kvs.find? (·.1 == k)).map (·.2)
+  | _ => none
+
 /-- A JSON string literal. -/
 def J.quote (s : String) : String :=
   (Json.str s).compress

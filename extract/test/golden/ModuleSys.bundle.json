@@ -2,15 +2,22 @@
   "entries": {
     "ModuleSys.honest": {
       "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "ModuleSys.honest",
       "doc": "A public theorem with an honest proof.",
       "kind": "theorem",
       "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "117a797e0286c76e74172b1548539b5f00924111a156b289a332ba62c565f120",
       "sorry": false,
       "source": {
         "line": 18,
         "path": "ModuleSys/Lib.lean"
       },
+      "stmtHash": "967b81633edc8b35f306a0b65aa29748001e6f87d499f9c11fcb2ff7f94fd6ff",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{honest} : \\LeanNumber{1} + \\LeanNumber{1} = \\LeanNumber{2}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A public theorem with an honest proof.}"
@@ -18,15 +25,22 @@
     },
     "ModuleSys.plain_user": {
       "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "ModuleSys.plain_user",
       "doc": "Builds on `honest`.",
       "kind": "theorem",
       "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "060d8ef91e3095bea7594989a205ce95e7dc8c220d68061a108980e10749c8e3",
       "sorry": false,
       "source": {
         "line": 12,
         "path": "ModuleSys/Plain.lean"
       },
+      "stmtHash": "081ced5ba77649ad9cf6a4ae3eeeb05c07a1f1ed06a3f37714edeab6d0bda9d6",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{plain\\_user} : \\LeanNumber{1} + \\LeanNumber{1} = \\LeanNumber{2} ∧ \\LeanConst{True}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Builds on \\LeanCodeInline{honest}.}"
@@ -34,15 +48,22 @@
     },
     "ModuleSys.pub_thm": {
       "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "ModuleSys.pub_thm",
       "doc": "A public theorem with a private, unfinished proof.",
       "kind": "theorem",
       "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sigHash": "131f5ddbeb8b30636606fc86f32f288231ef5b1a47300c56ccad7fe127036f9c",
       "sorry": true,
       "source": {
         "line": 15,
         "path": "ModuleSys/Lib.lean"
       },
+      "stmtHash": "c54d409213293c8c1cf2e29ae7494f1c14af5b578f0d9a8c4559a4871fda116c",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{pub\\_thm} : \\LeanNumber{2} + \\LeanNumber{2} = \\LeanNumber{4}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A public theorem with a private, unfinished proof.}"
@@ -50,15 +71,22 @@
     },
     "ModuleSys.via_all": {
       "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "ModuleSys.via_all",
       "doc": "Builds on `pub_thm`.",
       "kind": "theorem",
       "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sigHash": "10ddbafdd370739ec0d41ff5e4a3a53853e562b16b04fbcc2d29ffa7f28fba1b",
       "sorry": true,
       "source": {
         "line": 15,
         "path": "ModuleSys/UsesAll.lean"
       },
+      "stmtHash": "ac8e594b5ac02777b5cb0746a04adc6edb90c3bc37b33aaac5bd31689086b33a",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{via\\_all} : \\LeanNumber{2} + \\LeanNumber{2} = \\LeanNumber{4} ∧ \\LeanConst{True}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Builds on \\LeanCodeInline{pub\\_thm}.}"

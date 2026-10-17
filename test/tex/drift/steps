@@ -1,0 +1,10 @@
+check --bundle v1.bundle.json
+accept --bundle v1.bundle.json --all
+check --bundle v1.bundle.json
+check --bundle v2-weakened.bundle.json
+check --bundle v3-renamed.bundle.json
+accept --bundle v2-weakened.bundle.json Demo.main Demo.unused
+check --bundle v2-weakened.bundle.json
+check --bundle nohash.bundle.json
+accept --bundle nohash.bundle.json Demo.main
+accept --bundle v1.bundle.json

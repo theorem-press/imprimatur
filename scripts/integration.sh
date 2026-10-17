@@ -19,7 +19,8 @@ SPLICE="$ROOT/splice/.lake/build/bin/imprimatur-splice"
 (cd splice && lake build -q imprimatur-splice)
 
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT
+# KEEP_WORK=1 keeps the scratch directory, for investigating a failure.
+[ "${KEEP_WORK:-}" = 1 ] && echo "scratch directory: $work" || trap 'rm -rf "$work"' EXIT
 
 echo "== integration/llmbda-scan-strip: scan and strip llmbda's oopsla2027/paper.tex"
 if [ ! -f "$LLMBDA_ROOT/oopsla2027/paper.tex" ]; then
@@ -93,4 +94,84 @@ if [ -f "$MATH_ROOT/OAI/SetTheory/PartitionPrinciple/Models/Separation.lean" ]; 
 else
   echo "the math catalogue not found at $MATH_ROOT (set MATH_ROOT); skipped" >&2
 fi
+# M3: trust and manifests, in external mode. Extractors are installed into a
+# cache in the scratch directory, one per toolchain.
+export IMPRIMATUR_CACHE="${IMPRIMATUR_CACHE:-$work/cache}"
+IMPRIMATUR="$ROOT/splice/.lake/build/bin/imprimatur"
+(cd splice && lake build -q imprimatur)
+relpath() { python3 -c 'import os,sys; print(os.path.relpath(sys.argv[1], sys.argv[2]))' "$1" "$2"; }
+failures=0
+
+if [ -d "$MATH_ROOT/ComparatorChallenges" ]; then
+  echo "== integration/math-manifests: the math catalogue's comparator manifests"
+  stage="$work/math-manifests"; mkdir -p "$stage/all" "$stage/built"
+  cp "$MATH_ROOT"/ComparatorChallenges/*.json "$stage/all/"
+  # Only manifests whose solution module is built can be checked: external
+  # mode reads a host as it is, and never builds it.
+  python3 - "$MATH_ROOT" "$stage" <<'PY'
+import glob, json, os, shutil, sys
+root, stage = sys.argv[1], sys.argv[2]
+for m in sorted(glob.glob(os.path.join(stage, "all", "*.json"))):
+    sol = json.load(open(m)).get("solution_module", "")
+    if os.path.exists(os.path.join(root, ".lake/build/lib/lean", sol.replace(".", "/") + ".olean")):
+        shutil.copy(m, os.path.join(stage, "built"))
+PY
+  rel=$(relpath "$MATH_ROOT" "$stage")
+  printf '\\documentclass{article}\\begin{document}Catalogue.\\end{document}\n' > "$stage/paper.tex"
+  for set in all built; do
+    printf 'schema = 1\nmain = "paper.tex"\nlean_project = "%s"\nmode = "external"\n\n[manifests]\ncomparator = ["%s/*.json"]\n' \
+      "$rel" "$set" > "$stage/$set.toml"
+  done
+  (cd "$stage" && "$IMPRIMATUR" --config all.toml scan -o all-requests.json > scan.log 2>&1) \
+    || { echo "  FAIL: scan"; cat "$stage/scan.log"; failures=1; }
+  python3 -c "import json,sys; r=json.load(open('$stage/all-requests.json')); print(f'  all {len(r[\"requests\"])} theorem keys from {len(list(__import__(\"glob\").glob(\"$stage/all/*.json\")))} manifests parsed')"
+  "$IMPRIMATUR" toolchain install "$(sed 's/.*://' "$MATH_ROOT/lean-toolchain")" | sed 's/^/  /'
+  (cd "$stage" && "$IMPRIMATUR" --config built.toml check > check.log 2>&1) || true
+  grep -v "^warning: .*repository .* has local changes" "$stage/check.log" | sed 's/^/  /'
+  if grep -qE 'broken-ref|bad-manifest|^error:' "$stage/check.log"; then
+    echo "  FAIL: manifests did not import cleanly"; failures=1
+  fi
+fi
+
+if [ -f "$PLANET_ROOT/Planet/Paper.lean" ]; then
+  echo "== integration/planet-drift: a weakened copy of a PLanet theorem is caught as drift"
+  scratch="$work/planet-drift"; mkdir -p "$scratch/olean"
+  tc=$(sed 's/.*://' "$PLANET_ROOT/lean-toolchain")
+  "$IMPRIMATUR" toolchain install "$tc" | sed 's/^/  /'
+  exe="$IMPRIMATUR_CACHE/toolchains/$tc/.lake/build/bin/imprimatur-export"
+  copy() {  # copy CONCLUSION PROOF: compile a restatement of proposition1_full
+    cat > "$scratch/PlanetDrift.lean" <<LEAN
+import Planet.Paper
+open Planet Planet.Paper
+namespace PlanetDrift
+/-- A restatement of Proposition 1, as a paper might quote it. -/
+theorem prop1_copy {R C : Type} {n : ℕ} [Fintype R] [Fintype C]
+    {M : Props.Mat R C n} (hR : Fintype.card R = n.factorial)
+    (hC : Fintype.card C = n) (hn : 0 < n) :
+    $1 :=
+  $2
+end PlanetDrift
+LEAN
+    # --root: Lean only compiles files under its root directory.
+    (cd "$PLANET_ROOT" && lake env lean --root="$scratch" "$scratch/PlanetDrift.lean" -o "$scratch/olean/PlanetDrift.olean")
+    printf '{"schema": "imprimatur-requests/1", "config": {"imports": ["PlanetDrift"]}, "requests": {"PlanetDrift.prop1_copy": {"views": []}}}' > "$scratch/requests.json"
+    (cd "$PLANET_ROOT" && lake env bash -c "LEAN_PATH=\$LEAN_PATH:$scratch/olean '$exe' --requests '$scratch/requests.json' --out '$scratch/bundle.json'") > /dev/null
+  }
+  printf '\\documentclass{article}\\begin{document}\nProposition 1 holds \\leancheck{PlanetDrift.prop1_copy}.\n\\end{document}\n' > "$scratch/paper.tex"
+  SPLICE="$ROOT/splice/.lake/build/bin/imprimatur-splice"
+  copy "Des.LeafSem (Props.cbWithin R C n) M ↔ Props.RowsPerm M ∧ DistinctRows M" \
+       "Planet.Paper.proposition1_full hR hC hn"
+  (cd "$scratch" && "$SPLICE" --main paper.tex accept --bundle bundle.json --all && "$SPLICE" --main paper.tex check --bundle bundle.json) | sed 's/^/  /'
+  grep -o '\\leancheck\[[^]]*\]' "$scratch/paper.tex" | sed 's/^/  accepted: /'
+  # Weaken it: the iff becomes one direction.
+  copy "Des.LeafSem (Props.cbWithin R C n) M → Props.RowsPerm M" \
+       "fun h => ((Planet.Paper.proposition1_full hR hC hn).mp h).1"
+  if (cd "$scratch" && "$SPLICE" --main paper.tex check --bundle bundle.json > check.log 2>&1); then
+    echo "  FAIL: the weakened statement was not reported"; failures=1
+  fi
+  sed 's/^/  /' "$scratch/check.log"
+  grep -q 'error\[drift\]' "$scratch/check.log" || { echo "  FAIL: no drift reported"; failures=1; }
+fi
+
+[ $failures = 0 ] || exit 1
 echo "integration: passed"

@@ -1,0 +1,15 @@
+\documentclass{article}
+\usepackage{imprimatur}
+\begin{document}
+
+\section{Rectangles}
+
+The area of a rectangle is the product of its sides; swapping the sides
+keeps it \leancheck[stmt=ef984ed62ab8, sig=f639e6d6211a]{Shapes.Rect.area_swap, Shapes.Rect.area}.
+
+\begin{leanblock}[sum=v80Pqxg1yV]{Shapes.Rect.area_swap}{Swap}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{Rect.area\_swap} (\LeanBound{r} : \LeanConst{Rect}) : \{ w := \LeanBound{r}.h, h := \LeanBound{r}.w \}.area = \LeanBound{r}.area}
+\end{leanblock}
+
+\end{document}

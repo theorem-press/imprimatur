@@ -1,7 +1,8 @@
 $ imprimatur-splice scan
 {
   "schema": "imprimatur-requests/1",
-  "config": {"imports": [], "open_scoped": [], "strip_namespaces": []},
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
   "requests": {
     "Demo.c": {"views": ["lean"]}
   }

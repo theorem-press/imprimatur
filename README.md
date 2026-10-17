@@ -17,15 +17,22 @@ with no preprocessor. The host Lean project doesn't need to change.
 
 ## Status
 
-Early development (v0.1 in progress). `imprimatur build` renders Lean
+Early development (v0.2 in progress). `imprimatur build` renders Lean
 declarations into a paper in two styles:
 - **`lean`:** the signature, as Lean prints it;
 - **`meta`:** the source location, axioms, `sorry` status and docstring.
 
-It works in in-project and sidecar modes. See [docs/blocks.md](docs/blocks.md)
-to set it up, [docs/views.md](docs/views.md) for the output, and
-[examples/](examples/) for two working papers. Typeset mathematics, external
-mode and statement-drift checks come next. [PLAN.md](PLAN.md) gives the build order, and
+`imprimatur check` fails when a cited result:
+- depends on `sorry` or a disallowed axiom;
+- disappears;
+- or, with `\leancheck` and `imprimatur accept`, changes its meaning after
+  the prose was checked against it (see [docs/trust.md](docs/trust.md)).
+
+It works in all three modes: in-project, sidecar, and external, which leaves
+the host project untouched. See [docs/blocks.md](docs/blocks.md) to set it
+up, [docs/views.md](docs/views.md) for the output, and
+[examples/](examples/) for three working papers. Typeset mathematics comes
+next. [PLAN.md](PLAN.md) gives the build order, and
 [CONTRIBUTING.md](CONTRIBUTING.md) explains how to work on the code. See
 [DESIGN.md](DESIGN.md) for:
 

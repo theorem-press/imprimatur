@@ -2,15 +2,22 @@
   "entries": {
     "Trust.Hyp": {
       "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
       "decl": "Trust.Hyp",
       "doc": "The hypothesis of `Trust.uses_hyp`, in its real form.",
       "kind": "definition",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "696a0d3f5f399aa31fb33c4b797153088994fc3efbd9043f83433c004b997aaa",
       "sorry": false,
       "source": {
         "line": 9,
         "path": "TrustVariant/Hyp.lean"
       },
+      "stmtHash": "1673d8d36c076b7dab6f2219f66127a3255150e7e056280d9277dff75772ff96",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{Hyp} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanSort{Prop}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{The hypothesis of \\LeanCodeInline{Trust.uses\\_hyp}, in its real form.}"
@@ -18,15 +25,24 @@
     },
     "Trust.collatz_stmt": {
       "axioms": [],
+      "cone": {
+        "reasons": {
+          "Trust.collatz": ["partial"]
+        },
+        "size": 1,
+        "untrusted": ["Trust.collatz"]
+      },
       "decl": "Trust.collatz_stmt",
       "doc": "A statement whose cone contains a `partial` definition.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "3815f42da17da976dca718174244e8d11bb82d255977cd39349cb986cfcc19d6",
       "sorry": false,
       "source": {
         "line": 24,
         "path": "Trust/Axioms.lean"
       },
+      "stmtHash": "6c4a5968a1bf3b12053e22fca8aec271b9fce0c15a5764b4e974cee78ea90bfa",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{collatz\\_stmt} (\\LeanBound{n} : \\LeanConst{Nat}) (\\LeanBound{h} : \\LeanConst{collatz} \\LeanBound{n} = \\LeanNumber{0}) : \\LeanConst{collatz} \\LeanBound{n} = \\LeanNumber{0}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A statement whose cone contains a \\LeanCodeInline{partial} definition.}"
@@ -34,15 +50,24 @@
     },
     "Trust.deep_sorry": {
       "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {
+          "Trust.Level3": ["sorry"]
+        },
+        "size": 3,
+        "untrusted": ["Trust.Level3"]
+      },
       "decl": "Trust.deep_sorry",
       "doc": "The proof is honest, but the statement depends on `sorry`.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sigHash": "46ef648652e810e9df9505da4e30f57233a0b6868a0e1b142ea149235e8911c0",
       "sorry": true,
       "source": {
         "line": 27,
         "path": "Trust/Sorry.lean"
       },
+      "stmtHash": "d243992b0087d71f2660ae798519d85c146aad43aa3bdbda38eadb3c8cd57652",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{deep\\_sorry} (\\LeanBound{n} : \\LeanConst{Nat}) (\\LeanBound{h} : \\LeanConst{Level1} \\LeanBound{n}) : \\LeanConst{Level1} \\LeanBound{n}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{The proof is honest, but the statement depends on \\LeanCodeInline{sorry}.}"
@@ -50,14 +75,21 @@
     },
     "Trust.direct_sorry": {
       "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "Trust.direct_sorry",
       "kind": "theorem",
       "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sigHash": "1f332852095d6f504f4127d094c1240044a763125a53bb86d0e285563167a2fb",
       "sorry": true,
       "source": {
         "line": 13,
         "path": "Trust/Sorry.lean"
       },
+      "stmtHash": "afc1c0c536e7c484ac06ed8d72a3275f25225836e74a59e0a5072844c6f75cc3",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{direct\\_sorry} : \\LeanNumber{2} + \\LeanNumber{2} = \\LeanNumber{5}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{}"
@@ -65,14 +97,21 @@
     },
     "Trust.double_even": {
       "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 4,
+        "untrusted": []
+      },
       "decl": "Trust.double_even",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "224516c73332943ee18df777798008ad7039b57e7a7b616172f464650bfcfd78",
       "sorry": false,
       "source": {
         "line": 56,
         "path": "Trust/Basic.lean"
       },
+      "stmtHash": "2e3bce84f08fe7d42db0f01de60fd055184841f800a753efee774f2899ebad70",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{double\\_even} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanConst{Even} (\\LeanConst{double} \\LeanBound{n})}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{}"
@@ -80,15 +119,22 @@
     },
     "Trust.double_even_renamed": {
       "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 4,
+        "untrusted": []
+      },
       "decl": "Trust.double_even_renamed",
       "doc": "`double_even` with a different binder name: same `stmtHash`.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "a8a6de15d4a1c285629ddd36e0ec2bdb67d811e373a570357dab8b1e67ac8468",
       "sorry": false,
       "source": {
         "line": 62,
         "path": "Trust/Basic.lean"
       },
+      "stmtHash": "2e3bce84f08fe7d42db0f01de60fd055184841f800a753efee774f2899ebad70",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{double\\_even\\_renamed} (\\LeanBound{m} : \\LeanConst{Nat}) : \\LeanConst{Even} (\\LeanConst{double} \\LeanBound{m})}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{\\LeanCodeInline{double\\_even} with a different binder name: same \\LeanCodeInline{stmtHash}.}"
@@ -96,14 +142,21 @@
     },
     "Trust.halve_le": {
       "axioms": ["Quot.sound", "propext"],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
       "decl": "Trust.halve_le",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "d68f741216a44ce607913c696b5883dd351086229bed97c943266a634cf91a2d",
       "sorry": false,
       "source": {
         "line": 75,
         "path": "Trust/Basic.lean"
       },
+      "stmtHash": "f733e9b109040f2f568339e38a6fc744d19df143281513f9fd289cb90436d8bf",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{halve\\_le} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanConst{halve} \\LeanBound{n} ≤ \\LeanBound{n}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{Quot.sound, propext}{\\LeanSorryFree}{}"
@@ -111,29 +164,66 @@
     },
     "Trust.pairMap_fst": {
       "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
       "decl": "Trust.pairMap_fst",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMeta", "\\LeanNewline", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "03d3050191f82a47e664d1baa1b9bc3b824d507521316c844447b5665d10424d",
       "sorry": false,
       "source": {
         "line": 68,
         "path": "Trust/Basic.lean"
       },
+      "stmtHash": "6adcf1afe6192f51d5464f51418a808623317d43055c3f7682a841113034c632",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{pairMap\\_fst}.\\{\\LeanBound{u}, \\LeanBound{v}\\} \\{\\LeanBound{α} : \\LeanSort{Type} \\LeanBound{u}\\} \\{\\LeanBound{β} : \\LeanSort{Type} \\LeanBound{v}\\} (\\LeanBound{f} : \\LeanBound{α} → \\LeanBound{β}) (\\LeanBound{p} : \\LeanBound{α} × \\LeanBound{α}) :\\LeanNewline\n\\LeanIndent{2}(\\LeanConst{pairMap} \\LeanBound{f} \\LeanBound{p}).fst = \\LeanBound{f} \\LeanBound{p}.fst}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{}"
       }
     },
+    "Trust.pairMap_fst_renamed": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Trust.pairMap_fst_renamed",
+      "doc": "`pairMap_fst` with different universe and binder names: same `stmtHash`.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMeta", "\\LeanNewline", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "a038d3886ab5164156ec0beab8b83b5318bc5bf5591e3c227553a044b3520890",
+      "sorry": false,
+      "source": {
+        "line": 72,
+        "path": "Trust/Basic.lean"
+      },
+      "stmtHash": "6adcf1afe6192f51d5464f51418a808623317d43055c3f7682a841113034c632",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{pairMap\\_fst\\_renamed}.\\{\\LeanBound{a}, \\LeanBound{b}\\} \\{\\LeanBound{γ} : \\LeanSort{Type} \\LeanBound{a}\\} \\{\\LeanBound{δ} : \\LeanSort{Type} \\LeanBound{b}\\} (\\LeanBound{g} : \\LeanBound{γ} → \\LeanBound{δ})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{q} : \\LeanBound{γ} × \\LeanBound{γ}) : (\\LeanConst{pairMap} \\LeanBound{g} \\LeanBound{q}).fst = \\LeanBound{g} \\LeanBound{q}.fst}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{\\LeanCodeInline{pairMap\\_fst} with different universe and binder names: same \\LeanCodeInline{stmtHash}.}"
+      }
+    },
     "Trust.uses_custom_axiom": {
       "axioms": ["Trust.custom_axiom"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "Trust.uses_custom_axiom",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "a3adb8bc3f2ec65f610b0c5db220bb7d2167675e343fb8752e71a66e1eb1f07d",
       "sorry": false,
       "source": {
         "line": 15,
         "path": "Trust/Axioms.lean"
       },
+      "stmtHash": "f34d2a37d23ad5ffa1dbd41282b186b6bc0df4d2e12f59645a5c0858312ecdc5",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{uses\\_custom\\_axiom} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanBound{n} + \\LeanNumber{0} = \\LeanBound{n}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{Trust.custom\\_axiom}{\\LeanSorryFree}{}"
@@ -141,14 +231,21 @@
     },
     "Trust.uses_direct_sorry": {
       "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "Trust.uses_direct_sorry",
       "kind": "theorem",
       "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sigHash": "b03db1623ce055636e49c5963fcc97242bad9150b3bdf3b5b26588734d003193",
       "sorry": true,
       "source": {
         "line": 15,
         "path": "Trust/Sorry.lean"
       },
+      "stmtHash": "c527b4ad83cbda7641ade5ee25f21e4bc8ff1916b1c04f8af2dff991103b3df2",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{uses\\_direct\\_sorry} : \\LeanNumber{2} + \\LeanNumber{2} = \\LeanNumber{5} ∧ \\LeanConst{True}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{}"
@@ -156,14 +253,21 @@
     },
     "Trust.uses_hyp": {
       "axioms": ["Quot.sound", "propext"],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
       "decl": "Trust.uses_hyp",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "08d4472ced5c7712cd0a783ca2df083bccb90d11d17af686f7a9fd8aec398280",
       "sorry": false,
       "source": {
         "line": 15,
         "path": "Trust/Drift.lean"
       },
+      "stmtHash": "f7f0916dd12c085147b5b6ebc7c04158c2b2e211339ab3c6ddbc3b775ab7699e",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{uses\\_hyp} (\\LeanBound{n} : \\LeanConst{Nat}) (\\LeanBound{h} : \\LeanConst{Hyp} \\LeanBound{n}) : \\LeanConst{Hyp} (\\LeanBound{n} + \\LeanNumber{2})}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{Quot.sound, propext}{\\LeanSorryFree}{}"
@@ -171,14 +275,21 @@
     },
     "Trust.uses_standard_axioms": {
       "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
       "decl": "Trust.uses_standard_axioms",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "6b164e58fe451bad91b7f7fefb3cd9190c791452e1ba7b0ae3998797f80e0631",
       "sorry": false,
       "source": {
         "line": 17,
         "path": "Trust/Axioms.lean"
       },
+      "stmtHash": "e336700b3d061020ebf2060fcebd87cf730ea8876cf0485f02cab204edf17375",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{uses\\_standard\\_axioms} (\\LeanBound{p} : \\LeanSort{Prop}) : \\LeanBound{p} ∨ ¬\\LeanBound{p}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{Classical.choice, Quot.sound, propext}{\\LeanSorryFree}{}"

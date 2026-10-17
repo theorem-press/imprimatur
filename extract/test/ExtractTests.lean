@@ -6,6 +6,7 @@ import Imprimatur
 import Testkit
 import ExtractTest.Unit
 import ExtractTest.Fixtures
+import ExtractTest.HashProps
 
 /-!
 # Extractor tests
@@ -27,4 +28,5 @@ unsafe def main : IO UInt32 :=
   runSuite do
     testVersion
     ExtractTest.Unit.tests
+    ExtractTest.HashProps.tests
     ExtractTest.Fixtures.tests

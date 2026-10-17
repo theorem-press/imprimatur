@@ -88,16 +88,30 @@ def renderRef (links : SourceLinks) (commit : Option String) (e : Entry) : Excep
 /-- Where a view leaves the source location for the splicer to fill. -/
 def metaSourceMarker : String := "\\leanmetasource{}"
 
+/-- The edits that set options of an item: existing options get new values,
+and missing ones are added at the end of the options (or in a new `[…]`).
+Nothing else in the item changes. -/
+def optEdits (s : Src) (it : Item) (kvs : Array (String × String)) : Array Edit := Id.run do
+  let mut edits := #[]
+  let mut missing := #[]
+  for (k, v) in kvs do
+    match it.opts.find? (·.key == k) with
+    | some o => if o.value != v then edits := edits.push { start := o.valueStart, stop := o.valueEnd, text := v }
+    | none => missing := missing.push s!"{k}={v}"
+  unless missing.isEmpty do
+    let text := ", ".intercalate missing.toList
+    match it.optsSpan with
+    | some (a, b) =>
+      if (s.slice (a + 1) (b - 1)).trimAscii.isEmpty then
+        edits := edits.push { start := a + 1, stop := b - 1, text }
+      else
+        edits := edits.push { start := b - 1, stop := b - 1, text := ", " ++ text }
+    | none => edits := edits.push { start := it.insertAt, stop := it.insertAt, text := "[" ++ text ++ "]" }
+  return edits
+
 /-- The edit that sets an item's `sum=` option. -/
 def sumEdit (s : Src) (it : Item) (sum : String) : Edit :=
-  match it.opts.find? (·.key == "sum"), it.optsSpan with
-  | some o, _ => { start := o.valueStart, stop := o.valueEnd, text := sum }
-  | none, some (a, b) =>
-    if (s.slice (a + 1) (b - 1)).trimAscii.isEmpty then
-      { start := a + 1, stop := b - 1, text := s!"sum={sum}" }
-    else
-      { start := b - 1, stop := b - 1, text := s!", sum={sum}" }
-  | none, none => { start := it.insertAt, stop := it.insertAt, text := s!"[sum={sum}]" }
+  (optEdits s it #[("sum", sum)])[0]?.getD { start := it.insertAt, stop := it.insertAt, text := "" }
 
 /-- Whether braces in `t` balance. -/
 def bracesBalance (t : String) : Bool :=
@@ -151,7 +165,7 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
     let eol := dominantEol s.chars
     let mut edits : Array Edit := #[]
     for it in f.scan.items do
-      if it.kind == .check || it.kind == .index then continue
+      if it.kind == .check || it.kind == .index || it.kind == .leanok then continue
       let loc := s.locString it.start
       let missing :=
         if o.keepStale then

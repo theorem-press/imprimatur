@@ -118,3 +118,25 @@ the cone check must (DESIGN §7.7).
   Measure it in the M3 integration run.
 
 The spike code is not kept in the repository (PLAN §3). The fixture is kept.
+
+## Revised in M3
+
+The math catalogue's comparator manifests, run in external mode
+(`scripts/integration.sh`), changed two of the conclusions above:
+
+1. **Equation lemmas only for recursive definitions.** Generating equation
+   lemmas for one non-recursive definition (`ProducedMarkedSeamEquations`,
+   a few `let`s) used more than 12 GB. That work happens where the extractor's
+   heartbeat limit doesn't reach it. Equation lemmas are needed only where
+   the compiled form differs between toolchains, which is recursion.
+   - A recursive definition is now hashed by its equation lemmas.
+   - Any other definition is hashed by its body, which is what the author
+     wrote.
+   - Matchers and auxiliary recursors are hashed by their type alone.
+   - The fixtures' hashes are still identical on v4.28.0-rc1 to v4.35.0.
+2. **The serialisation must follow sharing.** The same definition's body is
+   3,813 shared nodes, but more than 10^8 as a tree. The serialisation is now
+   a Merkle hash memoised on pointers, and is linear in the shared size. The
+   memo table must be keyed on pointers, not on `Expr` equality, which
+   ignores binder annotations that the serialisation keeps. A
+   hash-invariance property caught that mistake.

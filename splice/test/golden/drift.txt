@@ -1,0 +1,55 @@
+$ imprimatur-splice check --bundle v1.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice accept --bundle v1.bundle.json --all
+accept: recorded the hashes of 2 keys in 1 file
+[exit 0]
+
+$ imprimatur-splice check --bundle v1.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle v2-weakened.bundle.json
+main.tex:1:40: error[drift]: the statement of Demo.main, or something it depends on, has changed since the prose was last checked against it (stmt=aaaaaaaaaaaa, now cccccccccccc).
+  Re-read the prose, then run: imprimatur accept Demo.main
+main.tex:2:25: error[drift]: the statement of Demo.main, Demo.lemma, or something it depends on, has changed since the prose was last checked against it (stmt=b1da1a175574, now ca421fd89b91).
+  Re-read the prose, then run: imprimatur accept Demo.main Demo.lemma
+check: 0 stale, 2 errors, 0 warnings
+[exit 1]
+
+$ imprimatur-splice check --bundle v3-renamed.bundle.json
+main.tex:1:40: warning[sig-changed]: the signature of Demo.main reads differently (binder names or notation), but its meaning is unchanged; run imprimatur accept to record it
+main.tex:2:25: warning[sig-changed]: the signature of Demo.main, Demo.lemma reads differently (binder names or notation), but its meaning is unchanged; run imprimatur accept to record it
+check: 0 stale, 0 errors, 2 warnings
+[exit 0]
+
+$ imprimatur-splice accept --bundle v2-weakened.bundle.json Demo.main Demo.unused
+warning[not-checked]: no \leancheck mentions Demo.unused
+accept: recorded the hashes of 2 keys in 1 file
+[exit 0]
+
+$ imprimatur-splice check --bundle v2-weakened.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle nohash.bundle.json
+main.tex:1:40: error[no-hash]: the bundle has no statement hash for Demo.main; rebuild it with imprimatur-export 0.2 or later
+main.tex:2:25: error[no-hash]: the bundle has no statement hash for Demo.main, Demo.lemma; rebuild it with imprimatur-export 0.2 or later
+check: 0 stale, 2 errors, 0 warnings
+[exit 1]
+
+$ imprimatur-splice accept --bundle nohash.bundle.json Demo.main
+main.tex:1:40: error[no-hash]: cannot accept Demo.main: a key is missing from the bundle or has no hash
+main.tex:2:25: error[no-hash]: cannot accept Demo.main, Demo.lemma: a key is missing from the bundle or has no hash
+accept: nothing written
+[exit 1]
+
+$ imprimatur-splice accept --bundle v1.bundle.json
+error: accept needs the keys to accept, or --all
+[exit 2]
+
+== main.tex
+Our main result, Theorem 1, is checked \leancheck[stmt=cccccccccccc, sig=111111111111]{Demo.main} against Lean.
+Together with the lemma \leancheck[note=kept, stmt=ca421fd89b91, sig=d24a4134be71]{Demo.main, Demo.lemma} it gives the corollary.
+

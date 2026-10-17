@@ -41,6 +41,8 @@ commands:
   strip -o DIR                 write a copy with imprimatur's markers removed
   migrate-slots --bundle B.json
                                rewrite slots declared by position as \leanslot
+  accept --bundle B.json KEY... | --all
+                               record the current statement hashes in \leancheck
 
 The configuration is imprimatur.toml in the current directory, unless
 --config or --main is given.
