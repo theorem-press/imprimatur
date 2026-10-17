@@ -5,9 +5,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Lake
 open Lake DSL
 
-/-! The `Trust` fixture (PLAN §2.2). `lake build -Kweak=1` swaps the
+/-! The `Trust` fixture (PLAN §2.2). `lake build -R -Kweak=1` swaps the
 definition of `Trust.Hyp` for a vacuous one, which the drift tests of
-DESIGN §10.3 must catch. -/
+DESIGN §10.3 must catch; `lake build -R` swaps it back. Lake caches `-K`
+options with the configuration, so `-R` (reconfigure) is needed each time
+the option changes. -/
 
 package «trust-fixture»
 
