@@ -5,5 +5,8 @@ Rectangles
 The area of a rectangle is the product of its sides; swapping the sides keeps it.
 theorem Rect.area_swap (r : Rect) : { w := r.h, h := r.w }.area = r.area
 
+As mathematics:
+|rh × rw | = |r|
+
 1
 

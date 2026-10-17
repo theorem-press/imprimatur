@@ -30,3 +30,11 @@ All notable changes to imprimatur are recorded here. Versions follow
 - External mode: `imprimatur toolchain install VERSION`, then
   `mode = "external"` reads a host project without changing it.
   `examples/external` shows it.
+- Notation and typeset mathematics (PLAN M4):
+  - `latex_notation`, with `prec`, `width`, `hide`, `variant`, `flatten` and
+    typed `@` patterns, and `latex_metavar`;
+  - the notation packs `core`, `logic`, `sets` and `order`;
+  - the `math` and `prose` views.
+
+  Notation modules work in every mode. In external mode they are given as
+  files and elaborated by the extractor. See [docs/notation.md](docs/notation.md).

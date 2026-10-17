@@ -34,6 +34,8 @@ structure Fixture where
   strip : Array Name
   /-- Keys to export. -/
   keys : Array String
+  /-- Views to ask for. -/
+  views : Array String := #["lean", "meta"]
   deriving Inhabited
 
 /-- The fixtures and the keys exported from each. -/
@@ -47,6 +49,10 @@ def fixtures : Array Fixture := #[
     keys := #["ModuleSys.pub_thm", "ModuleSys.honest", "ModuleSys.via_all", "ModuleSys.plain_user"] },
   { dir := "Manifests", module := `Manifests, strip := #[`Cat],
     keys := #["Cat.main", "Cat.classical", "Cat.IsEven"] },
+  { dir := "Notation", module := `Notation, strip := #[`Notation],
+    keys := #["Notation.arith", "Notation.logic", "Notation.sets", "Notation.order",
+      "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.typed"],
+    views := #["math", "prose", "math:named"] },
   { dir := "Trust", module := `Trust, strip := #[`Trust],
     keys := #["Trust.double_even", "Trust.double_even_renamed", "Trust.pairMap_fst",
       "Trust.pairMap_fst_renamed",
@@ -60,7 +66,8 @@ def maskToolchain (bundle : String) : String :=
     if l.trimAscii.toString.startsWith "\"lean\": \"v4." then "    \"lean\": \"v4.x\"," else l)
 
 /-- Export a fixture's bundle in-process. -/
-unsafe def exportFixture (f : Fixture) : IO ExportResult := do
+unsafe def exportFixture (f : Fixture) (used : Option (IO.Ref (Array String)) := none) :
+    IO ExportResult := do
   let dir := fixturesDir / f.dir
   let lib := dir / ".lake" / "build" / "lib" / "lean"
   unless ← lib.pathExists do
@@ -70,8 +77,9 @@ unsafe def exportFixture (f : Fixture) : IO ExportResult := do
     throw (IO.userError s!"cannot import {f.module} from {dir}: {e}\n\
       Rebuild the fixtures with the current toolchain (scripts/test-all.sh does).")
   let settings : Settings := { imports := #[f.module], stripNamespaces := f.strip }
-  let reqs := f.keys.map fun k => { key := k, views := #["lean", "meta"] }
-  exportBundle env dir settings reqs
+  let reqs := f.keys.map fun k => { key := k, views := f.views }
+  let (entries, warnings) ← exportEntries env dir settings reqs (used := used)
+  return { bundle := renderBundle entries none, entries := entries.size, warnings }
 
 /-- A bundle's entry for a key, as JSON. -/
 def entry? (bundle : String) (key : String) : Option Json :=
@@ -156,7 +164,8 @@ unsafe def tests : TestM Unit := group "fixtures" do
   challengeTest
   IO.FS.createDirAll "out"
   for f in fixtures do
-    let r ← exportFixture f
+    let used ← IO.mkRef #[]
+    let r ← exportFixture f used
     IO.FS.writeFile ("out" / s!"{f.dir}.bundle.json") r.bundle
     golden s!"extract/golden/{f.dir}" ("golden" / s!"{f.dir}.bundle.json") (maskToolchain r.bundle)
     match f.dir with
@@ -173,6 +182,14 @@ unsafe def tests : TestM Unit := group "fixtures" do
       checkEq "extract/modules/private-sorry-seen" (usesSorry r.bundle "ModuleSys.pub_thm") (some true)
       checkEq "extract/modules/sorry-through-import-all" (usesSorry r.bundle "ModuleSys.via_all") (some true)
       checkEq "extract/modules/honest" (axioms r.bundle "ModuleSys.honest") #[]
+    | "Notation" =>
+      -- PLAN M4: every pack rule has a golden use.
+      let usedRules ← used.get
+      let unused := (Packs.all.toArray.flatMap (·.2)).filter fun r =>
+        !usedRules.contains s!"{r.origin}: {r.template}"
+      checkEq "extract/notation/every-pack-rule-used" (unused.map (·.template)) #[]
+      checkEq "extract/notation/no-render-errors"
+        (f.keys.filter fun k => ((entry? r.bundle k).bind (·.getObjVal? "errors" |>.toOption)).isSome) #[]
     | "Trust" =>
       checkEq "extract/trust/same-hash-renamed-binder"
         (field r.bundle "Trust.double_even" "stmtHash") (field r.bundle "Trust.double_even_renamed" "stmtHash")

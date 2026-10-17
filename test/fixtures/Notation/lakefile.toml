@@ -1,0 +1,12 @@
+# The `Notation` fixture (PLAN §2.2): every feature of a notation rule
+# (DESIGN §7.5), and a use of every rule of the notation packs. It requires
+# imprimatur, as a project in in-project mode does.
+name = "notation-fixture"
+defaultTargets = ["Notation"]
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"
+
+[[lean_lib]]
+name = "Notation"

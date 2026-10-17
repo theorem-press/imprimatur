@@ -27,6 +27,17 @@ Theorem~\ref{thm:add} has an injective companion:
 \LeanCodeInline{m = n}.}
 \end{leanblock}
 
+\section{The same results as mathematics}
+
+With the notation $2n$ for doubling, distributivity reads
+\begin{leanblock}[view=math, sum=Wb00DNEEwc]{Minimal.double_add}{Distributivity}
+\LeanMath{2(m + n) = 2m + 2n}
+\end{leanblock}
+and injectivity, in words:
+\begin{leanblock}[view=prose, sum=vngoStrHR1]{Minimal.double_injective}{Injectivity}
+\LeanProse{Let $m, n \in \mathbb{N}$. Assume \LeanHyp{h} $2m = 2n$. Then $m = n$.}
+\end{leanblock}
+
 Both results are checked \leancheck{Minimal.double_add, Minimal.double_injective}
 against Lean.
 

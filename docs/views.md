@@ -3,7 +3,7 @@
 *For authors of papers that use imprimatur: what each view produces, and the
 macros `tex/imprimatur.sty` defines for it. Redefine any of these macros to
 change the style. [DESIGN.md](../DESIGN.md) §7.3 lists all the planned views.
-This page covers the ones that exist: `lean` and `meta`.*
+This page covers the ones that exist: `lean`, `meta`, `math` and `prose`.*
 
 ## `lean`: the signature as Lean prints it
 
@@ -63,8 +63,42 @@ chosen when splicing:
 
 `\leanmetasource` prints nothing when the location is empty.
 
+## `math`: a declaration as a formula
+
+```latex
+\LeanMath{2(m + n) = 2m + 2n}
+```
+
+Using the notation in scope ([notation.md](notation.md)):
+
+- **A theorem** is its statement. The outer variables are left out, as a
+  paper states a result, and the hypotheses become premises:
+  `P \wedge Q \implies C`.
+- **A non-recursive definition** is `f\,x \mathrel{:=} body`.
+- **Anything else** is `name : type`.
+
+**Long formulas.** The formula is broken with `\LeanBreak` at its outermost
+connectives when it is wider than three quarters of `width` in
+`imprimatur.toml`: 60 characters by default. The fraction is there because
+mathematics sets wider than monospace. `\LeanMath` sets the lines as an array.
+
+**Variants.** `notation=named` on a block selects the rules of variant
+`named`.
+
+## `prose`: a theorem as a sentence
+
+```latex
+\LeanProse{Let $m, n \in \mathbb{N}$. Assume \LeanHyp{h} $2m = 2n$. Then $m = n$.}
+```
+
+The prose is built in four parts:
+
+- **Variables** are grouped when they have the same type.
+- **Hypotheses** are labelled with their names (`\LeanHyp`).
+- **The conclusion** is numbered when it is a conjunction. `↔` reads "if and
+  only if", and `∃ x, p` reads "there is x such that p".
+- **A definition** reads "We define …".
+
 ## Views to come
 
-`math`, `prose`, `rules` and `grammar` come with the notation language
-(PLAN M4 and M5). Asking for one of them today records the reason in the
-bundle, and the splicer reports `missing-view` with that reason.
+`rules` and `grammar` come in PLAN M5.

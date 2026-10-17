@@ -3,4 +3,5 @@ main = "paper.tex"
 lean_project = "host"
 mode = "external"
 imports = ["Shapes"]
+notation = ["notation/ShapesTeX.lean"]
 strip_namespaces = ["Shapes"]

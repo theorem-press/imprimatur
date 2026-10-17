@@ -110,7 +110,8 @@ def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × Stri
   writeAtomic reqs (requests doc)
   let leanDir := root / cfg.leanProject
   unless ← leanDir.pathExists do throw s!"lean_project {cfg.leanProject} does not exist"
-  let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString]
+  let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString,
+    "--base", (← IO.FS.realPath root).toString]
   let exportOut ← if cfg.mode == "external" then
       -- External mode (DESIGN §6.3 A): a cached extractor built with the host's
       -- toolchain runs under the host's `lake env`. Nothing in the host changes,
