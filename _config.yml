@@ -1,0 +1,32 @@
+# GitHub Pages site, built by .github/workflows/pages.yml. The site is the
+# repository's Markdown: README.md becomes the home page, and relative links
+# between .md files become links between pages.
+title: imprimatur
+description: Keep the LaTeX of a paper in step with a Lean 4 development.
+theme: jekyll-theme-primer
+
+plugins:
+  - jekyll-relative-links
+  - jekyll-optional-front-matter
+  - jekyll-readme-index
+  - jekyll-titles-from-headings
+
+relative_links:
+  enabled: true
+  collections: false
+
+# Code, fixtures and tooling are not part of the site.
+exclude:
+  - .github/
+  - .lake/
+  - extract/
+  - schema/
+  - scripts/
+  - splice/
+  - test/
+  - testkit/
+  - tex/
+  - "*.lean"
+  - lakefile.toml
+  - lean-toolchain
+  - lake-manifest.json
