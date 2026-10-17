@@ -1,0 +1,5 @@
+.lake/
+*.olean
+/test/e2e-out/
+_site/
+.jekyll-cache/
