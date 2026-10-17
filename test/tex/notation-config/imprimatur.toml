@@ -1,0 +1,10 @@
+schema = 1
+main = "main.tex"
+mode = "external"
+lean_project = "lean"
+notation = ["tex/PaperTeX.lean"]
+notation_packs = ["core", "logic"]
+width = 60
+
+[aliases]
+leantheorem = { view = "math", wrap = "theorem" }

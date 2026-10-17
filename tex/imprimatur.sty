@@ -10,6 +10,7 @@
 \NeedsTeXFormat{LaTeX2e}[2020/10/01]
 \ProvidesPackage{imprimatur}[2026/10/17 v0.0.0 Lean declarations in LaTeX]
 
+\RequirePackage{amsmath}
 \RequirePackage{amssymb}
 \RequirePackage{newunicodechar}
 
@@ -106,6 +107,19 @@
 \newcommand\LeanUsesSorry{\textbf{uses sorry}}
 \newcommand\LeanMeta[4]{{\small #1Axioms: \ifx\relax#2\relax none\else #2\fi;
   #3.\ifx\relax#4\relax\else\space #4\fi}}
+
+% ---------------------------------------------------------------------------
+% The math and prose views (DESIGN 7.3). \LeanMath sets a formula; when it is
+% too wide, \LeanBreak separates its lines, which are set as the rows of a
+% left-aligned array, the later ones indented.
+\newcommand\LeanMath[1]{\ensuremath{\begin{array}[t]{@{}l@{}}#1\end{array}}}
+\newcommand\LeanBreak{\\\quad}
+% A constant with no notation, and Lean's own rendering of what has none.
+\newcommand\LeanMathConst[1]{\mathsf{#1}}
+\newcommand\LeanMathCode[1]{\text{\LeanCode{#1}}}
+% Prose, and the label of a hypothesis in it.
+\newcommand\LeanProse[1]{#1}
+\newcommand\LeanHyp[1]{(\textup{#1})}
 
 % ---------------------------------------------------------------------------
 % Unicode that Lean prints, mapped to maths so that pdfLaTeX needs no special

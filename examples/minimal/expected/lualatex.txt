@@ -13,6 +13,14 @@ theorem double_injective {m n : Nat} (h : double m = double n ) : m = n
 Lean: Minimal/Basic.lean:15. Axioms: Quot.sound, propext; sorry-free. Doubling
 is injective, for all m and n: if double m = double n then m = n.
 
+2
+
+The same results as mathematics
+
+With the notation 2n for doubling, distributivity reads
+2(m + n) = 2m + 2n
+and injectivity, in words:
+Let m, n ∈ N. Assume (h) 2m = 2n. Then m = n.
 Both results are checked against Lean.
 
 1

@@ -134,10 +134,15 @@ def requests (doc : Doc) : String := Id.run do
   let challenges := doc.manifests.foldl (fun acc m => match m.challengeModule with
     | some cm => acc ++ m.theorems.map (q · ++ ": " ++ q cm)
     | none => acc) #[]
+  -- Settings that are left out when not given, so the extractor's defaults apply.
+  let extra := String.join [
+    match c.notationPacks with | some ps => s!", \"notation_packs\": {list ps}" | none => "",
+    if c.notationFiles.isEmpty then "" else s!", \"notation\": {list c.notationFiles}",
+    match c.width with | some w => s!", \"width\": {w}" | none => ""]
   let config := s!"  \"config\": \{\"imports\": {list imports}, \
     \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces},\n    \
     \"trusted_prefixes\": {list c.trustedPrefixes}, \
-    \"challenges\": \{{", ".intercalate challenges.toList}}},\n"
+    \"challenges\": \{{", ".intercalate challenges.toList}}{extra}},\n"
   return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n{config}  \"requests\": \{\n\
     {",\n".intercalate lines.toList}\n  }\n}\n"
 

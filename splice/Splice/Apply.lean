@@ -120,11 +120,15 @@ def bracesBalance (t : String) : Bool :=
   | .ok (_, _, after) => after == s.size
   | .error _ => false
 
-/-- The view an item asks for. -/
+/-- The view an item asks for. With `notation=V`, the view is written
+`view:V`, which the extractor renders with notation variant `V`. -/
 def itemView (cfg : Config) (it : Item) : String :=
-  match it.opt? "view" with
-  | some v => v
-  | none => ((cfg.alias? it.name).map (·.view)).getD "lean"
+  let view := match it.opt? "view" with
+    | some v => v
+    | none => ((cfg.alias? it.name).map (·.view)).getD "lean"
+  match it.opt? "notation" with
+  | some n => view ++ ":" ++ n
+  | none => view
 
 /-- The slot declaration that applies to an item. -/
 def itemSlots (cfg : Config) (it : Item) : Option SlotSpec :=

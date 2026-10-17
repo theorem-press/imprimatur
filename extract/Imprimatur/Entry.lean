@@ -9,6 +9,8 @@ import Imprimatur.Compat
 import Imprimatur.Requests
 import Imprimatur.Views.Lean
 import Imprimatur.Trust
+import Imprimatur.Packs
+import Imprimatur.Views.Math
 
 /-!
 # Bundle entries
@@ -108,9 +110,17 @@ def guarded {α : Type} (x : MetaM α) : MetaM (Except String α) := do
 /-- Views this extractor renders. -/
 def knownViews : List String := ["lean", "meta"]
 
+/-- The rendering context for the notation in scope: the project's rules and
+the selected packs. `used` collects the rules that fire. -/
+def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array String)) :
+    MetaM Render.Ctx := do
+  let env ← getEnv
+  return { rules := projectRules env ++ Packs.select s.notationPacks,
+           metavars := projectMetavars env, variant, strip := s.stripNamespaces, used }
+
 /-- The entry for a constant, as JSON. -/
-def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : ConstantInfo) :
-    MetaM J := do
+def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : ConstantInfo)
+    (used : IO.Ref (Array String)) : MetaM J := do
   let env ← getEnv
   -- IMPRIMATUR_TRACE=1 reports each stage, for finding what is slow.
   let trace ← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)
@@ -134,7 +144,21 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
       | .ok v => views := views.push ("lean", .str v); stage "lean view"
       | .error msg => errors := errors.push ("lean", .str msg)
     | "meta" => views := views.push ("meta", .str (metaView axioms usesSorry doc))
-    | other => errors := errors.push (other, .str s!"the {other} view is not implemented yet")
+    | other =>
+      -- `math`, `prose`, and their variants: `math:named` uses the notation
+      -- variant `named` (DESIGN §7.5).
+      let (base, variant) := match other.splitOn ":" with
+        | [b, v] => (b, some v)
+        | _ => (other, none)
+      if base == "math" || base == "prose" then
+        let ctx ← renderCtx s variant used
+        let act : MetaM String :=
+          if base == "math" then (Views.mathView c s.width).run ctx else (Views.proseView c s.width).run ctx
+        match ← guarded act with
+        | .ok v => views := views.push (other, .str v)
+        | .error msg => errors := errors.push (other, .str msg)
+      else
+        errors := errors.push (other, .str s!"the {other} view is not implemented yet")
   let allTeX := String.join (views.toList.map fun (_, j) => match j with | .str t => t | _ => "")
   stage "views"
   -- The dependency cone and the hashes (DESIGN §7.7).

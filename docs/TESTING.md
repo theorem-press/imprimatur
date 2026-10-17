@@ -73,7 +73,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§3 | prior art | — | n/a |
 | D§4 | (1) the extractor builds and runs on every supported toolchain | `extract/version/lean`, `extract/golden/Basic` | M0 |
 | D§4 | (2) the splicer imports nothing from Lean but `Lean.Data.Json` | `lint/splice-imports` | M1 |
-| D§4 | (3) a notation rule naming a missing constant fails at build time | — | M4 |
+| D§4 | (3) a notation rule naming a missing constant fails at build time (checked when the `Notation` fixture builds; the messages are tested by hand) | `extract/golden/Notation` | M4 |
 | D§4 | (4) every declaration has a default rendering (the `lean` view) | `extract/golden/Basic`, `integration/planet-lean-view`, `integration/math-lean-view` | M2 |
 | D§4 | (5) external mode changes nothing in the host project | `e2e/external` | M3 |
 | D§4 | (6) shipped packages have no Lake dependencies | `lint/no-deps` | M0 (lint) |
@@ -81,19 +81,20 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§5 | extractor and splicer communicate only through the bundle | `splice/version/schema`, `extract/version/schema` | M1 |
 | D§5 | `imprimatur build` runs scan, export, apply; `check` passes after it | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§6.1 | `imprimatur.toml` is parsed; unknown keys and bad values are reported | `splice/toml/parses`, `splice/toml/duplicate-key`, `splice/toml/error-line`, `splice/config/parses`, `splice/config/unknown-key`, `splice/config/alias-needs-view`, `splice/config/url-needs-template`, `splice/golden/config-errors` | M1 |
-| D§6.2 | the notation module is elaborated and its names resolved | — | M4 |
+| D§6.2 | the notation module is elaborated and its names resolved, in-project and as a file in external mode | `extract/golden/Notation`, `e2e/minimal`, `e2e/external` | M4 |
 | D§6.3 | sidecar and in-project modes | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§6.3 | external mode, with `imprimatur toolchain install` | `e2e/external`, `integration/math-manifests`, `integration/planet-drift` | M3 |
-| D§7.1 | `Doc` emitter: escaping, parenthesisation, line breaking | — | M4 |
-| D§7.2 | notation matches `Expr`; unmatched subterms are delaborated | — | M4 |
+| D§7.1 | `Doc` emitter: escaping, parenthesisation, line breaking | `extract/doc/escape-specials`, `extract/doc/width-symbols`, `extract/doc/width-wrappers`, `extract/doc/width-spacing`, `extract/doc/width-scripts`, `extract/doc/width-given`, `extract/doc/no-parens-left-assoc`, `extract/doc/parens-right`, `extract/doc/parens-tighter`, `extract/doc/no-parens-looser`, `extract/doc/width-counts-parens`, `extract/doc/fits-unbroken`, `extract/doc/breaks-outermost`, `extract/doc/breaks-deeper-when-needed` | M4 |
+| D§7.2 | notation matches `Expr`; unmatched subterms are rendered as functions, or delaborated | `extract/golden/Notation`, `extract/notation/no-render-errors` | M4 |
 | D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic`, `integration/planet-lean-view` | M2 |
 | D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
-| D§7.3 | `math` and `prose` views | — | M4 |
+| D§7.3 | `math` and `prose` views | `extract/golden/Notation`, `e2e/minimal`, `e2e/fixture-views`, `integration/math-prose` | M4 |
 | D§7.3 | `rules` and `grammar` views | — | M5 |
 | D§7.3 | custom views through `@[latex_view]` | — | M5 |
 | D§7.4 | rule label precedence | — | M5 |
-| D§7.5 | notation rules: patterns, templates, `prec`, `width`, `hide`, `variant`, `flatten`, lookup order, metavariables | — | M4 |
-| D§7.5 | the bundle records the macros each rendering uses | — | M4 |
+| D§7.5 | notation rules: patterns, templates, `prec`, `width`, `hide`, `variant`, `flatten`, typed patterns, lookup order, metavariables | `extract/golden/Notation`, `extract/doc/template-prime`, `extract/doc/template-longest`, `extract/doc/template-unknown`, `extract/doc/metavar-subscript`, `extract/doc/metavar-digits`, `extract/doc/metavar-prime`, `extract/doc/metavar-long`, `extract/doc/metavar-renamed`, `splice/golden/notation-config` | M4 |
+| D§7.5 | packs: every rule has a golden use, and the output typesets with both engines | `extract/notation/every-pack-rule-used`, `e2e/fixture-views` | M4 |
+| D§7.5 | the bundle records the macros each rendering uses | `extract/golden/Notation` | M4 |
 | D§7.6 | premise conventions | — | M5 |
 | D§7.7 | axioms and `sorry` | `extract/trust/direct-sorry`, `extract/trust/custom-axiom`, `extract/trust/classical-axioms`, `extract/trust/sorry-in-proof-chain`, `extract/trust/sorry-in-statement`, `extract/trust/custom-axiom-trust`, `extract/modules/private-sorry-seen` | M2 |
 | D§7.7 | dependency cone up to `trusted_prefixes`, with reasons | `extract/trust/cone-sorry`, `extract/trust/cone-partial`, `extract/trust/cone-clean`, `splice/golden/cone` | M3 |

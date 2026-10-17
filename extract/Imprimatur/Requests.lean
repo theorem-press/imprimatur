@@ -44,6 +44,10 @@ structure Settings where
   challenges : Array (String × Name) := #[]
   /-- The heartbeat limit per entry, in thousands, as Lean's `maxHeartbeats`. -/
   maxHeartbeats : Nat := 200000
+  /-- Notation packs to use, in order (DESIGN §7.5). -/
+  notationPacks : Array String := #["core", "logic", "sets", "order"]
+  /-- Notation modules given as files, elaborated in-process (external mode). -/
+  notationFiles : Array String := #[]
   deriving Repr
 
 /-- One requested key. -/
@@ -95,6 +99,10 @@ def parseRequests (text : String) : Except String (Settings × Array Request) :=
     | .error _ => pure #[]
   let maxHeartbeats := (cfg.getObjValAs? Nat "max_heartbeats").toOption.getD 200000
   let settings := { settings with challenges, maxHeartbeats }
+  let settings := { settings with notationFiles := (get "notation").toOption.getD #[] }
+  let settings := match cfg.getObjVal? "notation_packs" with
+    | .ok _ => { settings with notationPacks := (get "notation_packs").toOption.getD #[] }
+    | .error _ => settings
   let reqs ← match (j.getObjVal? "requests").toOption.bind (·.getObj?.toOption) with
     | some kvs => kvs.toArray.mapM fun ⟨k, v⟩ => do
         let views ← match v.getObjVal? "views" with

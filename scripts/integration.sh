@@ -133,6 +133,36 @@ PY
   fi
 fi
 
+if [ -f "$MATH_ROOT/OAI/SetTheory/PartitionPrinciple/Models/Separation.lean" ]; then
+  echo "== integration/math-prose: the partition-principle theorem in the prose view"
+  # PLAN M4, done when: rendered with the notation in scripts/integration/math,
+  # it must match the agreed text (target-prose.tex), and typeset.
+  prose="$work/math-prose"; mkdir -p "$prose"
+  tc=$(sed 's/.*://' "$MATH_ROOT/lean-toolchain")
+  "$IMPRIMATUR" toolchain install "$tc" > /dev/null
+  key=OAI.PartitionPilot.Forcing.TransitiveGround.exists_model_partitionPrinciple_without_choice
+  printf '{"schema": "imprimatur-requests/1", "config": {"imports": [], "strip_namespaces": ["OAI", "OAI.PartitionPilot.Forcing"], "notation": ["PartitionTeX.lean"]}, "requests": {"%s": {"views": ["prose", "math"]}}}' "$key" > "$prose/requests.json"
+  (cd "$MATH_ROOT" && lake env "$IMPRIMATUR_CACHE/toolchains/$tc/.lake/build/bin/imprimatur-export" \
+    --requests "$prose/requests.json" --out "$prose/bundle.json" --base "$ROOT/scripts/integration/math") 2>&1 \
+    | grep -v "local changes" | sed 's/^/  /'
+  python3 - "$prose/bundle.json" "$prose" <<'PY'
+import json, sys
+e = list(json.load(open(sys.argv[1]))["entries"].values())[0]
+open(sys.argv[2] + "/prose.tex", "w").write(e["views"]["prose"] + "\n")
+open(sys.argv[2] + "/paper.tex", "w").write("\\documentclass{article}\\usepackage{imprimatur}\\begin{document}\n"
+    + e["views"]["prose"] + "\n\n\\[" + e["views"]["math"] + "\\]\n\\end{document}\n")
+PY
+  sed 's/^/  /' "$prose/prose.tex"
+  if ! diff -u "scripts/integration/math/target-prose.tex" "$prose/prose.tex" > "$prose/diff.txt"; then
+    echo "  FAIL: the prose differs from the agreed text:"; sed 's/^/    /' "$prose/diff.txt"; failures=1
+  fi
+  if ! (cd "$prose" && TEXINPUTS="$ROOT/tex//:" latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex > latexmk.log 2>&1); then
+    echo "  FAIL: the prose doesn't typeset"; failures=1
+  else
+    echo "  typeset: $prose/paper.pdf"
+  fi
+fi
+
 if [ -f "$PLANET_ROOT/Planet/Paper.lean" ]; then
   echo "== integration/planet-drift: a weakened copy of a PLanet theorem is caught as drift"
   scratch="$work/planet-drift"; mkdir -p "$scratch/olean"

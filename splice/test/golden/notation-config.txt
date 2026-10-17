@@ -1,0 +1,30 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}, "notation_packs": ["core", "logic"], "notation": ["tex/PaperTeX.lean"], "width": 60},
+  "requests": {
+    "Demo.thm": {"views": ["math", "math:named", "prose"]}
+  }
+}
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 3 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice --config bad-pack.toml scan
+error: bad-pack.toml: notation_packs: unknown pack "calculus"; the packs are core, logic, sets and order
+[exit 2]
+
+== main.tex
+\begin{leantheorem}[sum=9YIwLywaBN]{Demo.thm}{Default notation}
+\LeanMath{2n = n + n}
+\end{leantheorem}
+\begin{leantheorem}[notation=named, sum=tKCQv1ln32]{Demo.thm}{Named notation}
+\LeanMath{\mathrm{dbl}(n) = n + n}
+\end{leantheorem}
+\begin{leanblock}[view=prose, sum=XYfkd9IGdz]{Demo.thm}{Prose}
+\LeanProse{Let $n \in \mathbb{N}$. Then $2n = n + n$.}
+\end{leanblock}
+

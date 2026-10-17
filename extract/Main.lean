@@ -9,9 +9,10 @@ import Imprimatur
 
 The extractor's command line (DESIGN §12):
 
-    imprimatur-export --requests requests.json --out bundle.json [--project NAME]
+    imprimatur-export --requests requests.json --out bundle.json [--base DIR] [--project NAME]
 
-It runs in the Lean project, under `lake env` or `lake exe`, so that the
+Notation files named in the requests are relative to `--base`, the directory
+of `imprimatur.toml`. It runs in the Lean project, under `lake env` or `lake exe`, so that the
 project's modules are on the search path. Source paths in the bundle are
 relative to the current directory.
 -/
@@ -20,7 +21,7 @@ open Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
-  "usage: imprimatur-export --requests requests.json --out bundle.json [--project NAME] [--verbose]\n\
+  "usage: imprimatur-export --requests requests.json --out bundle.json [--base DIR] [--project NAME] [--verbose]\n\
    \x20      imprimatur-export --version"
 
 /-- Parse `--flag value` pairs. -/
@@ -42,7 +43,7 @@ unsafe def main (args : List String) : IO UInt32 := do
   let (settings, reqs) ← match parseRequests text with
     | .ok r => pure r
     | .error e => IO.eprintln s!"imprimatur-export: {reqPath}: {e}"; return (2 : UInt32)
-  if settings.imports.isEmpty then
+  if settings.imports.isEmpty && settings.notationFiles.isEmpty then
     IO.eprintln "imprimatur-export: no modules to import; set imports in imprimatur.toml"
     return 2
   -- The host's search path (from `lake env`), and this program's own library,
@@ -50,7 +51,15 @@ unsafe def main (args : List String) : IO UInt32 := do
   Lean.initSearchPath (← Lean.findSysroot) [(← IO.appDir) / ".." / "lib" / "lean"]
   let root ← IO.currentDir
   let main := reqs.filter (!·.key.endsWith challengeSuffix)
-  let (entries, warnings) ← match ← (Compat.importPrivate settings.imports).toBaseIO with
+  -- Notation files (external mode) are elaborated, with the imports; otherwise
+  -- the imports are imported.
+  let base : System.FilePath := (flag args "--base").getD "."
+  let load : IO Lean.Environment :=
+    match settings.notationFiles.toList with
+    | [] => Compat.importPrivate settings.imports
+    | [f] => Compat.elaborateNotation (base / f) settings.imports
+    | _ => throw (IO.userError "only one notation file is supported; import the others from it")
+  let (entries, warnings) ← match ← load.toBaseIO with
     | .ok env => exportEntries env root settings main (args.contains "--verbose")
     | .error e =>
       IO.eprintln s!"imprimatur-export: cannot import {settings.imports}: {e}\n\
