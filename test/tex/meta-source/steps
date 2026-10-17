@@ -1,0 +1,5 @@
+scan
+apply --bundle demo.bundle.json --profile none
+check --bundle demo.bundle.json
+apply --bundle demo.bundle.json
+check --bundle demo.bundle.json

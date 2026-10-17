@@ -1,8 +1,39 @@
 # Blocks and the splicer
 
 *For authors of papers that use imprimatur. This page describes the TeX markup
-and what `imprimatur-splice` does with it. [DESIGN.md](../DESIGN.md) §9–§10
+and what `imprimatur-splice` does with it; [views.md](views.md) describes the
+generated content. [DESIGN.md](../DESIGN.md) §9–§10
 gives the reasoning behind it.*
+
+## Setting up
+
+Put `imprimatur.toml` next to the main `.tex` file:
+
+```toml
+schema = 1
+main = "paper.tex"
+lean_project = "lean"            # the package that requires imprimatur
+mode = "in-project"              # or "sidecar"
+imports = ["Minimal"]            # the modules declarations come from
+strip_namespaces = ["Minimal"]
+
+[aliases]
+leantheorem = { view = "lean", wrap = "theorem" }
+```
+
+Then add `\usepackage{imprimatur}` to the paper (`tex/imprimatur.sty`), and
+for each alias `\leanblockalias{leantheorem}{theorem}`. Run
+`imprimatur build` after changing the Lean or the paper, and
+`imprimatur check` in CI.
+
+The Lean project must require imprimatur, in one of two ways:
+
+- **In-project.** The project's own lakefile requires
+  `imprimatur` (`subDir = "extract"`).
+- **Sidecar.** A small package next to the project requires both the project
+  and `imprimatur`, so the project itself doesn't change.
+
+`examples/minimal` and `examples/sidecar` show both.
 
 ## Markup
 
@@ -103,6 +134,8 @@ position into `\leanslot` form. It matches each old slot to the new
 | `imprimatur-splice check --bundle B` | reports what `apply` would change, without writing. Options: `--diff`, `--check-fail-msg MSG` |
 | `imprimatur-splice strip -o DIR` | writes a copy without markers: blocks become their content, wrapped in `wrap` if given; slots become their text; `\leancheck` and `\leanindex` disappear |
 | `imprimatur-splice migrate-slots --bundle B` | see Slots above |
+| `imprimatur build` | `scan`, then `imprimatur-export` in `lean_project`, then `apply`; takes `apply`'s options |
+| `imprimatur check` | the same, with `check` instead of `apply`; writes only the bundle, in `.imprimatur/` |
 
 The configuration is `imprimatur.toml` in the current directory, or
 `--config FILE`. With `--main FILE.tex`, no configuration file is needed.

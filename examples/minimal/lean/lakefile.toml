@@ -1,0 +1,12 @@
+# The Lean project of examples/minimal, in in-project mode (DESIGN §6.3 C):
+# it requires imprimatur itself. A real project would use
+#   git = "https://github.com/theorem-press/imprimatur", rev = "...", subDir = "extract"
+name = "minimal"
+defaultTargets = ["Minimal"]
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"
+
+[[lean_lib]]
+name = "Minimal"

@@ -44,8 +44,9 @@ of done is PLAN §5:
   and nowhere else (DESIGN §13).
 - The extractor must build on every toolchain in the matrix. Avoid APIs that
   were added, renamed or deprecated inside that range. For example,
-  `String.mk` is deprecated in v4.35 and `String.ofList` doesn't exist in
-  v4.28, so `testkit` builds strings with `String.push`.
+  `String.mk` and `String.trim` are deprecated from v4.28; use
+  `String.ofList` and `String.trimAscii`. Check an API in each toolchain's
+  sources (`~/.elan/toolchains/*/src/lean`) before relying on it.
 
 ## Branches and releases
 
