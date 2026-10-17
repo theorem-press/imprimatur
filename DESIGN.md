@@ -268,7 +268,7 @@ name = "planet-lean"
 path = "../named/planet-lean/planet-lean"
 [[require]]
 name = "imprimatur"
-git = "https://github.com/OWNER/imprimatur"
+git = "https://github.com/theorem-press/imprimatur"
 rev = "v0.3.0"
 subDir = "extract"
 [[lean_lib]]
