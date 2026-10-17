@@ -18,12 +18,16 @@ export TEXINPUTS="$ROOT/tex//:"
 IMPRIMATUR="$ROOT/splice/.lake/build/bin/imprimatur"
 status=0
 
-compare() {  # compare GOT EXPECTED-FILE NAME
-  local got=$1 want=$2 name=$3
+compare() {  # compare GOT EXPECTED-FILE NAME [loose]
+  # With "loose", spaces within lines are ignored: pdftotext versions differ
+  # in where they put spaces (`(m + n )` against `(m + n)`).
+  local got=$1 want=$2 name=$3 loose=${4:-}
+  local opts=-u
+  [ "$loose" = loose ] && opts="-u --ignore-all-space"
   if [ "${UPDATE_GOLDEN:-}" = 1 ]; then
     mkdir -p "$(dirname "$want")"
     if ! cmp -s "$got" "$want" 2>/dev/null; then cp "$got" "$want"; echo "  updated $want"; fi
-  elif ! diff -u "$want" "$got" > "$got.diff" 2>&1; then
+  elif ! diff $opts "$want" "$got" > "$got.diff" 2>&1; then
     echo "  FAIL: $name differs from $want:"; head -40 "$got.diff" | sed 's/^/    /'
     status=1
   fi
@@ -65,7 +69,7 @@ for dir in examples/*/; do
       status=1
     fi
     pdftotext "$work/out-$engine/paper.pdf" - | normalise > "$work/$engine.txt"
-    compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text"
+    compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
 [ $status = 0 ] && echo "e2e: all examples passed"

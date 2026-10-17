@@ -43,13 +43,14 @@ want splice && lean_tests splice
 if want extract; then
   # The fixture Lean projects must build on every toolchain in the matrix. The
   # weak variant of Trust is built first, so the extractor tests see the
-  # default (strong) one.
+  # default (strong) one. Lake caches -K options with the configuration, so
+  # each build reconfigures (-R).
   tc=${toolchain:-$(sed 's/.*://' extract/lean-toolchain)}
   step "fixture test/fixtures/Trust, weak variant, on $tc"
-  (cd test/fixtures/Trust && ELAN_TOOLCHAIN="leanprover/lean4:$tc" lake build -q -Kweak=1)
+  (cd test/fixtures/Trust && ELAN_TOOLCHAIN="leanprover/lean4:$tc" lake build -q -R -Kweak=1)
   for fx in test/fixtures/*/; do
     step "fixture $fx on $tc"
-    (cd "$fx" && ELAN_TOOLCHAIN="leanprover/lean4:$tc" lake build -q)
+    (cd "$fx" && ELAN_TOOLCHAIN="leanprover/lean4:$tc" lake build -q -R)
   done
   lean_tests extract "$toolchain"
 fi
