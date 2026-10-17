@@ -1,0 +1,18 @@
+# Test-only package: the harness, golden files and generator shared by
+# imprimatur's test packages. Shipped packages never depend on it (PLAN §1.6).
+name = "imprimatur-testkit"
+version = "0.0.0"
+defaultTargets = ["Testkit"]
+testDriver = "selftest"
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+linter.all = true
+
+[[lean_lib]]
+name = "Testkit"
+
+[[lean_exe]]
+name = "selftest"
+root = "SelfTest"

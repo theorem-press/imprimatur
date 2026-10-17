@@ -1,0 +1,24 @@
+# Tests of the splicer (PLAN §2). A separate package, so that the test
+# harness never becomes a dependency of the shipped `imprimatur-splice`
+# package. Its toolchain is the parent directory's `lean-toolchain`.
+name = "imprimatur-splice-test"
+version = "0.0.0"
+defaultTargets = ["tests"]
+testDriver = "tests"
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+linter.all = true
+
+[[require]]
+name = "imprimatur-splice"
+path = ".."
+
+[[require]]
+name = "imprimatur-testkit"
+path = "../../testkit"
+
+[[lean_exe]]
+name = "tests"
+root = "SpliceTests"

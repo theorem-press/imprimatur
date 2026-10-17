@@ -1,0 +1,20 @@
+# The extractor (DESIGN §5). It depends on Lean core only and must have no
+# Lake dependencies (DESIGN §4, constraint 6). Warnings are errors in CI
+# (`lake build --wfail`), but not here, so that users on a newer toolchain
+# are not broken by a new deprecation.
+name = "imprimatur"
+version = "0.0.0"
+defaultTargets = ["Imprimatur", "imprimatur-export"]
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+linter.all = true
+
+[[lean_lib]]
+name = "Imprimatur"
+
+[[lean_exe]]
+name = "imprimatur-export"
+root = "Main"
+supportInterpreter = true

@@ -1,0 +1,25 @@
+# Tests of the extractor (PLAN §2). A separate package, so that the test
+# harness never becomes a dependency of the shipped `imprimatur` package. Its
+# toolchain is the parent directory's `lean-toolchain`.
+name = "imprimatur-test"
+version = "0.0.0"
+defaultTargets = ["tests"]
+testDriver = "tests"
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+linter.all = true
+
+[[require]]
+name = "imprimatur"
+path = ".."
+
+[[require]]
+name = "imprimatur-testkit"
+path = "../../testkit"
+
+[[lean_exe]]
+name = "tests"
+root = "ExtractTests"
+supportInterpreter = true

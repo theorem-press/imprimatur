@@ -17,7 +17,10 @@ with no preprocessor. The host Lean project doesn't need to change.
 
 ## Status
 
-Design only; there is no code yet. See [DESIGN.md](DESIGN.md) for:
+Early development: the repository layout, test harness and CI exist, and
+nothing user-facing works yet. [PLAN.md](PLAN.md) gives the build order, and
+[CONTRIBUTING.md](CONTRIBUTING.md) explains how to work on the code. See
+[DESIGN.md](DESIGN.md) for:
 
 - the architecture: a Lean-side extractor and a text-only splicer, connected
   by a versioned JSON bundle;

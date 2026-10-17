@@ -139,6 +139,14 @@ needed a change to DESIGN.md.
 S1 and S2 run in the first week, since external mode and hashing shape
 milestones M2 and M3.
 
+**Results.**
+- S1 succeeded on all three projects:
+  [docs/spikes/S1-external-mode.md](docs/spikes/S1-external-mode.md).
+- S2 succeeded once definitions are hashed by their equation lemmas, not their
+  bodies: [docs/spikes/S2-stable-hashing.md](docs/spikes/S2-stable-hashing.md).
+- DESIGN.md revision 3 takes in both results. S3 is still to do, before M5 is
+  planned.
+
 ## 4. Milestones
 
 Each milestone ends with green CI, an updated traceability matrix, and a
@@ -146,6 +154,14 @@ tag. "Tests first" means the listed tests are merged, failing, before the
 code that makes them pass.
 
 ### M0 — Foundations (no release)
+
+*Status: done on branch `m0-foundations` (2026-10-17), apart from green CI on
+GitHub, which needs the branch pushed. §7's decisions were taken at their
+defaults:*
+- *our own generator, not Plausible;*
+- *the toolchains v4.28.0-rc1, v4.31.0 and v4.34.1, plus v4.35.0, the latest
+  stable;*
+- *the repository stays private until v0.5.0.*
 
 - Repository layout as in D§15: two Lake packages, `test/` and `scripts/`,
   Apache headers, `CONTRIBUTING.md`, templates for pull requests and issues.
