@@ -85,6 +85,9 @@ def renderRef (links : SourceLinks) (commit : Option String) (e : Entry) : Excep
     let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
     return s!"\\url\{{url}}"
 
+/-- Where a view leaves the source location for the splicer to fill. -/
+def metaSourceMarker : String := "\\leanmetasource{}"
+
 /-- The edit that sets an item's `sum=` option. -/
 def sumEdit (s : Src) (it : Item) (sum : String) : Edit :=
   match it.opts.find? (·.key == "sum"), it.optsSpan with
@@ -175,6 +178,14 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
       let new := match generated with
         | .ok t => t
         | .error _ => ""
+      -- The `meta` view leaves its source location to the profile (DESIGN §11).
+      let new ← if (new.splitOn metaSourceMarker).length > 1 then
+          match renderRef o.links o.commit e with
+          | .ok ref => pure (new.replace metaSourceMarker ("\\leanmetasource{" ++ ref ++ "}"))
+          | .error msg =>
+            out := { out with diags := out.diags.push (Diag.err "bad-ref" loc msg) }
+            continue
+        else pure new
       let old := s.slice it.regionStart it.regionEnd
       let (merged, orphans) := mergeSlots o spec old new
       for sl in orphans do

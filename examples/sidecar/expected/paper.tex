@@ -1,0 +1,19 @@
+\documentclass{article}
+\usepackage{imprimatur}
+\begin{document}
+
+\section{Reversal with an accumulator}
+
+The function \leaninline[sum=rehEB6yXO8]{Host.revAcc}{\LeanCode{%
+\LeanKeyword{def} \LeanConst{revAcc} \{\LeanBound{α} : \LeanSort{Type}\} : \LeanConst{List} \LeanBound{α} → \LeanConst{List} \LeanBound{α} → \LeanConst{List} \LeanBound{α}}} reverses a list onto an accumulator.
+
+\begin{leanblock}[sum=FDbYMlWjcy]{Host.revAcc_eq}{Correctness}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{revAcc\_eq} \{\LeanBound{α} : \LeanSort{Type}\} (\LeanBound{xs} \LeanBound{acc} : \LeanConst{List} \LeanBound{α}) : \LeanConst{revAcc} \LeanBound{xs} \LeanBound{acc} = \LeanBound{xs}.reverse ++ \LeanBound{acc}}
+\end{leanblock}
+
+\begin{leanblock}[view=meta, sum=uGzbIM6E0M]{Host.revAcc_eq}{Provenance}
+\LeanMeta{\leanmetasource{Host/Lists.lean:11}}{propext}{\LeanSorryFree}{\LeanCodeInline{revAcc} agrees with \LeanCodeInline{List.reverse}.}
+\end{leanblock}
+
+\end{document}

@@ -1,0 +1,11 @@
+# The sidecar package (DESIGN §6.3 B): it requires the host by path, and
+# imprimatur, so the host's own lakefile is untouched.
+name = "paper-tex"
+
+[[require]]
+name = "host"
+path = "../host"
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"

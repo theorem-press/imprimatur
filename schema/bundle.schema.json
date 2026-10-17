@@ -33,7 +33,7 @@
       "required": ["kind", "decl", "views"],
       "properties": {
         "kind": {
-          "enum": ["theorem", "definition", "axiom", "opaque", "inductive",
+          "enum": ["theorem", "definition", "instance", "axiom", "opaque", "inductive",
                    "constructor", "recursor", "quotient", "structure", "group",
                    "challenge"]
         },

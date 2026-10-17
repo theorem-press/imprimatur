@@ -1,0 +1,216 @@
+% imprimatur.sty -- keep the LaTeX of a paper in step with a Lean development.
+%
+% Copyright (c) 2026 The imprimatur authors.
+% Released under Apache 2.0 license as described in the file LICENSE.
+%
+% This package defines the markup that imprimatur-splice reads and fills
+% (DESIGN.md section 9), and the macros its generated content uses. A document
+% compiles with it whether or not imprimatur is installed: it shows the
+% content last spliced in. See docs/blocks.md.
+\NeedsTeXFormat{LaTeX2e}[2020/10/01]
+\ProvidesPackage{imprimatur}[2026/10/17 v0.0.0 Lean declarations in LaTeX]
+
+\RequirePackage{amssymb}
+\RequirePackage{newunicodechar}
+
+% ---------------------------------------------------------------------------
+% Markup (DESIGN 9.1). Options are read with l3keys; unknown ones are ignored,
+% so blocks can carry options that later versions use.
+\ExplSyntaxOn
+\tl_new:N \l__imprimatur_wrap_tl
+\tl_new:N \l__imprimatur_label_tl
+\keys_define:nn { imprimatur }
+  {
+    wrap    .tl_set:N = \l__imprimatur_wrap_tl ,
+    label   .tl_set:N = \l__imprimatur_label_tl ,
+    unknown .code:n   = { }
+  }
+
+% \begin{leanblock}[options]{key}{title} ... \end{leanblock}
+% With wrap=ENV, the content is set in \begin{ENV}[title]; label=L adds \label{L}.
+\NewDocumentEnvironment { leanblock } { O{} m m }
+  {
+    \tl_clear:N \l__imprimatur_wrap_tl
+    \tl_clear:N \l__imprimatur_label_tl
+    \keys_set:nn { imprimatur } { #1 }
+    \par
+    \tl_if_empty:NF \l__imprimatur_wrap_tl
+      {
+        \tl_if_blank:nTF { #3 }
+          { \exp_args:NV \begin \l__imprimatur_wrap_tl }
+          { \exp_args:NV \begin \l__imprimatur_wrap_tl [ #3 ] }
+      }
+    \tl_if_empty:NF \l__imprimatur_label_tl
+      { \exp_args:NV \label \l__imprimatur_label_tl }
+  }
+  {
+    \tl_if_empty:NF \l__imprimatur_wrap_tl
+      { \exp_args:NV \end \l__imprimatur_wrap_tl }
+    \par
+  }
+
+% \leanblockalias{NAME}{WRAP}: define environment NAME as a leanblock that
+% wraps its content in WRAP (which may be empty), for [aliases] entries.
+\NewDocumentCommand \leanblockalias { m m }
+  {
+    \NewDocumentEnvironment { #1 } { O{} m m }
+      { \begin { leanblock } [ wrap = { #2 } , ##1 ] { ##2 } { ##3 } }
+      { \end { leanblock } }
+  }
+\ExplSyntaxOff
+
+% \leaninline[options]{key}{generated text}
+\NewDocumentCommand\leaninline{O{} m m}{#3}
+% \leanref[options]{key}{generated location}
+\NewDocumentCommand\leanref{O{} m m}{#3}
+% \leancheck[options]{key, ...}: ties prose to Lean; prints nothing, and
+% swallows the space after it.
+\NewDocumentCommand\leancheck{O{} m}{\ignorespaces}
+% \leanindex: the table of every key used (generated from v0.5).
+\NewDocumentCommand\leanindex{}{}
+% \leanslot{id}{text}: text that belongs to the authors.
+\NewDocumentCommand\leanslot{m m}{#2}
+% \leanmetasource{location}: filled by the splicer according to the profile;
+% prints nothing when the profile gives no location.
+\ExplSyntaxOn
+\NewDocumentCommand \leanmetasource { m } { \tl_if_blank:nF { #1 } { Lean:~#1.~ } }
+\ExplSyntaxOff
+
+% ---------------------------------------------------------------------------
+% The lean view (DESIGN 7.3): semantic macros for tokens, in the manner of
+% agda.sty. Redefine any of them to change the style.
+% \LeanCode works inline (in \leaninline) and in blocks; \LeanNewline breaks
+% the line without ending the paragraph.
+% In the monospace font, the escaped specials are the font's own ASCII
+% characters (in OT1, T1 and TU alike), not symbols borrowed from maths fonts.
+\newcommand\LeanCodeFont{\ttfamily\footnotesize\upshape\mdseries\frenchspacing}
+\newcommand\LeanCodeSpecials{%
+  \def\_{\char95\relax}\def\{{\char123\relax}\def\}{\char125\relax}%
+  \def\textbackslash{\char92\relax}\def\textasciitilde{\char126\relax}%
+  \def\textasciicircum{\char94\relax}}
+\newcommand\LeanCode[1]{\begingroup\LeanCodeFont\LeanCodeSpecials #1\endgroup}
+\newcommand\LeanNewline{\newline}
+\newcommand\LeanIndent[1]{\hspace*{#1\fontcharwd\font`m}}
+\newcommand\LeanSpace[1]{\hspace*{#1\fontcharwd\font`m}}
+\newcommand\LeanKeyword[1]{\textbf{#1}}
+\newcommand\LeanSort[1]{\textbf{#1}}
+\newcommand\LeanConst[1]{#1}
+\newcommand\LeanBound[1]{\textsl{#1}}
+\newcommand\LeanNumber[1]{#1}
+\newcommand\LeanString[1]{#1}
+\newcommand\LeanCodeInline[1]{{\LeanCodeFont\LeanCodeSpecials #1}}
+
+% The meta view: source location, axioms, sorry status, docstring.
+\newcommand\LeanSorryFree{sorry-free}
+\newcommand\LeanUsesSorry{\textbf{uses sorry}}
+\newcommand\LeanMeta[4]{{\small #1Axioms: \ifx\relax#2\relax none\else #2\fi;
+  #3.\ifx\relax#4\relax\else\space #4\fi}}
+
+% ---------------------------------------------------------------------------
+% Unicode that Lean prints, mapped to maths so that pdfLaTeX needs no special
+% fonts. A character the document (or inputenc) already maps is left alone.
+% Add others in the document with \newunicodechar.
+\newcommand\imprimatur@unichar[2]{%
+  \ifcsname u8:\detokenize{#1}\endcsname\else\newunicodechar{#1}{#2}\fi}
+\imprimatur@unichar{∀}{\ensuremath{\forall}}
+\imprimatur@unichar{∃}{\ensuremath{\exists}}
+\imprimatur@unichar{¬}{\ensuremath{\neg}}
+\imprimatur@unichar{∧}{\ensuremath{\wedge}}
+\imprimatur@unichar{∨}{\ensuremath{\vee}}
+\imprimatur@unichar{→}{\ensuremath{\to}}
+\imprimatur@unichar{←}{\ensuremath{\leftarrow}}
+\imprimatur@unichar{↔}{\ensuremath{\leftrightarrow}}
+\imprimatur@unichar{⇒}{\ensuremath{\Rightarrow}}
+\imprimatur@unichar{↦}{\ensuremath{\mapsto}}
+\imprimatur@unichar{≤}{\ensuremath{\le}}
+\imprimatur@unichar{≥}{\ensuremath{\ge}}
+\imprimatur@unichar{≠}{\ensuremath{\ne}}
+\imprimatur@unichar{≃}{\ensuremath{\simeq}}
+\imprimatur@unichar{≅}{\ensuremath{\cong}}
+\imprimatur@unichar{≡}{\ensuremath{\equiv}}
+\imprimatur@unichar{∈}{\ensuremath{\in}}
+\imprimatur@unichar{∉}{\ensuremath{\notin}}
+\imprimatur@unichar{⊆}{\ensuremath{\subseteq}}
+\imprimatur@unichar{⊂}{\ensuremath{\subset}}
+\imprimatur@unichar{∪}{\ensuremath{\cup}}
+\imprimatur@unichar{∩}{\ensuremath{\cap}}
+\imprimatur@unichar{∅}{\ensuremath{\emptyset}}
+\imprimatur@unichar{⊤}{\ensuremath{\top}}
+\imprimatur@unichar{⊥}{\ensuremath{\bot}}
+\imprimatur@unichar{⊢}{\ensuremath{\vdash}}
+\imprimatur@unichar{⊓}{\ensuremath{\sqcap}}
+\imprimatur@unichar{⊔}{\ensuremath{\sqcup}}
+\imprimatur@unichar{⊗}{\ensuremath{\otimes}}
+\imprimatur@unichar{⊕}{\ensuremath{\oplus}}
+\imprimatur@unichar{∘}{\ensuremath{\circ}}
+\imprimatur@unichar{×}{\ensuremath{\times}}
+\imprimatur@unichar{•}{\ensuremath{\bullet}}
+\imprimatur@unichar{·}{\ensuremath{\cdot}}
+\imprimatur@unichar{∣}{\ensuremath{\mid}}
+\imprimatur@unichar{‖}{\ensuremath{\|}}
+\imprimatur@unichar{∑}{\ensuremath{\sum}}
+\imprimatur@unichar{∏}{\ensuremath{\prod}}
+\imprimatur@unichar{∞}{\ensuremath{\infty}}
+\imprimatur@unichar{⋯}{\ensuremath{\cdots}}
+\imprimatur@unichar{…}{\ensuremath{\ldots}}
+\imprimatur@unichar{⟨}{\ensuremath{\langle}}
+\imprimatur@unichar{⟩}{\ensuremath{\rangle}}
+\imprimatur@unichar{⦃}{\ensuremath{\{\!\!\{}}
+\imprimatur@unichar{⦄}{\ensuremath{\}\!\!\}}}
+\imprimatur@unichar{✝}{\ensuremath{^\dagger}}
+\imprimatur@unichar{ℕ}{\ensuremath{\mathbb{N}}}
+\imprimatur@unichar{ℤ}{\ensuremath{\mathbb{Z}}}
+\imprimatur@unichar{ℚ}{\ensuremath{\mathbb{Q}}}
+\imprimatur@unichar{ℝ}{\ensuremath{\mathbb{R}}}
+\imprimatur@unichar{ℂ}{\ensuremath{\mathbb{C}}}
+\imprimatur@unichar{α}{\ensuremath{\alpha}}
+\imprimatur@unichar{β}{\ensuremath{\beta}}
+\imprimatur@unichar{γ}{\ensuremath{\gamma}}
+\imprimatur@unichar{δ}{\ensuremath{\delta}}
+\imprimatur@unichar{ε}{\ensuremath{\varepsilon}}
+\imprimatur@unichar{ζ}{\ensuremath{\zeta}}
+\imprimatur@unichar{η}{\ensuremath{\eta}}
+\imprimatur@unichar{θ}{\ensuremath{\theta}}
+\imprimatur@unichar{ι}{\ensuremath{\iota}}
+\imprimatur@unichar{κ}{\ensuremath{\kappa}}
+\imprimatur@unichar{λ}{\ensuremath{\lambda}}
+\imprimatur@unichar{μ}{\ensuremath{\mu}}
+\imprimatur@unichar{ν}{\ensuremath{\nu}}
+\imprimatur@unichar{ξ}{\ensuremath{\xi}}
+\imprimatur@unichar{π}{\ensuremath{\pi}}
+\imprimatur@unichar{ρ}{\ensuremath{\rho}}
+\imprimatur@unichar{σ}{\ensuremath{\sigma}}
+\imprimatur@unichar{τ}{\ensuremath{\tau}}
+\imprimatur@unichar{υ}{\ensuremath{\upsilon}}
+\imprimatur@unichar{φ}{\ensuremath{\varphi}}
+\imprimatur@unichar{χ}{\ensuremath{\chi}}
+\imprimatur@unichar{ψ}{\ensuremath{\psi}}
+\imprimatur@unichar{ω}{\ensuremath{\omega}}
+\imprimatur@unichar{Γ}{\ensuremath{\Gamma}}
+\imprimatur@unichar{Δ}{\ensuremath{\Delta}}
+\imprimatur@unichar{Θ}{\ensuremath{\Theta}}
+\imprimatur@unichar{Λ}{\ensuremath{\Lambda}}
+\imprimatur@unichar{Ξ}{\ensuremath{\Xi}}
+\imprimatur@unichar{Π}{\ensuremath{\Pi}}
+\imprimatur@unichar{Σ}{\ensuremath{\Sigma}}
+\imprimatur@unichar{Φ}{\ensuremath{\Phi}}
+\imprimatur@unichar{Ψ}{\ensuremath{\Psi}}
+\imprimatur@unichar{Ω}{\ensuremath{\Omega}}
+\imprimatur@unichar{₀}{\ensuremath{_0}}
+\imprimatur@unichar{₁}{\ensuremath{_1}}
+\imprimatur@unichar{₂}{\ensuremath{_2}}
+\imprimatur@unichar{₃}{\ensuremath{_3}}
+\imprimatur@unichar{₄}{\ensuremath{_4}}
+\imprimatur@unichar{₅}{\ensuremath{_5}}
+\imprimatur@unichar{₆}{\ensuremath{_6}}
+\imprimatur@unichar{₇}{\ensuremath{_7}}
+\imprimatur@unichar{₈}{\ensuremath{_8}}
+\imprimatur@unichar{₉}{\ensuremath{_9}}
+\imprimatur@unichar{ᵢ}{\ensuremath{_i}}
+\imprimatur@unichar{ⱼ}{\ensuremath{_j}}
+\imprimatur@unichar{ₙ}{\ensuremath{_n}}
+\imprimatur@unichar{⁻}{\ensuremath{^-}}
+\imprimatur@unichar{¹}{\ensuremath{^1}}
+\imprimatur@unichar{²}{\ensuremath{^2}}
+
+\endinput

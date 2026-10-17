@@ -1,0 +1,74 @@
+{
+  "entries": {
+    "ModuleSys.honest": {
+      "axioms": [],
+      "decl": "ModuleSys.honest",
+      "doc": "A public theorem with an honest proof.",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 18,
+        "path": "ModuleSys/Lib.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{honest} : \\LeanNumber{1} + \\LeanNumber{1} = \\LeanNumber{2}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A public theorem with an honest proof.}"
+      }
+    },
+    "ModuleSys.plain_user": {
+      "axioms": [],
+      "decl": "ModuleSys.plain_user",
+      "doc": "Builds on `honest`.",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 12,
+        "path": "ModuleSys/Plain.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{plain\\_user} : \\LeanNumber{1} + \\LeanNumber{1} = \\LeanNumber{2} ∧ \\LeanConst{True}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Builds on \\LeanCodeInline{honest}.}"
+      }
+    },
+    "ModuleSys.pub_thm": {
+      "axioms": ["sorryAx"],
+      "decl": "ModuleSys.pub_thm",
+      "doc": "A public theorem with a private, unfinished proof.",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sorry": true,
+      "source": {
+        "line": 15,
+        "path": "ModuleSys/Lib.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{pub\\_thm} : \\LeanNumber{2} + \\LeanNumber{2} = \\LeanNumber{4}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A public theorem with a private, unfinished proof.}"
+      }
+    },
+    "ModuleSys.via_all": {
+      "axioms": ["sorryAx"],
+      "decl": "ModuleSys.via_all",
+      "doc": "Builds on `pub_thm`.",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sorry": true,
+      "source": {
+        "line": 15,
+        "path": "ModuleSys/UsesAll.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{via\\_all} : \\LeanNumber{2} + \\LeanNumber{2} = \\LeanNumber{4} ∧ \\LeanConst{True}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Builds on \\LeanCodeInline{pub\\_thm}.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

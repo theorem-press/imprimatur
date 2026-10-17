@@ -1,0 +1,19 @@
+1
+
+A tiny formalisation
+
+We define def double (n : Nat) : Nat and prove that it distributes over addition;
+the proof is at Minimal/Basic.lean:9.
+Theorem 1 (Distributivity). theorem double_add (m n : Nat) : double (m + n ) =
+double m + double n
+
+Theorem 1 has an injective companion:
+theorem double_injective {m n : Nat} (h : double m = double n ) : m = n
+
+Lean: Minimal/Basic.lean:15. Axioms: Quot.sound, propext; sorry-free. Doubling
+is injective, for all m and n: if double m = double n then m = n.
+
+Both results are checked against Lean.
+
+1
+

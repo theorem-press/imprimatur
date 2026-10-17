@@ -65,6 +65,16 @@ structure Config where
     #["verbatim", "verbatim*", "Verbatim", "lstlisting", "minted", "comment", "alltt"]
   /-- Whether to read blueprint `\lean{…}` as check-only references. -/
   blueprint : Bool := false
+  /-- The Lean project, relative to the configuration's directory. -/
+  leanProject : String := "."
+  /-- How the extractor runs (DESIGN §6.3). -/
+  mode : String := "in-project"
+  /-- Modules the extractor imports. -/
+  imports : Array String := #[]
+  /-- Namespaces whose scoped notation the `lean` view uses. -/
+  openScoped : Array String := #[]
+  /-- Namespaces left out of rendered names. -/
+  stripNamespaces : Array String := #[]
   deriving Repr
 
 /-- The alias for an environment name, if any. -/
@@ -75,9 +85,11 @@ def Config.alias? (c : Config) (env : String) : Option Alias :=
 def Config.profile? (c : Config) (name : String) : Option SourceLinks :=
   (c.profiles.find? (·.1 == name)).map (·.2)
 
-/-- Keys that only the extractor reads; the splicer accepts and ignores them. -/
+/-- Keys that only the extractor reads. The splicer passes them on in
+`requests.json`, or (for later milestones) accepts and ignores them. -/
 private def extractorKeys : List String :=
-  ["lean_project", "mode", "notation", "strip_namespaces", "open_scoped", "notation_packs"]
+  ["lean_project", "mode", "imports", "notation", "strip_namespaces", "open_scoped",
+   "notation_packs"]
 
 private def expectStr (where_ : String) : Toml → Except String String
   | .str s => .ok s
@@ -186,10 +198,17 @@ def Config.parse (text : String) : Except String Config := do
     cfg := { cfg with verbatimEnvs := cfg.verbatimEnvs ++ (← expectStrs "verbatim_envs" v) }
   for k in extractorKeys do
     if let some v := root.find? k then
-      match k, v with
-      | "lean_project", .str _ | "mode", .str _ => pure ()
-      | "lean_project", _ | "mode", _ => throw s!"{k} must be a string, not {v.typeName}"
-      | _, _ => discard <| expectStrs k v
+      match k with
+      | "lean_project" => cfg := { cfg with leanProject := ← expectStr k v }
+      | "mode" =>
+        let m ← expectStr k v
+        unless ["in-project", "sidecar", "external"].contains m do
+          throw s!"mode must be in-project, sidecar or external, not {repr m}"
+        cfg := { cfg with mode := m }
+      | "imports" => cfg := { cfg with imports := ← expectStrs k v }
+      | "open_scoped" => cfg := { cfg with openScoped := ← expectStrs k v }
+      | "strip_namespaces" => cfg := { cfg with stripNamespaces := ← expectStrs k v }
+      | _ => discard <| expectStrs k v
   return cfg
 
 end Splice

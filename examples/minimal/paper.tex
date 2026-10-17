@@ -1,0 +1,26 @@
+\documentclass{article}
+\usepackage{amsthm}
+\usepackage{imprimatur}
+\newtheorem{theorem}{Theorem}
+\leanblockalias{leantheorem}{theorem}
+\begin{document}
+
+\section{A tiny formalisation}
+
+We define \leaninline{Minimal.double}{} and prove that it distributes over
+addition; the proof is at \leanref{Minimal.double_add}{}.
+
+\begin{leantheorem}[label=thm:add]{Minimal.double_add}{Distributivity}
+\end{leantheorem}
+
+Theorem~\ref{thm:add} has an injective companion:
+\begin{leanblock}[view=lean]{Minimal.double_injective}{Injectivity}
+\end{leanblock}
+
+\begin{leanblock}[view=meta]{Minimal.double_injective}{Provenance}
+\end{leanblock}
+
+Both results are checked \leancheck{Minimal.double_add, Minimal.double_injective}
+against Lean.
+
+\end{document}

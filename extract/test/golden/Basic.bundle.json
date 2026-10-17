@@ -1,0 +1,265 @@
+{
+  "entries": {
+    "Basic.Even": {
+      "axioms": [],
+      "decl": "Basic.Even",
+      "doc": "An inductive predicate.",
+      "kind": "inductive",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 30,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Even} : \\LeanConst{Nat} → \\LeanSort{Prop}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{An inductive predicate.}"
+      }
+    },
+    "Basic.Even.step": {
+      "axioms": [],
+      "decl": "Basic.Even.step",
+      "doc": "Add two.",
+      "kind": "constructor",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 32,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanConst{Even.step} \\{\\LeanBound{n} : \\LeanConst{Nat}\\} : \\LeanConst{Even} \\LeanBound{n} → \\LeanConst{Even} (\\LeanBound{n} + \\LeanNumber{2})}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Add two.}"
+      }
+    },
+    "Basic.Pair": {
+      "axioms": [],
+      "decl": "Basic.Pair",
+      "doc": "A pair of values of one type.",
+      "kind": "structure",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 15,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{structure} \\LeanConst{Pair}.\\{\\LeanBound{u}\\} (\\LeanBound{α} : \\LeanSort{Type} \\LeanBound{u}) : \\LeanSort{Type} \\LeanBound{u}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A pair of values of one type.}"
+      }
+    },
+    "Basic.Pair.fst": {
+      "axioms": [],
+      "decl": "Basic.Pair.fst",
+      "doc": "The first component.",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 17,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{Pair.fst}.\\{\\LeanBound{u}\\} \\{\\LeanBound{α} : \\LeanSort{Type} \\LeanBound{u}\\} (\\LeanBound{self} : \\LeanConst{Pair} \\LeanBound{α}) : \\LeanBound{α}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{The first component.}"
+      }
+    },
+    "Basic.Pair.swap": {
+      "axioms": [],
+      "decl": "Basic.Pair.swap",
+      "doc": "Swap the components: an explicit binder and an implicit one.",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 22,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{Pair.swap}.\\{\\LeanBound{u}\\} \\{\\LeanBound{α} : \\LeanSort{Type} \\LeanBound{u}\\} (\\LeanBound{p} : \\LeanConst{Pair} \\LeanBound{α}) : \\LeanConst{Pair} \\LeanBound{α}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Swap the components: an explicit binder and an implicit one.}"
+      }
+    },
+    "Basic.add_comm'": {
+      "axioms": [],
+      "decl": "Basic.add_comm'",
+      "doc": "Commutativity, with implicit, instance and explicit binders.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMeta", "\\LeanNewline", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 25,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{add\\_comm'}.\\{\\LeanBound{u}\\} \\{\\LeanBound{α} : \\LeanSort{Type} \\LeanBound{u}\\} [\\LeanConst{Add} \\LeanBound{α}] (\\LeanBound{comm} : ∀ (\\LeanBound{a} \\LeanBound{b} : \\LeanBound{α}), \\LeanBound{a} + \\LeanBound{b} = \\LeanBound{b} + \\LeanBound{a})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{x} \\LeanBound{y} : \\LeanBound{α}) : \\LeanBound{x} + \\LeanBound{y} = \\LeanBound{y} + \\LeanBound{x}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Commutativity, with implicit, instance and explicit binders.}"
+      }
+    },
+    "Basic.em'": {
+      "axioms": ["Classical.choice", "Quot.sound", "propext"],
+      "decl": "Basic.em'",
+      "doc": "Uses classical logic.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 60,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{em'} (\\LeanBound{p} : \\LeanSort{Prop}) : \\LeanBound{p} ∨ ¬\\LeanBound{p}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Classical.choice, Quot.sound, propext}{\\LeanSorryFree}{Uses classical logic.}"
+      }
+    },
+    "Basic.instInhabitedPair": {
+      "axioms": [],
+      "decl": "Basic.instInhabitedPair",
+      "doc": "An instance.",
+      "kind": "instance",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 57,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{instance} \\LeanConst{instInhabitedPair} : \\LeanConst{Inhabited} (\\LeanConst{Pair} \\LeanConst{Nat})}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{An instance.}"
+      }
+    },
+    "Basic.long_statement": {
+      "axioms": [],
+      "decl": "Basic.long_statement",
+      "doc": "A statement long enough to break across lines when printed at the\ndefault width.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 49,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{long\\_statement} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} \\LeanBound{d} \\LeanBound{e} \\LeanBound{f} \\LeanBound{g} \\LeanBound{h} : \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h₁} : \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} = \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} + \\LeanBound{h}) (\\LeanBound{h₂} : \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} + \\LeanBound{h} = \\LeanNumber{0}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} = \\LeanNumber{0} ∧ \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} + \\LeanBound{h} = \\LeanNumber{0} ∧ \\LeanConst{my\\_fun'} \\LeanBound{a} = \\LeanBound{a} + \\LeanNumber{1}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A statement long enough to break across lines when printed at the\ndefault width.}"
+      }
+    },
+    "Basic.my_fun'": {
+      "axioms": [],
+      "decl": "Basic.my_fun'",
+      "doc": "A name with an underscore and a prime.",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 45,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{my\\_fun'} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanConst{Nat}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A name with an underscore and a prime.}"
+      }
+    },
+    "Basic.oracle": {
+      "axioms": ["Basic.oracle"],
+      "decl": "Basic.oracle",
+      "doc": "A custom axiom.",
+      "kind": "axiom",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 35,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{axiom} \\LeanConst{oracle} : \\LeanConst{Nonempty} \\LeanConst{Nat} → \\LeanConst{Nat}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Basic.oracle}{\\LeanSorryFree}{A custom axiom.}"
+      }
+    },
+    "Basic.secret": {
+      "axioms": [],
+      "decl": "Basic.secret",
+      "doc": "An opaque constant.",
+      "kind": "opaque",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 54,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{opaque} \\LeanConst{secret} : \\LeanConst{Nat}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{An opaque constant.}"
+      }
+    },
+    "Basic.unfinished": {
+      "axioms": ["sorryAx"],
+      "decl": "Basic.unfinished",
+      "doc": "Unfinished.",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanUsesSorry", "\\leanmetasource"],
+      "sorry": true,
+      "source": {
+        "line": 42,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{unfinished} : \\LeanNumber{1} + \\LeanNumber{1} = \\LeanNumber{3}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Unfinished.}"
+      }
+    },
+    "Basic.uses_oracle": {
+      "axioms": ["Basic.oracle"],
+      "decl": "Basic.uses_oracle",
+      "doc": "Uses the custom axiom. Markdown in a docstring: `code`, **bold**, *emphasis*,\nthe maths $x_1 + y^2$, and TeX specials # % & _ ~.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\emph", "\\leanmetasource", "\\textasciitilde", "\\textbf"],
+      "sorry": false,
+      "source": {
+        "line": 39,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{uses\\_oracle} : ∃ \\LeanBound{n}, \\LeanBound{n} = \\LeanConst{oracle} ⋯}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Basic.oracle}{\\LeanSorryFree}{Uses the custom axiom. Markdown in a docstring: \\LeanCodeInline{code}, \\textbf{bold}, \\emph{emphasis},\nthe maths $x_1 + y^2$, and TeX specials \\# \\% \\& \\_ \\textasciitilde{}.}"
+      }
+    },
+    "no_doc": {
+      "axioms": [],
+      "decl": "no_doc",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 67,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{no\\_doc} : \\LeanConst{topLevel} = \\LeanNumber{1}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{}"
+      }
+    },
+    "topLevel": {
+      "axioms": [],
+      "decl": "topLevel",
+      "doc": "Outside the namespace, with no docstring on the theorem below.",
+      "kind": "definition",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sorry": false,
+      "source": {
+        "line": 65,
+        "path": "Basic/Defs.lean"
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{topLevel} : \\LeanConst{Nat}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Outside the namespace, with no docstring on the theorem below.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

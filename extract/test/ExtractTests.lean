@@ -4,12 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Imprimatur
 import Testkit
+import ExtractTest.Unit
+import ExtractTest.Fixtures
 
 /-!
 # Extractor tests
 
-Run with `lake test` in this directory. Test names are referred to by
-`docs/TESTING.md`.
+Run with `lake test` in this directory, after building the fixtures under
+`test/fixtures/` with the same toolchain (`scripts/test-all.sh` does both).
+Test names are referred to by `docs/TESTING.md`.
 -/
 
 open Testkit
@@ -20,6 +23,8 @@ def testVersion : TestM Unit := group "version" do
   check "extract/version/lean" (Imprimatur.leanVersion.startsWith "v4.")
 
 /-- Entry point for `lake test`. -/
-def main : IO UInt32 :=
+unsafe def main : IO UInt32 :=
   runSuite do
     testVersion
+    ExtractTest.Unit.tests
+    ExtractTest.Fixtures.tests

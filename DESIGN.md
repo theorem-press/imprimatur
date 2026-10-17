@@ -175,6 +175,7 @@ schema = 1
 main = "exp-des-dsl-paper.tex"            # entry point; \input/\include are followed
 lean_project = "named/planet-lean/planet-lean"
 mode = "external"                         # external | sidecar | in-project (§6.3)
+imports = ["Planet.Paper"]                # modules to read declarations from
 notation = ["tex/PaperTeX.lean"]          # notation modules
 strip_namespaces = ["Planet", "Planet.Paper"]
 open_scoped = []                          # e.g. ["Topology", "BigOperators"], for the lean view
@@ -348,6 +349,20 @@ resulting `Syntax`, to avoid exposing instance arguments
 | `prose` | "Let …. Assume (h₁) …, (h₂) …. Then …": explicit Prop binders become labelled hypotheses, and the conclusion is split at `∧` | notation |
 | `rules` | each constructor of an inductive predicate becomes a mathpartir `\inferrule`; premises are its Prop-typed binders, in order, after premise conventions are applied (§7.6) | notation, groups |
 | `grammar` | inductive types become BNF alternatives, and structures become field lists. Constructors can be grouped into productions on one line or on separate lines, with a comment column (as in Ott). Each comment is an author-owned slot (§9.5), and the constructor's docstring supplies its default text | notation, groups |
+
+**How the `lean` and `meta` views are made (M2).**
+
+- **`lean`.** Lean's `ppSignature` prints the signature. The printed text is
+  then split into tokens, and each identifier is classified: a bound
+  variable (from the type's binders), a constant (by name resolution, with
+  `strip_namespaces` open), a keyword or a sort. Working on the text keeps the
+  output identical across toolchains. The fixtures' bundles are
+  byte-identical from v4.28 to v4.35.
+- **`meta`.** The extractor writes `\leanmetasource{}` for the source
+  location, and the splicer fills it according to the active profile (§11).
+- **Requests.** The extractor reads its settings (`imports`, `open_scoped`,
+  `strip_namespaces`) from `requests.json`, which `scan` writes, so it needs
+  no TOML parser.
 
 **Projects can add their own views.** A project registers
 `@[latex_view "name"] def myView : ViewFn` in its notation module. The
@@ -562,7 +577,10 @@ The `[aliases]` table maps existing environment names (`leantheorem`,
 ### 9.4 `imprimatur.sty`
 
 This file ships in the repo. It defines the environments and macros above,
-the semantic token macros of the `lean` view, and the `meta` badges. A
+the semantic token macros of the `lean` view, and the `meta` badges.
+`\leanblockalias{NAME}{WRAP}` defines an alias environment. A table of
+`\newunicodechar` mappings covers the symbols Lean prints, so pdfLaTeX needs
+no special fonts (see [docs/views.md](docs/views.md)). A
 document still compiles without imprimatur installed; it shows the content last
 spliced in.
 
@@ -971,7 +989,7 @@ that depends on them.
 
 | Claim | Affects | Status |
 |---|---|---|
-| Since Lean 4.2x, `.olean` data has levels, and proof bodies are only in `private` | §4 (7), §7.7 | **Verified** for v4.28.0-rc1, v4.31.0, v4.34.1 and v4.35.0: `importModules (level := OLeanLevel.private)` in `Lean/Environment.lean`. Spike S1 read proof bodies from a `module` file of the math catalogue |
+| Since Lean 4.2x, `.olean` data has levels, and proof bodies are only in `private` | §4 (7), §7.7 | **Verified** for v4.28.0-rc1, v4.31.0, v4.34.1 and v4.35.0: `importModules (level := OLeanLevel.private)` in `Lean/Environment.lean`. Spike S1 read proof bodies from a `module` file of the math catalogue. The `ModuleSys` fixture shows the consequence (M2). Below `private`, a public theorem of a `module` file is imported as an axiom with no body. `collectAxioms` then reports the theorem itself as an axiom on v4.28, and `sorryAx` on v4.35. Only at `private` do both give the right answer |
 | The math repository already uses comparator manifests with `theorem_names` and `permitted_axioms` | §10.5, §16 | **Verified** locally (`lean/ComparatorChallenges/PartitionPrinciple.json`) |
 | Cog's `-c` checksum, `--check`, `--diff`, `--check-fail-msg` and `-d` behave as described | §10 | Check against the Cog 3.6 documentation |
 | LeanArchitect's own pins caused a Mathlib rebuild (cameronfreer/infinitary-logic issue #26) | §4 (6) | Read the issue. The constraint stands on general grounds either way |

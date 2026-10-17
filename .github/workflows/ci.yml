@@ -90,9 +90,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      # M2 adds TeX Live (pdflatex, lualatex, latexmk, pdftotext) here, with
-      # the first example.
-      - name: End-to-end
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install TeX Live (pdflatex, lualatex, latexmk) and pdftotext
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -q -y --no-install-recommends latexmk texlive-latex-base \
+            texlive-latex-recommended texlive-latex-extra texlive-luatex \
+            texlive-fonts-recommended lmodern poppler-utils
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            splice/.lake
+            extract/.lake
+          key: e2e-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-${{ github.sha }}
+          restore-keys: e2e-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-
+      - name: End-to-end (examples/, both modes, pdflatex and lualatex)
         run: scripts/e2e.sh
 
   lint:
