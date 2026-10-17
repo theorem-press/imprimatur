@@ -1,7 +1,8 @@
 # imprimatur — design
 
-*Status: draft design, no code yet. Revision 2 (2026-10-17) takes in a survey
-of prior art (§3).*
+*Status: draft design. Revision 2 (2026-10-17) takes in a survey of prior art
+(§3). Revision 3 (2026-10-17) takes in spikes S1 (external mode) and S2
+(stable hashing), under [docs/spikes/](docs/spikes/).*
 
 *Name: an imprimatur ("let it be printed") is the approval a work receives
 before publication. The tool's core job is to let only checked statements into
@@ -195,7 +196,7 @@ leangrammar = { view = "grammar" }
 
 [trust]
 allowed_axioms   = ["propext", "Classical.choice", "Quot.sound"]
-trusted_prefixes = ["Mathlib", "Std", "Batteries", "Lean", "Init"]   # §7.7
+trusted_prefixes = ["Mathlib", "Std", "Batteries", "Lean", "Init"]   # module prefixes (§7.7)
 
 [manifests]                               # §10.5
 comparator = []                           # e.g. ["ComparatorChallenges/*.json"]
@@ -250,8 +251,12 @@ environment that contains the host's modules and the notation module.
   the host's `lean-toolchain`.
 - At run time, imprimatur takes the host's search path from `lake env` in the
   host project, adds its own cached `Imprimatur` `.olean` files, and elaborates
-  the notation module in-process with Lean's frontend before importing the
-  requested modules at `private` level.
+  the notation module in-process with Lean's frontend. The resulting
+  environment already contains the requested modules at `private` level, so
+  nothing is imported a second time. Spike S1
+  ([docs/spikes/S1-external-mode.md](docs/spikes/S1-external-mode.md))
+  showed this working on all three motivating projects. For a Mathlib-based
+  host it needs about 7 GB of memory.
 - The host's lakefile, manifest and sources are untouched, and there is no
   extra checkout of Mathlib. This is LeanInk's `--lake` pattern.
 - It suits all three motivating projects, and is the only mode the math
@@ -424,17 +429,31 @@ For every entry, the extractor imports the environment at `private` level
 - **`sorry`**: whether it depends on `sorryAx`.
 - **The statement's dependency cone**, following comparator. This is every
   constant appearing in the declaration's type, followed transitively through
-  the bodies of definitions until it reaches a namespace listed in
-  `trusted_prefixes`. Each constant in the cone is itself checked for `sorry`,
+  definitions until it reaches a constant declared in a module whose name
+  starts with an entry of `trusted_prefixes`.
+  - The test is on modules, not namespaces. Core constants such as `Nat.add`
+    are declared in `Init.Prelude` but in no `Init` namespace.
+  - Definitions are followed through their equation lemmas
+    (`Meta.getEqnsFor?`), not their bodies, so matchers, `brecOn` and other
+    auxiliary constants never enter the cone. Each constant in the cone is itself checked for `sorry`,
   for disallowed axioms, and for `unsafe` or `partial`.
   - Without this, someone could change a definition used in the hypotheses
     to `True`, and the theorem would become trivial while its own statement
     looked unchanged.
 - **`stmtHash`** is a SHA-256 hash of a canonical serialisation of the
-  declaration's type, together with the bodies of the definitions in its
-  cone.
+  declaration's type, together with each definition in its cone. A definition
+  is represented by its type and the statements of its equation lemmas.
+  - Bodies are not used, because their elaborated form changes between
+    toolchains. For example, structural recursion compiles differently in
+    v4.28 and v4.31. Equation lemmas were byte-identical from v4.28 to v4.35
+    in spike S2
+    ([docs/spikes/S2-stable-hashing.md](docs/spikes/S2-stable-hashing.md)).
   - Binder names are dropped and universe parameters are renamed to
     canonical names.
+  - Every `sorryAx` application is serialised as one fixed token, because an
+    elaborated `sorry` carries a tag that encodes where it was written.
+  - The environment is imported with `loadExts := true`. Without it,
+    equation lemmas can't be generated for imported definitions.
   - imprimatur writes its own serialisation and does not use Lean's
     `Expr.hash`, so the hash stays the same across toolchain upgrades.
   - The hash changes when the statement, or anything in the project that the
@@ -734,7 +753,9 @@ imprimatur:
   - the delaborator;
   - `importModules`, including whether it has a `level` argument and what
     its default is;
-  - the frontend API used by external mode.
+  - the frontend API used by external mode (for example, from v4.31
+    `runFrontend` turns initializer execution off again, so a later
+    `importModules (loadExts := true)` must turn it back on).
 
   If a version break can't be bridged there, that version gets its own
   release tag (`v0.3.0-lean4.28`).
@@ -799,6 +820,9 @@ imprimatur/
     Splice/Strip.lean  Splice/Manifests.lean  Splice/Config.lean  Splice/Bundle.lean
     Main.lean                     imprimatur-splice, imprimatur (wrapper)
     test/
+  testkit/                        test-only package: harness, golden files, seeded generator
+  test/                           fixtures/ (Lean projects), tex/ (documents), bundles/
+  scripts/                        test-all.sh, lint.sh, e2e.sh, integration.sh
   schema/bundle.schema.json
   tex/imprimatur.sty
   docs/  blocks.md  notation.md  views.md  trust.md  bundle.md  anonymity.md  prior-art.md
@@ -915,11 +939,10 @@ survey found the clearest gap, and they don't depend on the notation work.
    `trusted_prefixes` catches definitions that were weakened. It can also
    flag harmless refactors of definitions in the project. Should those
    refactors produce a separate, softer kind of drift?
-6. **Whether external mode works in practice.** It assumes the cached
-   `Imprimatur` `.olean` files and the host's search path can be combined, and
-   that the notation file can be elaborated in-process, on every supported
-   toolchain. This needs a prototype before 0.2. Sidecar mode is the
-   fallback.
+6. ~~**Whether external mode works in practice.**~~ Resolved by spike S1: it
+   works on v4.28.0-rc1, v4.31.0 and v4.34.1 against the three motivating
+   projects. Custom views compiled in the notation module were not tested, and
+   sidecar mode remains the answer for them.
 
 Overleaf, an open question in revision 1, is resolved. Splicing in place
 leaves ordinary `.tex` files, which Overleaf compiles as-is; CI runs `check`;
@@ -936,7 +959,7 @@ that depends on them.
 
 | Claim | Affects | Status |
 |---|---|---|
-| Since Lean 4.2x, `.olean` data has levels, and proof bodies are only in `private` | §4 (7), §7.7 | **Verified** for v4.34.1: `OLeanLevel` and `importModules (level := .private)` in `Lean/Environment.lean`. Still to check for v4.28 and v4.31 |
+| Since Lean 4.2x, `.olean` data has levels, and proof bodies are only in `private` | §4 (7), §7.7 | **Verified** for v4.28.0-rc1, v4.31.0, v4.34.1 and v4.35.0: `importModules (level := OLeanLevel.private)` in `Lean/Environment.lean`. Spike S1 read proof bodies from a `module` file of the math catalogue |
 | The math repository already uses comparator manifests with `theorem_names` and `permitted_axioms` | §10.5, §16 | **Verified** locally (`lean/ComparatorChallenges/PartitionPrinciple.json`) |
 | Cog's `-c` checksum, `--check`, `--diff`, `--check-fail-msg` and `-d` behave as described | §10 | Check against the Cog 3.6 documentation |
 | LeanArchitect's own pins caused a Mathlib rebuild (cameronfreer/infinitary-logic issue #26) | §4 (6) | Read the issue. The constraint stands on general grounds either way |
