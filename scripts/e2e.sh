@@ -9,7 +9,7 @@
 #   3. compare the spliced paper.tex with examples/X/expected/paper.tex;
 #   4. compile with pdflatex and with lualatex (latexmk); fail on errors,
 #      undefined control sequences or missing glyphs;
-#   5. compare pdftotext's output with examples/X/expected/{pdflatex,lualatex}.txt.
+#   5. compare pdftotext's output (in content order) with examples/X/expected/{pdflatex,lualatex}.txt.
 # UPDATE_GOLDEN=1 rewrites the expected files; review the diff.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -97,7 +97,10 @@ for dir in examples/*/; do
       grep -E 'Undefined control sequence|Missing character' "$work/out-$engine/paper.log" | head | sed 's/^/    /'
       status=1
     fi
-    pdftotext "$work/out-$engine/paper.pdf" - | normalise > "$work/$engine.txt"
+    # -raw keeps the text in the order TeX wrote it. Without it, pdftotext
+    # guesses a reading order from the layout, and versions guess differently
+    # (poppler 24 reorders a grammar's description column; poppler 22 doesn't).
+    pdftotext -raw "$work/out-$engine/paper.pdf" - | normalise > "$work/$engine.txt"
     compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
