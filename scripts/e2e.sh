@@ -41,7 +41,7 @@ normalise() {  # pdftotext output, independent of small TeX differences
 
 # One test per example, named so docs/TESTING.md can refer to it. An example
 # without a name here is an error, so none is skipped by accident.
-TESTS=(e2e/external e2e/minimal e2e/sidecar)
+TESTS=(e2e/external e2e/minimal e2e/semantics e2e/sidecar)
 # And one test that is not an example: e2e/fixture-views, below.
 
 # External mode needs an extractor built for the examples' toolchain. It goes in

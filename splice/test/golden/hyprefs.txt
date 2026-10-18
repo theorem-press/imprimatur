@@ -1,0 +1,34 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    {"key": "Demo.thm", "env": "leanblock", "view": "prose", "order": 1}],
+    "labels": [
+    ],
+    "hypRefs": [{"key": "Demo.thm", "hyp": "h"}]},
+  "requests": {
+    "Demo.thm": {"views": ["prose"]}
+  }
+}
+[exit 0]
+
+$ imprimatur-splice strip -o stripped
+strip: wrote 1 file to stripped
+[exit 0]
+
+== main.tex
+\documentclass{article}
+\begin{document}
+\begin{leanblock}[view=prose]{Demo.thm}{A result}
+\end{leanblock}
+By \leanhypref{Demo.thm}{h}, and again by \leanhypref{Demo.thm}{h}, it follows.
+\end{document}
+
+== stripped/main.tex
+\documentclass{article}
+\begin{document}
+By \LeanHyp{h}, and again by \LeanHyp{h}, it follows.
+\end{document}
+

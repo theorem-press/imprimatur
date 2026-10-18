@@ -142,8 +142,8 @@ def parseViewSpec (s : String) : ViewSpec :=
 
 /-- The rendering context for the notation in scope: the project's rules and
 the selected packs. `used` collects the rules that fire. -/
-def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array String)) :
-    MetaM Render.Ctx := do
+def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array String))
+    (key : String := "") : MetaM Render.Ctx := do
   let env ← getEnv
   let style (k v : String) := (projectStyles env).find? (·.1 == k) == some (k, v)
   let rawVars := style "names" "raw"
@@ -151,7 +151,7 @@ def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array Str
   let subscriptVars := style "applied_variables" "subscript"
   return { rules := projectRules env ++ Packs.select s.notationPacks,
            metavars := projectMetavars env, variant, strip := s.stripNamespaces, used, rawVars,
-           callVars, subscriptVars, document := s.document }
+           callVars, subscriptVars, document := s.document, key }
 
 /-- The entry for a `latex_group`: a key that names a group of rules, not a
 declaration. Only the `rules` view applies. -/
@@ -162,7 +162,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
   for v in r.views do
     let spec := parseViewSpec v
     let spec := { spec with opts := spec.opts ++ extra }
-    let ctx ← renderCtx s spec.variant used
+    let ctx ← renderCtx s spec.variant used r.key
     if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == spec.base) then
       match ← guarded ((runCustomView fn r.key none spec.opts).run ctx) with
       | .ok t => views := views.push (v, .str t)
@@ -214,7 +214,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
       let base := spec.base
       let variant := spec.variant
       if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == base) then
-        let ctx ← renderCtx s variant used
+        let ctx ← renderCtx s variant used r.key
         match ← guarded ((runCustomView fn r.key (some c) spec.opts).run ctx) with
         | .ok v => views := views.push (other, .str v)
         | .error msg => errors := errors.push (other, .str msg)
@@ -226,18 +226,18 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
         if ctors.isEmpty then
           errors := errors.push (other, .str s!"the rules view needs an inductive predicate or a constructor")
         else
-          let ctx ← renderCtx s variant used
+          let ctx ← renderCtx s variant used r.key
           let ctors := Views.selectCtors ctors (spec.opt "include") (spec.opt "exclude")
           match ← guarded ((Views.rulesView ctors).run ctx) with
           | .ok v => views := views.push (other, .str v)
           | .error msg => errors := errors.push (other, .str msg)
       else if base == "grammar" then
-        let ctx ← renderCtx s variant used
+        let ctx ← renderCtx s variant used r.key
         match ← guarded ((Views.grammarView c).run ctx) with
         | .ok v => views := views.push (other, .str v)
         | .error msg => errors := errors.push (other, .str msg)
       else if base == "math" || base == "prose" then
-        let ctx ← renderCtx s variant used
+        let ctx ← renderCtx s variant used r.key
         let act : MetaM String :=
           if base == "math" then (Views.mathViewWith c s.width spec.opts).run ctx
           else (Views.proseView c s.width).run ctx

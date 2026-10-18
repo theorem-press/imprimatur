@@ -72,8 +72,8 @@ def maskToolchain (bundle : String) : String :=
     if l.trimAscii.toString.startsWith "\"lean\": \"v4." then "    \"lean\": \"v4.x\"," else l)
 
 /-- Export a fixture's bundle in-process. -/
-unsafe def exportFixture (f : Fixture) (used : Option (IO.Ref (Array String)) := none) :
-    IO ExportResult := do
+unsafe def exportFixture (f : Fixture) (used : Option (IO.Ref (Array String)) := none)
+    (document : DocumentInfo := {}) : IO ExportResult := do
   let dir := fixturesDir / f.dir
   let lib := dir / ".lake" / "build" / "lib" / "lean"
   unless ← lib.pathExists do
@@ -82,7 +82,7 @@ unsafe def exportFixture (f : Fixture) (used : Option (IO.Ref (Array String)) :=
   let env ← try Compat.importPrivate #[f.module] catch e =>
     throw (IO.userError s!"cannot import {f.module} from {dir}: {e}\n\
       Rebuild the fixtures with the current toolchain (scripts/test-all.sh does).")
-  let settings : Settings := { imports := #[f.module], stripNamespaces := f.strip }
+  let settings : Settings := { imports := #[f.module], stripNamespaces := f.strip, document }
   let reqs := f.keys.map fun k => { key := k, views := f.views }
   let (entries, warnings) ← exportEntries env dir settings reqs (used := used)
   return { bundle := renderBundle entries none, entries := entries.size, warnings }
@@ -194,6 +194,13 @@ unsafe def tests : TestM Unit := group "fixtures" do
       let unused := (Packs.all.toArray.flatMap (·.2)).filter fun r =>
         !usedRules.contains s!"{r.origin}: {r.template}"
       checkEq "extract/notation/every-pack-rule-used" (unused.map (·.template)) #[]
+      -- Prose labels a hypothesis only where the paper refers to it.
+      let one ← exportFixture { f with keys := #["Notation.project"], views := #["prose"] }
+        (document := { hypRefs := #[("Notation.project", "hd")] })
+      let prose := ((entry? one.bundle "Notation.project").bind fun e =>
+        (e.getObjVal? "views" >>= (·.getObjValAs? String "prose")).toOption).getD ""
+      check "extract/prose/hyp-referred-labelled" ((prose.splitOn "\\LeanHyp{hd}").length > 1) prose
+      check "extract/prose/hyp-unreferred-unlabelled" ((prose.splitOn "\\LeanHyp{hr}").length == 1) prose
       checkEq "extract/notation/no-render-errors"
         (f.keys.filter fun k => ((entry? r.bundle k).bind (·.getObjVal? "errors" |>.toOption)).isSome) #[]
     | "Trust" =>

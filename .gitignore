@@ -4,3 +4,12 @@
 _site/
 .jekyll-cache/
 /parity-out/
+# LaTeX build files of examples compiled in place (by an editor)
+/examples/**/*.aux
+/examples/**/*.log
+/examples/**/*.fls
+/examples/**/*.fdb_latexmk
+/examples/**/*.pdf
+/examples/**/*.synctex.gz
+/examples/**/*.out
+/examples/*/host/lake-manifest.json

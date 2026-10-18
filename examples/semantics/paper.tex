@@ -1,0 +1,140 @@
+\documentclass{article}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{url}
+\usepackage{imprimatur}
+\newtheorem{theorem}{Theorem}
+% The paper's environments, as imprimatur.toml's [aliases] declares them.
+\leanblockalias{leangrammar}{}
+\leanblockalias{leanrules}{}
+\leanblockalias{leantheorem}{theorem}
+% Conventions of the generated rules: \val is a value, and \rulelabel{Key}{label}
+% makes a rule a target for \ref.
+\newcommand\val{v}
+\makeatletter
+\newcommand\rulelabel[2]{\def\@currentlabel{#2}\label{rule:#1}}
+\makeatother
+\begin{document}
+
+\section{A small calculus, generated from Lean}
+
+This paper presents a simply-typed $\lambda$-calculus whose definitions and
+results are in Lean. Everything in a \texttt{lean...} environment below is
+generated from the Lean development by imprimatur; the rest is written by
+hand, and the hand-written statements are checked against Lean.
+
+\subsection{Syntax}
+
+Terms are name-carrying: a variable is a name, and an abstraction binds a
+name. The grammar is generated from the inductive types. The descriptions on
+the right are the authors': imprimatur keeps them when it regenerates the
+grammar, and uses the constructors' docstrings only for new ones.
+
+\begin{leangrammar}{Stlc.Ty}{Types}
+\end{leangrammar}
+
+\begin{leangrammar}{Stlc.Tm}{Terms}
+\end{leangrammar}
+
+\subsection{Names, $\alpha$-equivalence and substitution}
+
+We handle names as Pitts does~\cite{Pitts06}. The basic operation is
+\emph{swapping}: $(a\ b) \cdot e$ exchanges the names $a$ and $b$
+everywhere in $e$, bound, binding and free occurrences alike. Unlike
+renaming, swapping needs no side condition at a binder, and it is its own
+inverse; its definition is structural:
+
+\begin{center}
+\begin{leanblock}[view=math, def]{Stlc.Tm.swap}{Swapping}
+\end{leanblock}
+\end{center}
+
+Two abstractions are $\alpha$-equivalent when swapping each binder's name
+with a name $c$ fresh for both, written $c \mathrel{\#} \ldots$, makes their
+bodies $\alpha$-equivalent:
+
+\begin{leanrules}{Stlc.Alpha}{Alpha-equivalence}
+\end{leanrules}
+
+Substitution $e[u/x]$ is then defined by recursion on $e$. At an abstraction
+$\lambda a{:}\tau.\, e$ it first swaps $a$ with a name $c$ fresh for $x$,
+$a$, $e$ and $u$, so that no free name of $u$ is captured, and continues in
+$(a\ c) \cdot e$\leancheck{Stlc.subst}. Swapping preserves the size of a
+term\leancheck{Stlc.Tm.size_swap}, so the recursion terminates, although
+$(a\ c) \cdot e$ is not a subterm of the abstraction.
+
+\subsection{Typing}
+
+The typing rules are generated from the constructors of \texttt{HasType}.
+Their labels come from the constructors' docstrings. The well-formedness side
+conditions of the Lean rules are left implicit, by a convention declared in
+the notation module.
+
+\begin{leanrules}{Stlc.HasType}{Typing}
+\end{leanrules}
+
+\subsection{Reduction}
+
+Reduction is call by value. A premise that a term is a value is left
+implicit: the value is written $\val$ instead. Each rule is labelled from its
+constructor's name, and can be referred to: rule~\ref{rule:AppLeft}
+reduces the function of an application.
+
+\begin{leanrules}{Stlc.Step}{Reduction}
+\end{leanrules}
+
+\subsection{Results}
+
+A result can be generated, as a sentence; its key can be a title, declared
+in the notation module:
+
+\begin{leantheorem}{Swapping is involutive}{Swapping is involutive}
+\end{leantheorem}
+
+\begin{leantheorem}{Values are final}{Values are final}
+\end{leantheorem}
+
+Or as a rule, from a theorem whose hypotheses become its premises:
+\begin{center}
+\begin{leanblock}[view=math, rule]{Stlc.step_app}{Congruence}
+\end{leanblock}
+\end{center}
+
+Or the prose can be written by hand and checked: the unit value has only
+the base type, that is, if $\Gamma \vdash () : \tau$ then
+$\tau = \mathsf{b}$\leancheck{Stlc.unit_type}. Should the Lean statement of
+\texttt{unit\_type} change, \texttt{imprimatur check} reports this sentence.
+
+\subsection{Type safety}
+
+The substitution lemma is proved as Pitts's paper suggests. Typing is
+equivariant: swapping two names throughout a term and its context preserves
+its type.
+
+\begin{leantheorem}{Equivariance}{Equivariance}
+\end{leantheorem}
+
+Typing also depends on the context only at the term's free names, which
+gives weakening and shadowing at once\leancheck{Stlc.HasType.agree}. So
+substitution preserves types: if $\Gamma, x{:}\tau_1 \vdash e : \tau$ and
+$\Gamma \vdash u : \tau_1$, then $\Gamma \vdash e[u/x] : \tau$. At an
+abstraction, substitution renames the binder to a fresh name by swapping, and
+equivariance carries the typing of its body across the renaming; the
+induction is on the size of $e$, which swapping
+preserves\leancheck{Stlc.subst_typing}. Type safety follows.
+
+\begin{leantheorem}{Preservation}{Preservation}
+\end{leantheorem}
+
+\begin{leantheorem}{Progress}{Progress}
+\end{leantheorem}
+
+\begin{thebibliography}{1}
+\bibitem[Pitts(2006)]{Pitts06}
+Andrew~M. Pitts.
+\newblock Alpha-structural recursion and induction.
+\newblock \emph{Journal of the ACM}, 53(3):459--506, 2006.
+\newblock \url{https://doi.org/10.1145/1147954.1147961}.
+\end{thebibliography}
+
+\end{document}

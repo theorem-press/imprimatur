@@ -119,6 +119,33 @@ three quarters of it (60 characters by default). -/
 def mathView (c : ConstantInfo) (width : Nat) : RenderM String := do
   return s!"\\LeanMath\{{(← mathDoc c).render (width * 3 / 4)}}"
 
+/-- The binders of an equation lemma, with the names the definition used:
+Lean names the matched argument `x` and renames a pattern variable `x` to
+`x_1`, so `x_1` is shown as `x` when no other binder is called `x`. -/
+def restoreEqnNames (e : Expr) : Expr :=
+  let names := collect e #[]
+  rename names e
+where
+  collect : Expr → Array Name → Array Name
+    | .forallE n _ b _, acc => collect b (acc.push n)
+    | _, acc => acc
+  base? (n : Name) : Option Name :=
+    match n with
+    | .str p s =>
+      match s.splitOn "_" with
+      | [] | [_] => none
+      | parts =>
+        if (parts.getLast!.toNat?).isSome then some (.str p ("_".intercalate parts.dropLast)) else none
+    | _ => none
+  rename (names : Array Name) : Expr → Expr
+    | .forallE n t b bi =>
+      let n' := match base? n with
+        | some m => if names.contains m || names.contains n == false then n
+                    else if (names.filter (base? · == some m)).size == 1 then m else n
+        | none => n
+      .forallE n' t (rename names b) bi
+    | e => e
+
 /-- `lhs = rhs` of an equation statement, with its variables introduced. -/
 def equationRow (eqn : Expr) : RenderM String :=
   statementParts eqn fun _ _ concl => do
@@ -152,7 +179,7 @@ def mathViewWith (c : ConstantInfo) (width : Nat) (opts : Array (String × Strin
     else if has "def" && isDef then
       match ← getEqnsFor? c.name with
       | some es =>
-        let rows ← es.mapM fun e => do equationRow (← getConstInfo e).type
+        let rows ← es.mapM fun e => do equationRow (restoreEqnNames (← getConstInfo e).type)
         return wrap ("\\begin{aligned}" ++ " \\\\ ".intercalate rows.toList ++ "\\end{aligned}")
       | none => mathView c width
     else mathView c width
@@ -164,16 +191,18 @@ partial def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
     return s!"\\LeanProse\{We define ${formula}$.}"
   statementParts c.type fun vars hyps concl => withConventions hyps fun hyps => do
     let mut sentences : Array String := #[]
-    -- Variables, grouped by type.
-    let mut groups : Array (Array Name × Expr) := #[]
-    for (n, _, t) in vars do
+    -- Variables, grouped by type. Each is rendered as a variable, so a
+    -- metavariable convention (`\val`) applies to it here too.
+    let mut groups : Array (Array Expr × Expr) := #[]
+    for (_, x, t) in vars do
       match groups.back? with
-      | some (ns, t') =>
-        if t' == t then groups := groups.pop.push (ns.push n, t) else groups := groups.push (#[n], t)
-      | none => groups := groups.push (#[n], t)
+      | some (xs, t') =>
+        if t' == t then groups := groups.pop.push (xs.push x, t) else groups := groups.push (#[x], t)
+      | none => groups := groups.push (#[x], t)
     let mut phrases : Array String := #[]
-    for (ns, t) in groups do
-      let names := ", ".intercalate (← ns.toList.mapM varName)
+    for (xs, t) in groups do
+      let ns := xs
+      let names := ", ".intercalate (← xs.toList.mapM fun x => do return (← render x).render 100000)
       if t.isProp then
         phrases := phrases.push s!"${names}$ be {if ns.size == 1 then "a proposition" else "propositions"}"
       else if t.isSort then
@@ -181,11 +210,15 @@ partial def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
       else
         phrases := phrases.push s!"${names} \\in {(← render t).render 100000}$"
     unless phrases.isEmpty do sentences := sentences.push s!"Let {andList phrases}."
-    -- Hypotheses, labelled.
+    -- Hypotheses, labelled with their names where the paper refers to them
+    -- (`\leanhypref{key}{h}`).
+    let ctx ← read
     let mut hs : Array String := #[]
     for (n, h) in hyps do
-      let label := if n.hasMacroScopes || n.isAnonymous then "" else
-        s!"\\LeanHyp\{{TeX.escape n.eraseMacroScopes.toString}} "
+      let name := n.eraseMacroScopes.toString
+      let referred := ctx.document.hypRefs.contains (ctx.key, name)
+      let label := if n.hasMacroScopes || n.isAnonymous || !referred then "" else
+        s!"\\LeanHyp\{{TeX.escape name}} "
       hs := hs.push s!"{label}{← inline h}"
     unless hs.isEmpty do sentences := sentences.push s!"Assume {andList hs}."
     -- The conclusion.

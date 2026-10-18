@@ -36,6 +36,9 @@ inductive ItemKind where
   | index
   /-- Blueprint `\leanok` (DESIGN §9.3), read when `manifests.blueprint` is on. -/
   | leanok
+  /-- `\leanhypref{key}{h}`: a reference to hypothesis `h` of a result, so its
+  prose view labels `h` (it labels no hypothesis the paper doesn't refer to). -/
+  | hypref
   deriving Repr, BEq, Inhabited
 
 /-- One `key=value` option, with the position of its value. -/
@@ -66,8 +69,10 @@ structure Item where
   optsSpan : Option (Nat × Nat) := none
   /-- The options, in order. -/
   opts : Array Opt := #[]
-  /-- The key (blocks, inline, ref). -/
+  /-- The key (blocks, inline, ref, hypref). -/
   key : String := ""
+  /-- The hypothesis referred to (hypref). -/
+  hyp : String := ""
   /-- The keys (check). -/
   keys : Array String := #[]
   /-- The title (blocks). -/
@@ -395,6 +400,13 @@ def notConditionals : List String :=
    "ifdefcounter", "ifcscounter", "ifltxcounter", "ifinlist", "ifinlistcs", "ifrmnum",
    "ifcsvoid", "ifdefmacro", "ifx"]
 
+/-- Commands that define the command named after them. -/
+def definingCommands : List String :=
+  ["newcommand", "renewcommand", "providecommand", "DeclareRobustCommand",
+   "NewDocumentCommand", "RenewDocumentCommand", "ProvideDocumentCommand",
+   "DeclareDocumentCommand", "NewExpandableDocumentCommand", "def", "edef", "gdef", "xdef",
+   "let", "newenvironment", "renewenvironment", "NewDocumentEnvironment"]
+
 /-- Whether a control sequence opens a TeX conditional (closed by `\fi`).
 `\ifx` is one, but takes no part in nesting decisions of its own: it is
 listed above only to keep the list honest. -/
@@ -479,6 +491,19 @@ def scanSrcWith (cfg : Config) (s : Src) (switches : Switches) (live : Bool := t
         conds := conds.push known
         i := j
         continue
+      -- A command being defined is not a use: `\newcommand{\leancheck}…`,
+      -- `\NewDocumentCommand\leancheck{O{} m}{}`, `\def\leanref#1#2{…}`.
+      if definingCommands.contains name then
+        let mut k := skipSpaces s j
+        if s.get k == '*' then k := skipSpaces s (k + 1)
+        if s.get k == '{' then
+          let (_, _, after) ← group s k
+          i := after
+        else if s.get k == '\\' then
+          i := (ctrlName s k).2
+        else
+          i := j
+        continue
       match name with
       | "verb" =>
         let d := if s.get j == '*' then j + 1 else j
@@ -536,6 +561,22 @@ def scanSrcWith (cfg : Config) (s : Src) (switches : Switches) (live : Bool := t
                              regionStart := j, regionEnd := j, env := envs.back?.getD 0 }
           r := { r with items := r.items.push { it with live := here } }
         i := j
+      | "leanhypref" =>
+        let g := skipSpaces s j
+        if s.get g == '{' then
+          let (ka, kb, after) ← group s g
+          let h := skipSpaces s after
+          if s.get h != '{' then
+            throw (parseError s h "\\leanhypref takes a key and a hypothesis: \\leanhypref{key}{h}")
+          let (ha, hb, stop) ← group s h
+          let it : Item := { kind := .hypref, name, start := i, stop, insertAt := j,
+                             key := (s.slice ka kb).trimAscii.toString,
+                             hyp := (s.slice ha hb).trimAscii.toString,
+                             regionStart := stop, regionEnd := stop, live := here }
+          r := { r with items := r.items.push it }
+          i := stop
+        else
+          i := j
       | "leanindex" =>
         let it : Item := { kind := .index, name, start := i, stop := j, insertAt := j,
                            regionStart := j, regionEnd := j }

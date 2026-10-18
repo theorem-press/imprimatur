@@ -89,13 +89,16 @@ mathematics sets wider than monospace. `\LeanMath` sets the lines as an array.
 ## `prose`: a theorem as a sentence
 
 ```latex
-\LeanProse{Let $m, n \in \mathbb{N}$. Assume \LeanHyp{h} $2m = 2n$. Then $m = n$.}
+\LeanProse{Let $m, n \in \mathbb{N}$. Assume $2m = 2n$. Then $m = n$.}
 ```
 
 The prose is built in four parts:
 
 - **Variables** are grouped when they have the same type.
-- **Hypotheses** are labelled with their names (`\LeanHyp`).
+- **Hypotheses** are labelled with their Lean names, `(h)` (`\LeanHyp`), only
+  where the paper refers to them: `\leanhypref{key}{h}` in the text prints
+  `(h)` and makes the prose view of `key` label `h`. A hypothesis the paper
+  never mentions is not labelled.
 - **The conclusion** is numbered when it is a conjunction. `↔` reads "if and
   only if", and `∃ x, p` reads "there is x such that p".
 - **A definition** reads "We define …".
