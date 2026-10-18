@@ -95,6 +95,9 @@ def stripEdits (cfg : Config) (s : Src) (items : Array Item) : Array Edit := Id.
     | .inline | .ref =>
       edits := edits.push { start := it.start, stop := it.stop, text := region }
     | .leanok => pure ()
+    | .hypref =>
+      -- The reference as the generated prose labels the hypothesis.
+      edits := edits.push { start := it.start, stop := it.stop, text := s!"\\LeanHyp\{{it.hyp}}" }
     | .check | .index =>
       -- Blueprint markup belongs to leanblueprint, so it stays.
       if it.name == "lean" then continue
@@ -122,6 +125,7 @@ def requests (doc : Doc) : String := Id.run do
   let q (t : String) : String := (Json.str t).compress
   let mut blocks : Array String := #[]
   let mut anchors : Array String := #[]
+  let mut hypRefs : Array String := #[]
   let mut order := 0
   for (f, fi) in doc.files.toList.zip (List.range doc.files.size) do
     -- Items and labels of the file, in order of position.
@@ -134,6 +138,9 @@ def requests (doc : Doc) : String := Id.run do
       | .inr l => anchors := anchors.push s!"\{\"name\": {q l}, \"order\": {order}}"
       | .inl ii =>
         let it := f.scan.items[ii]!
+        if it.kind == .hypref then
+          let r := s!"\{\"key\": {q it.key}, \"hyp\": {q it.hyp}}"
+          unless hypRefs.contains r do hypRefs := hypRefs.push r
         if it.kind == .block || it.kind == .inline then
           let label := match labels.find? (fun (a, b, _) => a == fi && b == ii) with
             | some (_, _, l) => s!", \"label\": {q l}"
@@ -176,8 +183,10 @@ def requests (doc : Doc) : String := Id.run do
     \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces},\n    \
     \"trusted_prefixes\": {list c.trustedPrefixes}, \
     \"challenges\": \{{", ".intercalate challenges.toList}}{extra}},\n"
+  let hypRefsText := if hypRefs.isEmpty then "" else
+    s!",\n    \"hypRefs\": [{", ".intercalate hypRefs.toList}]"
   let document := s!"  \"document\": \{\"blocks\": [\n    {",\n    ".intercalate blocks.toList}],\n    \
-    \"labels\": [\n    {",\n    ".intercalate anchors.toList}]},\n"
+    \"labels\": [\n    {",\n    ".intercalate anchors.toList}]{hypRefsText}},\n"
   return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n{config}{document}  \"requests\": \{\n\
     {",\n".intercalate lines.toList}\n  }\n}\n"
 

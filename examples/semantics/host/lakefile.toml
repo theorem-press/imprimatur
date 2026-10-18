@@ -1,0 +1,7 @@
+# A host project that knows nothing of imprimatur. In external mode
+# (DESIGN §6.3 A) nothing in it changes.
+name = "stlc"
+defaultTargets = ["Stlc"]
+
+[[lean_lib]]
+name = "Stlc"

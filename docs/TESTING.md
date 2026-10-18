@@ -75,7 +75,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§4 | (2) the splicer imports nothing from Lean but `Lean.Data.Json` | `lint/splice-imports` | M1 |
 | D§4 | (3) a notation rule naming a missing constant fails at build time (checked when the `Notation` fixture builds; the messages are tested by hand) | `extract/golden/Notation` | M4 |
 | D§4 | (4) every declaration has a default rendering (the `lean` view) | `extract/golden/Basic`, `integration/planet-lean-view`, `integration/math-lean-view` | M2 |
-| D§4 | (5) external mode changes nothing in the host project | `e2e/external` | M3 |
+| D§4 | (5) external mode changes nothing in the host project | `e2e/external`, `e2e/semantics` | M3 |
 | D§4 | (6) shipped packages have no Lake dependencies | `lint/no-deps` | M0 (lint) |
 | D§4 | (7) environments are imported at `private` level | `extract/modules/private-sorry-seen`, `extract/modules/sorry-through-import-all`, `extract/golden/ModuleSys` | M2 |
 | D§5 | extractor and splicer communicate only through the bundle | `splice/version/schema`, `extract/version/schema` | M1 |
@@ -88,8 +88,9 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.2 | notation matches `Expr`; unmatched subterms are rendered as functions, or delaborated | `extract/golden/Notation`, `extract/notation/no-render-errors` | M4 |
 | D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic`, `integration/planet-lean-view` | M2 |
 | D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
+| D§7.3 | `prose` labels only hypotheses the paper refers to (`\leanhypref`) | `extract/prose/hyp-referred-labelled`, `extract/prose/hyp-unreferred-unlabelled`, `splice/golden/hyprefs` | M5 |
 | D§7.3 | `math` and `prose` views | `extract/golden/Notation`, `e2e/minimal`, `e2e/fixture-views`, `integration/math-prose` | M4 |
-| D§7.3 | `rules` and `grammar` views | `extract/golden/Semantics`, `e2e/fixture-views`, `integration/planet-rules`, llmbda's parity gate | M5 |
+| D§7.3 | `rules` and `grammar` views | `extract/golden/Semantics`, `e2e/fixture-views`, `e2e/semantics`, `integration/planet-rules`, llmbda's parity gate | M5 |
 | D§7.3 | custom views through `@[latex_view]`, with the document inventory | `extract/golden/Semantics` (`fixture.rulelist`), llmbda's parity gate (four custom views) | M5 |
 | D§7.4 | rule label precedence; `latex_rules` templates, anchors, `sep`, `doc_labels`; groups across inductives | `extract/golden/Semantics`, llmbda's parity gate | M5 |
 | D§7.5 | notation rules: patterns, templates, `prec`, `width`, `hide`, `variant`, `flatten`, typed patterns, lookup order, metavariables | `extract/golden/Notation`, `extract/doc/template-prime`, `extract/doc/template-longest`, `extract/doc/template-unknown`, `extract/doc/metavar-subscript`, `extract/doc/metavar-digits`, `extract/doc/metavar-prime`, `extract/doc/metavar-long`, `extract/doc/metavar-renamed`, `splice/golden/notation-config` | M4 |
@@ -108,12 +109,13 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§9.1 | `leanblock`, `\leaninline`, `\leanref`, `\leancheck`, `\leanindex` are recognised | `splice/scan/forms`, `splice/scan/options`, `splice/scan/check-keys`, `splice/golden/basic` | M1 |
 | D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
 | D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases`, llmbda's parity gate | M5 |
+| D§10.1 | definitions of imprimatur's macros are not uses | `splice/golden/definitions` | M5 |
 | D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases`, llmbda's parity gate | M5 |
 | D§9.2 | aliases map existing environments onto `leanblock` | `splice/config/alias-slots`, `splice/golden/basic`, `splice/golden/positional-slots` | M1 |
 | D§9.3 | blueprint `\lean{…}` read as check-only references; `\leanok` cross-checked | `splice/golden/blueprint` | M3 |
 | D§9.3 | `--blueprint-compat` writes `\lean{…}` | — | M6 |
 | D§9.4 | a document compiles with `imprimatur.sty` (pdflatex and lualatex) and shows the spliced content | `e2e/minimal`, `e2e/sidecar` | M2 |
-| D§9.5 | slots keep their text by id; slot edits are not hand edits | `splice/slots/merge`, `splice/checksum/ignores-slot-text`, `splice/prop/slot-preservation`, `splice/prop/edit-detection`, `splice/golden/slots`, `splice/golden/unicode` | M1 |
+| D§9.5 | slots keep their text by id; slot edits are not hand edits | `e2e/semantics`, `splice/slots/merge`, `splice/checksum/ignores-slot-text`, `splice/prop/slot-preservation`, `splice/prop/edit-detection`, `splice/golden/slots`, `splice/golden/unicode` | M1 |
 | D§9.5 | orphaned slots are dropped with their text printed; `--rename-slot` | `splice/slots/orphans`, `splice/slots/rename`, `splice/golden/slots` | M1 |
 | D§9.5 | slots declared by position; `migrate-slots` | `splice/slots/found`, `splice/slots/outer`, `splice/golden/positional-slots`, `splice/golden/migrate-slots` | M1 |
 | D§10.1 | `scan` follows `\input`, `\include`, `\subfile`, skips comments, `\verb` and `verbatim`; malformed markup is an error with a position | `splice/scan/inputs`, `splice/scan/comment-skipped`, `splice/scan/verb-skipped`, `splice/scan/verbatim-skipped`, `splice/scan/unclosed-block`, `splice/prop/scanner-robustness`, `splice/prop/scanner-truncated`, `splice/golden/basic`, `splice/golden/comments-verbatim`, `splice/golden/macro-args`, `splice/golden/parse-errors`, `splice/golden/outside` | M1 |

@@ -360,7 +360,7 @@ resulting `Syntax`, to avoid exposing instance arguments
 | `lean` | the declaration's signature, pretty-printed by Lean (delaborator and `ppSignature`, with `open_scoped` active). Tokens are wrapped in semantic macros (`\LeanKeyword`, `\LeanConst`, `\LeanBound`, `\LeanSort`, …, in the manner of `agda.sty`) defined in `imprimatur.sty`. There are no verbatim environments, so the output works inside macro arguments | none |
 | `meta` | source location (§11), axioms used, `sorry` status, docstring | none |
 | `math` | the statement as a formula (§7.2) | notation |
-| `prose` | "Let …. Assume (h₁) …, (h₂) …. Then …": explicit Prop binders become labelled hypotheses, and the conclusion is split at `∧` | notation |
+| `prose` | "Let …. Assume …, (h₂) …. Then …": explicit Prop binders become hypotheses, labelled with their names where the paper refers to them (`\leanhypref{key}{h}`, M5), and the conclusion is split at `∧` | notation |
 | `rules` | each constructor of an inductive predicate becomes a mathpartir `\inferrule`; premises are its Prop-typed binders, in order, after premise conventions are applied (§7.6) | notation, groups |
 | `grammar` | inductive types become BNF alternatives, and structures become field lists. Constructors can be grouped into productions on one line or on separate lines, with a comment column (as in Ott). Each comment is an author-owned slot (§9.5), and the constructor's docstring supplies its default text | notation, groups |
 

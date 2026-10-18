@@ -64,7 +64,7 @@
       "decl": "Notation.binders",
       "doc": "Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a `match`, which falls back to Lean's printer.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathCode", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\exists", "\\forall", "\\implies", "\\in", "\\lambda", "\\leanmetasource", "\\mapsto", "\\mathbb", "\\mathrm", "\\ne", "\\to", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathCode", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\exists", "\\forall", "\\implies", "\\in", "\\lambda", "\\leanmetasource", "\\mapsto", "\\mathbb", "\\mathrm", "\\ne", "\\to", "\\wedge"],
       "sigHash": "f35290c1a52bd4ec389e89c77b632966bb98a89f72fe1b37689e53335bbd065b",
       "sorry": true,
       "source": {
@@ -78,7 +78,7 @@
         "math:binders": "\\LeanMath{(\\forall x.\\, x \\in s \\Rightarrow f\\,x = x) \\wedge (\\exists y.\\, y \\in s \\wedge f\\,y = y) \\implies (\\exists z.\\, z = f\\,0) \\wedge ((n \\mapsto n + 1)\\,0 \\LeanBreak = 1 \\wedge (\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}))}",
         "math:named": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a \\LeanCodeInline{match}, which falls back to Lean's printer.}",
-        "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume \\LeanHyp{h} $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$ and (4)~$\\mathrm{true} \\ne \\mathrm{false}$.}"
+        "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$ and (4)~$\\mathrm{true} \\ne \\mathrm{false}$.}"
       }
     },
     "Notation.logic": {
@@ -118,7 +118,7 @@
       "decl": "Notation.long",
       "doc": "A long statement, broken across lines in the math view.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanUsesSorry", "\\cdot", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanUsesSorry", "\\cdot", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\wedge"],
       "sigHash": "741759d8b08457cf755b7bd1167328d6d9c461cdca2d2882ee9c461a8b039a1a",
       "sorry": true,
       "source": {
@@ -132,7 +132,7 @@
         "math:binders": "\\LeanMath{a + b + c + d = e + f + g \\wedge e + f + g = a + b + c + d \\wedge a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g \\implies a + b + c + d + e + f + g \\LeanBreak = e + f + g + a + b + c + d \\wedge (a + b + c \\LeanBreak = c + b + a \\wedge (c + d + e = e + d + c \\wedge a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a))}",
         "math:named": "\\LeanMath{a + b + c + d = e + f + g \\wedge e + f + g = a + b + c + d \\wedge a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g \\LeanBreak \\implies a + b + c + d + e + f + g = e + f + g + a + b + c + d \\LeanBreak \\wedge a + b + c = c + b + a \\wedge c + d + e = e + d + c \\wedge a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A long statement, broken across lines in the math view.}",
-        "prose": "\\LeanProse{Let $a, b, c, d, e, f, g \\in \\mathbb{N}$. Assume \\LeanHyp{h₁} $a + b + c + d = e + f + g$, \\LeanHyp{h₂} $e + f + g = a + b + c + d$ and \\LeanHyp{h₃} $a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g$. Then (1)~$a + b + c + d + e + f + g = e + f + g + a + b + c + d$, (2)~$a + b + c = c + b + a$, (3)~$c + d + e = e + d + c$ and (4)~$a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a$.}"
+        "prose": "\\LeanProse{Let $a, b, c, d, e, f, g \\in \\mathbb{N}$. Assume $a + b + c + d = e + f + g$, $e + f + g = a + b + c + d$ and $a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g$. Then (1)~$a + b + c + d + e + f + g = e + f + g + a + b + c + d$, (2)~$a + b + c = c + b + a$, (3)~$c + d + e = e + d + c$ and (4)~$a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a$.}"
       }
     },
     "Notation.order": {
@@ -172,7 +172,7 @@
       "decl": "Notation.project",
       "doc": "Notation from the project: every feature of a rule.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\implies", "\\in", "\\leanmetasource", "\\lub", "\\mathbb", "\\mathbf", "\\mathbin", "\\mathrm", "\\models", "\\neg", "\\rho", "\\to", "\\triangleright", "\\vdash", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\implies", "\\in", "\\leanmetasource", "\\lub", "\\mathbb", "\\mathbf", "\\mathbin", "\\mathrm", "\\models", "\\neg", "\\rho", "\\to", "\\triangleright", "\\vdash", "\\wedge"],
       "sigHash": "c134fb1e52b319051da4329bdb04b49634aa06ab95f5c032ecb4bb13072cea7b",
       "sorry": true,
       "source": {
@@ -186,7 +186,7 @@
         "math:binders": "\\LeanMath{2n = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge (\\vdash L \\wedge (n = m \\Rightarrow n \\models m))}",
         "math:named": "\\LeanMath{\\mathrm{dbl}(n) = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Notation from the project: every feature of a rule.}",
-        "prose": "\\LeanProse{Let $n, m, k \\in \\mathbb{N}$, $\\rho \\in \\LeanMathConst{Fin}\\,0 \\to \\mathbb{N}$ and $L \\in \\mathbb{N}$. Assume \\LeanHyp{hd} $2n = m$, \\LeanHyp{hr} $\\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho$, \\LeanHyp{hl} $\\lub{n, m, k, n} = k$ and \\LeanHyp{hz} $\\mathbf{0} = 0$. Then (1)~$n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k$, (2)~$\\vdash L$ and (3)~$n = m \\implies n \\models m$.}"
+        "prose": "\\LeanProse{Let $n, m, k \\in \\mathbb{N}$, $\\rho \\in \\LeanMathConst{Fin}\\,0 \\to \\mathbb{N}$ and $L \\in \\mathbb{N}$. Assume $2n = m$, $\\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho$, $\\lub{n, m, k, n} = k$ and $\\mathbf{0} = 0$. Then (1)~$n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k$, (2)~$\\vdash L$ and (3)~$n = m \\implies n \\models m$.}"
       }
     },
     "Notation.sets": {

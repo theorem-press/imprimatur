@@ -197,7 +197,7 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
     let eol := dominantEol s.chars
     let mut edits : Array Edit := #[]
     for (it, ii) in f.scan.items.toList.zip (List.range f.scan.items.size) do
-      if it.kind == .check || it.kind == .index || it.kind == .leanok then continue
+      if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then continue
       let loc := s.locString it.start
       let missing :=
         if o.keepStale then
