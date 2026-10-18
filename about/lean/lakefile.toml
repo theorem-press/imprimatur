@@ -1,0 +1,8 @@
+# A model of imprimatur's splicer, with its laws and the soundness of
+# `imprimatur check` proved (DESIGN §18.2). It knows nothing of imprimatur:
+# the paper in ../ reads it in external mode.
+name = "splice-model"
+defaultTargets = ["SpliceModel"]
+
+[[lean_lib]]
+name = "SpliceModel"

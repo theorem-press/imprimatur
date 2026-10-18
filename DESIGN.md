@@ -1078,8 +1078,9 @@ survey found the clearest gap, and they don't depend on the notation work.
 What does it mean for imprimatur to be correct? A paper is correct with
 respect to its Lean development when what it shows is what Lean proved. This
 section states that as two theorems, one about the splicer and one about the
-notation, with the trusted base they rest on. Neither is proved yet; §18.4
-says how they will be checked.
+notation, with the trusted base they rest on. Theorem 1 and the splicer's
+laws are proved for a model of the splicer (`about/lean`); §18.4 says how
+the rest is checked.
 
 ### 18.1 What a document claims
 
@@ -1113,7 +1114,11 @@ strings and so can be proved in Lean, where the splicer is written:
 - **fixed point:** `check(apply(d, b), b)` reports nothing stale;
 - **slot preservation:** slot text survives regeneration.
 
-Today these are property-tested (PLAN §2.3).
+They are proved in Lean for a model of the splicer, in which a document is
+already parsed into pieces (`about/lean`, presented in
+`about/imprimatur-paper.tex`, a paper built and checked with imprimatur). The
+splicer itself, which works on TeX source, is property-tested against them
+(PLAN §2.3).
 
 ### 18.3 Theorem 2: rendering is faithful
 
@@ -1170,7 +1175,8 @@ stands only for values).
 
 The extractor is meta-programming and will not be verified. Instead:
 
-- **the splicer's laws** (Theorem 1) are proved in Lean;
+- **the splicer's laws** and Theorem 1 are proved in Lean for a model of the
+  splicer (`about/lean`); the splicer's scanner and edits are property-tested;
 - **Theorem 2 by translation validation** (`Imprimatur.Validate`), below;
 - **the `Doc` emitter's parenthesisation**, a few dozen lines, is proved
   correct with respect to precedence.

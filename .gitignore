@@ -13,3 +13,13 @@ _site/
 /examples/**/*.synctex.gz
 /examples/**/*.out
 /examples/*/host/lake-manifest.json
+# The paper about imprimatur: its build files, and the bundle imprimatur makes
+/about/.imprimatur/
+/about/*.aux
+/about/*.log
+/about/*.fls
+/about/*.fdb_latexmk
+/about/*.pdf
+/about/*.synctex.gz
+/about/*.out
+/about/lean/lake-manifest.json

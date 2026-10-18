@@ -42,7 +42,7 @@ normalise() {  # pdftotext output, independent of small TeX differences
 # One test per example, named so docs/TESTING.md can refer to it. An example
 # without a name here is an error, so none is skipped by accident.
 TESTS=(e2e/external e2e/minimal e2e/semantics e2e/sidecar)
-# And one test that is not an example: e2e/fixture-views, below.
+# And two tests that are not examples: e2e/fixture-views and e2e/about, below.
 
 # External mode needs an extractor built for the examples' toolchain. It goes in
 # a cache inside e2e-out, so the run touches nothing outside the repository.
@@ -133,6 +133,27 @@ for engine in pdflatex lualatex; do
     echo "  FAIL: $engine log has undefined macros or missing glyphs"; status=1
   fi
 done
+
+# e2e/about: the paper about imprimatur (about/), whose theorems are proved in
+# its Lean model of the splicer. The committed paper must be what `build`
+# makes, `check` must report nothing at all (warnings included: every formula
+# reads back), and it must typeset.
+echo "== e2e/about"
+work="e2e-out/about"; rm -rf "$work"; mkdir -p "$work"
+(cd about && tar --exclude=.lake --exclude=.imprimatur --exclude='*.pdf' --exclude='*.aux' \
+  --exclude='*.log' --exclude='*.fls' --exclude='*.fdb_latexmk' -cf - .) | (cd "$work" && tar -xf -)
+if ! (cd "$work/lean" && lake build -q > ../lake.log 2>&1); then
+  echo "  FAIL: the Lean model does not build"; sed 's/^/    /' "$work/lake.log"; status=1
+elif ! (cd "$work" && "$IMPRIMATUR" build > build.log 2>&1 && "$IMPRIMATUR" check > check.log 2>&1); then
+  echo "  FAIL: build or check"; cat "$work"/build.log "$work"/check.log 2>/dev/null | sed 's/^/    /'; status=1
+elif ! grep -q "check: 0 stale, 0 errors, 0 warnings" "$work/check.log"; then
+  echo "  FAIL: check reports something"; sed 's/^/    /' "$work/check.log"; status=1
+else
+  compare "$work/imprimatur-paper.tex" about/imprimatur-paper.tex "the built paper"
+  if ! (cd "$work" && TEXINPUTS="$ROOT/tex//:" latexmk -pdf -interaction=nonstopmode -halt-on-error imprimatur-paper.tex > latexmk.log 2>&1); then
+    echo "  FAIL: the paper does not typeset"; status=1
+  fi
+fi
 
 [ $status = 0 ] && echo "e2e: all examples passed"
 exit $status
