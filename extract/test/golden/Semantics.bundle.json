@@ -55,6 +55,10 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "bcd5ea338db26567bb6b94bdb39bb976c43ce9cc88b3cfdf909cb0e25c08eb36",
+      "validation": {
+        "rules": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[application f(a)[\\Gamma; i]; t]"],
+        "rules|exclude=beta": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[application f(a)[\\Gamma; i]; t]"]
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{HasType} : \\LeanConst{Ctx} → \\LeanConst{Tm} → \\LeanConst{Ty} → \\LeanSort{Prop}}",

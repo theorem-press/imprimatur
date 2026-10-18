@@ -10,6 +10,7 @@ import Imprimatur.Notation
 import Imprimatur.Commands
 import Imprimatur.Views.Lean
 import Imprimatur.Requests
+import Imprimatur.Validate
 
 /-!
 # Rendering expressions as mathematics
@@ -33,11 +34,28 @@ import Imprimatur.Requests
      subscripts for trailing digits);
    - literals and sorts.
 3. **Lean's delaborator,** for anything else (`match`, `let`, …), in monospace.
+
+When the context asks for it (`problems`), each formula a view renders is
+read back (DESIGN §18.4, `Imprimatur.Validate`): the renderer logs the atoms
+it writes (variables, literals, constants without notation), and the
+formula must parse, in the grammar of the notation in scope, as exactly one
+expression. Two variables that print alike are reported too.
 -/
 
 namespace Imprimatur.Render
 
 open Lean Meta
+
+/-- An atom written in a formula, for reading it back. -/
+structure Atom where
+  /-- Its TeX. -/
+  tex : String
+  /-- Its sort (`Validate`). -/
+  sort : String
+  /-- A bound variable's name, at its binder. -/
+  isVar : Bool := false
+  /-- The variable it is, if it is one. -/
+  fvar : Option FVarId := none
 
 /-- What rendering needs. -/
 structure Ctx where
@@ -63,6 +81,14 @@ structure Ctx where
   document : DocumentInfo := {}
   /-- The key being rendered, as the document writes it. -/
   key : String := ""
+  /-- Where to report formulas that do not read back faithfully, when they
+  are to be checked (DESIGN §18.4). -/
+  problems : Option (IO.Ref (Array String)) := none
+  /-- The atoms written in the formula being rendered. -/
+  atoms : Option (IO.Ref (Array Atom)) := none
+  /-- The grammar of the notation in scope (`Validate.notationGrammar`),
+  built once for the formulas a view renders. -/
+  grammar : Option Validate.Grammar := none
 
 /-- The renderer's monad. -/
 abbrev RenderM := ReaderT Ctx MetaM
@@ -132,21 +158,70 @@ def candidates (head : Name) : RenderM (Array NotationRule) := do
     x1 < x2 || (x1 == x2 && y1 ≤ y2)
   return (rs.toList.mergeSort le).toArray.filter fun r => r.variant.isNone || r.variant == ctx.variant
 
-/-- The depth of unescaped braces after `t`, starting from `d`. -/
-def braceDepth (t : String) (d : Nat) : Nat := Id.run do
-  let mut d := d
-  let mut esc := false
-  for c in t.toList do
-    if esc then esc := false; continue
-    if c == '\\' then esc := true
-    else if c == '{' then d := d + 1
-    else if c == '}' then d := d - 1
-  return d
+/-- Log an atom of the formula being rendered. -/
+def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none) :
+    RenderM Unit := do
+  if let some r := (← read).atoms then r.modify (·.push { tex, sort, isVar, fvar })
+
+/-- The sort of an expression, for reading back. -/
+def sortOf (e : Expr) : MetaM String := do
+  try sortKey (← inferType e) catch _ => pure "*"
+
+/-- Read a rendered formula back (DESIGN §18.4): it must have exactly one
+reading as an expression of `e`'s sort, and its free variables must print
+differently. Problems go to the context's `problems`. -/
+def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array String)) :
+    RenderM Unit := do
+  let ctx ← read
+  let tex := d.render 100000
+  let ts := Validate.tokenize tex
+  if ts.isEmpty then return
+  let mut leaves : Array Validate.Prod := #[]
+  for a in atoms do
+    let p : Validate.Prod :=
+      { name := a.tex, sort := a.sort, prec := Doc.maxPrec, isVar := a.isVar,
+        syms := (Validate.tokenize a.tex).map .tok }
+    unless p.syms.isEmpty || leaves.any (fun q => q.name == p.name && q.sort == p.sort && q.isVar == p.isVar) do
+      leaves := leaves.push p
+  let base := ctx.grammar.getD
+    (Validate.notationGrammar ctx.rules ctx.variant ctx.callVars ctx.subscriptVars)
+  let g := base.extend leaves
+  let (rs, over) := Validate.readBack g ts (← sortOf e)
+  if over then
+    problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
+  else if rs.isEmpty then
+    -- IMPRIMATUR_VALIDATE_DEBUG=1 shows the tokens and the grammar.
+    if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+      IO.eprintln s!"validate: {ts} as {← sortOf e}"
+      for (p, b) in g.prods do IO.eprintln s!"  {p.name} : {p.sort} @{p.prec} := {repr b}"
+    problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
+  else if rs.size ≥ 2 then
+    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!} and as {rs[1]!}")
+  -- Free variables that print alike.
+  let lctx ← getLCtx
+  let free := atoms.filterMap fun a => match a.fvar with
+    | some f => if lctx.contains f then some (f, a.tex) else none
+    | none => none
+  let mut seen : Array (FVarId × String) := #[]
+  for (f, t) in free do
+    if let some (f', _) := seen.find? fun (f', t') => t' == t && f' != f then
+      let n₁ := (lctx.find? f').map (·.userName.eraseMacroScopes.toString) |>.getD "?"
+      let n₂ := (lctx.find? f).map (·.userName.eraseMacroScopes.toString) |>.getD "?"
+      let p := s!"variables {n₁} and {n₂} both print as ${t}$, in ${tex}$"
+      unless (← problems.get).contains p do problems.modify (·.push p)
+    unless seen.any (·.1 == f) do seen := seen.push (f, t)
 
 mutual
 
-  /-- Render an expression. -/
+  /-- Render an expression. A formula a view renders (not a part of one) is
+  read back when the context asks for it. -/
   partial def render (e : Expr) : RenderM Doc := do
+    let ctx ← read
+    if let (some problems, none) := (ctx.problems, ctx.atoms) then
+      let atoms ← IO.mkRef #[]
+      let d ← withReader (fun c => { c with atoms := some atoms }) (render e)
+      validate e d (← atoms.get) problems
+      return d
     let e := e.consumeMData
     -- Notation rules first: those for the head constant, or for the binder.
     let head : Name := match e with
@@ -171,26 +246,38 @@ mutual
         if let some d ← renderExists e then return d
     match e with
     | .fvar f =>
-      match (← read).overrides.find? (·.1 == f) with
-      | some (_, t) => return .tex t
-      | none => return .tex (← varName (← f.getUserName))
-    | .sort .zero => return .tex "\\mathrm{Prop}"
-    | .sort _ => return .tex "\\mathrm{Type}"
-    | .lit (.natVal n) => return .tex (toString n)
-    | .lit (.strVal s) => return .tex s!"\\text\{``{TeX.escape s}''}"
+      let t ← match (← read).overrides.find? (·.1 == f) with
+        | some (_, t) => pure t
+        | none => varName (← f.getUserName)
+      logAtom t (← sortOf e) (fvar := some f)
+      return .tex t
+    | .sort .zero => logAtom "\\mathrm{Prop}" "Sort"; return .tex "\\mathrm{Prop}"
+    | .sort _ => logAtom "\\mathrm{Type}" "Sort"; return .tex "\\mathrm{Type}"
+    | .lit (.natVal n) => logAtom (toString n) "Nat"; return .tex (toString n)
+    | .lit (.strVal s) =>
+      let t := s!"\\text\{``{TeX.escape s}''}"
+      logAtom t "String"
+      return .tex t
     | .forallE .. => renderForall e
     | .lam n t b bi =>
       withLocalDecl n bi t fun x => do
         let body ← render (b.instantiate1 x)
+        logAtom (← varName n) "*" (isVar := true)
         return .node 0 #[.tex s!"\\lambda {← varName n}.\\,", .child 0 body]
-    | .const h _ => return .tex (constTeX (← read).strip h)
+    | .const h _ =>
+      let t := constTeX (← read).strip h
+      logAtom t (← sortOf e)
+      return .tex t
     | .app .. =>
       if ← isMatcherApp e then return ← delab e
       let f := e.getAppFn
       match f with
       | .const h _ =>
         match ← explicitArgsLoose e with
-        | some (_, args) => apply (.tex (constTeX (← read).strip h)) args
+        | some (_, args) =>
+          let t := constTeX (← read).strip h
+          logAtom t "*"
+          apply (.tex t) args
         | none => delab e
       | .fvar _ =>
         if (← read).subscriptVars then
@@ -259,7 +346,7 @@ mutual
       let mut out : Array Nat := #[]
       for p in parts do
         match p with
-        | .inl t => d := braceDepth t d
+        | .inl t => d := TeX.braceDepth t d
         | .inr _ => out := out.push d
       return out
     let topCount := (topHoles.filter (· == 0)).size
@@ -277,7 +364,7 @@ mutual
           w := tw
           textW := some 0
         out := out.push (.text t w)
-        depth := braceDepth t depth
+        depth := TeX.braceDepth t depth
       | .inr v =>
         if hidden.contains v then
           holeIdx := holeIdx + 1
@@ -337,6 +424,7 @@ mutual
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
       let v ← varName n
+      logAtom v "*" (isVar := true)
       -- `∃ x, x ∈ s ∧ p` is written `∃ x ∈ s, p`.
       if body.isAppOfArity ``And 2 then
         let mem := body.appFn!.appArg!
@@ -361,6 +449,7 @@ mutual
       -- Instance binders are not shown.
       if bi.isInstImplicit then return ← render body
       let v ← varName n
+      logAtom v "*" (isVar := true)
       -- `∀ x, x ∈ s → p` is written `∀ x ∈ s, p`.
       if let .forallE _ dom rest _ := body then
         if !rest.hasLooseBVars && dom.isAppOfArity ``Membership.mem 5 && dom.appArg! == x then
@@ -373,7 +462,9 @@ mutual
   partial def delab (e : Expr) : RenderM Doc := do
     let text := toString (← ppExpr e)
     let line := " ".intercalate ((text.splitOn "\n").map (·.trimAscii.toString))
-    return .text s!"\\LeanMathCode\{{TeX.escape line}}" line.length
+    let t := s!"\\LeanMathCode\{{TeX.escape line}}"
+    logAtom t (← sortOf e)
+    return .text t line.length
 
 end
 

@@ -51,6 +51,9 @@ structure Entry where
   views : Array (String × String) := #[]
   /-- Views that failed to render, with the reason. -/
   errors : Array (String × String) := #[]
+  /-- For each view, the formulas in it that do not read back faithfully
+  (DESIGN §18.4). -/
+  validation : Array (String × Array String) := #[]
   deriving Repr
 
 /-- A bundle. -/
@@ -137,7 +140,13 @@ private def entry (key : String) (j : Json) : Except String Entry := do
   let errors ← match j.getObjVal? "errors" with
     | .ok e => strMap s!"{w}.errors" e
     | .error _ => pure #[]
-  return { key, kind, source, axioms, usesSorry, untrusted, reasons, stmtHash, sigHash, views, errors }
+  let validation ← match j.getObjVal? "validation" with
+    | .ok v => match v.getObj? with
+      | .ok kvs => kvs.toArray.mapM fun ⟨k, ps⟩ => do return (k, ← strs s!"{w}.validation.{k}" ps)
+      | .error _ => throw s!"{w}.validation must be an object"
+    | .error _ => pure #[]
+  return { key, kind, source, axioms, usesSorry, untrusted, reasons, stmtHash, sigHash, views, errors,
+           validation }
 
 /-- Read a bundle from JSON text. -/
 def Bundle.parse (text : String) : Except String Bundle := do

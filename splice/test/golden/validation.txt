@@ -1,0 +1,31 @@
+$ imprimatur-splice apply --bundle v.bundle.json
+apply: 4 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle v.bundle.json
+main.tex:4:1: warning[unfaithful-rendering]: Demo.swap (math): ambiguous: $(a\ b) \cdot e_{1}\; e_{2}$ reads as swap[a; b; app[e_{1}; e_{2}]] and as app[swap[a; b; e_{1}]; e_{2}]
+main.tex:12:13: warning[unfaithful-rendering]: Demo.swap (math): ambiguous: $(a\ b) \cdot e_{1}\; e_{2}$ reads as swap[a; b; app[e_{1}; e_{2}]] and as app[swap[a; b; e_{1}]; e_{2}]
+check: 0 stale, 0 errors, 2 warnings
+[exit 0]
+
+== main.tex
+\documentclass{article}
+\begin{document}
+% A typeset block whose rendering is ambiguous: check warns.
+\begin{leanblock}[view=math, sum=lq3abcfXcP]{Demo.swap}{Swapping}
+$(a\ b) \cdot e_{1}\; e_{2}$
+\end{leanblock}
+% The same key in another view, which reads back faithfully: no warning.
+\begin{leanblock}[sum=rbZ45e4Lc6]{Demo.swap}{In Lean}
+def Demo.swap
+\end{leanblock}
+% Inline, also ambiguous.
+Swapping is \leaninline[view=math, sum=lq3abcfXcP]{Demo.swap}{$(a\ b) \cdot e_{1}\; e_{2}$}.
+% Not typeset: maintained, but not warned about.
+\iffalse
+\begin{leanblock}[view=math, sum=lq3abcfXcP]{Demo.swap}{Hidden}
+$(a\ b) \cdot e_{1}\; e_{2}$
+\end{leanblock}
+\fi
+\end{document}
+

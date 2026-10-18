@@ -75,4 +75,15 @@ where
       | none => go rest (out ++ "\\$")
     | c :: rest, out => go rest (out ++ escape c.toString)
 
+/-- The depth of unescaped braces after `t`, starting from `d`. -/
+def braceDepth (t : String) (d : Nat) : Nat := Id.run do
+  let mut d := d
+  let mut esc := false
+  for c in t.toList do
+    if esc then esc := false; continue
+    if c == '\\' then esc := true
+    else if c == '{' then d := d + 1
+    else if c == '}' then d := d - 1
+  return d
+
 end Imprimatur.TeX

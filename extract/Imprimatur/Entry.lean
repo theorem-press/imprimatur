@@ -153,23 +153,47 @@ def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array Str
            metavars := projectMetavars env, variant, strip := s.stripNamespaces, used, rawVars,
            callVars, subscriptVars, document := s.document, key }
 
+/-- Run a view that renders mathematics. The formulas it renders are read
+back unless the configuration says not to (DESIGN §18.4); the problems
+found come back with the view's text. -/
+def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array String))
+    (key : String) (act : Render.Ctx → MetaM String) : MetaM (Except String String × Array String) := do
+  let ctx ← renderCtx s variant used key
+  let problems ← IO.mkRef #[]
+  let ctx := if s.validate then
+      { ctx with problems := some problems,
+                 grammar := some (Validate.notationGrammar ctx.rules variant ctx.callVars ctx.subscriptVars) }
+    else ctx
+  let r ← guarded (act ctx)
+  return (r, ← problems.get)
+
+/-- The `validation` field of an entry: each view's problems, if any. -/
+def validationField (vs : Array (String × Array String)) : Array (String × J) :=
+  let vs := vs.filter (!·.2.isEmpty)
+  if vs.isEmpty then #[] else #[("validation", .obj (vs.map fun (v, ps) => (v, .arr (ps.map .str))))]
+
 /-- The entry for a `latex_group`: a key that names a group of rules, not a
 declaration. Only the `rules` view applies. -/
 def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Ref (Array String))
     (extra : Array (String × String) := #[]) : MetaM J := do
   let mut views : Array (String × J) := #[]
   let mut errors : Array (String × J) := #[]
+  let mut validation : Array (String × Array String) := #[]
   for v in r.views do
     let spec := parseViewSpec v
     let spec := { spec with opts := spec.opts ++ extra }
-    let ctx ← renderCtx s spec.variant used r.key
+    let run := runRendered s spec.variant used r.key
     if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == spec.base) then
-      match ← guarded ((runCustomView fn r.key none spec.opts).run ctx) with
+      let (res, ps) ← run (runCustomView fn r.key none spec.opts).run
+      validation := validation.push (v, ps)
+      match res with
       | .ok t => views := views.push (v, .str t)
       | .error msg => errors := errors.push (v, .str msg)
     else if let (some g, "rules") := (g, spec.base) then
       let ctors := Views.selectCtors g.ctors (spec.opt "include") (spec.opt "exclude")
-      match ← guarded ((Views.rulesView ctors).run ctx) with
+      let (res, ps) ← run (Views.rulesView ctors).run
+      validation := validation.push (v, ps)
+      match res with
       | .ok t => views := views.push (v, .str t)
       | .error msg => errors := errors.push (v, .str msg)
     else errors := errors.push (v, .str s!"{r.key} names no declaration, so only a group's rules view or a custom view applies, not {v}")
@@ -178,6 +202,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
     ("kind", .str "group"), ("decl", .str r.key), ("axioms", .arr #[]), ("sorry", .bool false),
     ("macros", .arr ((macrosOf allTeX).map .str)), ("views", .obj views)]
   unless errors.isEmpty do fields := fields.push ("errors", .obj errors)
+  fields := fields ++ validationField validation
   return .obj fields
 
 /-- The entry for a constant, as JSON. -/
@@ -198,6 +223,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
   let src ← sourceOf root c.name
   let mut views : Array (String × J) := #[]
   let mut errors : Array (String × J) := #[]
+  let mut validation : Array (String × Array String) := #[]
   let wanted := (knownViews.toArray ++ r.views).foldl (fun a v => if a.contains v then a else a.push v) #[]
   for v in wanted do
     match v with
@@ -213,9 +239,11 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
       let spec := { spec with opts := spec.opts ++ extra }
       let base := spec.base
       let variant := spec.variant
+      let run := runRendered s variant used r.key
       if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == base) then
-        let ctx ← renderCtx s variant used r.key
-        match ← guarded ((runCustomView fn r.key (some c) spec.opts).run ctx) with
+        let (res, ps) ← run (runCustomView fn r.key (some c) spec.opts).run
+        validation := validation.push (other, ps)
+        match res with
         | .ok v => views := views.push (other, .str v)
         | .error msg => errors := errors.push (other, .str msg)
       else if base == "rules" then
@@ -226,22 +254,25 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
         if ctors.isEmpty then
           errors := errors.push (other, .str s!"the rules view needs an inductive predicate or a constructor")
         else
-          let ctx ← renderCtx s variant used r.key
           let ctors := Views.selectCtors ctors (spec.opt "include") (spec.opt "exclude")
-          match ← guarded ((Views.rulesView ctors).run ctx) with
+          let (res, ps) ← run (Views.rulesView ctors).run
+          validation := validation.push (other, ps)
+          match res with
           | .ok v => views := views.push (other, .str v)
           | .error msg => errors := errors.push (other, .str msg)
       else if base == "grammar" then
-        let ctx ← renderCtx s variant used r.key
-        match ← guarded ((Views.grammarView c).run ctx) with
+        let (res, ps) ← run (Views.grammarView c).run
+        validation := validation.push (other, ps)
+        match res with
         | .ok v => views := views.push (other, .str v)
         | .error msg => errors := errors.push (other, .str msg)
       else if base == "math" || base == "prose" then
-        let ctx ← renderCtx s variant used r.key
-        let act : MetaM String :=
-          if base == "math" then (Views.mathViewWith c s.width spec.opts).run ctx
-          else (Views.proseView c s.width).run ctx
-        match ← guarded act with
+        let act : Render.Ctx → MetaM String :=
+          if base == "math" then (Views.mathViewWith c s.width spec.opts).run
+          else (Views.proseView c s.width).run
+        let (res, ps) ← run act
+        validation := validation.push (other, ps)
+        match res with
         | .ok v => views := views.push (other, .str v)
         | .error msg => errors := errors.push (other, .str msg)
       else
@@ -281,6 +312,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
   if let some (path, line) := src then
     fields := fields.push ("source", .obj #[("path", .str path), ("line", .num line)])
   unless errors.isEmpty do fields := fields.push ("errors", .obj errors)
+  fields := fields ++ validationField validation
   return .obj fields
 
 end Imprimatur

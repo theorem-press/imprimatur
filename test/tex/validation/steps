@@ -1,0 +1,2 @@
+apply --bundle v.bundle.json
+check --bundle v.bundle.json

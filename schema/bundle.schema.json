@@ -61,7 +61,12 @@
         "sigHash": { "$ref": "#/$defs/hash" },
         "macros": { "type": "array", "items": { "type": "string", "pattern": "^\\\\" } },
         "views": { "type": "object", "additionalProperties": { "type": "string" } },
-        "errors": { "type": "object", "additionalProperties": { "type": "string" } }
+        "errors": { "type": "object", "additionalProperties": { "type": "string" } },
+        "validation": {
+          "description": "For each view, the formulas in it that do not read back faithfully (DESIGN §18.4).",
+          "type": "object",
+          "additionalProperties": { "type": "array", "items": { "type": "string" } }
+        }
       }
     }
   }

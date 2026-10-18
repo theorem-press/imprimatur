@@ -116,9 +116,46 @@ structure NotationRule where
   breakBefore : Bool := false
   /-- For a flattened binder rule, the text between the bound variables. -/
   sep : String := ", "
+  /-- The sort of what the rule renders (its type's head, `Prop`, `Sort`, or
+  `*` when unknown), for reading renderings back (DESIGN §18.3). -/
+  sort : String := "*"
+  /-- The sorts of its variables. -/
+  holeSorts : Array (Name × String) := #[]
+  /-- A synonym writes a constant as what it is by definition (`Nat.succ n`
+  as `n + 1`), so reading it back as that is right: it adds no reading of
+  its own (DESIGN §18.3). -/
+  synonym : Bool := false
   /-- Where the rule came from, for messages: a module or a pack. -/
   origin : String := ""
   deriving Inhabited
+
+/-- The sort of an expression of type `t`, as the validator compares sorts
+(DESIGN §18.3):
+
+- `Prop`, and `Sort` for types;
+- the head constant of a type, after unfolding reducible definitions;
+- `(A → B)` for a function type;
+- `?m`, a type variable, for a type a notation pattern leaves open
+  (`a ⊔ b` for any `a b : α`): the holes of that sort must agree;
+- `'x` for a type parameter `x` of the statement;
+- `*` when unknown (a dependent function type, a universe that may be zero). -/
+partial def sortKey (t : Expr) : MetaM String := do
+  let t ← whnfR (← instantiateMVars t)
+  match t with
+  | .sort .zero => return "Prop"
+  -- A universe that may be zero (`Sort u`) is either.
+  | .sort u => return if u.isNeverZero then "Sort" else "*"
+  | .forallE _ d b _ =>
+    if b.hasLooseBVars then return "*"
+    let d ← sortKey d
+    let b ← sortKey b
+    return if d == "*" && b == "*" then "*" else s!"({d} → {b})"
+  | _ =>
+    match t.getAppFn with
+    | .const n _ => return n.toString
+    | .mvar m => return s!"?{m.name}"
+    | .fvar f => return s!"'{f.name}"
+    | _ => return "*"
 
 /-- The head constant of a rule. -/
 def NotationRule.head (r : NotationRule) : Name := r.pat.head
