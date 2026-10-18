@@ -147,7 +147,12 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§16 | project B `check --anonymous` | — | M6 |
 | D§16 | math catalogue comparator manifests import cleanly | `integration/math-manifests` | M3 |
 | D§17 | roadmap | — | n/a |
-| D§18 | open questions | — | n/a |
+| D§18.1 | what a document claims | — | n/a |
+| D§18.2 | correctness: the splicer's laws (Theorem 1) | `splice/prop/locality`, `splice/prop/idempotence`, `splice/prop/fixed-point`, `splice/prop/slot-preservation` (property tests; proofs not yet scheduled) | M1 |
+| D§18.3 | correctness: faithful rendering (Theorem 2) | — | n/a |
+| D§18.4 | checking it: proofs of the splicer's laws, translation validation of renderings | — (not yet scheduled) | n/a |
+| D§18.5 | the trusted base | — | n/a |
+| D§19 | open questions | — | n/a |
 | D§A | claims still to check | — | n/a |
 
 The test harness has its own checks (`testkit/harness/counts`,

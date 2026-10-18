@@ -1072,7 +1072,122 @@ their blocks are kept up to date), and the document inventory, which
 The trust features moved earlier than in revision 1. They are where the
 survey found the clearest gap, and they don't depend on the notation work.
 
-## 18. Open questions
+## 18. Correctness
+
+What does it mean for imprimatur to be correct? A paper is correct with
+respect to its Lean development when what it shows is what Lean proved. This
+section states that as two theorems, one about the splicer and one about the
+notation, with the trusted base they rest on. Neither is proved yet; §18.4
+says how they will be checked.
+
+### 18.1 What a document claims
+
+A document `D` is read as a list of *claims*, each tied to a key `k`, which
+names a constant of the Lean environment `E` with type `T_k`:
+
+- **Generated claims.** A block or `\leaninline` of view `v` on `k` shows
+  `render_N(v, T_k)`, where `N` is the notation module.
+- **Attested claims.** A `\leancheck[stmt=h]{k}` attached to hand-written prose
+  records that a person checked the prose against the statement whose hash is
+  `h`. Prose has no formal meaning; it is only attested.
+
+The meaning `⟦D⟧` is the set of propositions `T_k`, each asserted as proved.
+
+### 18.2 Theorem 1: what `check` guarantees
+
+**If `imprimatur check D` succeeds against `E`, then for every claim on `k`:**
+
+1. `k` is a constant of `E`, proved with no `sorry` and with only the
+   permitted axioms (§7.7);
+2. for a generated claim, the text in the document is exactly
+   `render_N(v, T_k)` for the current `E`;
+3. for an attested claim, the statement hash of `T_k` is `h`: assuming no
+   collision, the statement has not changed since the prose was checked.
+
+It rests on the splicer's laws, which are statements about pure functions on
+strings and so can be proved in Lean, where the splicer is written:
+
+- **locality:** `apply` changes nothing outside generated regions and `sum=`;
+- **idempotence:** `apply(apply(d, b), b) = apply(d, b)`;
+- **fixed point:** `check(apply(d, b), b)` reports nothing stale;
+- **slot preservation:** slot text survives regeneration.
+
+Today these are property-tested (PLAN §2.3).
+
+### 18.3 Theorem 2: rendering is faithful
+
+Theorem 1 says the text is the *rendering* of `T_k`. Theorem 2 says a reader
+recovers `T_k` from it. This is Pollack's question of believing a
+machine-checked proof (Pollack 1998), and Wiedijk's *Pollack-consistency*:
+printing a term and parsing it back gives the same term (Wiedijk 2012).
+
+The notation module `N` defines both directions. Printing is `render_N`.
+Reading is a grammar `G_N`, many-sorted by Lean type: each `latex_notation`
+rule is a mixfix production whose template tokens are terminals, whose holes
+are nonterminals of their variables' sorts, and whose `prec` and `assoc` give
+grouping (Danielsson and Norell's mixfix operators).
+
+**For every expression `e` in the fragment of `N`, `G_N` parses
+`render_N(e)` uniquely, and the parse is `e` up to `≈_N`.**
+
+`≈_N` erases exactly what `N` declares invisible, and nothing else:
+
+- implicit and instance arguments, and arguments a rule `hide`s;
+- premises a convention hides: `latex_hide_premise` premises are erased;
+  `latex_metavar_convention P v` premises are restored from the reading
+  "the metavariable stands for a `v` with `P v`";
+- the names of hypotheses, and the choice of bound names (α-equivalence).
+
+The views extend it: the `prose` view's sentences have a fixed reading
+(*Let x ∈ X. Assume P. Then Q.* is `∀ x : X, P → Q`); a `rules` figure reads
+as the constructors it shows, so a figure without `include`/`exclude` *is*
+the inductive definition; a `grammar` reads as the inductive type's
+constructors; the `def` view reads as the equation lemmas.
+
+**Side conditions on `N`,** checkable on `N` itself:
+
+1. **distinct readings:** two rules whose templates coincide apply at
+   different sorts (`(a\ b) \cdot e` for terms and for contexts);
+2. **separated holes:** holes are separated by tokens or enclosed in braces;
+   a template that is a bare hole (`Tm.var x => #x`) is a coercion between
+   sorts, allowed when coercions form no cycle;
+3. **consistent precedence:** the precedences and associativities make
+   `G_N` unambiguous; this is where `(a b)·e₁ e₂` failed;
+4. **injective names:** metavariable renamings (`latex_metavar`, including
+   `decorated` ones) are injective on the names in a statement.
+
+**Source and glyphs.** The theorem is about TeX source. A reader sees
+glyphs, and two tokens can print alike: `\;` (application) prints as space,
+and in `examples/semantics` `\val` prints as `v`. A glyph-level reading needs
+one more condition: macros that print alike are reserved for one sort (`v`
+stands only for values).
+
+### 18.4 Checking it
+
+The extractor is meta-programming and will not be verified. Instead:
+
+- **the splicer's laws** (Theorem 1) are proved in Lean;
+- **Theorem 2 by translation validation:** `imprimatur check` parses every
+  generated formula back with `G_N` and confirms it is the original
+  expression up to `≈_N`, reporting an ambiguous or lossy rendering where it
+  occurs. Its trust reduces to a small parser. The side conditions on `N`
+  are checked when the notation module is elaborated;
+- **the `Doc` emitter's parenthesisation**, a few dozen lines, is proved
+  correct with respect to precedence.
+
+### 18.5 The trusted base
+
+The Lean kernel; the extractor's reading of the environment; collision
+resistance of SHA-256; the notation module as the paper's dictionary (Lean
+checks its names, not its choice of symbols); TeX, since the theorems stop
+at TeX source; and, for attested claims, the person who checked the prose.
+
+**References.** R. Pollack, "How to believe a machine-checked proof", in
+*Twenty-Five Years of Constructive Type Theory*, OUP, 1998. F. Wiedijk,
+"Pollack-inconsistency", *ENTCS* 285, 2012. N. A. Danielsson and U. Norell,
+"Parsing mixfix operators", *IFL 2008*, LNCS 5836, 2011.
+
+## 19. Open questions
 
 1. **Name availability.** In October 2026, a GitHub search found no Lean or
    LaTeX project called "imprimatur". Before creating the repository, also
