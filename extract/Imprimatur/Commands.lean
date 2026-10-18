@@ -163,14 +163,16 @@ def splitTemplate (t : String) (vars : Array String) :
   return .ok out
 
 /-- Elaborate a pattern (see the module docs): its `Pat`, and its variables. -/
-def elabPattern (patStx : Syntax) : TermElabM (Pat × Array Name) := do
+def elabPatternSorted (patStx : Syntax) :
+    TermElabM (Pat × Array Name × Array (Name × String) × String) := do
   let vars ← patternVars patStx
   -- An unknown name at the head would be read as a pattern variable.
   if patStx.getKind == ``Lean.Parser.Term.app && patStx[0].isIdent && vars.contains patStx[0].getId then
     throwErrorAt patStx[0] "unknown constant {patStx[0].getId} at the head of the pattern \
       (a name that isn't a constant is read as a pattern variable)"
   -- Bind each pattern variable as a local whose type is unknown.
-  let rec withVars (i : Nat) (acc : Array (Name × Expr)) : TermElabM Pat := do
+  let rec withVars (i : Nat) (acc : Array (Name × Expr)) :
+      TermElabM (Pat × Array (Name × String) × String) := do
     if h : i < vars.size then
       let ty ← mkFreshTypeMVar
       withLocalDeclD vars[i] ty fun x => withVars (i + 1) (acc.push (vars[i], x))
@@ -196,8 +198,21 @@ def elabPattern (patStx : Syntax) : TermElabM (Pat × Array Name) := do
         | some h => throwErrorAt patStx "{h} is not a constant, so it was read as a pattern \
             variable; a pattern must have a constant at its head"
         | none => throwErrorAt patStx "a pattern must have a constant at its head, not {repr pat}"
-      return pat
-  return (← withVars 0 #[], vars)
+      -- The sorts of the variables and of the whole, for reading back. A
+      -- universe in a pattern was defaulted when it was elaborated, but the
+      -- matcher ignores universes, so it stands for any (`p → q` matches
+      -- implications and function types): its sort is unknown.
+      let loose (k : String) : String := if k == "Sort" then "*" else k
+      let sorts ← acc.mapM fun (n, x) => do return (n, loose (← sortKey (← inferType x)))
+      let sort ← try loose <$> sortKey (← inferType e) catch _ => pure "*"
+      return (pat, sorts, sort)
+  let (pat, sorts, sort) ← withVars 0 #[]
+  return (pat, vars, sorts, sort)
+
+/-- Elaborate a pattern (see the module docs): its `Pat`, and its variables. -/
+def elabPattern (patStx : Syntax) : TermElabM (Pat × Array Name) := do
+  let (pat, vars, _, _) ← elabPatternSorted patStx
+  return (pat, vars)
 
 /-- The atom of an option written as one of several keywords
 (`(&"left" <|> &"right")`), which the parser may wrap in a node. -/
@@ -212,8 +227,9 @@ partial def choiceAtom (stx : Syntax) : String :=
   let variant := if stx[1].getNumArgs == 0 then none else stx[1][3].isStrLit?
   let some template := stx[4].isStrLit? | throwErrorAt stx[4] "expected a string"
   let rule ← liftTermElabM do
-    let (pat, vars) ← elabPattern stx[2]
-    let mut r : NotationRule := { pat, template, variant, origin := toString (← getMainModule) }
+    let (pat, vars, holeSorts, sort) ← elabPatternSorted stx[2]
+    let mut r : NotationRule :=
+      { pat, template, variant, origin := toString (← getMainModule), sort, holeSorts }
     for o in stx[5].getArgs do
       -- Each option starts with its keyword.
       match o[0].getAtomVal with
@@ -238,6 +254,15 @@ partial def choiceAtom (stx : Syntax) : String :=
       throwErrorAt stx[4] "the template uses #{v}, which is not a variable of the pattern"
     if r.flatten && pat.arity != 2 && pat.binder?.isNone then
       throwErrorAt stx "flatten needs a pattern with exactly two arguments, or a binder"
+    -- A variable the template neither shows nor accounts for is lost: two
+    -- expressions that differ only there render alike (DESIGN §18.3).
+    if let .ok parts := splitTemplate template (pat.vars.map (·.toString)) then
+      let shown := parts.filterMap fun | .inr v => some v | .inl _ => none
+      for x in pat.vars do
+        unless shown.contains x.toString || r.hides.any (·.1 == x) || r.guards.any (·.1 == x) do
+          logWarningAt stx[4] m!"the template does not show #{x}, so expressions that differ \
+            only in {x} render alike; show it, or say what it must be with `when {x} := …` \
+            or `hide {x} := …`"
     return r
   modifyEnv (notationExt.addEntry · (.rule rule))
 

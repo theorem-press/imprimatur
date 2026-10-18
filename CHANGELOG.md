@@ -68,3 +68,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
   See [docs/views.md](docs/views.md), [docs/notation.md](docs/notation.md)
   and [docs/blocks.md](docs/blocks.md).
+- Correctness (DESIGN §18): what `check` guarantees, and faithful rendering.
+  The extractor reads back every formula it renders, in the grammar of the
+  notation module, with sorts from Lean's types. `imprimatur check` warns
+  (`unfaithful-rendering`) where a typeset formula is ambiguous, showing
+  both readings, or does not read back. A template that drops a pattern
+  variable is a warning. `validate = false` turns the reading back off.
+  Lean's warnings about notation files now reach the user in external mode,
+  at the files' own line numbers. See
+  [docs/notation.md](docs/notation.md#reading-back).

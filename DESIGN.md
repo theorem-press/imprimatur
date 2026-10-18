@@ -181,6 +181,7 @@ strip_namespaces = ["ProjB", "MyPaper.Results"]
 open_scoped = []                          # e.g. ["Topology", "BigOperators"], for the lean view
 notation_packs = ["core", "logic"]        # §7.5
 verbatim_envs = []                        # extra environments the scanner skips (§10.1)
+validate = true                           # read rendered formulas back (§18.4)
 default_profile = "submission"
 
 [profile.submission]
@@ -1136,7 +1137,10 @@ grouping (Danielsson and Norell's mixfix operators).
 - premises a convention hides: `latex_hide_premise` premises are erased;
   `latex_metavar_convention P v` premises are restored from the reading
   "the metavariable stands for a `v` with `P v`";
-- the names of hypotheses, and the choice of bound names (α-equivalence).
+- the names of hypotheses, and the choice of bound names (α-equivalence);
+- the association of a `flatten` chain, which the rule declares associative;
+- synonyms: a rule that writes a constant as what it is by definition
+  (the `core` pack writes `Nat.succ n` as `n + 1`, as Lean does).
 
 The views extend it: the `prose` view's sentences have a fixed reading
 (*Let x ∈ X. Assume P. Then Q.* is `∀ x : X, P → Q`); a `rules` figure reads
@@ -1167,13 +1171,48 @@ stands only for values).
 The extractor is meta-programming and will not be verified. Instead:
 
 - **the splicer's laws** (Theorem 1) are proved in Lean;
-- **Theorem 2 by translation validation:** `imprimatur check` parses every
-  generated formula back with `G_N` and confirms it is the original
-  expression up to `≈_N`, reporting an ambiguous or lossy rendering where it
-  occurs. Its trust reduces to a small parser. The side conditions on `N`
-  are checked when the notation module is elaborated;
+- **Theorem 2 by translation validation** (`Imprimatur.Validate`), below;
 - **the `Doc` emitter's parenthesisation**, a few dozen lines, is proved
   correct with respect to precedence.
+
+**Translation validation.** The extractor reads back every formula a view
+renders, as it renders it, and records what it finds in the bundle
+(`validation`, per view). `imprimatur check` reports each problem in a
+typeset block as a warning, `unfaithful-rendering`, where the block is.
+
+- **The grammar** is `G_N` over TeX tokens: a production for each rule, with
+  its holes at the precedences the emitter gives them; the built-in forms
+  (`∀`, `∃`, `→`, `λ`, application, and `f(a)` or `f_{a}` under the style that
+  writes them); the emitter's parentheses; and the formula's own atoms
+  (variables, literals, constants without notation, Lean's fallback text).
+- **Sorts** are Lean types: a head constant, `Prop`, a function sort
+  `(A → B)`, a type parameter of the statement, or unknown. A hole of a
+  type the pattern leaves open (`a ⊔ b` for any `a b : α`) is a type
+  variable, bound by what fills the first such hole, so `a = b = c` does not
+  read as comparing a proposition with a label. A rule elaborated with a
+  defaulted universe applies at any sort.
+- **Readings** are trees named by the shapes of the rules' patterns, so
+  rules for the same expressions (a variant's and a pack's) give the same
+  reading. Coercions, chain association and synonyms are invisible (`≈_N`).
+- **One reading** is the original expression, since the grammar mirrors the
+  emitter: the renderer's output is a parse of what it rendered. **Two** is
+  an ambiguity, reported with both readings. **None** means the grammar does
+  not model what the renderer did, and the formula is *not validated*;
+  that is a gap in the validator, or a rendering no reader could parse.
+- **The trusted part** is that mirroring, `Validate.ofRule` against
+  `Render.fillTemplate`, and a small chart parser that counts at most two
+  readings, with a work budget.
+- **Side conditions** are found per formula, except one checked when the
+  notation module is elaborated: a pattern variable that the template neither
+  shows nor constrains (`hide`, `when`) is a warning, since two expressions
+  that differ there render alike. `validate = false` in `imprimatur.toml`
+  turns the reading back off.
+
+Reading back project-a's a conference paper adds about a second to a 50-second
+extraction. It reads every formula, and finds about 200 ambiguities, all puns
+of its notation: two constants written alike (`stamp` and `labeled`,
+`ValS` and `ShapeVal`), and coercions both ways between `Expr` and
+`ExprF`, which side condition 2 excludes.
 
 ### 18.5 The trusted base
 

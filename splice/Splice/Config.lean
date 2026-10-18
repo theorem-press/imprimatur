@@ -112,6 +112,9 @@ structure Config where
   notationFiles : Array String := #[]
   /-- The line width of rendered views, if not the extractor's default. -/
   width : Option Nat := none
+  /-- Whether the extractor reads rendered formulas back (DESIGN §18.4);
+  `none` means its default, which is to. -/
+  validate : Option Bool := none
   deriving Repr
 
 /-- The alias for an environment name, if any. -/
@@ -126,7 +129,7 @@ def Config.profile? (c : Config) (name : String) : Option SourceLinks :=
 `requests.json`, or (for later milestones) accepts and ignores them. -/
 private def extractorKeys : List String :=
   ["lean_project", "mode", "imports", "notation", "strip_namespaces", "open_scoped",
-   "notation_packs", "width"]
+   "notation_packs", "width", "validate"]
 
 private def expectStr (where_ : String) : Toml → Except String String
   | .str s => .ok s
@@ -247,6 +250,7 @@ def Config.parse (text : String) : Except String Config := do
         match v with
         | .int n => if n ≥ 20 then cfg := { cfg with width := some n.toNat } else throw "width must be at least 20"
         | _ => throw s!"width must be a number, not {v.typeName}"
+      | "validate" => cfg := { cfg with validate := some (← expectBool k v) }
       | "lean_project" => cfg := { cfg with leanProject := ← expectStr k v }
       | "mode" =>
         let m ← expectStr k v

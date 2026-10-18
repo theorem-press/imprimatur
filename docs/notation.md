@@ -178,6 +178,39 @@ in; a binder pattern for them in the project takes precedence.
 for the same constant. Among a project's rules, the most specific pattern
 wins, and the first declared breaks ties.
 
+## Reading back
+
+The extractor reads back every formula it renders (DESIGN §18.4), in the
+grammar the notation module defines, and `imprimatur check` warns where a
+typeset block's formula does not read back as exactly one expression:
+
+```
+paper.tex:58:1: warning[unfaithful-rendering]: Stlc.Tm.swap (math|def=): ambiguous: $(a\ b) \cdot e_{1}\; e_{2}$ reads as Stlc.Tm.swap[a; b; Stlc.Tm.app[e_{1}; e_{2}]] and as Stlc.Tm.app[Stlc.Tm.swap[a; b; e_{1}]; e_{2}]
+```
+
+**Ambiguous** formulas have two readings, both shown. The usual fixes:
+
+- **Precedence.** Give the rules a precedence and associativity, so the
+  emitter adds the parentheses a reader needs. The example above was fixed
+  by `prec := 100  assoc := none` on both application and swapping.
+- **Distinct templates.** Two constants written alike, at the same sort,
+  cannot be told apart. Write them differently, or accept the pun.
+- **Coercions.** A template that is a bare variable (`Tm.var x => #x`) is
+  invisible. Coercions in both directions between two sorts make every
+  formula over them ambiguous.
+
+**Not validated** formulas have no reading: the notation does not model
+what the renderer wrote. Please report one as a bug.
+
+**A template that drops a variable** is a warning when the notation module
+is elaborated, since expressions that differ only there render alike:
+
+```
+warning: the template does not show #s, so expressions that differ only in s render alike; show it, or say what it must be with `when s := …` or `hide s := …`
+```
+
+`validate = false` in `imprimatur.toml` turns the reading back off.
+
 ## What has no notation
 
 **An applied constant with no rule** is set as a named function, with

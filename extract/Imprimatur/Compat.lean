@@ -45,7 +45,8 @@ unsafe def elaborateNotation (paths : Array System.FilePath) (modules : Array Na
     IO Environment := do
   let some first := paths[0]? | throw (IO.userError "no notation file")
   let text ← IO.FS.readFile first
-  let header := String.join (modules.toList.map fun m => s!"import {m}\n")
+  -- On the file's first line, so that messages give the file's own lines.
+  let header := String.join (modules.toList.map fun m => s!"import {m} ")
   enableInitializersExecution
   let some env ← Elab.runFrontend (header ++ text) {} first.toString `_imprimatur_notation
     | throw (IO.userError s!"{first} has errors (shown above)")

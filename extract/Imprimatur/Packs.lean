@@ -28,17 +28,20 @@ namespace Imprimatur.Packs
 
 open Lean
 
-/-- A rule over a constant's explicit arguments, named `#a`, `#b`, … in order. -/
+/-- A rule over a constant's explicit arguments, named `#a`, `#b`, … in order.
+Packs are not elaborated, so the sorts the validator reads them at
+(DESIGN §18.3) are given: what the rule renders, and its arguments. -/
 def rule (pack : String) (head : Name) (arity : Nat) (template : String)
-    (prec : Nat := 1024) (assoc : String := "left") (breakBefore : Bool := false) : NotationRule :=
+    (prec : Nat := 1024) (assoc : String := "left") (breakBefore : Bool := false)
+    (sort : String := "*") (holes : String := "*") : NotationRule :=
   let vars := #[`a, `b, `c, `d].extract 0 arity
   { pat := .app head (vars.map .var), template, prec, assoc, breakBefore,
-    origin := s!"pack {pack}" }
+    origin := s!"pack {pack}", sort, holeSorts := vars.map (·, holes) }
 
 /-- The `core` pack. -/
 def core : Array NotationRule := #[
-  rule "core" ``Eq 2 "#a = #b" 50 "none" true,
-  rule "core" ``Ne 2 "#a \\ne #b" 50 "none" true,
+  rule "core" ``Eq 2 "#a = #b" 50 "none" true (sort := "Prop") (holes := "?α"),
+  rule "core" ``Ne 2 "#a \\ne #b" 50 "none" true (sort := "Prop") (holes := "?α"),
   rule "core" ``HAdd.hAdd 2 "#a + #b" 65,
   rule "core" ``HSub.hSub 2 "#a - #b" 65,
   rule "core" ``HMul.hMul 2 "#a \\cdot #b" 70,
@@ -46,46 +49,47 @@ def core : Array NotationRule := #[
   rule "core" ``HMod.hMod 2 "#a \\bmod #b" 70,
   rule "core" ``HPow.hPow 2 "#a^{#b}" 75 "right",
   rule "core" ``Neg.neg 1 "-#a" 75,
-  rule "core" ``LT.lt 2 "#a < #b" 50 "none" true,
-  rule "core" ``LE.le 2 "#a \\le #b" 50 "none" true,
-  rule "core" ``GT.gt 2 "#a > #b" 50 "none" true,
-  rule "core" ``GE.ge 2 "#a \\ge #b" 50 "none" true,
-  rule "core" ``OfNat.ofNat 1 "#a",
-  rule "core" ``Nat.succ 1 "#a + 1" 65,
+  rule "core" ``LT.lt 2 "#a < #b" 50 "none" true (sort := "Prop") (holes := "?α"),
+  rule "core" ``LE.le 2 "#a \\le #b" 50 "none" true (sort := "Prop") (holes := "?α"),
+  rule "core" ``GT.gt 2 "#a > #b" 50 "none" true (sort := "Prop") (holes := "?α"),
+  rule "core" ``GE.ge 2 "#a \\ge #b" 50 "none" true (sort := "Prop") (holes := "?α"),
+  rule "core" ``OfNat.ofNat 1 "#a" (holes := "Nat"),
+  -- `n + 1` is `Nat.succ n` by definition, and Lean writes it so.
+  { rule "core" ``Nat.succ 1 "#a + 1" 65 (sort := "Nat") (holes := "Nat") with synonym := true },
   rule "core" ``Function.comp 2 "#a \\circ #b" 90,
   rule "core" ``Prod.mk 2 "(#a, #b)",
-  rule "core" ``Nat 0 "\\mathbb{N}",
-  rule "core" ``Int 0 "\\mathbb{Z}",
-  rule "core" ``Nat.cast 1 "#a",
-  rule "core" ``Int.cast 1 "#a",
-  rule "core" ``Subtype.val 1 "#a",
+  rule "core" ``Nat 0 "\\mathbb{N}" (sort := "Sort"),
+  rule "core" ``Int 0 "\\mathbb{Z}" (sort := "Sort"),
+  rule "core" ``Nat.cast 1 "#a" (holes := "Nat"),
+  rule "core" ``Int.cast 1 "#a" (holes := "Int"),
+  rule "core" ``Subtype.val 1 "#a" (holes := "Subtype"),
   rule "core" ``Bool.true 0 "\\mathrm{true}",
   rule "core" ``Bool.false 0 "\\mathrm{false}"]
 
 /-- The `logic` pack. -/
 def logic : Array NotationRule := #[
-  rule "logic" ``And 2 "#a \\wedge #b" 35 "right" true,
-  rule "logic" ``Or 2 "#a \\vee #b" 30 "right" true,
-  rule "logic" ``Not 1 "\\neg #a" 40,
-  rule "logic" ``Iff 2 "#a \\iff #b" 20 "none" true,
-  rule "logic" ``True 0 "\\top",
-  rule "logic" ``False 0 "\\bot"]
+  rule "logic" ``And 2 "#a \\wedge #b" 35 "right" true (sort := "Prop") (holes := "Prop"),
+  rule "logic" ``Or 2 "#a \\vee #b" 30 "right" true (sort := "Prop") (holes := "Prop"),
+  rule "logic" ``Not 1 "\\neg #a" 40 (sort := "Prop") (holes := "Prop"),
+  rule "logic" ``Iff 2 "#a \\iff #b" 20 "none" true (sort := "Prop") (holes := "Prop"),
+  rule "logic" ``True 0 "\\top" (sort := "Prop"),
+  rule "logic" ``False 0 "\\bot" (sort := "Prop")]
 
 /-- The `sets` pack. `Membership.mem` takes the collection first. -/
 def sets : Array NotationRule := #[
-  { rule "sets" ``Membership.mem 2 "#b \\in #a" 50 "none" with },
-  rule "sets" ``HasSubset.Subset 2 "#a \\subseteq #b" 50 "none",
-  rule "sets" ``HasSSubset.SSubset 2 "#a \\subset #b" 50 "none",
-  rule "sets" ``Union.union 2 "#a \\cup #b" 65,
-  rule "sets" ``Inter.inter 2 "#a \\cap #b" 70,
-  rule "sets" ``SDiff.sdiff 2 "#a \\setminus #b" 70,
+  { rule "sets" ``Membership.mem 2 "#b \\in #a" 50 "none" (sort := "Prop") with },
+  rule "sets" ``HasSubset.Subset 2 "#a \\subseteq #b" 50 "none" (sort := "Prop") (holes := "?α"),
+  rule "sets" ``HasSSubset.SSubset 2 "#a \\subset #b" 50 "none" (sort := "Prop") (holes := "?α"),
+  rule "sets" ``Union.union 2 "#a \\cup #b" 65 (sort := "?α") (holes := "?α"),
+  rule "sets" ``Inter.inter 2 "#a \\cap #b" 70 (sort := "?α") (holes := "?α"),
+  rule "sets" ``SDiff.sdiff 2 "#a \\setminus #b" 70 (sort := "?α") (holes := "?α"),
   rule "sets" ``EmptyCollection.emptyCollection 0 "\\emptyset",
   rule "sets" ``Singleton.singleton 1 "\\{#a\\}"]
 
 /-- The `order` pack. -/
 def order : Array NotationRule := #[
-  rule "order" ``Max.max 2 "\\max(#a, #b)",
-  rule "order" ``Min.min 2 "\\min(#a, #b)"]
+  rule "order" ``Max.max 2 "\\max(#a, #b)" (sort := "?α") (holes := "?α"),
+  rule "order" ``Min.min 2 "\\min(#a, #b)" (sort := "?α") (holes := "?α")]
 
 /-- The packs by name. -/
 def all : List (String × Array NotationRule) :=

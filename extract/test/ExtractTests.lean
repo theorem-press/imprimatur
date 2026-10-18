@@ -8,6 +8,7 @@ import ExtractTest.Unit
 import ExtractTest.Fixtures
 import ExtractTest.HashProps
 import ExtractTest.Doc
+import ExtractTest.Validate
 
 /-!
 # Extractor tests
@@ -31,4 +32,5 @@ unsafe def main : IO UInt32 :=
     ExtractTest.Unit.tests
     ExtractTest.HashProps.tests
     ExtractTest.DocTests.tests
+    ExtractTest.ValidateTests.tests
     ExtractTest.Fixtures.tests

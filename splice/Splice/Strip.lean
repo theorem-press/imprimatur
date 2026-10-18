@@ -178,7 +178,8 @@ def requests (doc : Doc) : String := Id.run do
   let extra := String.join [
     match c.notationPacks with | some ps => s!", \"notation_packs\": {list ps}" | none => "",
     if c.notationFiles.isEmpty then "" else s!", \"notation\": {list c.notationFiles}",
-    match c.width with | some w => s!", \"width\": {w}" | none => ""]
+    match c.width with | some w => s!", \"width\": {w}" | none => "",
+    match c.validate with | some b => s!", \"validate\": {b}" | none => ""]
   let config := s!"  \"config\": \{\"imports\": {list imports}, \
     \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces},\n    \
     \"trusted_prefixes\": {list c.trustedPrefixes}, \

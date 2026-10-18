@@ -78,6 +78,12 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
           unless it.name == "lean" do
             for p in trustProblems doc.cfg.allowedAxioms e do
               ds := ds.push (Diag.err "untrusted" loc p)
+          -- Faithfulness (DESIGN §18.4): a typeset rendering that does not
+          -- read back as its statement.
+          if (it.kind == .block || it.kind == .inline) && it.live then
+            let view := itemView doc.cfg it
+            for p in ((e.validation.find? (·.1 == view)).map (·.2)).getD #[] do
+              ds := ds.push (Diag.warn "unfaithful-rendering" loc s!"{key} ({view}): {p}")
       -- Drift (DESIGN §10.3): the hashes recorded when the prose was checked.
       if it.kind == .check && it.name == "leancheck" then
         match it.opt? "stmt", checkHashes bundle it.keys with

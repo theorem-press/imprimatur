@@ -1,0 +1,16 @@
+\documentclass{article}
+\begin{document}
+% A typeset block whose rendering is ambiguous: check warns.
+\begin{leanblock}[view=math]{Demo.swap}{Swapping}
+\end{leanblock}
+% The same key in another view, which reads back faithfully: no warning.
+\begin{leanblock}{Demo.swap}{In Lean}
+\end{leanblock}
+% Inline, also ambiguous.
+Swapping is \leaninline[view=math]{Demo.swap}{}.
+% Not typeset: maintained, but not warned about.
+\iffalse
+\begin{leanblock}[view=math]{Demo.swap}{Hidden}
+\end{leanblock}
+\fi
+\end{document}
