@@ -58,6 +58,8 @@ structure DocumentInfo where
   blocks : Array DocBlock := #[]
   /-- The `\label`s, in document order. -/
   labels : Array DocLabel := #[]
+  /-- The hypotheses the paper refers to, with `\leanhypref{key}{h}`. -/
+  hypRefs : Array (String × String) := #[]
   deriving Repr, Inhabited
 
 /-- Settings from `imprimatur.toml` that the extractor uses. -/
@@ -160,7 +162,13 @@ def parseRequests (text : String) : Except String (Settings × Array Request) :=
       let labels : Array DocLabel ← match d.getObjVal? "labels" with
         | .ok (.arr ls) => ls.mapM label
         | _ => pure #[]
-      pure ({ blocks, labels } : DocumentInfo)
+      let hypRefs : Array (String × String) ← match d.getObjVal? "hypRefs" with
+        | .ok (.arr rs) => rs.mapM fun r =>
+          match r.getObjValAs? String "key", r.getObjValAs? String "hyp" with
+          | .ok k, .ok h => (pure (k, h) : Except String (String × String))
+          | _, _ => throw "document.hypRefs: each reference needs a key and a hyp"
+        | _ => pure #[]
+      pure ({ blocks, labels, hypRefs } : DocumentInfo)
     | .error _ => pure ({} : DocumentInfo)
   let settings := { settings with document }
   let reqs ← match (j.getObjVal? "requests").toOption.bind (·.getObj?.toOption) with

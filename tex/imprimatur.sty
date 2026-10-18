@@ -120,6 +120,9 @@
 % Prose, and the label of a hypothesis in it.
 \newcommand\LeanProse[1]{#1}
 \newcommand\LeanHyp[1]{(\textup{#1})}
+% \leanhypref{key}{h}: refers to hypothesis h of the result with key `key`, as
+% its prose view labels it; the prose view labels only hypotheses referred to.
+\NewDocumentCommand\leanhypref{m m}{\LeanHyp{#2}}
 
 % ---------------------------------------------------------------------------
 % The grammar view (DESIGN 7.3): a production per inductive type, one row per

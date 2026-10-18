@@ -1,0 +1,9 @@
+# The host is built by its owners; imprimatur only reads it.
+!(cd host && lake build -q)
+build
+# An author rewrites a description in the generated grammar (a slot) ...
+!sed -i 's/\\leanslot{Stlc.Tm.lam}{an abstraction}/\\leanslot{Stlc.Tm.lam}{an abstraction, annotated with the type of its argument}/' paper.tex
+# ... and regenerating keeps it.
+build
+accept --all
+check

@@ -1,0 +1,162 @@
+1
+
+A small calculus, generated from Lean
+
+This paper presents a simply-typed λ-calculus whose definitions and results are
+in Lean. Everything in a lean... environment below is generated from the
+Lean development by imprimatur; the rest is written by hand, and the handwritten statements are checked against Lean.
+
+1.1
+
+Syntax
+
+Terms are name-carrying: a variable is a name, and an abstraction binds a
+name. The grammar is generated from the inductive types. The descriptions
+on the right are the authors’: imprimatur keeps them when it regenerates the
+grammar, and uses the constructors’ docstrings only for new ones.
+τ ::= b
+| τ1 → τ2
+e ::= x
+| λx:τ. e
+| e1 e2
+| ()
+
+1.2
+
+the base type
+functions
+
+a variable
+an abstraction, binding x in e
+an application
+the unit value
+
+Names, α-equivalence and substitution
+
+We handle names as Pitts does [Pitts(2006)]. The basic operation is swapping:
+(a b) · e exchanges the names a and b everywhere in e, bound, binding and
+free occurrences alike. Unlike renaming, swapping needs no side condition at a
+binder, and it is its own inverse; its definition is structural:
+(a b) · x = (a b)(x)
+(a b) · (λx:τ. e) = λ(a b)(x):τ. (a b) · e
+(a b) · (e1 e2 ) = ((a b) · e1 ) ((a b) · e2 )
+(a b) · () = ()
+Two abstractions are α-equivalent when swapping each binder’s name with
+a name c fresh for both, written c # . . ., makes their bodies α-equivalent:
+(α-Lam)
+(α-Var)
+
+x =α x
+
+c # a, b, e, e0
+(a c) · e =α (b c) · e0
+(λa:τ. e) =α (λb:τ. e0 )
+
+(α-App)
+
+e1 =α e01
+e2 =α e02
+e1 e2 =α e01 e02
+
+(α-Unit)
+
+() =α ()
+
+1
+
+Substitution e[u/x] is then defined by recursion on e. At an abstraction
+λa:τ. e it first swaps a with a name c fresh for x, a, e and u, so that no free
+name of u is captured, and continues in (a c) · e. Swapping preserves the size of
+a term, so the recursion terminates, although (a c) · e is not a subterm of the
+abstraction.
+
+1.3
+
+Typing
+
+The typing rules are generated from the constructors of HasType. Their labels
+come from the constructors’ docstrings. The well-formedness side conditions of
+the Lean rules are left implicit, by a convention declared in the notation module.
+T-Var
+
+T-Abs
+
+Γ, x:τ1 ` e : τ2
+Γ ` (λx:τ1 . e) : τ1 → τ2
+
+Γ(x) = τ
+Γ`x:τ
+T-App
+
+T-Unit
+
+Γ ` e1 : τ1 → τ2
+Γ ` e2 : τ1
+Γ ` e1 e2 : τ2
+
+1.4
+
+Γ ` () : b
+
+Reduction
+
+Reduction is call by value. A premise that a term is a value is left implicit: the
+value is written v instead. Each rule is labelled from its constructor’s name, and
+can be referred to: rule (−→-App Left) reduces the function of an application.
+(−→-App Left)
+
+e1 −→ e01
+e1 e2 −→ e01 e2
+
+(−→-Beta)
+
+(λx:τ. e) v −→ e[v/x]
+(−→-App Right)
+
+e2 −→ e02
+v e2 −→ v e02
+
+1.5
+
+Results
+
+A result can be generated, as a sentence; its key can be a title, declared in the
+notation module:
+Theorem 1 (Swapping is involutive). Let a, b ∈ Name and e ∈ Term. Then
+(a b) · ((a b) · e) = e.
+Theorem 2 (Values are final). Let v, e ∈ Term. Then ¬(v −→ e).
+Or as a rule, from a theorem whose hypotheses become its premises:
+
+2
+
+e1 −→ e01
+e1 e2 −→ e01 e2
+Or the prose can be written by hand and checked: the unit value has only
+the base type, that is, if Γ ` () : τ then τ = b. Should the Lean statement of
+unit type change, imprimatur check reports this sentence.
+
+1.6
+
+Type safety
+
+The substitution lemma is proved as Pitts’s paper suggests. Typing is equivariant: swapping two names throughout a term and its context preserves its
+type.
+Theorem 3 (Equivariance). Let a, b ∈ Name, Γ ∈ Context, e ∈ Term and
+τ ∈ Type. Assume Γ ` e : τ . Then (a b) · Γ ` (a b) · e : τ .
+Typing also depends on the context only at the term’s free names, which
+gives weakening and shadowing at once. So substitution preserves types: if
+Γ, x:τ1 ` e : τ and Γ ` u : τ1 , then Γ ` e[u/x] : τ . At an abstraction,
+substitution renames the binder to a fresh name by swapping, and equivariance
+carries the typing of its body across the renaming; the induction is on the size
+of e, which swapping preserves. Type safety follows.
+Theorem 4 (Preservation). Let e, e0 ∈ Term, Γ ∈ Context and τ ∈ Type.
+Assume e −→ e0 and Γ ` e : τ . Then Γ ` e0 : τ .
+Theorem 5 (Progress). Let e ∈ Term and τ ∈ Type. Assume ` e : τ . Then
+e ∈ Val ∨ (∃e0 , e −→ e0 ).
+
+References
+[Pitts(2006)] Andrew M. Pitts. Alpha-structural recursion and induction. Journal of the ACM, 53(3):459–506, 2006. https://doi.org/10.1145/1147954.
+1147961.
+
+3
+

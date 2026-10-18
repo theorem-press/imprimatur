@@ -1,0 +1,26 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    ],
+    "labels": [
+    ]},
+  "requests": {
+    "Demo.thm": {"views": []}
+  }
+}
+[exit 0]
+
+== main.tex
+\documentclass{article}
+% Definitions of imprimatur's macros are not uses of them.
+\NewDocumentCommand\leancheck{O{} m}{}
+\providecommand{\leanref}[2]{#2}
+\newcommand*\leaninline[2]{#2}
+\def\leancheck#1{}
+\begin{document}
+Holds\leancheck{Demo.thm}.
+\end{document}
+

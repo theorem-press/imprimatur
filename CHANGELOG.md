@@ -51,9 +51,16 @@ All notable changes to imprimatur are recorded here. Versions follow
     `assoc`, `when` guards, `latex_metavar … decorated`, and Greek letters
     as macros;
   - several notation files in external mode;
+  - `examples/semantics`, a paper on a name-carrying λ-calculus (swapping,
+    α-equivalence and substitution after Pitts, with preservation and
+    progress proved) whose grammar, rules and results are generated, next to hand-written statements checked with
+    `\leancheck`; the `def` view shows equation lemmas with the definition's
+    own variable names; the prose view labels a hypothesis only where the
+    paper refers to it, with `\leanhypref{key}{h}`;
   - alias options `label`, `repeat_suffix`, `template` and `comment`;
   - the scanner records which blocks are typeset, reading `\iffalse` and
-    `\newif` switches; blocks that are not are still maintained;
+    `\newif` switches; blocks that are not are still maintained; and a
+    command being defined (`\NewDocumentCommand\leancheck…`) is not a use;
   - the project-a parity gate of DESIGN §16 passed byte for byte; project-a now
     builds its papers with imprimatur, keeps the port in its `imprimatur/`,
     and has deleted its old exporter; and project B's analysis rules are

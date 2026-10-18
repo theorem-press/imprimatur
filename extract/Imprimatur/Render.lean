@@ -61,6 +61,8 @@ structure Ctx where
   subscriptVars : Bool := false
   /-- The document's blocks and labels, for views that index it. -/
   document : DocumentInfo := {}
+  /-- The key being rendered, as the document writes it. -/
+  key : String := ""
 
 /-- The renderer's monad. -/
 abbrev RenderM := ReaderT Ctx MetaM

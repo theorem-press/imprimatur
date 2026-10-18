@@ -1,0 +1,251 @@
+\documentclass{article}
+\usepackage{amsthm}
+\usepackage{mathpartir}
+\usepackage{url}
+\usepackage{imprimatur}
+\newtheorem{theorem}{Theorem}
+% The paper's environments, as imprimatur.toml's [aliases] declares them.
+\leanblockalias{leangrammar}{}
+\leanblockalias{leanrules}{}
+\leanblockalias{leantheorem}{theorem}
+% Conventions of the generated rules: \val is a value, and \rulelabel{Key}{label}
+% makes a rule a target for \ref.
+\newcommand\val{v}
+\makeatletter
+\newcommand\rulelabel[2]{\def\@currentlabel{#2}\label{rule:#1}}
+\makeatother
+\begin{document}
+
+\section{A small calculus, generated from Lean}
+
+This paper presents a simply-typed $\lambda$-calculus whose definitions and
+results are in Lean. Everything in a \texttt{lean...} environment below is
+generated from the Lean development by imprimatur; the rest is written by
+hand, and the hand-written statements are checked against Lean.
+
+\subsection{Syntax}
+
+Terms are name-carrying: a variable is a name, and an abstraction binds a
+name. The grammar is generated from the inductive types. The descriptions on
+the right are the authors': imprimatur keeps them when it regenerates the
+grammar, and uses the constructors' docstrings only for new ones.
+
+\begin{leangrammar}[sum=aKgDCq93E3]{Stlc.Ty}{Types}
+\begin{LeanGrammar}
+\LeanProduction{\tau}{types}{\mathsf{b}}{\leanslot{Stlc.Ty.base}{the base type}}
+\LeanAlternative{\tau_{1} \to \tau_{2}}{\leanslot{Stlc.Ty.arrow}{functions}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+\begin{leangrammar}[sum=UYuwf2EAfF]{Stlc.Tm}{Terms}
+\begin{LeanGrammar}
+\LeanProduction{e}{terms, with names}{x}{\leanslot{Stlc.Tm.var}{a variable}}
+\LeanAlternative{\lambda x{:}\tau.\, e}{\leanslot{Stlc.Tm.lam}{an abstraction, binding $x$ in $e$}}
+\LeanAlternative{e_{1}\; e_{2}}{\leanslot{Stlc.Tm.app}{an application}}
+\LeanAlternative{()}{\leanslot{Stlc.Tm.unit}{the unit value}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+\subsection{Names, $\alpha$-equivalence and substitution}
+
+We handle names as Pitts does~\cite{Pitts06}. The basic operation is
+\emph{swapping}: $(a\ b) \cdot e$ exchanges the names $a$ and $b$
+everywhere in $e$, bound, binding and free occurrences alike. Unlike
+renaming, swapping needs no side condition at a binder, and it is its own
+inverse; its definition is structural:
+
+\begin{center}
+\begin{leanblock}[view=math, def, sum=kQtdL6J5XN]{Stlc.Tm.swap}{Swapping}
+\LeanMath{\begin{aligned}(a\ b) \cdot x &= (a\ b)(x) \\ (a\ b) \cdot (\lambda x{:}\tau.\, e) &= \lambda (a\ b)(x){:}\tau.\, (a\ b) \cdot e \\ (a\ b) \cdot (e_{1}\; e_{2}) &= ((a\ b) \cdot e_{1})\; ((a\ b) \cdot e_{2}) \\ (a\ b) \cdot () &= ()\end{aligned}}
+\end{leanblock}
+\end{center}
+
+Two abstractions are $\alpha$-equivalent when swapping each binder's name
+with a name $c$ fresh for both, written $c \mathrel{\#} \ldots$, makes their
+bodies $\alpha$-equivalent:
+
+\begin{leanrules}[sum=G1XetiAjYO]{Stlc.Alpha}{Alpha-equivalence}
+\begin{mathpar}
+
+\inferrule[($\alpha$-Var)]
+  { }
+  { x =_{\alpha} x }
+
+\and
+
+\inferrule[($\alpha$-Lam)]
+  {
+    c \mathrel{\#} a, b, e, e' \\
+    (a\ c) \cdot e =_{\alpha} (b\ c) \cdot e'
+  }
+  { (\lambda a{:}\tau.\, e) =_{\alpha} (\lambda b{:}\tau.\, e') }
+
+\and
+
+\inferrule[($\alpha$-App)]
+  {
+    e_{1} =_{\alpha} e_{1}' \\
+    e_{2} =_{\alpha} e_{2}'
+  }
+  { e_{1}\; e_{2} =_{\alpha} e_{1}'\; e_{2}' }
+
+\and
+
+\inferrule[($\alpha$-Unit)]
+  { }
+  { () =_{\alpha} () }
+
+\end{mathpar}
+\end{leanrules}
+
+Substitution $e[u/x]$ is then defined by recursion on $e$. At an abstraction
+$\lambda a{:}\tau.\, e$ it first swaps $a$ with a name $c$ fresh for $x$,
+$a$, $e$ and $u$, so that no free name of $u$ is captured, and continues in
+$(a\ c) \cdot e$\leancheck[stmt=a457f283ff65, sig=3e2ddde53b5b]{Stlc.subst}. Swapping preserves the size of a
+term\leancheck[stmt=95b8589b3570, sig=c576560f0187]{Stlc.Tm.size_swap}, so the recursion terminates, although
+$(a\ c) \cdot e$ is not a subterm of the abstraction.
+
+\subsection{Typing}
+
+The typing rules are generated from the constructors of \texttt{HasType}.
+Their labels come from the constructors' docstrings. The well-formedness side
+conditions of the Lean rules are left implicit, by a convention declared in
+the notation module.
+
+\begin{leanrules}[sum=nDDgEQ1-Ha]{Stlc.HasType}{Typing}
+\begin{mathpar}
+
+\inferrule[T-Var]
+  {
+    \Gamma(x) = \tau
+  }
+  { \Gamma \vdash x : \tau }
+
+\and
+
+\inferrule[T-Abs]
+  {
+    \Gamma, x{:}\tau_{1} \vdash e : \tau_{2}
+  }
+  { \Gamma \vdash (\lambda x{:}\tau_{1}.\, e) : \tau_{1} \to \tau_{2} }
+
+\and
+
+\inferrule[T-App]
+  {
+    \Gamma \vdash e_{1} : \tau_{1} \to \tau_{2} \\
+    \Gamma \vdash e_{2} : \tau_{1}
+  }
+  { \Gamma \vdash e_{1}\; e_{2} : \tau_{2} }
+
+\and
+
+\inferrule[T-Unit]
+  { }
+  { \Gamma \vdash () : \mathsf{b} }
+
+\end{mathpar}
+\end{leanrules}
+
+\subsection{Reduction}
+
+Reduction is call by value. A premise that a term is a value is left
+implicit: the value is written $\val$ instead. Each rule is labelled from its
+constructor's name, and can be referred to: rule~\ref{rule:AppLeft}
+reduces the function of an application.
+
+\begin{leanrules}[sum=V5YXLse5tR]{Stlc.Step}{Reduction}
+\begin{mathpar}
+
+\rulelabel{Beta}{($\longrightarrow$-Beta)}%
+\inferrule[($\longrightarrow$-Beta)]
+  { }
+  { (\lambda x{:}\tau.\, e)\; \val \longrightarrow e[\val/x] }
+
+\and
+
+\rulelabel{AppLeft}{($\longrightarrow$-App Left)}%
+\inferrule[($\longrightarrow$-App Left)]
+  {
+    e_{1} \longrightarrow e_{1}'
+  }
+  { e_{1}\; e_{2} \longrightarrow e_{1}'\; e_{2} }
+
+\and
+
+\rulelabel{AppRight}{($\longrightarrow$-App Right)}%
+\inferrule[($\longrightarrow$-App Right)]
+  {
+    e_{2} \longrightarrow e_{2}'
+  }
+  { \val\; e_{2} \longrightarrow \val\; e_{2}' }
+
+\end{mathpar}
+\end{leanrules}
+
+\subsection{Results}
+
+A result can be generated, as a sentence; its key can be a title, declared
+in the notation module:
+
+\begin{leantheorem}[sum=zzIi1wbp85]{Swapping is involutive}{Swapping is involutive}
+\label{thm:Swapping-is-involutive}
+\LeanProse{Let $a, b \in \mathit{Name}$ and $e \in \mathit{Term}$. Then $(a\ b) \cdot ((a\ b) \cdot e) = e$.}
+\end{leantheorem}
+
+\begin{leantheorem}[sum=OKrVw4uVc8]{Values are final}{Values are final}
+\label{thm:Values-are-final}
+\LeanProse{Let $\val, e \in \mathit{Term}$. Then $\neg (\val \longrightarrow e)$.}
+\end{leantheorem}
+
+Or as a rule, from a theorem whose hypotheses become its premises:
+\begin{center}
+\begin{leanblock}[view=math, rule, sum=fpyxtM_nmj]{Stlc.step_app}{Congruence}
+\LeanMath{\inferrule{e_{1} \longrightarrow e_{1}'}{e_{1}\; e_{2} \longrightarrow e_{1}'\; e_{2}}}
+\end{leanblock}
+\end{center}
+
+Or the prose can be written by hand and checked: the unit value has only
+the base type, that is, if $\Gamma \vdash () : \tau$ then
+$\tau = \mathsf{b}$\leancheck[stmt=a39c03ca314b, sig=59daca2b7dd5]{Stlc.unit_type}. Should the Lean statement of
+\texttt{unit\_type} change, \texttt{imprimatur check} reports this sentence.
+
+\subsection{Type safety}
+
+The substitution lemma is proved as Pitts's paper suggests. Typing is
+equivariant: swapping two names throughout a term and its context preserves
+its type.
+
+\begin{leantheorem}[sum=T-GyIH9gSH]{Equivariance}{Equivariance}
+\label{thm:Equivariance}
+\LeanProse{Let $a, b \in \mathit{Name}$, $\Gamma \in \mathit{Context}$, $e \in \mathit{Term}$ and $\tau \in \mathit{Type}$. Assume $\Gamma \vdash e : \tau$. Then $(a\ b) \cdot \Gamma \vdash (a\ b) \cdot e : \tau$.}
+\end{leantheorem}
+
+Typing also depends on the context only at the term's free names, which
+gives weakening and shadowing at once\leancheck[stmt=8f91408eb45c, sig=a65d051214fc]{Stlc.HasType.agree}. So
+substitution preserves types: if $\Gamma, x{:}\tau_1 \vdash e : \tau$ and
+$\Gamma \vdash u : \tau_1$, then $\Gamma \vdash e[u/x] : \tau$. At an
+abstraction, substitution renames the binder to a fresh name by swapping, and
+equivariance carries the typing of its body across the renaming; the
+induction is on the size of $e$, which swapping
+preserves\leancheck[stmt=6842915c5069, sig=105ed38d10fd]{Stlc.subst_typing}. Type safety follows.
+
+\begin{leantheorem}[sum=VQLUk38uFC]{Preservation}{Preservation}
+\label{thm:Preservation}
+\LeanProse{Let $e, e' \in \mathit{Term}$, $\Gamma \in \mathit{Context}$ and $\tau \in \mathit{Type}$. Assume $e \longrightarrow e'$ and $\Gamma \vdash e : \tau$. Then $\Gamma \vdash e' : \tau$.}
+\end{leantheorem}
+
+\begin{leantheorem}[sum=CxgvvaS6H8]{Progress}{Progress}
+\label{thm:Progress}
+\LeanProse{Let $e \in \mathit{Term}$ and $\tau \in \mathit{Type}$. Assume $\vdash e : \tau$. Then $e \in \mathit{Val} \vee (\exists e',\ e \longrightarrow e')$.}
+\end{leantheorem}
+
+\begin{thebibliography}{1}
+\bibitem[Pitts(2006)]{Pitts06}
+Andrew~M. Pitts.
+\newblock Alpha-structural recursion and induction.
+\newblock \emph{Journal of the ACM}, 53(3):459--506, 2006.
+\newblock \url{https://doi.org/10.1145/1147954.1147961}.
+\end{thebibliography}
+
+\end{document}

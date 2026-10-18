@@ -20,7 +20,7 @@ The same results as mathematics
 With the notation 2n for doubling, distributivity reads
 2(m + n) = 2m + 2n
 and injectivity, in words:
-Let m, n ∈ N. Assume (h) 2m = 2n. Then m = n.
+Let m, n ∈ N. Assume 2m = 2n. Then m = n.
 Both results are checked against Lean.
 
 1

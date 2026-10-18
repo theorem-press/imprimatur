@@ -1,0 +1,13 @@
+schema = 1
+main = "paper.tex"
+lean_project = "host"
+mode = "external"
+imports = ["Stlc"]
+notation = ["notation/StlcTeX.lean"]
+strip_namespaces = ["Stlc"]
+
+[aliases]
+# The paper's own environments, each with the view it shows.
+leangrammar = { view = "grammar" }
+leanrules   = { view = "rules" }
+leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }

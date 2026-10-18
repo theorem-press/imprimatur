@@ -39,7 +39,16 @@ The Lean project is reached in one of three ways:
   without changing it.
 
 `examples/minimal`, `examples/sidecar` and `examples/external` show all
-three.
+three. `examples/semantics` is a short paper on a typed λ-calculus with
+name-carrying terms, in external mode, that shows the two ways of tying a
+paper to Lean side by side: a generated grammar (with the authors'
+descriptions kept as slots), swapping and α-equivalence in the style of
+Pitts's nominal techniques, generated typing and reduction rules, and
+generated results up to preservation and progress, next to hand-written statements checked with
+`\leancheck`. Each example's `paper.tex` is
+the input, with its blocks empty; `expected/paper.tex` is the paper
+imprimatur makes from it, and both compile in an editor (their
+`.latexmkrc` puts `tex/` on the path).
 
 ## Markup
 
@@ -49,6 +58,7 @@ three.
 | inline | `\leaninline{Key}{}` | regenerates the second argument |
 | reference | `\leanref{Key}{}` | fills the second argument with the source location, per profile |
 | check | `\leancheck{Key1, Key2}` | generates nothing; `check` reports missing keys and untrusted results |
+| hypothesis reference | `\leanhypref{Key}{h}` | prints `(h)`, and makes the prose view of `Key` label its hypothesis `h` |
 | index | `\leanindex` | recognised; generated from M6 |
 | slot | `\leanslot{id}{text}` | inside generated content: text that belongs to the authors |
 
@@ -111,6 +121,10 @@ itself.
   for views that index the paper: not those in a branch that is off
   (`\iffalse`, or a switch declared with `\newif\ifNAME` and set with
   `\NAMEfalse`), nor those in a file input only from one.
+- **Definitions.** The command named after `\newcommand`, `\providecommand`,
+  `\NewDocumentCommand`, `\def` and their relatives is being defined, not
+  used, so a paper can define `\leancheck` itself:
+  `\NewDocumentCommand\leancheck{O{} m}{}` prints nothing.
 - **Uses without arguments.** `\leaninline` that isn't followed by `[` or `{`
   is a definition, as in `\newcommand{\x}{\leaninline}`, not a use.
 
