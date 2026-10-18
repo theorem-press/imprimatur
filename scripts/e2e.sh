@@ -101,22 +101,23 @@ for dir in examples/*/; do
     compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
-# e2e/fixture-views: every math and prose view of the Notation fixture's
-# golden bundle, which uses every pack rule, typesets with both engines.
+# e2e/fixture-views: every math, prose, rules and grammar view of the
+# Notation and Semantics fixtures' golden bundles typesets with both engines.
 echo "== e2e/fixture-views"
 views="e2e-out/fixture-views"; rm -rf "$views"; mkdir -p "$views"
-python3 - extract/test/golden/Notation.bundle.json "$views/paper.tex" <<'PY'
+python3 - "$views/paper.tex" extract/test/golden/Notation.bundle.json extract/test/golden/Semantics.bundle.json <<'PY'
 import json, sys
-b = json.load(open(sys.argv[1]))["entries"]
-out = [r"\documentclass{article}", r"\usepackage{amsthm}", r"\usepackage{imprimatur}",
-       r"\newcommand\lub[1]{\bigsqcup\{#1\}}", r"\begin{document}"]
-for key, e in sorted(b.items()):
-    for view in sorted(e["views"]):
-        if view.startswith(("math", "prose")):
-            out.append(r"\paragraph{%s, %s.}" % (key.replace("_", r"\_"), view))
-            out.append(e["views"][view])
+out = [r"\documentclass{article}", r"\usepackage{amsthm}", r"\usepackage{mathpartir}",
+       r"\usepackage{imprimatur}", r"\newcommand\lub[1]{\bigsqcup\{#1\}}",
+       r"\newcommand\val{v}", r"\newcommand\rulelabel[2]{}", r"\begin{document}"]
+for path in sys.argv[2:]:
+    for key, e in sorted(json.load(open(path))["entries"].items()):
+        for view in sorted(e["views"]):
+            if view.startswith(("math", "prose", "rules", "grammar")):
+                out.append(r"\paragraph{%s, %s.}" % (key.replace("_", r"\_"), view.replace("_", r"\_").replace("|", "/")))
+                out.append(e["views"][view])
 out.append(r"\end{document}")
-open(sys.argv[2], "w").write("\n".join(out) + "\n")
+open(sys.argv[1], "w").write("\n".join(out) + "\n")
 PY
 for engine in pdflatex lualatex; do
   flag=$([ $engine = pdflatex ] && echo -pdf || echo -lualatex)

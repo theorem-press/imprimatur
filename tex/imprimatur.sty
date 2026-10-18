@@ -122,6 +122,15 @@
 \newcommand\LeanHyp[1]{(\textup{#1})}
 
 % ---------------------------------------------------------------------------
+% The grammar view (DESIGN 7.3): a production per inductive type, one row per
+% constructor, with the author-owned description in the last column.
+\newenvironment{LeanGrammar}{\[\begin{array}{@{}r@{\;}c@{\;}l@{\qquad}l@{}}}{\end{array}\]}
+\newcommand\LeanProduction[4]{#1 & ::= & #3 & \text{#4}\\}
+\newcommand\LeanAlternative[2]{ & \mid & #1 & \text{#2}\\}
+\newcommand\LeanStructure[2]{#1 & & & \text{#2}\\}
+\newcommand\LeanField[3]{ & & \mathit{#1} : #2 & \text{#3}\\}
+
+% ---------------------------------------------------------------------------
 % Unicode that Lean prints, mapped to maths so that pdfLaTeX needs no special
 % fonts. A character the document (or inputenc) already maps is left alone.
 % Add others in the document with \newunicodechar.

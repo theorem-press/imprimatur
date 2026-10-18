@@ -11,6 +11,9 @@ import Imprimatur.Views.Lean
 import Imprimatur.Trust
 import Imprimatur.Packs
 import Imprimatur.Views.Math
+import Imprimatur.Views.Rules
+import Imprimatur.Views.Grammar
+import Imprimatur.CustomViews
 
 /-!
 # Bundle entries
@@ -110,17 +113,76 @@ def guarded {α : Type} (x : MetaM α) : MetaM (Except String α) := do
 /-- Views this extractor renders. -/
 def knownViews : List String := ["lean", "meta"]
 
+/-- A requested view: its name, notation variant and options. -/
+structure ViewSpec where
+  /-- The view (`rules`, `math`, …). -/
+  base : String
+  /-- The notation variant. -/
+  variant : Option String := none
+  /-- Options, such as `include=App,Lam`. -/
+  opts : Array (String × String) := #[]
+
+/-- The comma-separated values of an option. -/
+def ViewSpec.opt (v : ViewSpec) (k : String) : Array String :=
+  match v.opts.find? (·.1 == k) with
+  | some (_, x) => (x.splitOn ",").toArray.map (·.trimAscii.toString) |>.filter (!·.isEmpty)
+  | none => #[]
+
+/-- Parse `view[:variant][|key=value]*`. -/
+def parseViewSpec (s : String) : ViewSpec :=
+  match s.splitOn "|" with
+  | [] => { base := s }
+  | head :: opts =>
+    let (base, variant) := match head.splitOn ":" with
+      | [b, v] => (b, some v)
+      | _ => (head, none)
+    { base, variant, opts := opts.toArray.filterMap fun o => match o.splitOn "=" with
+        | [k, v] => some (k, v)
+        | _ => none }
+
 /-- The rendering context for the notation in scope: the project's rules and
 the selected packs. `used` collects the rules that fire. -/
 def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array String)) :
     MetaM Render.Ctx := do
   let env ← getEnv
+  let style (k v : String) := (projectStyles env).find? (·.1 == k) == some (k, v)
+  let rawVars := style "names" "raw"
+  let callVars := style "applied_variables" "call"
+  let subscriptVars := style "applied_variables" "subscript"
   return { rules := projectRules env ++ Packs.select s.notationPacks,
-           metavars := projectMetavars env, variant, strip := s.stripNamespaces, used }
+           metavars := projectMetavars env, variant, strip := s.stripNamespaces, used, rawVars,
+           callVars, subscriptVars, document := s.document }
+
+/-- The entry for a `latex_group`: a key that names a group of rules, not a
+declaration. Only the `rules` view applies. -/
+def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Ref (Array String))
+    (extra : Array (String × String) := #[]) : MetaM J := do
+  let mut views : Array (String × J) := #[]
+  let mut errors : Array (String × J) := #[]
+  for v in r.views do
+    let spec := parseViewSpec v
+    let spec := { spec with opts := spec.opts ++ extra }
+    let ctx ← renderCtx s spec.variant used
+    if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == spec.base) then
+      match ← guarded ((runCustomView fn r.key none spec.opts).run ctx) with
+      | .ok t => views := views.push (v, .str t)
+      | .error msg => errors := errors.push (v, .str msg)
+    else if let (some g, "rules") := (g, spec.base) then
+      let ctors := Views.selectCtors g.ctors (spec.opt "include") (spec.opt "exclude")
+      match ← guarded ((Views.rulesView ctors).run ctx) with
+      | .ok t => views := views.push (v, .str t)
+      | .error msg => errors := errors.push (v, .str msg)
+    else errors := errors.push (v, .str s!"{r.key} names no declaration, so only a group's rules view or a custom view applies, not {v}")
+  let allTeX := String.join (views.toList.map fun (_, j) => match j with | .str t => t | _ => "")
+  let mut fields : Array (String × J) := #[
+    ("kind", .str "group"), ("decl", .str r.key), ("axioms", .arr #[]), ("sorry", .bool false),
+    ("macros", .arr ((macrosOf allTeX).map .str)), ("views", .obj views)]
+  unless errors.isEmpty do fields := fields.push ("errors", .obj errors)
+  return .obj fields
 
 /-- The entry for a constant, as JSON. -/
 def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : ConstantInfo)
-    (used : IO.Ref (Array String)) : MetaM J := do
+    (used : IO.Ref (Array String)) (extra : Array (String × String) := #[]) : MetaM J := do
   let env ← getEnv
   -- IMPRIMATUR_TRACE=1 reports each stage, for finding what is slow.
   let trace ← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)
@@ -145,15 +207,40 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
       | .error msg => errors := errors.push ("lean", .str msg)
     | "meta" => views := views.push ("meta", .str (metaView axioms usesSorry doc))
     | other =>
-      -- `math`, `prose`, and their variants: `math:named` uses the notation
-      -- variant `named` (DESIGN §7.5).
-      let (base, variant) := match other.splitOn ":" with
-        | [b, v] => (b, some v)
-        | _ => (other, none)
-      if base == "math" || base == "prose" then
+      -- `math`, `prose` and `rules`, with a notation variant (`math:named`,
+      -- DESIGN §7.5) and options (`rules|include=App,Lam`, DESIGN §9.1).
+      let spec := parseViewSpec other
+      let spec := { spec with opts := spec.opts ++ extra }
+      let base := spec.base
+      let variant := spec.variant
+      if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == base) then
+        let ctx ← renderCtx s variant used
+        match ← guarded ((runCustomView fn r.key (some c) spec.opts).run ctx) with
+        | .ok v => views := views.push (other, .str v)
+        | .error msg => errors := errors.push (other, .str msg)
+      else if base == "rules" then
+        let ctors := match c with
+          | .inductInfo i => i.ctors.toArray
+          | .ctorInfo _ => #[c.name]
+          | _ => #[]
+        if ctors.isEmpty then
+          errors := errors.push (other, .str s!"the rules view needs an inductive predicate or a constructor")
+        else
+          let ctx ← renderCtx s variant used
+          let ctors := Views.selectCtors ctors (spec.opt "include") (spec.opt "exclude")
+          match ← guarded ((Views.rulesView ctors).run ctx) with
+          | .ok v => views := views.push (other, .str v)
+          | .error msg => errors := errors.push (other, .str msg)
+      else if base == "grammar" then
+        let ctx ← renderCtx s variant used
+        match ← guarded ((Views.grammarView c).run ctx) with
+        | .ok v => views := views.push (other, .str v)
+        | .error msg => errors := errors.push (other, .str msg)
+      else if base == "math" || base == "prose" then
         let ctx ← renderCtx s variant used
         let act : MetaM String :=
-          if base == "math" then (Views.mathView c s.width).run ctx else (Views.proseView c s.width).run ctx
+          if base == "math" then (Views.mathViewWith c s.width spec.opts).run ctx
+          else (Views.proseView c s.width).run ctx
         match ← guarded act with
         | .ok v => views := views.push (other, .str v)
         | .error msg => errors := errors.push (other, .str msg)

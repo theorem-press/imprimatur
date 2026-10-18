@@ -29,12 +29,18 @@ if [ ! -f "$LLMBDA_ROOT/oopsla2027/paper.tex" ]; then
 fi
 mkdir -p "$work/llmbda"
 cp "$LLMBDA_ROOT"/oopsla2027/*.tex "$work/llmbda/"
-cp scripts/integration/llmbda/imprimatur.toml "$work/llmbda/"
+# llmbda's own configuration, or, before llmbda adopted imprimatur, aliases
+# for its environments.
+if [ -f "$LLMBDA_ROOT/oopsla2027/imprimatur.toml" ]; then
+  cp "$LLMBDA_ROOT/oopsla2027/imprimatur.toml" "$work/llmbda/"
+else
+  cp scripts/integration/llmbda-aliases.toml "$work/llmbda/imprimatur.toml"
+fi
 (cd "$work/llmbda" && "$SPLICE" scan -o requests.json)
 python3 -c "import json,sys; r=json.load(open('$work/llmbda/requests.json'))['requests']; print(f'scan: {len(r)} keys requested')"
 (cd "$work/llmbda" && "$SPLICE" strip -o stripped)
 python3 scripts/integration/check_outside.py "$work/llmbda" "$work/llmbda/stripped" \
-  leangrammar leanrules leantheorem leancorollary leanlemma leandef leanconventions leantranslation
+  leangrammar leanrules leantheorem leancorollary leanlemma leandef leanconventions leantranslation %LEANCLAUSE
 # M2: the lean view over real Mathlib-based projects, for review by hand.
 # The extractor is built with each host's toolchain in a scratch copy, and run
 # under the host's `lake env`, so nothing in the host changes.
@@ -164,6 +170,37 @@ PY
 fi
 
 if [ -f "$PLANET_ROOT/Planet/Paper.lean" ]; then
+  echo "== integration/planet-rules: PLanet's analysis rules, generated from Der and DerF (PLAN M5)"
+  # PLAN M5, done when: the rules figure is generated (Lift stays hand-written),
+  # with the notation in scripts/integration/planet. It must match the agreed
+  # text (target-rules.tex), and typeset.
+  prules="$work/planet-rules"; mkdir -p "$prules"
+  tc=$(sed 's/.*://' "$PLANET_ROOT/lean-toolchain")
+  "$IMPRIMATUR" toolchain install "$tc" > /dev/null
+  printf '{"schema": "imprimatur-requests/1", "config": {"imports": [], "strip_namespaces": ["Planet"], "notation": ["PlanetTeX.lean"]}, "requests": {"Analysis rules": {"views": ["rules"]}}}' > "$prules/requests.json"
+  (cd "$PLANET_ROOT" && lake env "$IMPRIMATUR_CACHE/toolchains/$tc/.lake/build/bin/imprimatur-export" \
+    --requests "$prules/requests.json" --out "$prules/bundle.json" --base "$ROOT/scripts/integration/planet") 2>&1 \
+    | grep -v "local changes" | sed 's/^/  /'
+  python3 - "$prules/bundle.json" "$prules" <<'PY'
+import json, sys
+e = json.load(open(sys.argv[1]))["entries"]["Analysis rules"]
+if "errors" in e: print("  errors:", e["errors"])
+rules = e["views"].get("rules", "")
+open(sys.argv[2] + "/rules.tex", "w").write(rules + "\n")
+open(sys.argv[2] + "/paper.tex", "w").write("\\documentclass{article}\\usepackage{imprimatur,mathpartir,amssymb}\n"
+    "\\newcommand{\\judge}[1]{\\mathsf{#1}}\\newcommand{\\lab}[1]{\\mathit{#1}}\n"
+    "\\newcommand{\\nestD}[2]{#1 \\triangleright #2}\\newcommand{\\crossD}[2]{#1 \\times #2}\n"
+    "\\begin{document}\n" + rules + "\n\\end{document}\n")
+PY
+  if ! diff -u "scripts/integration/planet/target-rules.tex" "$prules/rules.tex" > "$prules/diff.txt"; then
+    echo "  FAIL: the rules differ from the agreed text:"; sed 's/^/    /' "$prules/diff.txt" | head -60; failures=1
+  fi
+  if ! (cd "$prules" && TEXINPUTS="$ROOT/tex//:" latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex > latexmk.log 2>&1); then
+    echo "  FAIL: the rules don't typeset (see $prules/latexmk.log)"; failures=1
+  else
+    echo "  typeset: $prules/paper.pdf"
+  fi
+
   echo "== integration/planet-drift: a weakened copy of a PLanet theorem is caught as drift"
   scratch="$work/planet-drift"; mkdir -p "$scratch/olean"
   tc=$(sed 's/.*://' "$PLANET_ROOT/lean-toolchain")

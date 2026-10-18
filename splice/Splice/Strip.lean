@@ -62,8 +62,17 @@ def stripEdits (cfg : Config) (s : Src) (items : Array Item) : Array Edit := Id.
     match it.kind with
     | .block =>
       let wrap := (it.opt? "wrap").orElse (fun _ => (cfg.alias? it.name).bind (·.wrap))
+      let isComment := ((cfg.alias? it.name).map (·.comment)).getD false
       match wrap with
       | some w =>
+        -- A comment-delimited block's markers are comments: its content stays.
+        if isComment then
+          let a := lineStartIfBlank s it.start
+          let b := lineEndIfBlank s it.stop
+          edits := edits.push { start := a, stop := it.regionStart, text := "" }
+          edits := edits.push { start := it.regionStart, stop := it.regionEnd, text := region }
+          edits := edits.push { start := it.regionEnd, stop := b, text := "" }
+          continue
         let title := if it.title.trimAscii.isEmpty then "" else s!"[{it.title}]"
         let label := match it.opt? "label" with | some l => s!"\\label\{{l}}" | none => ""
         let headerRest := s.slice it.headerEnd it.regionStart
@@ -103,10 +112,35 @@ def stripDoc (doc : Doc) : Array (String × String) :=
 
 open Lean (Json) in
 /-- The requests file (`requests.json`): every key the document uses, with
-the views it asks for. Check-only keys and references ask for no view. -/
+the views it asks for. Check-only keys and references ask for no view. The
+`document` object is the inventory an index view works from: the blocks, with
+the labels the splicer gives them (and `"live": false` when not typeset), and
+the document's typeset `\label`s, in document order (`order` counts both). -/
 def requests (doc : Doc) : String := Id.run do
   let mut keys : Array (String × Array String) := #[]
-  for f in doc.files do
+  let labels := blockLabels doc
+  let q (t : String) : String := (Json.str t).compress
+  let mut blocks : Array String := #[]
+  let mut anchors : Array String := #[]
+  let mut order := 0
+  for (f, fi) in doc.files.toList.zip (List.range doc.files.size) do
+    -- Items and labels of the file, in order of position.
+    let mut events : Array (Nat × Sum Nat String) := f.scan.labels.map fun (l, pos) => (pos, .inr l)
+    for (it, ii) in f.scan.items.toList.zip (List.range f.scan.items.size) do
+      events := events.push (it.start, .inl ii)
+    for (_, ev) in events.qsort (·.1 < ·.1) do
+      order := order + 1
+      match ev with
+      | .inr l => anchors := anchors.push s!"\{\"name\": {q l}, \"order\": {order}}"
+      | .inl ii =>
+        let it := f.scan.items[ii]!
+        if it.kind == .block || it.kind == .inline then
+          let label := match labels.find? (fun (a, b, _) => a == fi && b == ii) with
+            | some (_, _, l) => s!", \"label\": {q l}"
+            | none => ""
+          let live := if it.live then "" else ", \"live\": false"
+          blocks := blocks.push s!"\{\"key\": {q it.key}, \"env\": {q it.name}, \
+            \"view\": {q (itemView doc.cfg it)}{label}{live}, \"order\": {order}}"
     for it in f.scan.items do
       let views := match it.kind with
         | .block | .inline => #[itemView doc.cfg it]
@@ -122,7 +156,6 @@ def requests (doc : Doc) : String := Id.run do
     for k in m.theorems do
       unless keys.any (·.1 == k) do keys := keys.push (k, #[])
   -- Written by hand so that keys are sorted and each request is one line.
-  let q (t : String) : String := (Json.str t).compress
   let lines := (keys.qsort (·.1 < ·.1)).map fun (k, vs) =>
     s!"    {q k}: \{\"views\": [{", ".intercalate ((vs.qsort (· < ·)).map q).toList}]}"
   let list (xs : Array String) : String := "[" ++ ", ".intercalate (xs.map q).toList ++ "]"
@@ -143,7 +176,9 @@ def requests (doc : Doc) : String := Id.run do
     \"open_scoped\": {list c.openScoped}, \"strip_namespaces\": {list c.stripNamespaces},\n    \
     \"trusted_prefixes\": {list c.trustedPrefixes}, \
     \"challenges\": \{{", ".intercalate challenges.toList}}{extra}},\n"
-  return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n{config}  \"requests\": \{\n\
+  let document := s!"  \"document\": \{\"blocks\": [\n    {",\n    ".intercalate blocks.toList}],\n    \
+    \"labels\": [\n    {",\n    ".intercalate anchors.toList}]},\n"
+  return s!"\{\n  \"schema\": \"imprimatur-requests/1\",\n{config}{document}  \"requests\": \{\n\
     {",\n".intercalate lines.toList}\n  }\n}\n"
 
 end Splice

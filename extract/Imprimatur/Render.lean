@@ -9,6 +9,7 @@ import Imprimatur.TeX
 import Imprimatur.Notation
 import Imprimatur.Commands
 import Imprimatur.Views.Lean
+import Imprimatur.Requests
 
 /-!
 # Rendering expressions as mathematics
@@ -50,6 +51,16 @@ structure Ctx where
   strip : Array Name := #[]
   /-- The rules used so far, by `origin: template` (for tests). -/
   used : IO.Ref (Array String)
+  /-- Renderings of particular variables, from metavariable conventions. -/
+  overrides : Array (FVarId × String) := #[]
+  /-- `latex_style names := raw`: binder names are written as they are. -/
+  rawVars : Bool := false
+  /-- `latex_style applied_variables := call`: `f(a)(b)` for an applied variable. -/
+  callVars : Bool := false
+  /-- `latex_style applied_variables := subscript`: `f_{a, b}` for an applied variable. -/
+  subscriptVars : Bool := false
+  /-- The document's blocks and labels, for views that index it. -/
+  document : DocumentInfo := {}
 
 /-- The renderer's monad. -/
 abbrev RenderM := ReaderT Ctx MetaM
@@ -59,10 +70,22 @@ def subscripts : List (Char × Char) :=
   [('₀', '0'), ('₁', '1'), ('₂', '2'), ('₃', '3'), ('₄', '4'), ('₅', '5'), ('₆', '6'), ('₇', '7'),
    ('₈', '8'), ('₉', '9')]
 
+/-- Greek letters, and their macros. -/
+def greek : List (String × String) :=
+  [("α", "\\alpha"), ("β", "\\beta"), ("γ", "\\gamma"), ("δ", "\\delta"), ("ε", "\\varepsilon"),
+   ("ζ", "\\zeta"), ("η", "\\eta"), ("θ", "\\theta"), ("ι", "\\iota"), ("κ", "\\kappa"),
+   ("λ", "\\lambda"), ("μ", "\\mu"), ("ν", "\\nu"), ("ξ", "\\xi"), ("π", "\\pi"), ("ρ", "\\rho"),
+   ("σ", "\\sigma"), ("τ", "\\tau"), ("υ", "\\upsilon"), ("φ", "\\varphi"), ("χ", "\\chi"),
+   ("ψ", "\\psi"), ("ω", "\\omega"), ("Γ", "\\Gamma"), ("Δ", "\\Delta"), ("Θ", "\\Theta"),
+   ("Λ", "\\Lambda"), ("Ξ", "\\Xi"), ("Π", "\\Pi"), ("Σ", "\\Sigma"), ("Φ", "\\Phi"),
+   ("Ψ", "\\Psi"), ("Ω", "\\Omega"), ("ℓ", "\\ell")]
+
 /-- The TeX of a variable named `n` (DESIGN §7.5, metavariables): a
-`latex_metavar` name, or the name with trailing digits as a subscript;
-a name longer than one letter is set in `\mathit`. -/
-def varTeX (metavars : Array MetavarRule) (n : Name) : String :=
+`latex_metavar` name, or the name with trailing digits as a subscript; a
+Greek letter becomes its macro; a name longer than one letter is set in
+`\mathit` and escaped, unless `raw` (`latex_style variables := raw`), when
+names are written as they are. -/
+def varTeX (metavars : Array MetavarRule) (n : Name) (raw : Bool := false) : String :=
   let s := (n.eraseMacroScopes.toString.replace "✝" "")
   match metavars.find? (·.name.toString == s) with
   | some m => m.tex
@@ -74,9 +97,19 @@ def varTeX (metavars : Array MetavarRule) (n : Name) : String :=
     let base := String.ofList (cs.take (cs.length - digitsRev.length))
     let digits := String.ofList (digitsRev.reverse.map fun c =>
       ((subscripts.find? (·.1 == c)).map (·.2)).getD c)
-    let baseTeX := if base.length ≤ 1 then TeX.escape base else s!"\\mathit\{{TeX.escape base}}"
+    let baseTeX := match metavars.find? (fun m => m.decorated && m.name.toString == base), greek.find? (·.1 == base) with
+      | some m, _ => m.tex
+      | none, some (_, m) => m
+      | none, none =>
+        if raw then base
+        else if base.length ≤ 1 then TeX.escape base else s!"\\mathit\{{TeX.escape base}}"
     let sub := if digits.isEmpty then "" else s!"_\{{digits}}"
     baseTeX ++ sub ++ String.ofList (List.replicate primes '\'')
+
+/-- The TeX of a variable, under the style in force. -/
+def varName (n : Name) : RenderM String := do
+  let ctx ← read
+  return varTeX ctx.metavars n ctx.rawVars
 
 /-- The TeX of a constant without notation. -/
 def constTeX (strip : Array Name) (n : Name) : String :=
@@ -90,7 +123,7 @@ def candidates (head : Name) : RenderM (Array NotationRule) := do
   -- order), then specificity.
   let key (r : NotationRule) : Nat × Nat :=
     ((if r.variant.isSome && r.variant == ctx.variant then 0 else if r.variant.isNone then 1 else 2),
-     1000 - r.pat.specificity)
+     1000 - r.specificity)
   let le (a b : NotationRule) : Bool :=
     let (x1, y1) := key a
     let (x2, y2) := key b
@@ -113,22 +146,32 @@ mutual
   /-- Render an expression. -/
   partial def render (e : Expr) : RenderM Doc := do
     let e := e.consumeMData
-    -- Notation rules first.
-    if let .const h _ := e.getAppFn then
-      if h == ``Exists then
-        if let some d ← renderExists e then return d
-      for r in ← candidates h do
-        if let some bs ← r.tryMatch e then
+    -- Notation rules first: those for the head constant, or for the binder.
+    let head : Name := match e with
+      | .forallE _ _ b _ => if b.hasLooseBVar 0 then `_forall else `_arrow
+      | .lam .. => `_lam
+      | _ => match e.getAppFn with
+        | .const h _ => h
+        | _ => .anonymous
+    unless head.isAnonymous do
+      for r in ← candidates head do
+        let fire (e : Expr) (bs : Array (Name × Expr)) : RenderM (Option Doc) := do
           (← read).used.modify (·.push s!"{r.origin}: {r.template}")
-          return ← applyRule r bs e
+          return some (← applyRule r bs e)
+        let ctx ← read
+        if let some d ← r.tryMatchK e (fun bs => (fire e bs).run ctx) then return d
         -- Over-applied, as `(f ∘ g) x`: match a prefix, then apply the rest.
         if let some (pre, rest) ← splitAfterExplicit e r.pat.arity then
           if !rest.isEmpty then
-            if let some bs ← r.tryMatch pre then
-              (← read).used.modify (·.push s!"{r.origin}: {r.template}")
-              return ← apply (← applyRule r bs pre) rest
+            if let some d ← r.tryMatchK pre (fun bs => (fire pre bs).run ctx) then
+              return ← apply d rest
+      if head == ``Exists then
+        if let some d ← renderExists e then return d
     match e with
-    | .fvar f => return .tex (varTeX (← read).metavars (← f.getUserName))
+    | .fvar f =>
+      match (← read).overrides.find? (·.1 == f) with
+      | some (_, t) => return .tex t
+      | none => return .tex (← varName (← f.getUserName))
     | .sort .zero => return .tex "\\mathrm{Prop}"
     | .sort _ => return .tex "\\mathrm{Type}"
     | .lit (.natVal n) => return .tex (toString n)
@@ -137,7 +180,7 @@ mutual
     | .lam n t b bi =>
       withLocalDecl n bi t fun x => do
         let body ← render (b.instantiate1 x)
-        return .node 0 #[.tex s!"\\lambda {varTeX (← read).metavars n}.\\,", .child 0 body]
+        return .node 0 #[.tex s!"\\lambda {← varName n}.\\,", .child 0 body]
     | .const h _ => return .tex (constTeX (← read).strip h)
     | .app .. =>
       if ← isMatcherApp e then return ← delab e
@@ -147,7 +190,20 @@ mutual
         match ← explicitArgsLoose e with
         | some (_, args) => apply (.tex (constTeX (← read).strip h)) args
         | none => delab e
-      | .fvar _ | .lam .. => apply (← render f) e.getAppArgs
+      | .fvar _ =>
+        if (← read).subscriptVars then
+          let mut parts : Array Doc := #[.child Doc.maxPrec (← render f), .tex "_{"]
+          for (a, i) in e.getAppArgs.toList.zip (List.range e.getAppNumArgs) do
+            if i > 0 then parts := parts.push (.tex ", ")
+            parts := parts.push (.child 0 (← render a))
+          return .node Doc.maxPrec (parts.push (.tex "}"))
+        if (← read).callVars then
+          let mut parts : Array Doc := #[.child Doc.maxPrec (← render f)]
+          for a in e.getAppArgs do
+            parts := parts ++ #[.tex "(", .child 0 (← render a), .tex ")"]
+          return .node Doc.maxPrec parts
+        apply (← render f) e.getAppArgs
+      | .lam .. => apply (← render f) e.getAppArgs
       | _ => delab e
     | _ => delab e
 
@@ -163,8 +219,30 @@ mutual
     if parts.size == 1 then return f
     return .node (Doc.maxPrec - 1) parts
 
-  /-- Fill a rule's template. -/
+  /-- Fill a rule's template. A flattened binder rule (`∃ x, p` with
+  `flatten`) first folds a chain of binders into one list of variables. -/
   partial def applyRule (r : NotationRule) (bs : Array (Name × Expr)) (e : Expr) : RenderM Doc := do
+    if r.flatten then
+      if let some (x, p) := r.pat.binder? then
+        return ← foldBinders r bs x p #[] e
+    fillTemplate r bs #[] e
+
+  /-- Fold `∃ a, ∃ b, p`: while the body matches the rule again, collect the
+  bound variables, then fill the template with the list. -/
+  partial def foldBinders (r : NotationRule) (bs : Array (Name × Expr)) (x p : Name)
+      (xs : Array Expr) (e : Expr) : RenderM Doc := do
+    let (some (_, xv), some (_, body)) := (bs.find? (·.1 == x), bs.find? (·.1 == p))
+      | fillTemplate r bs #[] e
+    let xs := xs.push xv
+    let ctx ← read
+    match ← r.tryMatchK body (fun bs' => do return some (← (foldBinders r bs' x p xs body).run ctx)) with
+    | some d => return d
+    | none => fillTemplate r bs #[(x, xs)] e
+
+  /-- Fill a rule's template; `multi` gives the variables that stand for a
+  list, joined by the rule's `sep`. -/
+  partial def fillTemplate (r : NotationRule) (bs : Array (Name × Expr))
+      (multi : Array (Name × Array Expr)) (e : Expr) : RenderM Doc := do
     let vars := r.pat.vars.map (·.toString)
     let some parts := (splitTemplate r.template vars).toOption | return .tex r.template
     let hidden := r.hides.map (·.1.toString)
@@ -173,7 +251,7 @@ mutual
     if let #[.inr v] := parts then
       if let some a := get v then return ← render a
     -- Flatten a chain: `a ∘ (b ∘ c)` becomes one n-ary node.
-    let operands ← if r.flatten then collect r e else pure #[]
+    let operands ← if r.flatten && r.pat.binder?.isNone then collect r e else pure #[]
     let topHoles := Id.run do
       let mut d := 0
       let mut out : Array Nat := #[]
@@ -224,9 +302,13 @@ mutual
             if i > 0 then
               if r.breakBefore && depth == 0 then out := out.push .brk
               out := out.push (.tex sep)
-            out := out.push (.child (if depth > 0 then 0 else r.prec + 1) (← render o))
+            out := out.push (.child need (← render o))
         else if r.flatten && !operands.isEmpty && holeIdx == 0 then
-          out := out.push (.child (if depth > 0 then 0 else r.prec + 1) (← render operands[0]!))
+          out := out.push (.child need (← render operands[0]!))
+        else if let some (_, xs) := multi.find? (·.1.toString == v) then
+          for (a, i) in xs.toList.zip (List.range xs.size) do
+            if i > 0 then out := out.push (.tex r.sep)
+            out := out.push (.child need (← render a))
         else
           match get v with
           | some a => out := out.push (.child need (← render a))
@@ -252,7 +334,7 @@ mutual
     let some (_, #[.lam n t b bi]) ← explicitArgs e | return none
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
-      let v := varTeX (← read).metavars n
+      let v ← varName n
       -- `∃ x, x ∈ s ∧ p` is written `∃ x ∈ s, p`.
       if body.isAppOfArity ``And 2 then
         let mem := body.appFn!.appArg!
@@ -276,7 +358,7 @@ mutual
       let body := b.instantiate1 x
       -- Instance binders are not shown.
       if bi.isInstImplicit then return ← render body
-      let v := varTeX (← read).metavars n
+      let v ← varName n
       -- `∀ x, x ∈ s → p` is written `∀ x ∈ s, p`.
       if let .forallE _ dom rest _ := body then
         if !rest.hasLooseBVars && dom.isAppOfArity ``Membership.mem 5 && dom.appArg! == x then

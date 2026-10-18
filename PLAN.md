@@ -140,6 +140,11 @@ S1 and S2 run in the first week, since external mode and hashing shape
 milestones M2 and M3.
 
 **Results.**
+- S3 (2026-10-17) classified llmbda's 254 rendering special cases: about
+  half were notation, a fifth custom views, and the rest generic or
+  conventions. Its report, which quotes llmbda's code, is kept in llmbda.
+  It set M5's scope: binder patterns, `latex_style`, `latex_entry`, label
+  styles, alias templates and labels, and comment-delimited blocks.
 - S1 succeeded on all three projects:
   [docs/spikes/S1-external-mode.md](docs/spikes/S1-external-mode.md).
 - S2 succeeded once definitions are hashed by their equation lemmas, not their
@@ -254,6 +259,14 @@ hand-written golden bundles.
 
 ### M5 — Rules, grammars, and the llmbda migration (v0.4.0)
 
+*Status: done on branch `m5-rules` (2026-10-18). The parity gate passes
+byte for byte. llmbda's notation module and custom views live in llmbda
+(`imprimatur/`, on llmbda's `imprimatur` branch), whose three documents are
+now built with imprimatur in external mode; llmbda's old exporter, and the
+gate with it, are deleted there. PLanet's rules
+are generated (`integration/planet-rules`), with Lift hand-written. `show=`
+and `hide=` are not implemented, and `migrate-slots` was not needed.*
+
 - **Tests first:** `Semantics` fixture golden files for `rules` and
   `grammar`; premise conventions; `include` and `exclude`; label precedence;
   slots in grammars; the **parity harness**.
@@ -264,7 +277,7 @@ hand-written golden bundles.
   - custom views through `@[latex_view]`.
 - **Migration:** llmbda's notation module and custom views, built from spike
   S3's list.
-- **Parity gate:** `scripts/parity-llmbda.sh` builds `oopsla2027/paper.tex`
+- **Parity gate:** a script in llmbda builds `oopsla2027/paper.tex`
   with the old `run_latex` and with imprimatur from the same commit. It
   passes only if every difference is a `sum=` addition. Only then is the old
   code deleted from llmbda.

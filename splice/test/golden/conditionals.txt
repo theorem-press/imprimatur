@@ -1,0 +1,79 @@
+$ imprimatur-splice scan
+main.tex:10:1: warning[missing-input]: missing-file.tex does not exist, so it was not scanned (it may be generated later)
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    {"key": "Demo.a", "env": "leanblock", "view": "lean", "order": 1},
+    {"key": "Demo.hidden", "env": "leanblock", "view": "lean", "live": false, "order": 2},
+    {"key": "Demo.hidden", "env": "leanblock", "view": "lean", "live": false, "order": 3},
+    {"key": "Demo.b", "env": "leanblock", "view": "lean", "order": 4},
+    {"key": "Demo.c", "env": "leanblock", "view": "lean", "order": 5},
+    {"key": "Demo.hidden", "env": "leanblock", "view": "lean", "live": false, "order": 6},
+    {"key": "Demo.d", "env": "leanblock", "view": "lean", "order": 7},
+    {"key": "Demo.e", "env": "leanblock", "view": "lean", "order": 8},
+    {"key": "Demo.hidden", "env": "leanblock", "view": "lean", "live": false, "order": 9},
+    {"key": "Demo.f", "env": "leanblock", "view": "lean", "order": 10}],
+    "labels": [
+    ]},
+  "requests": {
+    "Demo.a": {"views": ["lean"]},
+    "Demo.b": {"views": ["lean"]},
+    "Demo.c": {"views": ["lean"]},
+    "Demo.d": {"views": ["lean"]},
+    "Demo.e": {"views": ["lean"]},
+    "Demo.f": {"views": ["lean"]},
+    "Demo.hidden": {"views": ["lean"]}
+  }
+}
+[exit 0]
+
+== appendix.tex
+\begin{leanblock}{Demo.f}{In the appendix, now that it is on}
+\end{leanblock}
+
+== main.tex
+\documentclass{article}
+\newif\ifappendix\appendixfalse
+\newif\ifshort\shorttrue
+\begin{document}
+\begin{leanblock}{Demo.a}{Shown}
+\end{leanblock}
+\iffalse
+\begin{leanblock}{Demo.hidden}{Commented out}
+\end{leanblock}
+\input{missing-file}
+\fi
+\ifappendix
+\input{appendix}
+\begin{leanblock}{Demo.hidden}{Switched off}
+\end{leanblock}
+\else
+\begin{leanblock}{Demo.b}{The else branch of a switch that is off}
+\end{leanblock}
+\fi
+\ifshort
+\begin{leanblock}{Demo.c}{The then branch of a switch that is on}
+\end{leanblock}
+\else
+\begin{leanblock}{Demo.hidden}{Its else branch}
+\end{leanblock}
+\fi
+\ifx\undefined\relax
+\begin{leanblock}{Demo.d}{An unknown conditional: both branches scanned}
+\end{leanblock}
+\else
+\begin{leanblock}{Demo.e}{Its else branch}
+\end{leanblock}
+\fi
+\appendixtrue
+\ifappendix
+\input{appendix}
+\fi
+\ifshort\iffalse
+\begin{leanblock}{Demo.hidden}{Nested, off}
+\end{leanblock}
+\fi\else\fi
+\end{document}
+

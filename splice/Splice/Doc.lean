@@ -22,6 +22,8 @@ structure SourceFile where
   src : Src
   /-- What the scanner found. -/
   scan : ScanResult
+  /-- Whether the file is typeset: reached from a branch that is on. -/
+  live : Bool := true
 
 /-- A loaded document. -/
 structure Doc where
@@ -69,10 +71,15 @@ def Doc.load {m : Type → Type} [Monad m] (cfg : Config) (read : String → m (
   let mut files : Array SourceFile := #[]
   let mut diags : Array Diag := #[]
   let mut seen : Array String := #[main]
-  let mut queue : Array (String × String) := #[(main, "")]
+  -- Each file to scan: its path, where it was reached from, and whether it
+  -- is typeset (a file reached only from branches that are off is not).
+  let mut queue : Array (String × String × Bool) := #[(main, "", true)]
   let mut qi := 0
+  -- `\newif` switches carry over from one file to the next.
+  let mut switches : Switches := #[]
+  let mut liveFiles : Array String := #[main]
   while h : qi < queue.size do
-    let (path, from_) := queue[qi]
+    let (path, from_, live) := queue[qi]
     qi := qi + 1
     let some text ← read path
       | if from_.isEmpty then
@@ -82,11 +89,12 @@ def Doc.load {m : Type → Type} [Monad m] (cfg : Config) (read : String → m (
             s!"{path} does not exist, so it was not scanned (it may be generated later)")
         continue
     let src := Src.ofString path text
-    match scanSrc cfg src with
+    match scanSrcWith cfg src switches live with
     | .error d => diags := diags.push d
-    | .ok scan =>
+    | .ok (scan, sw) =>
+      switches := sw
       files := files.push { src, scan }
-      for (macroName, p, pos) in scan.inputs do
+      for (macroName, p, pos, inputLive) in scan.inputs do
         if p.startsWith "/" || p.startsWith "\\" || (p.toList.getD 1 ' ') == ':' then
           let d := Diag.warn "absolute-input" (src.locString pos)
             s!"{p} is an absolute path, so it was not followed (use a path relative to the main file)"
@@ -97,9 +105,20 @@ def Doc.load {m : Type → Type} [Monad m] (cfg : Config) (read : String → m (
         let mut chosen := cands.headD p
         for c in cands do
           if (← read c).isSome then chosen := c; break
-        unless seen.contains chosen do
+        if seen.contains chosen then
+          -- Reached again, from a typeset place: the file is typeset.
+          if live && inputLive then
+            queue := queue.map fun (q, f, l) => if q == chosen then (q, f, true) else (q, f, l)
+            liveFiles := liveFiles.push chosen
+        else
           seen := seen.push chosen
-          queue := queue.push (chosen, src.locString pos)
+          queue := queue.push (chosen, src.locString pos, live && inputLive)
+          if live && inputLive then liveFiles := liveFiles.push chosen
+  -- Items of a file that is not typeset are not typeset; nor are its labels.
+  files := files.map fun f =>
+    if liveFiles.contains f.src.path then f
+    else { f with live := false, scan := { f.scan with
+      items := f.scan.items.map ({ · with live := false }), labels := #[] } }
   return { cfg, files, diags }
 
 /-- Load a document, and its comparator manifests, from disk; paths are

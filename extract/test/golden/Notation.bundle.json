@@ -21,9 +21,37 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{arith} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} : \\LeanConst{Nat}) (\\LeanBound{i} : \\LeanConst{Int}) (\\LeanBound{spec} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} - \\LeanBound{c} * \\LeanNumber{2} / \\LeanNumber{1} \\% \\LeanNumber{3} = \\LeanBound{b} \\textasciicircum{} \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{4}-\\LeanBound{i} ≠ \\LeanBound{i} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{a} < \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanBound{a} ≤ \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanBound{b} > \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{12}\\LeanBound{b} ≥ \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{14}\\LeanBound{a}.succ = \\LeanBound{a} + \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{16}(\\LeanConst{id} ∘ \\LeanConst{id}) \\LeanBound{a} = \\LeanBound{a} ∧ (\\LeanBound{a}, \\LeanBound{b}) = (\\LeanBound{a}, \\LeanBound{b}) ∧ ↑\\LeanBound{spec} = ↑\\LeanBound{i} ∧ ⟨\\LeanBound{a}, ⋯⟩.val = \\LeanBound{a}}",
         "math": "\\LeanMath{a + b - c \\cdot 2 / 1 \\bmod 3 = b^{2} \\wedge -i \\ne i \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
+        "math:binders": "\\LeanMath{a + b - c \\cdot 2 / 1 \\bmod 3 = b^{2} \\wedge (-i \\ne i \\wedge (a < b \\wedge (a \\le b \\wedge (b > a \\wedge (b \\ge a \\wedge (a + 1 \\LeanBreak = a + 1 \\wedge ((\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge ((a, b) = (a, b) \\wedge (L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a)))))))))}",
         "math:named": "\\LeanMath{a + b - c \\cdot 2 / 1 \\bmod 3 = b^{2} \\wedge -i \\ne i \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Arithmetic: every operator of the core pack.}",
         "prose": "\\LeanProse{Let $a, b, c \\in \\mathbb{N}$, $i \\in \\mathbb{Z}$ and $L \\in \\mathbb{N}$. Then (1)~$a + b - c \\cdot 2 / 1 \\bmod 3 = b^{2}$, (2)~$-i \\ne i$, (3)~$a < b$, (4)~$a \\le b$, (5)~$b > a$, (6)~$b \\ge a$, (7)~$a + 1 = a + 1$, (8)~$(\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a$, (9)~$(a, b) = (a, b)$, (10)~$L = i$ and (11)~$\\LeanMathConst{Subtype.mk}\\,a = a$.}"
+      }
+    },
+    "Notation.binderRules": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Notation.binderRules",
+      "doc": "Binder patterns (the `binders` variant): chains of ∃ and ∀ folded into\none list, an implication, a λ, a function taken by a binder pattern, and an\noperator with `assoc := none`.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\Rightarrow", "\\exists", "\\forall", "\\implies", "\\in", "\\lambda", "\\leanmetasource", "\\mapsto", "\\mathbb", "\\neg", "\\sum", "\\to", "\\wedge"],
+      "sigHash": "cc73f0ff1083703b7724b495a9ec006fd66155e5402efb927911f97b513727c6",
+      "sorry": true,
+      "source": {
+        "line": 84,
+        "path": "Notation/Defs.lean"
+      },
+      "stmtHash": "c095ee9dc585cc229fc3cd1f6e17d9cd485c4e6f08a1050766450e95ab513f66",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{binderRules} (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat}) (\\LeanBound{p} : \\LeanSort{Prop}) :\\LeanNewline\n\\LeanIndent{2}(∃ \\LeanBound{a} \\LeanBound{b}, \\LeanBound{a} = \\LeanBound{b}) ∧\\LeanNewline\n\\LeanIndent{4}(∀ (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}), \\LeanBound{a} = \\LeanBound{a} → \\LeanBound{b} = \\LeanBound{b} → \\LeanBound{p}) ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanConst{bigsum} \\LeanKeyword{fun} \\LeanBound{k} => \\LeanBound{k} + \\LeanNumber{1}) = \\LeanConst{bigsum} \\LeanBound{f} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n}) \\LeanNumber{1} = \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{10}(\\LeanBound{p} ∧ \\LeanBound{p}) ∧ ¬∃ \\LeanBound{c}, \\LeanBound{c} = \\LeanBound{c} ∧ ¬\\LeanBound{p} ∧ ∀ (\\LeanBound{acc₁} : \\LeanConst{Nat}), \\LeanBound{acc₁} = \\LeanBound{acc₁}}",
+        "math": "\\LeanMath{(\\exists a,\\ \\exists b,\\ a = b) \\wedge (\\forall a : \\mathbb{N},\\ \\forall b : \\mathbb{N},\\ a = a \\implies b = b \\implies p) \\wedge \\LeanMathConst{bigsum}\\,(\\lambda k.\\,k + 1) = \\LeanMathConst{bigsum}\\,f \\LeanBreak \\wedge (\\lambda n.\\,n)\\,1 = 1 \\wedge (p \\wedge p) \\wedge \\neg (\\exists c,\\ c = c \\wedge \\neg p \\wedge (\\forall a_{1} : \\mathbb{N},\\ a_{1} = a_{1}))}",
+        "math:binders": "\\LeanMath{(\\exists a, b.\\, a = b) \\wedge ((\\forall a, b.\\, a = a \\Rightarrow b = b \\Rightarrow p) \\wedge (\\sum_{k} k + 1 \\LeanBreak = \\sum f \\wedge ((n \\mapsto n)\\,1 = 1 \\wedge ((p \\wedge p) \\wedge \\neg(\\exists c.\\, c = c \\wedge (\\neg p \\wedge (\\forall a_{1}.\\, a_{1} = a_{1})))))))}",
+        "math:named": "\\LeanMath{(\\exists a,\\ \\exists b,\\ a = b) \\wedge (\\forall a : \\mathbb{N},\\ \\forall b : \\mathbb{N},\\ a = a \\implies b = b \\implies p) \\wedge \\LeanMathConst{bigsum}\\,(\\lambda k.\\,k + 1) = \\LeanMathConst{bigsum}\\,f \\LeanBreak \\wedge (\\lambda n.\\,n)\\,1 = 1 \\wedge (p \\wedge p) \\wedge \\neg (\\exists c,\\ c = c \\wedge \\neg p \\wedge (\\forall a_{1} : \\mathbb{N},\\ a_{1} = a_{1}))}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Binder patterns (the \\LeanCodeInline{binders} variant): chains of ∃ and ∀ folded into\none list, an implication, a λ, a function taken by a binder pattern, and an\noperator with \\LeanCodeInline{assoc := none}.}",
+        "prose": "\\LeanProse{Let $f \\in \\mathbb{N} \\to \\mathbb{N}$ and $p$ be a proposition. Then (1)~$\\exists a,\\ \\exists b,\\ a = b$, (2)~$\\forall a : \\mathbb{N},\\ \\forall b : \\mathbb{N},\\ a = a \\implies b = b \\implies p$, (3)~$\\LeanMathConst{bigsum}\\,(\\lambda k.\\,k + 1) = \\LeanMathConst{bigsum}\\,f$, (4)~$(\\lambda n.\\,n)\\,1 = 1$, (5)~$p \\wedge p$ and (6)~$\\neg (\\exists c,\\ c = c \\wedge \\neg p \\wedge (\\forall a_{1} : \\mathbb{N},\\ a_{1} = a_{1}))$.}"
       }
     },
     "Notation.binders": {
@@ -36,7 +64,7 @@
       "decl": "Notation.binders",
       "doc": "Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a `match`, which falls back to Lean's printer.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathCode", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\exists", "\\forall", "\\implies", "\\in", "\\lambda", "\\leanmetasource", "\\mathbb", "\\mathrm", "\\ne", "\\to", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathCode", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\exists", "\\forall", "\\implies", "\\in", "\\lambda", "\\leanmetasource", "\\mapsto", "\\mathbb", "\\mathrm", "\\ne", "\\to", "\\wedge"],
       "sigHash": "f35290c1a52bd4ec389e89c77b632966bb98a89f72fe1b37689e53335bbd065b",
       "sorry": true,
       "source": {
@@ -47,6 +75,7 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{binders} (\\LeanBound{s} : \\LeanConst{MySet} \\LeanConst{Nat}) (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h} : ∀ (\\LeanBound{x} : \\LeanConst{Nat}), \\LeanBound{x} ∈ \\LeanBound{s} → \\LeanBound{f} \\LeanBound{x} = \\LeanBound{x}) :\\LeanNewline\n\\LeanIndent{2}(∃ \\LeanBound{y}, \\LeanBound{y} ∈ \\LeanBound{s} ∧ \\LeanBound{f} \\LeanBound{y} = \\LeanBound{y}) →\\LeanNewline\n\\LeanIndent{4}(∃ \\LeanBound{z}, \\LeanBound{z} = \\LeanBound{f} \\LeanNumber{0}) ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} + \\LeanNumber{1}) \\LeanNumber{0} = \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanKeyword{match} \\LeanBound{f} \\LeanNumber{0} \\LeanKeyword{with}\\LeanNewline\n\\LeanIndent{12}| \\LeanNumber{0} => \\LeanConst{true}\\LeanNewline\n\\LeanIndent{12}| \\LeanBound{x} => \\LeanConst{false}) =\\LeanNewline\n\\LeanIndent{12}\\LeanConst{true} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{true} ≠ \\LeanConst{false}}",
         "math": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
+        "math:binders": "\\LeanMath{(\\forall x.\\, x \\in s \\Rightarrow f\\,x = x) \\wedge (\\exists y.\\, y \\in s \\wedge f\\,y = y) \\implies (\\exists z.\\, z = f\\,0) \\wedge ((n \\mapsto n + 1)\\,0 \\LeanBreak = 1 \\wedge (\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}))}",
         "math:named": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a \\LeanCodeInline{match}, which falls back to Lean's printer.}",
         "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume \\LeanHyp{h} $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$ and (4)~$\\mathrm{true} \\ne \\mathrm{false}$.}"
@@ -73,6 +102,7 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{logic} (\\LeanBound{p} \\LeanBound{q} : \\LeanSort{Prop}) : \\LeanBound{p} ∧ \\LeanBound{q} ∨ ¬\\LeanBound{p} ↔ \\LeanConst{True} ∨ \\LeanConst{False}}",
         "math": "\\LeanMath{p \\wedge q \\vee \\neg p \\iff \\top \\vee \\bot}",
+        "math:binders": "\\LeanMath{p \\wedge q \\vee \\neg p \\iff \\top \\vee \\bot}",
         "math:named": "\\LeanMath{p \\wedge q \\vee \\neg p \\iff \\top \\vee \\bot}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Logic: every connective of the logic pack.}",
         "prose": "\\LeanProse{Let $p, q$ be propositions. Then $p \\wedge q \\vee \\neg p$ if and only if $\\top \\vee \\bot$.}"
@@ -92,13 +122,14 @@
       "sigHash": "741759d8b08457cf755b7bd1167328d6d9c461cdca2d2882ee9c461a8b039a1a",
       "sorry": true,
       "source": {
-        "line": 82,
+        "line": 94,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "577dc99fc70b512c185a34e65f85c1ec2a4fd7938bb99da02bdfdb4c6a484708",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{long} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} \\LeanBound{d} \\LeanBound{e} \\LeanBound{f} \\LeanBound{g} : \\LeanConst{Nat}) (\\LeanBound{h₁} : \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} = \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h₂} : \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} = \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d}) (\\LeanBound{h₃} : \\LeanBound{a} * \\LeanBound{b} * \\LeanBound{c} * \\LeanBound{d} = \\LeanBound{e} * \\LeanBound{f} * \\LeanBound{g}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} + \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} = \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} + \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} = \\LeanBound{c} + \\LeanBound{b} + \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{c} + \\LeanBound{d} + \\LeanBound{e} = \\LeanBound{e} + \\LeanBound{d} + \\LeanBound{c} ∧ \\LeanBound{a} * \\LeanBound{b} * \\LeanBound{c} * \\LeanBound{d} * \\LeanBound{e} = \\LeanBound{e} * \\LeanBound{d} * \\LeanBound{c} * \\LeanBound{b} * \\LeanBound{a}}",
         "math": "\\LeanMath{a + b + c + d = e + f + g \\wedge e + f + g = a + b + c + d \\wedge a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g \\LeanBreak \\implies a + b + c + d + e + f + g = e + f + g + a + b + c + d \\LeanBreak \\wedge a + b + c = c + b + a \\wedge c + d + e = e + d + c \\wedge a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a}",
+        "math:binders": "\\LeanMath{a + b + c + d = e + f + g \\wedge e + f + g = a + b + c + d \\wedge a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g \\implies a + b + c + d + e + f + g \\LeanBreak = e + f + g + a + b + c + d \\wedge (a + b + c \\LeanBreak = c + b + a \\wedge (c + d + e = e + d + c \\wedge a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a))}",
         "math:named": "\\LeanMath{a + b + c + d = e + f + g \\wedge e + f + g = a + b + c + d \\wedge a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g \\LeanBreak \\implies a + b + c + d + e + f + g = e + f + g + a + b + c + d \\LeanBreak \\wedge a + b + c = c + b + a \\wedge c + d + e = e + d + c \\wedge a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A long statement, broken across lines in the math view.}",
         "prose": "\\LeanProse{Let $a, b, c, d, e, f, g \\in \\mathbb{N}$. Assume \\LeanHyp{h₁} $a + b + c + d = e + f + g$, \\LeanHyp{h₂} $e + f + g = a + b + c + d$ and \\LeanHyp{h₃} $a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g$. Then (1)~$a + b + c + d + e + f + g = e + f + g + a + b + c + d$, (2)~$a + b + c = c + b + a$, (3)~$c + d + e = e + d + c$ and (4)~$a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a$.}"
@@ -125,6 +156,7 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{order} (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}) : \\LeanConst{max} \\LeanBound{a} \\LeanBound{b} = \\LeanConst{min} \\LeanBound{a} \\LeanBound{b}}",
         "math": "\\LeanMath{\\max(a, b) = \\min(a, b)}",
+        "math:binders": "\\LeanMath{\\max(a, b) = \\min(a, b)}",
         "math:named": "\\LeanMath{\\max(a, b) = \\min(a, b)}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Order: max and min.}",
         "prose": "\\LeanProse{Let $a, b \\in \\mathbb{N}$. Then $\\max(a, b) = \\min(a, b)$.}"
@@ -140,7 +172,7 @@
       "decl": "Notation.project",
       "doc": "Notation from the project: every feature of a rule.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\implies", "\\in", "\\leanmetasource", "\\lub", "\\mathbb", "\\mathbf", "\\mathbin", "\\mathrm", "\\models", "\\neg", "\\to", "\\triangleright", "\\vdash", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\implies", "\\in", "\\leanmetasource", "\\lub", "\\mathbb", "\\mathbf", "\\mathbin", "\\mathrm", "\\models", "\\neg", "\\rho", "\\to", "\\triangleright", "\\vdash", "\\wedge"],
       "sigHash": "c134fb1e52b319051da4329bdb04b49634aa06ab95f5c032ecb4bb13072cea7b",
       "sorry": true,
       "source": {
@@ -150,10 +182,11 @@
       "stmtHash": "ebdc7fc42b37dc31c0069f33f5eabacdac639dc909b8df1aab32a7e2e7f3e594",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{project} (\\LeanBound{n} \\LeanBound{m} \\LeanBound{k} : \\LeanConst{Nat}) (\\LeanBound{ρ} : \\LeanConst{Fin} \\LeanNumber{0} → \\LeanConst{Nat}) (\\LeanBound{spec} : \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{hd} : \\LeanConst{double} \\LeanBound{n} = \\LeanBound{m}) (\\LeanBound{hr} : ¬\\LeanConst{Realize} \\LeanBound{n} \\LeanBound{m} \\LeanBound{ρ}) (\\LeanBound{hl} : \\LeanConst{lub} (\\LeanConst{lub} \\LeanBound{n} \\LeanBound{m}) (\\LeanConst{lub} \\LeanBound{k} \\LeanBound{n}) = \\LeanBound{k})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{hz} : \\LeanConst{zeroish} = \\LeanNumber{0}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{cons} \\LeanBound{n} (\\LeanConst{cons} \\LeanBound{m} \\LeanBound{k}) = \\LeanConst{cons} (\\LeanConst{cons} \\LeanBound{n} \\LeanBound{m}) \\LeanBound{k} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanConst{Judg} \\LeanBound{spec} ∧ (\\LeanBound{n} = \\LeanBound{m} → \\LeanConst{Realize} \\LeanBound{n} \\LeanBound{m} \\LeanConst{Fin.elim0})}",
-        "math": "\\LeanMath{2n = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,ρ \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
-        "math:named": "\\LeanMath{\\mathrm{dbl}(n) = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,ρ \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
+        "math": "\\LeanMath{2n = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
+        "math:binders": "\\LeanMath{2n = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge (\\vdash L \\wedge (n = m \\Rightarrow n \\models m))}",
+        "math:named": "\\LeanMath{\\mathrm{dbl}(n) = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Notation from the project: every feature of a rule.}",
-        "prose": "\\LeanProse{Let $n, m, k \\in \\mathbb{N}$, $ρ \\in \\LeanMathConst{Fin}\\,0 \\to \\mathbb{N}$ and $L \\in \\mathbb{N}$. Assume \\LeanHyp{hd} $2n = m$, \\LeanHyp{hr} $\\neg \\LeanMathConst{Realize}\\,n\\,m\\,ρ$, \\LeanHyp{hl} $\\lub{n, m, k, n} = k$ and \\LeanHyp{hz} $\\mathbf{0} = 0$. Then (1)~$n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k$, (2)~$\\vdash L$ and (3)~$n = m \\implies n \\models m$.}"
+        "prose": "\\LeanProse{Let $n, m, k \\in \\mathbb{N}$, $\\rho \\in \\LeanMathConst{Fin}\\,0 \\to \\mathbb{N}$ and $L \\in \\mathbb{N}$. Assume \\LeanHyp{hd} $2n = m$, \\LeanHyp{hr} $\\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho$, \\LeanHyp{hl} $\\lub{n, m, k, n} = k$ and \\LeanHyp{hz} $\\mathbf{0} = 0$. Then (1)~$n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k$, (2)~$\\vdash L$ and (3)~$n = m \\implies n \\models m$.}"
       }
     },
     "Notation.sets": {
@@ -166,7 +199,7 @@
       "decl": "Notation.sets",
       "doc": "Sets: every operation of the sets pack.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\cap", "\\cup", "\\emptyset", "\\in", "\\leanmetasource", "\\setminus", "\\subset", "\\subseteq", "\\textbackslash", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\alpha", "\\cap", "\\cup", "\\emptyset", "\\in", "\\leanmetasource", "\\setminus", "\\subset", "\\subseteq", "\\textbackslash", "\\wedge"],
       "sigHash": "7bf620d809b4035a80b56103198721e6b7b705a9615c3d45af5748d178eeaa53",
       "sorry": true,
       "source": {
@@ -177,9 +210,10 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} \\{\\LeanBound{α} : \\LeanSort{Type}\\} (\\LeanBound{s} \\LeanBound{t} : \\LeanConst{MySet} \\LeanBound{α}) (\\LeanBound{a} : \\LeanBound{α}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} ∈ \\LeanBound{s} ∪ \\LeanBound{t} ∩ (\\LeanBound{s} \\textbackslash{} \\LeanBound{t}) ∧ \\LeanBound{s} ⊆ \\LeanBound{t} ∧ \\LeanBound{s} ⊂ \\LeanBound{t} ∧ ∅ ⊆ \\{\\LeanBound{a}\\}}",
         "math": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}}",
+        "math:binders": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge (s \\subseteq t \\wedge (s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}))}",
         "math:named": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Sets: every operation of the sets pack.}",
-        "prose": "\\LeanProse{Let $α$ be a type, $s, t \\in \\LeanMathConst{MySet}\\,α$ and $a \\in α$. Then (1)~$a \\in s \\cup t \\cap (s \\setminus t)$, (2)~$s \\subseteq t$, (3)~$s \\subset t$ and (4)~$\\emptyset \\subseteq \\{a\\}$.}"
+        "prose": "\\LeanProse{Let $\\alpha$ be a type, $s, t \\in \\LeanMathConst{MySet}\\,\\alpha$ and $a \\in \\alpha$. Then (1)~$a \\in s \\cup t \\cap (s \\setminus t)$, (2)~$s \\subseteq t$, (3)~$s \\subset t$ and (4)~$\\emptyset \\subseteq \\{a\\}$.}"
       }
     },
     "Notation.triple": {
@@ -196,13 +230,14 @@
       "sigHash": "907b05bf0c8e607fcbc056d38b067fb75b09be18030faa7e464594026246e3a3",
       "sorry": false,
       "source": {
-        "line": 79,
+        "line": 91,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c7fde288a4c19a27c6a82b67a2e9b8271fd766dd8776b81e947e4c2dfa8d0c90",
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{triple} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanConst{Nat}}",
         "math": "\\LeanMath{\\LeanMathConst{triple}\\,n \\mathrel{:=} 2n + n}",
+        "math:binders": "\\LeanMath{\\LeanMathConst{triple}\\,n \\mathrel{:=} 2n + n}",
         "math:named": "\\LeanMath{\\LeanMathConst{triple}\\,n \\mathrel{:=} \\mathrm{dbl}(n) + n}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A definition, shown as \\LeanCodeInline{f x ≔ body}.}",
         "prose": "\\LeanProse{We define $\\LeanMathConst{triple}\\,n \\mathrel{:=} 2n + n$.}"
@@ -229,6 +264,7 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{typed} (\\LeanBound{s} \\LeanBound{t} : \\LeanConst{MySet} \\LeanConst{Nat}) (\\LeanBound{m} \\LeanBound{n} : \\LeanConst{Nat}) : \\LeanBound{s} ≤ \\LeanBound{t} ∧ \\LeanBound{m} ≤ \\LeanBound{n}}",
         "math": "\\LeanMath{s \\sqsubseteq t \\wedge m \\le n}",
+        "math:binders": "\\LeanMath{s \\sqsubseteq t \\wedge m \\le n}",
         "math:named": "\\LeanMath{s \\sqsubseteq t \\wedge m \\le n}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A typed pattern: \\LeanCodeInline{≤} on sets has its own notation; on numbers it doesn't.}",
         "prose": "\\LeanProse{Let $s, t \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $m, n \\in \\mathbb{N}$. Then (1)~$s \\sqsubseteq t$ and (2)~$m \\le n$.}"

@@ -1,0 +1,111 @@
+$ imprimatur-splice scan
+{
+  "schema": "imprimatur-requests/1",
+  "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
+    "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    {"key": "Soundness", "env": "leanlemma", "view": "prose", "label": "lem:Soundness", "order": 2},
+    {"key": "Pair", "env": "leandef", "view": "math", "label": "def:Pair", "order": 3},
+    {"key": "Pair", "env": "LEANCLAUSE", "view": "math", "order": 4},
+    {"key": "Soundness", "env": "leanlemma", "view": "prose", "label": "lem:Soundness-appendix", "order": 6},
+    {"key": "Soundness", "env": "leanlemma", "view": "prose", "label": "lem:Soundness-appendix2", "order": 7}],
+    "labels": [
+    {"name": "sec:results", "order": 1},
+    {"name": "app:proofs", "order": 5}]},
+  "requests": {
+    "Pair": {"views": ["math"]},
+    "Soundness": {"views": ["prose"]}
+  }
+}
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 5 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice strip -o stripped
+strip: wrote 1 file to stripped
+[exit 0]
+
+== main.tex
+\documentclass{article}
+\begin{document}
+\section{Results}\label{sec:results}
+\begin{leanlemma}[sum=HwqryzNV0z]{Soundness}{Total specialisation}
+\label{lem:Soundness}
+
+If
+$\vdash e : t$,
+then
+$\models e : t$.
+\end{leanlemma}
+\begin{leandef}[sum=NvozaoWVlA]{Pair}{Pairs}
+\label{def:Pair}
+\(p \in \mathrm{Pair}(A, B) \mathrel{:=} (a, b)\)
+\end{leandef}
+\begin{display}
+%LEANCLAUSE[sum=a35GHZjOe5]{Pair}{an ordered pair}
+\clause{p \in \mathrm{Pair}(A, B) \mathrel{:=} (a, b)}{an ordered pair}
+%ENDLEANCLAUSE
+\end{display}
+\appendix\label{app:proofs}
+\begin{leanlemma}[sum=imvTlVFnpd]{Soundness}{Restated}
+\label{lem:Soundness-appendix}
+
+If
+$\vdash e : t$,
+then
+$\models e : t$.
+\end{leanlemma}
+\begin{leanlemma}[sum=kY5YeJoO_0]{Soundness}{Restated again}
+\label{lem:Soundness-appendix2}
+
+If
+$\vdash e : t$,
+then
+$\models e : t$.
+\end{leanlemma}
+\end{document}
+
+== stripped/main.tex
+\documentclass{article}
+\begin{document}
+\section{Results}\label{sec:results}
+\begin{lemma}[Total specialisation]
+\label{lem:Soundness}
+
+If
+$\vdash e : t$,
+then
+$\models e : t$.
+\end{lemma}
+\begin{definition}[Pairs]
+\label{def:Pair}
+\(p \in \mathrm{Pair}(A, B) \mathrel{:=} (a, b)\)
+\end{definition}
+\begin{display}
+\clause{p \in \mathrm{Pair}(A, B) \mathrel{:=} (a, b)}{an ordered pair}
+\end{display}
+\appendix\label{app:proofs}
+\begin{lemma}[Restated]
+\label{lem:Soundness-appendix}
+
+If
+$\vdash e : t$,
+then
+$\models e : t$.
+\end{lemma}
+\begin{lemma}[Restated again]
+\label{lem:Soundness-appendix2}
+
+If
+$\vdash e : t$,
+then
+$\models e : t$.
+\end{lemma}
+\end{document}
+

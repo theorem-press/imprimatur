@@ -14,6 +14,9 @@ import Imprimatur.Commands
 import Imprimatur.Packs
 import Imprimatur.Render
 import Imprimatur.Views.Math
+import Imprimatur.Views.Rules
+import Imprimatur.Views.Grammar
+import Imprimatur.CustomViews
 import Imprimatur.Requests
 import Imprimatur.Views.Lean
 import Imprimatur.Entry

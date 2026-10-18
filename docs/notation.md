@@ -25,7 +25,11 @@ How the extractor finds it depends on the mode:
 - **In-project or sidecar.** Make it a module of the package that requires
   imprimatur, and list it in `imports` in `imprimatur.toml`.
 - **External.** List the file in `notation = ["tex/PaperTeX.lean"]`. The
-  extractor elaborates it itself, with the modules in `imports`.
+  extractor elaborates it itself, with the modules in `imports`. Several
+  files are elaborated in turn, each in the environment the previous one
+  left, so a long notation module can be split (grammar tables or an index
+  in files of their own); a later file's `import`s must already be imported
+  by the first.
 
 ## `latex_notation`
 
@@ -44,6 +48,13 @@ latex_notation (variant := "named")? PATTERN => "TEMPLATE" OPTIONS…
   ignored.
 - To constrain an implicit argument, write the pattern with `@`. For
   example, `@LE.le (Set _) _ a b` matches `≤` only on sets.
+- A constant applied to fewer arguments than it takes matches that partial
+  application, as in `Summable (M.weight c)`.
+- **Binders.** A pattern may bind a variable: `fun x => e`, `∀ x, p`,
+  `∃ x, p`, `∑' x, f`, `{x | p}`, or any constant applied to a `fun`. The
+  variable is rendered as the bound name, and the body under it. `∀ x, p`
+  matches a quantifier whose body mentions `x`; `p → q` matches an
+  implication or a function type.
 
 ```lean
 latex_notation double n => r"2#n"  prec := 70
@@ -51,6 +62,10 @@ latex_notation ¬ Realize U φ ρ => r"#U \not\models #φ"  hide ρ := Fin.elim0
 latex_notation LeafSpec.cb spec i = true => r"\cbA \in L(#i)"
 latex_notation @LE.le (Set _) _ a b => r"#a \subseteq #b"  prec := 50
 latex_notation zeroish => r"\mathbf{0}"
+latex_notation ∃ x, p => r"\exists\, #x,\; #p"  flatten  sep := r",\, "  prec := 10
+latex_notation ∑' x, f => r"\textstyle\sum_{#x}\, #f"  flatten
+latex_notation setOf (fun x => p) => r"\{#x \mid #p\}"
+latex_notation p → q => r"#p \to #q"
 ```
 
 **The template** is TeX. `#x` inserts the rendering of variable `x`. When
@@ -64,7 +79,10 @@ taken, so `#k'` is variable `k` followed by a prime.
 | `prec := n` | the precedence of the result. Lean's are a guide: 50 for relations, 65 for `+`, 70 for `*`. Without it the result is atomic (1024) |
 | `width := n` | the rendered width in characters, used for line breaking instead of an estimate from the TeX |
 | `hide x := v` | apply the rule only when `x` matches `v`, and leave `x` out |
-| `flatten` | for a two-argument rule, render nested uses as one chain: `\lub{a, b, c}`, or `a + b + c` |
+| `when x := v` | apply the rule only when `x` matches `v`, and show `x`: `¬ p => r"\neg(#p)" when p := (Exists _)` |
+| `flatten` | for a two-argument rule, render nested uses as one chain: `\lub{a, b, c}`, or `a + b + c`; for a binder rule, fold a chain of binders into one list of variables: `\exists\, a,\, b,\; p` |
+| `sep := ", "` | the text between the variables of a folded binder rule |
+| `assoc := left` | which side of a chain at the rule's own precedence needs no parentheses: `left` (the default), `right`, or `none` (both sides parenthesised, as for `∧` next to `∨` in some papers) |
 | `(variant := "v")` | an alternative notation, chosen per block with `notation=v` |
 
 **Parentheses** are added from precedences:
@@ -82,11 +100,63 @@ taken, so `#k'` is variable `k` followed by a prime.
 latex_metavar spec => "L"
 ```
 
-Renders variables bound with the name `spec` as `L`. Other names are set as
-they are, with two adjustments:
+Renders variables bound with the name `spec` as `L`; `spec₁` is set as it
+is, unless the rule ends with `decorated`, when it becomes `L_{1}`. Other
+names are set as
+they are, with three adjustments:
 
 - trailing digits or subscripts become TeX subscripts (`x₁` gives `x_{1}`);
-- names longer than one letter are set in `\mathit`.
+- a Greek letter becomes its macro (`ε` gives `\varepsilon`, `ℓ` gives
+  `\ell`);
+- names longer than one letter are set in `\mathit` and escaped, unless the
+  style says otherwise.
+
+## `latex_style`
+
+```lean
+latex_style names := raw
+latex_style applied_variables := call
+```
+
+Settings of the renderer, for conventions a paper fixes once:
+
+| Style | Values | Effect |
+|---|---|---|
+| `names` | `italic` (default), `raw` | with `raw`, a binder name is written as it is: it is TeX, so `l_c` sets a subscript |
+| `applied_variables` | `juxtaposed` (default), `call`, `subscript` | a variable applied to arguments: `f\,a\,b`, `f(a)(b)`, or `f_{a, b}` |
+
+## `latex_entry`
+
+```lean
+latex_entry "Soundness" => Stlc.preservation
+latex_entry "Progress" => Stlc.progress  options := "forall"
+```
+
+A key of the document that is a title rather than a Lean name, and the
+declaration it stands for. The options are those of a block
+([blocks.md](blocks.md)), and apply to every view of the key. A custom view
+may look keys up in a table of its own instead.
+
+## `latex_rules`, `latex_rule_label`, `latex_group`
+
+```lean
+latex_rules Step label := r"($\longrightarrow$-#)" label_macro := "rulelabel" sep := " " doc_labels := false
+latex_rule_label Step.app_right "App-R"
+latex_group "Typing and evaluation" := [HasType.app, Step.beta, Step.app_left]
+```
+
+How the `rules` view ([views.md](views.md)) labels and groups rules:
+
+- **`latex_rules I`** sets, for the constructors of `I`: the label template
+  (`#` is the rule's name); a macro written before each rule as
+  `\macro{Key}{label}%`, where `Key` is the constructor's words run together
+  (`ScalarLit`), so prose can refer to the rule; the text between the words
+  of a name (`scalar_lit` gives `Scalar-Lit`, or `Scalar Lit` with
+  `sep := " "`); and whether a docstring starting `Label:` supplies the label
+  (`doc_labels := false` when docstrings are prose, as in `Variables: …`).
+- **`latex_rule_label`** gives one constructor its label.
+- **`latex_group`** names a set of constructors, from any inductives, shown
+  together in display order; its title is the block's key.
 
 ## Packs
 
@@ -102,7 +172,7 @@ default.
 | `order` | `max`, `min` |
 
 `∀`, `∃`, bounded quantifiers (`∀ x ∈ s`), implication and `λ` are built
-in.
+in; a binder pattern for them in the project takes precedence.
 
 **Order of precedence.** A project rule takes precedence over a pack rule
 for the same constant. Among a project's rules, the most specific pattern

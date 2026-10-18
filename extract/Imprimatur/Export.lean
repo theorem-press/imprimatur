@@ -56,12 +56,32 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
   for r in reqs do
     let declKey := if r.key.endsWith challengeSuffix then
       (r.key.dropEnd challengeSuffix.length).toString else r.key
-    let some c := env.find? (toName declKey)
-      | warnings := warnings.push s!"{r.key}: no declaration with this name"
+    -- A key is an entry's (`latex_entry`), a declaration's name, a group's
+    -- title, or a key of custom views only.
+    let entry := (projectEntries env).find? (·.1 == declKey)
+    let extra := (entry.map (·.2.2)).getD #[]
+    let decl? := match entry with
+      | some (_, d, _) => env.find? d
+      | none => env.find? (toName declKey)
+    if let some (_, d, _) := entry then
+      if decl?.isNone then
+        warnings := warnings.push s!"{r.key}: its latex_entry names {d}, which is not a declaration"
+        continue
+    let some c := decl?
+      | -- A key that names no declaration may name a group of rules.
+        let group := (projectGroups env).find? (·.title == r.key)
+        let custom := !r.views.isEmpty && r.views.all fun v =>
+          (projectViews env).any (·.1 == (parseViewSpec v).base)
+        if group.isSome || custom then
+          let act : CoreM J := (groupEntry s r group used extra).run' {} {}
+          match ← (act.toIO coreCtx { env }).toBaseIO with
+          | .ok (j, _) => entries := entries.push (r.key, j)
+          | .error e => warnings := warnings.push s!"{r.key}: {e}"
+        else warnings := warnings.push s!"{r.key}: no declaration or group with this name"
         continue
     let act : CoreM J := do
       for ns in s.openScoped do activateScoped ns
-      (entryFor root s r c used).run' {} {}
+      (entryFor root s r c used extra).run' {} {}
     let t0 ← IO.monoMsNow
     try
       let (j, _) ← act.toIO coreCtx { env }

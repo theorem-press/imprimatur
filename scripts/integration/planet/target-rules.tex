@@ -1,0 +1,140 @@
+\begin{mathpar}
+
+\inferrule[T-CB]
+  {
+    \lab{cb}(x) \\
+    k_{x} \geq 2
+  }
+  { \judge{time}(x) }
+
+\and
+
+\inferrule[T-Max]
+  {
+    \lab{free}(x) \\
+    k_{x} \geq 2 \\
+    p = p_{\max}
+  }
+  { \judge{time}(x) }
+
+\and
+
+\inferrule[Ord]
+  {
+    \lab{ord}(x) \\
+    k_{x} \geq 2
+  }
+  { \judge{ord}(x) }
+
+\and
+
+\inferrule[M-Ord]
+  {
+    \lab{ord}(x) \\
+    \lab{within}(x) \\
+    k_{x} \geq 2
+  }
+  { \judge{main}(x) }
+
+\and
+
+\inferrule[W-NR]
+  {
+    \lab{within}(x) \\
+    k_{x} \mid |C|
+  }
+  { \judge{within}(x) }
+
+\and
+
+\inferrule[M-CB]
+  {
+    \judge{time}(x)
+  }
+  { \judge{main}(x) }
+
+\and
+
+\inferrule[I-CB]
+  {
+    \judge{time}(x) \\
+    \judge{time}(y) \\
+    p = p_{\max}
+  }
+  { \judge{inter}(x, y) }
+
+\and
+
+\inferrule[I-Ord]
+  {
+    \judge{time}(x) \\
+    \judge{ord}(y)
+  }
+  { \judge{inter}(x, y) }
+
+\and
+
+\inferrule[T-Int]
+  {
+    \judge{time}(x) \\
+    \judge{time}(y) \\
+    \judge{inter}(x, y)
+  }
+  { \judge{time}(x, y) }
+
+\and
+
+\inferrule[M-MF]
+  {
+    \judge{main}(m)
+  }
+  { \judge{main}(\mathit{mf}_{y}) }
+
+\and
+
+\inferrule[I-MF]
+  {
+    x \ne y \\
+    \judge{main}(m)
+  }
+  { \judge{inter}(\mathit{mf}_{x}, \mathit{mf}_{y}) }
+
+\and
+
+\inferrule[I-Nest]
+  {
+    \judge{main}(x) \\
+    \judge{main}(y)
+  }
+  { \judge{inter}(x, y) }
+
+\and
+
+\inferrule[W-Nest]
+  {
+    \judge{within}(x) \\
+    \judge{within}(y)
+  }
+  { \judge{within}(x, y) }
+
+\and
+
+\inferrule[I-Cross-L]
+  {
+    \judge{main}(x) \\
+    \judge{main}(y) \\
+    \judge{time}(x)
+  }
+  { \judge{inter}(x, y) }
+
+\and
+
+\inferrule[I-Cross-R]
+  {
+    \judge{main}(x) \\
+    \judge{main}(y) \\
+    \judge{time}(y)
+  }
+  { \judge{inter}(x, y) }
+
+\end{mathpar}

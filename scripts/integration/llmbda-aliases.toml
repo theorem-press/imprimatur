@@ -1,5 +1,5 @@
-# imprimatur configuration for llmbda's oopsla2027/paper.tex (PLAN M1 gate;
-# M5 completes the migration). The environments keep their names (DESIGN §9.2).
+# Aliases for llmbda's environments, for scanning its paper.tex when llmbda
+# has no imprimatur.toml of its own (integration/llmbda-scan-strip).
 schema = 1
 main = "paper.tex"
 
@@ -10,5 +10,6 @@ leantheorem     = { view = "math", wrap = "theorem" }
 leancorollary   = { view = "math", wrap = "corollary" }
 leanlemma       = { view = "math", wrap = "lemma" }
 leandef         = { view = "math", wrap = "definition" }
-leanconventions = { view = "llmbda.conventions" }
-leantranslation = { view = "llmbda.translation" }
+leanconventions = { view = "math" }
+leantranslation = { view = "math" }
+LEANCLAUSE      = { view = "math", comment = true }
