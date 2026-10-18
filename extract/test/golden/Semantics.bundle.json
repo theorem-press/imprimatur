@@ -204,6 +204,46 @@
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier).}"
       }
     },
+    "Stlc.size_pos": {
+      "axioms": ["propext"],
+      "cone": {
+        "reasons": {},
+        "size": 9,
+        "untrusted": []
+      },
+      "decl": "Stlc.size_pos",
+      "doc": "A clash with the paper's metavariables, for translation validation: `τ`\nstands for types (`latex_category Ty`), but here it names a number.",
+      "errors": {
+        "grammar": "the grammar view needs an inductive type",
+        "rules": "the rules view needs an inductive predicate or a constructor",
+        "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
+        "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
+      },
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNumber", "\\LeanSorryFree", "\\forall", "\\implies", "\\inferrule", "\\leanmetasource", "\\mathbb", "\\tau", "\\textsf"],
+      "sigHash": "9f9249aaeafc5b9f23dd0d1251096f52b82a594f19ad15210155f2624c0b6cac",
+      "sorry": false,
+      "source": {
+        "line": 78,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "d0a319c63731ab4a768538cb0ec931fbfc204910d44cfe74bf7bf6518b79433d",
+      "validation": {
+        "math|def=": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"],
+        "math|forall=": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"],
+        "math|names=full": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"],
+        "math|rule=": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"]
+      },
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.size_pos}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{size\\_pos} (\\LeanBound{e} : \\LeanConst{Tm}) (\\LeanBound{τ} : \\LeanConst{Nat}) (\\LeanBound{h} : \\LeanBound{τ} = \\LeanConst{size} \\LeanBound{e}) : \\LeanNumber{0} < \\LeanBound{τ}}",
+        "math|def=": "\\LeanMath{\\tau = \\LeanMathConst{size}\\,e \\implies 0 < \\tau}",
+        "math|forall=": "\\LeanMath{\\forall e : \\LeanMathConst{Tm},\\ \\forall \\tau : \\mathbb{N},\\ \\tau = \\LeanMathConst{size}\\,e \\implies 0 < \\tau}",
+        "math|names=full": "\\LeanMath{\\tau = \\LeanMathConst{Stlc.size}\\,e \\implies 0 < \\tau}",
+        "math|rule=": "\\LeanMath{\\inferrule{\\tau = \\LeanMathConst{size}\\,e}{0 < \\tau}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{propext}{\\LeanSorryFree}{A clash with the paper's metavariables, for translation validation: \\LeanCodeInline{τ}\nstands for types (\\LeanCodeInline{latex\\_category Ty}), but here it names a number.}"
+      }
+    },
     "Stlc.step_app": {
       "axioms": [],
       "cone": {

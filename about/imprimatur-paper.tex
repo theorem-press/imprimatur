@@ -52,9 +52,9 @@ A document is a list of pieces: hand-written text, generated blocks, and
 checks on hand-written prose. A block's body is a list of segments: text
 generated from Lean, and slots, whose text the authors own.
 
-\begin{leangrammar}[sum=UNYo3GAjOs]{SpliceModel.Seg}{Segments}
+\begin{leangrammar}[sum=OyTWUtn6ng]{SpliceModel.Seg}{Segments}
 \begin{LeanGrammar}
-\LeanProduction{s}{A segment of a generated block.}{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}
+\LeanProduction{\sigma}{A segment of a generated block.}{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}
 \LeanAlternative{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
 \end{LeanGrammar}
 \end{leangrammar}

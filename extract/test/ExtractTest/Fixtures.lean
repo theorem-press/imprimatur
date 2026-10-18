@@ -56,7 +56,7 @@ def fixtures : Array Fixture := #[
     views := #["math", "prose", "math:named", "math:binders"] },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
     keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
-      "Stlc.size", "Stlc.step_app", "Preservation"],
+      "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
       "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist"] },
   { dir := "Trust", module := `Trust, strip := #[`Trust],

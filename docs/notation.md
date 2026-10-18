@@ -199,6 +199,14 @@ paper.tex:58:1: warning[unfaithful-rendering]: Stlc.Tm.swap (math|def=): ambiguo
   invisible. Coercions in both directions between two sorts make every
   formula over them ambiguous.
 
+**A variable that prints as a category's letter** is reported too. With
+`latex_category Seg => "s"`, a grammar `s ::= gen(s)` would say that `gen`
+takes a segment when it takes a string:
+
+```
+warning[unfaithful-rendering]: SpliceModel.Seg (grammar): the variable s prints as $s$, which stands for SpliceModel.Seg (latex_category), but has type String: name it differently, or change the metavariable $s$
+```
+
 **Not validated** formulas have no reading: the notation does not model
 what the renderer wrote. Please report one as a bug.
 

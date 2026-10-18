@@ -77,6 +77,9 @@ All notable changes to imprimatur are recorded here. Versions follow
   Lean's warnings about notation files now reach the user in external mode,
   at the files' own line numbers. See
   [docs/notation.md](docs/notation.md#reading-back).
+- Translation validation also reports a variable that prints as another
+  type's category letter (`latex_category`), as `s ::= gen(s)` did in the
+  paper about imprimatur, where `s` was both a segment and a string.
 - `about/imprimatur-paper.tex`, a paper about imprimatur built with
   imprimatur. Its theorems, the splicer's laws and Theorem 1, are proved in
   `about/lean`, a model of the splicer. CI rebuilds and checks it.
