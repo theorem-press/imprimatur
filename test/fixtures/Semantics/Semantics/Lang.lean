@@ -73,4 +73,10 @@ theorem step_app {e₁ e₁' e₂ : Tm} (h : Step e₁ e₁') (hv : IsValue e₂
     Step (.app e₁ e₂) (.app e₁' e₂) :=
   Step.app_left h
 
+/-- A clash with the paper's metavariables, for translation validation: `τ`
+stands for types (`latex_category Ty`), but here it names a number. -/
+theorem size_pos (e : Tm) (τ : Nat) (h : τ = size e) : 0 < τ := by
+  subst h
+  cases e <;> simp [size]
+
 end Stlc
