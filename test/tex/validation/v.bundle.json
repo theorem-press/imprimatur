@@ -1,0 +1,22 @@
+{
+ "entries": {
+  "Demo.swap": {
+   "decl": "Demo.swap",
+   "kind": "definition",
+   "validation": {
+    "math": [
+     "ambiguous: $(a\\ b) \\cdot e_{1}\\; e_{2}$ reads as swap[a; b; app[e_{1}; e_{2}]] and as app[swap[a; b; e_{1}]; e_{2}]"
+    ]
+   },
+   "views": {
+    "lean": "def Demo.swap",
+    "math": "$(a\\ b) \\cdot e_{1}\\; e_{2}$"
+   }
+  }
+ },
+ "producer": {
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

@@ -130,8 +130,10 @@ def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × Stri
         fun acc => match m.challengeModule with | some cm => acc.push cm | none => acc) cfg.imports
       discard <| lake leanDir (#["build", "-q"] ++ modules)
       lake leanDir (#["exe", "imprimatur-export"] ++ exportArgs)
-  -- Only the extractor's warnings are of interest.
-  let warnings := (exportOut.splitOn "\n").filter (·.startsWith "imprimatur-export: warning")
+  -- Only warnings are of interest: the extractor's, and Lean's about the
+  -- notation files it elaborates (`file:line:col: warning: …`).
+  let warnings := (exportOut.splitOn "\n").filter fun l =>
+    l.startsWith "imprimatur-export: warning" || (l.splitOn ": warning: ").length > 1
   let rel := (bundle.toString.drop ((← IO.FS.realPath root).toString.length + 1)).toString
   let (code, out) ← (Cli.run (cliArgs a rel) root : IO _)
   return (code, String.join (warnings.map (· ++ "\n")) ++ out)

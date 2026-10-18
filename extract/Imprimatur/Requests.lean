@@ -85,6 +85,9 @@ structure Settings where
   notationFiles : Array String := #[]
   /-- The document's blocks and labels. -/
   document : DocumentInfo := {}
+  /-- Read rendered formulas back, and report those that are not faithful
+  (DESIGN §18.4). -/
+  validate : Bool := true
   deriving Repr
 
 /-- One requested key. -/
@@ -136,6 +139,7 @@ def parseRequests (text : String) : Except String (Settings × Array Request) :=
     | .error _ => pure #[]
   let maxHeartbeats := (cfg.getObjValAs? Nat "max_heartbeats").toOption.getD 200000
   let settings := { settings with challenges, maxHeartbeats }
+  let settings := { settings with validate := (cfg.getObjValAs? Bool "validate").toOption.getD true }
   let settings := { settings with notationFiles := (get "notation").toOption.getD #[] }
   let settings := match cfg.getObjVal? "notation_packs" with
     | .ok _ => { settings with notationPacks := (get "notation_packs").toOption.getD #[] }

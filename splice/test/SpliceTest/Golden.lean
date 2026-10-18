@@ -137,7 +137,8 @@ def cases : Array String := #[
   "splice/golden/refs",
   "splice/golden/slots",
   "splice/golden/strip",
-  "splice/golden/unicode"]
+  "splice/golden/unicode",
+  "splice/golden/validation"]
 
 /-- Every case, compared with its golden transcript. -/
 def tests : TestM Unit := group "golden" do
