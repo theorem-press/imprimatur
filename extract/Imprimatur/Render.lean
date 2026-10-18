@@ -56,6 +56,8 @@ structure Atom where
   isVar : Bool := false
   /-- The variable it is, if it is one. -/
   fvar : Option FVarId := none
+  /-- The variable's name. -/
+  name : String := ""
 
 /-- What rendering needs. -/
 structure Ctx where
@@ -159,9 +161,19 @@ def candidates (head : Name) : RenderM (Array NotationRule) := do
   return (rs.toList.mergeSort le).toArray.filter fun r => r.variant.isNone || r.variant == ctx.variant
 
 /-- Log an atom of the formula being rendered. -/
-def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none) :
-    RenderM Unit := do
-  if let some r := (← read).atoms then r.modify (·.push { tex, sort, isVar, fvar })
+def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none)
+    (name : String := "") : RenderM Unit := do
+  if let some r := (← read).atoms then r.modify (·.push { tex, sort, isVar, fvar, name })
+
+/-- A metavariable's base: its TeX without trailing primes and subscript, so
+`e_{1}'` is `e`. -/
+def metavarBase (t : String) : String := Id.run do
+  let mut t := t
+  while t.endsWith "'" do t := (t.dropEnd 1).toString
+  if t.endsWith "}" then
+    let parts := t.splitOn "_{"
+    if parts.length ≥ 2 then t := "_{".intercalate (parts.dropLast)
+  return t
 
 /-- The sort of an expression, for reading back. -/
 def sortOf (e : Expr) : MetaM String := do
@@ -197,6 +209,17 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
     problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
   else if rs.size ≥ 2 then
     problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!} and as {rs[1]!}")
+  -- A grammar category's metavariable stands for that category (the BNF
+  -- convention: `e ::= e₁\;e₂`), so a variable of another type must not
+  -- print as it.
+  let cats := projectCategories (← getEnv)
+  for a in atoms do
+    if a.fvar.isNone || a.sort == "*" || Validate.isTyVar a.sort || a.sort.startsWith "'" then continue
+    if let some (ty, m) := cats.find? (·.2 == metavarBase a.tex) then
+      if a.sort != ty.toString then
+        let p := s!"the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
+          (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${m}$"
+        unless (← problems.get).contains p do problems.modify (·.push p)
   -- Free variables that print alike.
   let lctx ← getLCtx
   let free := atoms.filterMap fun a => match a.fvar with
@@ -249,7 +272,7 @@ mutual
       let t ← match (← read).overrides.find? (·.1 == f) with
         | some (_, t) => pure t
         | none => varName (← f.getUserName)
-      logAtom t (← sortOf e) (fvar := some f)
+      logAtom t (← sortOf e) (fvar := some f) (name := (← f.getUserName).eraseMacroScopes.toString)
       return .tex t
     | .sort .zero => logAtom "\\mathrm{Prop}" "Sort"; return .tex "\\mathrm{Prop}"
     | .sort _ => logAtom "\\mathrm{Type}" "Sort"; return .tex "\\mathrm{Type}"

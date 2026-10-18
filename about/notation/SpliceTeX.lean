@@ -65,7 +65,7 @@ latex_notation Key => r"\mathit{Key}"
 latex_notation SlotId => r"\mathit{SlotId}"
 
 -- The metavariables of the grammars.
-latex_category Seg => "s"
+latex_category Seg => r"\sigma"
 latex_category Piece => "p"
 latex_category Diag => "x"
 

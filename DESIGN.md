@@ -1163,7 +1163,11 @@ constructors; the `def` view reads as the equation lemmas.
 3. **consistent precedence:** the precedences and associativities make
    `G_N` unambiguous; this is where `(a b)·e₁ e₂` failed;
 4. **injective names:** metavariable renamings (`latex_metavar`, including
-   `decorated` ones) are injective on the names in a statement.
+   `decorated` ones) are injective on the names in a statement;
+5. **categories keep their letters:** a grammar category's metavariable
+   (`latex_category T => "e"`) stands for `T` wherever it appears, as in BNF,
+   where `e ::= e₁\;e₂` says the arguments are expressions. A variable of
+   another type must not print as it, with or without subscripts and primes.
 
 **Source and glyphs.** The theorem is about TeX source. A reader sees
 glyphs, and two tokens can print alike: `\;` (application) prints as space,
@@ -1208,8 +1212,10 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
 - **The trusted part** is that mirroring, `Validate.ofRule` against
   `Render.fillTemplate`, and a small chart parser that counts at most two
   readings, with a work budget.
-- **Side conditions** are found per formula, except one checked when the
-  notation module is elaborated: a pattern variable that the template neither
+- **Side conditions** are found per formula: ambiguity (conditions 1–3),
+  variables that print alike (4), and variables that print as another
+  type's category letter (5). One is checked when the notation module is
+  elaborated: a pattern variable that the template neither
   shows nor constrains (`hide`, `when`) is a warning, since two expressions
   that differ there render alike. `validate = false` in `imprimatur.toml`
   turns the reading back off.
