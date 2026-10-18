@@ -13,4 +13,3 @@ With the notation 2n for doubling, distributivity reads
 and injectivity, in words:
 Let m, n ∈ N. Assume 2m = 2n. Then m = n.
 Both results are checked against Lean.
-1

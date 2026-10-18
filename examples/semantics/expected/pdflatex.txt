@@ -43,7 +43,6 @@ e1 e2 =α e′
 () =α ()
 Substitution e[u/x] is then defined by recursion on e. At an abstraction
 λa:τ. e it first swaps a with a name c fresh for x, a, e and u, so that no free
-1
 name of u is captured, and continues in (a c) · e. Swapping preserves the size of
 a term, so the recursion terminates, although (a c) · e is not a subterm of the
 abstraction.
@@ -89,10 +88,9 @@ e1 −→ e′
 1
 e1 e2 −→ e′
 1 e2
-2
 Or the prose can be written by hand and checked: the unit value has only
 the base type, that is, if Γ ⊢ () : τ then τ = b. Should the Lean statement of
-unit type change, imprimatur check reports this sentence.
+unit_type change, imprimatur check reports this sentence.
 1.6 Type safety
 The substitution lemma is proved as Pitts’s paper suggests. Typing is equiv-
 ariant: swapping two names throughout a term and its context preserves its
@@ -118,4 +116,3 @@ References
 [Pitts(2006)] Andrew M. Pitts. Alpha-structural recursion and induction.
 Journal of the ACM, 53(3):459–506, 2006. https://doi.org/10.1145/
 1147954.1147961.
-3
