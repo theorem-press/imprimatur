@@ -146,12 +146,15 @@ where
       .forallE n' t (rename names b) bi
     | e => e
 
-/-- `lhs = rhs` of an equation statement, with its variables introduced. -/
-def equationRow (eqn : Expr) : RenderM String :=
+/-- `lhs = rhs` of an equation statement, with its variables introduced. A
+right-hand side wider than `width` is broken, its lines aligned after the
+`=`. -/
+def equationRow (eqn : Expr) (width : Nat := 100000) : RenderM String :=
   statementParts eqn fun _ _ concl => do
     if concl.isAppOfArity ``Eq 3 then
       let lhs := (← render concl.appFn!.appArg!).render 100000
-      let rhs := (← render concl.appArg!).render 100000
+      let rhs := (← render concl.appArg!).render width
+      let rhs := rhs.replace " \\LeanBreak " " \\\\ &\\qquad "
       return s!"{lhs} &= {rhs}"
     return (← render concl).render 100000
 
@@ -179,7 +182,7 @@ def mathViewWith (c : ConstantInfo) (width : Nat) (opts : Array (String × Strin
     else if has "def" && isDef then
       match ← getEqnsFor? c.name with
       | some es =>
-        let rows ← es.mapM fun e => do equationRow (restoreEqnNames (← getConstInfo e).type)
+        let rows ← es.mapM fun e => do equationRow (restoreEqnNames (← getConstInfo e).type) (width * 3 / 4)
         return wrap ("\\begin{aligned}" ++ " \\\\ ".intercalate rows.toList ++ "\\end{aligned}")
       | none => mathView c width
     else mathView c width

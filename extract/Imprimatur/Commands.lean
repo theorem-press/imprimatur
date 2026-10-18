@@ -44,6 +44,10 @@ syntax &"hide" ident " := " term:max : latexNotationOpt
 /-- `flatten`: render nested applications as one n-ary chain, or nested
 binders as one list of variables. -/
 syntax &"flatten" : latexNotationOpt
+/-- `synonym`: the rule writes an expression as another rule writes one it
+equals (`Nat.card R` as `|R|`, like `Fintype.card R`), so reading a formula
+back identifies the two (DESIGN §18.3). -/
+syntax &"synonym" : latexNotationOpt
 /-- `when x := v`: apply only when `x` matches the pattern `v`, and show it. -/
 syntax &"when" ident " := " term:max : latexNotationOpt
 /-- `sep := ", "`: the text between the variables of a flattened binder rule. -/
@@ -202,7 +206,15 @@ def elabPatternSorted (patStx : Syntax) :
       -- universe in a pattern was defaulted when it was elaborated, but the
       -- matcher ignores universes, so it stands for any (`p → q` matches
       -- implications and function types): its sort is unknown.
-      let loose (k : String) : String := if k == "Sort" then "*" else k
+      -- A type that mentions the pattern's own variables (`k : ι → ℕ` in
+      -- `PlanMatrix R C ι k`) stands for whatever they match: the pattern's
+      -- variables are type variables there.
+      let loose (k : String) : String := Id.run do
+        if k == "Sort" then return "*"
+        let mut k := k
+        for (_, x) in acc do
+          k := k.replace s!"'{x.fvarId!.name}" s!"?{x.fvarId!.name}"
+        return k
       let sorts ← acc.mapM fun (n, x) => do return (n, loose (← sortKey (← inferType x)))
       let sort ← try loose <$> sortKey (← inferType e) catch _ => pure "*"
       return (pat, sorts, sort)
@@ -236,6 +248,7 @@ partial def choiceAtom (stx : Syntax) : String :=
       | "prec" => r := { r with prec := o[2].isNatLit?.getD 1024 }
       | "width" => r := { r with width := o[2].isNatLit? }
       | "flatten" => r := { r with flatten := true }
+      | "synonym" => r := { r with synonym := true }
       | "sep" => r := { r with sep := o[2].isStrLit?.getD ", " }
       | "assoc" => r := { r with assoc := choiceAtom o[2] }
       | "hide" | "when" =>

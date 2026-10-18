@@ -53,7 +53,7 @@ def tests : TestM Unit := group "validate" do
     (repr #[Sym.hole "Tm" 101, .tok "\\;", .hole "Tm" 101]).pretty
   let p := (ofRule (mk `subst #[(`x, "Nat"), (`u, "Tm"), (`e, "Tm")] "#e[#u/#x]" "Tm")).get!
   checkEq "extract/validate/production-atomic" (repr p.syms).pretty
-    (repr #[Sym.hole "Tm" 0, .tok "[", .hole "Tm" 0, .tok "/", .hole "Nat" 0, .tok "]"]).pretty
+    (repr #[Sym.hole "Tm" Doc.maxPrec, .tok "[", .hole "Tm" 0, .tok "/", .hole "Nat" 0, .tok "]"]).pretty
   check "extract/validate/production-coercion"
     (ofRule (mk `Tm.var #[(`x, "Nat")] "#x" "Tm")).get!.coercion
   -- Swapping next to application: ambiguous unless precedences separate them.
@@ -92,6 +92,27 @@ def tests : TestM Unit := group "validate" do
   -- Function sorts are compared part by part, type variables included.
   check "extract/validate/sort-arrow" (compat "(?α → ENNReal)" "('x → ENNReal)")
   check "extract/validate/sort-arrow-differs" (!compat "(Nat → ENNReal)" "(Nat → Real)")
+  -- Sorts with type arguments: an `Option(Label)` is not an `Option(Prop)`,
+  -- and a type written without arguments stands for it with any.
+  check "extract/validate/sort-args-differ" (!compat "Option(Label)" "Option(Prop)")
+  check "extract/validate/sort-args-open" (compat "Option(Label)" "Option")
+  -- Coercions are read with the sorts they make: `x : A` and `y : B` reach
+  -- the sum `A ⊎ B` through `inl` and `inr`, so a rule whose two holes share
+  -- a type reads `J(x, y)`.
+  let jr : NotationRule := mk `J #[(`a, "?t"), (`b, "?t")] "J(#a, #b)" "Prop"
+  let inl : NotationRule := mk `Sum.inl #[(`x, "?l")] "#x" "Sum(?l, ?r)"
+  let inr : NotationRule := mk `Sum.inr #[(`y, "?r2")] "#y" "Sum(?l2, ?r2)"
+  checkEq "extract/validate/coercion-sorts"
+    (readings #[jr, inl, inr] #[atom "x" "'A", atom "y" "'B"] "J(x, y)" "Prop") 1
+  checkEq "extract/validate/coercion-sorts-needed"
+    (readings #[jr] #[atom "x" "'A", atom "y" "'B"] "J(x, y)" "Prop") 0
+  -- Application is one reading however written: `f(a)(b)` is `f` applied
+  -- to `a` and `b`.
+  checkEq "extract/validate/application-curried"
+    (count (Grammar.of (builtins true false ++ #[atom "f" "*", atom "a" "*", atom "b" "*"]))
+      (tokenize "f(a)(b)") "*").1 1
+  -- A synonym adds no production.
+  check "extract/validate/synonym" (ofRule { mk `Nat.card #[(`a, "*")] "|#a|" "Nat" with synonym := true }).isNone
   -- What the grammar does not cover is not validated.
   checkEq "extract/validate/unmodelled" (readings #[] atoms "\\frac{e}{f}" "Tm") 0
 
