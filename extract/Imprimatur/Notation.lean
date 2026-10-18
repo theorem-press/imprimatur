@@ -133,7 +133,8 @@ structure NotationRule where
 (DESIGN §18.3):
 
 - `Prop`, and `Sort` for types;
-- the head constant of a type, after unfolding reducible definitions;
+- the head constant of a type, after unfolding reducible definitions, with
+  its type arguments: `Option(Label)`;
 - `(A → B)` for a function type;
 - `?m`, a type variable, for a type a notation pattern leaves open
   (`a ⊔ b` for any `a b : α`): the holes of that sort must agree;
@@ -152,7 +153,14 @@ partial def sortKey (t : Expr) : MetaM String := do
     return if d == "*" && b == "*" then "*" else s!"({d} → {b})"
   | _ =>
     match t.getAppFn with
-    | .const n _ => return n.toString
+    | .const n _ =>
+      -- With its type arguments (`Option(Label)`); other arguments, such as
+      -- `n` in `Fin n`, are left out.
+      let mut args : Array String := #[]
+      for x in t.getAppArgs do
+        let isType ← try (do return (← whnfR (← inferType x)).isSort) catch _ => pure false
+        if isType then args := args.push (← sortKey x)
+      return if args.isEmpty then n.toString else s!"{n}({", ".intercalate args.toList})"
     | .mvar m => return s!"?{m.name}"
     | .fvar f => return s!"'{f.name}"
     | _ => return "*"

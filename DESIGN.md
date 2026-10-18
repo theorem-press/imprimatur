@@ -1144,8 +1144,12 @@ grouping (Danielsson and Norell's mixfix operators).
   "the metavariable stands for a `v` with `P v`";
 - the names of hypotheses, and the choice of bound names (α-equivalence);
 - the association of a `flatten` chain, which the rule declares associative;
-- synonyms: a rule that writes a constant as what it is by definition
-  (the `core` pack writes `Nat.succ n` as `n + 1`, as Lean does).
+- synonyms: a rule that writes a constant as what it equals, by definition
+  or by a lemma (the `core` pack writes `Nat.succ n` as `n + 1`, as Lean
+  does; a module may mark its own rules `synonym`);
+- application, however it is written (`f\,a`, `f(a)`, `f_{a}`, and `⇑f a`
+  through the coercion to a function), with `f(a)(b)` read as `f` applied
+  to `a` and `b`.
 
 The views extend it: the `prose` view's sentences have a fixed reading
 (*Let x ∈ X. Assume P. Then Q.* is `∀ x : X, P → Q`); a `rules` figure reads
@@ -1195,8 +1199,10 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   (`∀`, `∃`, `→`, `λ`, application, and `f(a)` or `f_{a}` under the style that
   writes them); the emitter's parentheses; and the formula's own atoms
   (variables, literals, constants without notation, Lean's fallback text).
-- **Sorts** are Lean types: a head constant, `Prop`, a function sort
-  `(A → B)`, a type parameter of the statement, or unknown. A hole of a
+- **Sorts** are Lean types: a head constant with its type arguments
+  (`Option(Label)`), `Prop`, a function sort `(A → B)`, a type parameter of
+  the statement, or unknown. A named type found where a function is expected
+  is accepted, since it may be one by definition (`Matrix R C α`). A hole of a
   type the pattern leaves open (`a ⊔ b` for any `a b : α`) is a type
   variable, bound by what fills the first such hole, so `a = b = c` does not
   read as comparing a proposition with a label. A rule elaborated with a
@@ -1204,6 +1210,10 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
 - **Readings** are trees named by the shapes of the rules' patterns, so
   rules for the same expressions (a variant's and a pack's) give the same
   reading. Coercions, chain association and synonyms are invisible (`≈_N`).
+  A coercion is read as a production that adds nothing to the reading, and
+  gives it the coercion's sort, with its argument's bound (`inl x` for
+  `x : A` is of sort `Sum(A, *)`); a reading can therefore be of several
+  sorts, and a hole's binding chooses among them.
 - **One reading** is the original expression, since the grammar mirrors the
   emitter: the renderer's output is a parse of what it rendered. **Two** is
   an ambiguity, reported with both readings. **None** means the grammar does

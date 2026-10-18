@@ -29,7 +29,7 @@
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{step\\_app} \\{\\LeanBound{e₁} \\LeanBound{e₁'} \\LeanBound{e₂} : \\LeanConst{Tm}\\} (\\LeanBound{h} : \\LeanConst{Step} \\LeanBound{e₁} \\LeanBound{e₁'}) (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{e₂}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Step} (\\LeanBound{e₁}.app \\LeanBound{e₂}) (\\LeanBound{e₁'}.app \\LeanBound{e₂})}",
         "math|def=": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Tm},\\ \\forall e_{1}' : \\LeanMathConst{Tm},\\ \\forall e_{2} : \\LeanMathConst{Tm},\\ (e_{1} \\longrightarrow e_{1}') \\implies \\LeanMathConst{IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
         "math|forall=": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Tm},\\ \\forall e_{1}' : \\LeanMathConst{Tm},\\ \\forall e_{2} : \\LeanMathConst{Tm},\\ (e_{1} \\longrightarrow e_{1}') \\implies \\LeanMathConst{IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
-        "math|names=full": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Stlc.Tm},\\ \\forall e_{1}' : \\LeanMathConst{Stlc.Tm},\\ \\forall e_{2} : \\LeanMathConst{Stlc.Tm},\\ (e_{1} \\longrightarrow e_{1}') \\LeanBreak \\implies \\LeanMathConst{Stlc.IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|names=full": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Stlc.Tm},\\ \\forall e_{1}' : \\LeanMathConst{Stlc.Tm},\\ \\LeanBreak \\forall e_{2} : \\LeanMathConst{Stlc.Tm},\\ (e_{1} \\longrightarrow e_{1}') \\implies \\LeanMathConst{Stlc.IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
         "math|rule=": "\\LeanMath{\\inferrule{e_{1} \\longrightarrow e_{1}'}{e_{1}\\; \\val_{2} \\longrightarrow e_{1}'\\; \\val_{2}}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with hypotheses (for the \\LeanCodeInline{rule} and \\LeanCodeInline{forall} modifiers).}"
       }
@@ -56,8 +56,8 @@
       },
       "stmtHash": "bcd5ea338db26567bb6b94bdb39bb976c43ce9cc88b3cfdf909cb0e25c08eb36",
       "validation": {
-        "rules": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[application f(a)[\\Gamma; i]; t]"],
-        "rules|exclude=beta": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[application f(a)[\\Gamma; i]; t]"]
+        "rules": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[app[\\Gamma; i]; t]"],
+        "rules|exclude=beta": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[app[\\Gamma; i]; t]"]
       },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
