@@ -110,7 +110,9 @@ structure Edit where
 
 /-- Apply non-overlapping edits to a source. -/
 def applyEdits (s : Src) (edits : Array Edit) : String := Id.run do
-  let edits := edits.qsort (fun a b => a.start < b.start)
+  -- Edits at the same position keep their order of length, so an empty edit
+  -- never comes after a replacement starting there (`qsort` is not stable).
+  let edits := edits.qsort (fun a b => a.start < b.start || (a.start == b.start && a.stop < b.stop))
   let mut out := ""
   let mut pos := 0
   for e in edits do

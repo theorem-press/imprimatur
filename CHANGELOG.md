@@ -38,3 +38,26 @@ All notable changes to imprimatur are recorded here. Versions follow
 
   Notation modules work in every mode. In external mode they are given as
   files and elaborated by the extractor. See [docs/notation.md](docs/notation.md).
+- Rules, grammars and the project-a migration (PLAN M5):
+  - the `rules` view (mathpartir), with `latex_rules`, `latex_rule_label`,
+    `latex_group`, premise conventions (`latex_metavar_convention`,
+    `latex_hide_premise`), `include`/`exclude`, and the `grammar` view;
+  - theorem modifiers `rule`, `forall`, `def` and `names=full`;
+  - custom views through `@[latex_view]`, with the document's inventory;
+  - `latex_entry` for keys that are titles, and `latex_style` for a paper's
+    conventions (`names := raw`, `applied_variables := call`);
+  - binder patterns in `latex_notation` (`∃ x, p`, `∑' x, f`, `fun x => e`,
+    `p → q`), partial applications, `flatten` of binder chains with `sep`,
+    `assoc`, `when` guards, `latex_metavar … decorated`, and Greek letters
+    as macros;
+  - several notation files in external mode;
+  - alias options `label`, `repeat_suffix`, `template` and `comment`;
+  - the scanner records which blocks are typeset, reading `\iffalse` and
+    `\newif` switches; blocks that are not are still maintained;
+  - the project-a parity gate of DESIGN §16 passed byte for byte; project-a now
+    builds its papers with imprimatur, keeps the port in its `imprimatur/`,
+    and has deleted its old exporter; and project B's analysis rules are
+    generated from `Der` (`scripts/integration.sh`).
+
+  See [docs/views.md](docs/views.md), [docs/notation.md](docs/notation.md)
+  and [docs/blocks.md](docs/blocks.md).

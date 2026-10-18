@@ -121,14 +121,21 @@ def bracesBalance (t : String) : Bool :=
   | .error _ => false
 
 /-- The view an item asks for. With `notation=V`, the view is written
-`view:V`, which the extractor renders with notation variant `V`. -/
+`view:V`, which the extractor renders with notation variant `V`; options
+that change the rendering follow as `|key=value`. -/
 def itemView (cfg : Config) (it : Item) : String :=
   let view := match it.opt? "view" with
     | some v => v
     | none => ((cfg.alias? it.name).map (·.view)).getD "lean"
-  match it.opt? "notation" with
-  | some n => view ++ ":" ++ n
-  | none => view
+  let view := match it.opt? "notation" with
+    | some n => view ++ ":" ++ n
+    | none => view
+  -- Options the extractor renders with (DESIGN §9.1), in a fixed order:
+  -- `rules|include=App,Lam`, `math|rule=`.
+  ["include", "exclude", "rule", "def", "forall", "names"].foldl (fun v k =>
+    match it.opts.find? (·.key == k) with
+    | some o => v ++ "|" ++ k ++ "=" ++ (",".intercalate ((o.value.splitOn ",").map (·.trimAscii.toString)))
+    | none => v) view
 
 /-- The slot declaration that applies to an item. -/
 def itemSlots (cfg : Config) (it : Item) : Option SlotSpec :=
@@ -160,15 +167,36 @@ def mergeSlots (o : ApplyOpts) (spec : Option SlotSpec) (old new : String) :
   let orphans := oldSlots.filter (fun os => !used.contains os.textStart)
   return (merged, orphans)
 
+/-- The labels the splicer writes, by file and item index: an alias with
+`label` gives each of its blocks one, and a repeated key (in document order,
+counted per alias) gets the `repeat_suffix`. -/
+def blockLabels (doc : Doc) : Array (Nat × Nat × String) := Id.run do
+  let mut out := #[]
+  let mut seen : Array (String × String × Nat) := #[]
+  for (f, fi) in doc.files.toList.zip (List.range doc.files.size) do
+    for (it, ii) in f.scan.items.toList.zip (List.range f.scan.items.size) do
+      unless it.kind == .block do continue
+      let some a := doc.cfg.alias? it.name | continue
+      let mut occ := 0
+      if let some i := seen.findIdx? (fun (n, k, _) => n == a.name && k == it.key) then
+        let (n, k, c) := seen[i]!
+        occ := c + 1
+        seen := seen.set! i (n, k, occ)
+      else
+        seen := seen.push (a.name, it.key, 0)
+      if let some l := a.labelFor it.key occ then out := out.push (fi, ii, l)
+  return out
+
 /-- Work out what applying `bundle` to `doc` would do. -/
 def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
   let cfg := doc.cfg
+  let labels := blockLabels doc
   let mut out : Outcome := { diags := doc.diags }
-  for f in doc.files do
+  for (f, fi) in doc.files.toList.zip (List.range doc.files.size) do
     let s := f.src
     let eol := dominantEol s.chars
     let mut edits : Array Edit := #[]
-    for it in f.scan.items do
+    for (it, ii) in f.scan.items.toList.zip (List.range f.scan.items.size) do
       if it.kind == .check || it.kind == .index || it.kind == .leanok then continue
       let loc := s.locString it.start
       let missing :=
@@ -196,6 +224,14 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
       let new := match generated with
         | .ok t => t
         | .error _ => ""
+      -- The alias's template: a label, a wrapper, …
+      let new := match cfg.alias? it.name with
+        | some a =>
+          if it.kind == .block then
+            let label := (labels.find? (fun (a, b, _) => a == fi && b == ii)).map (·.2.2)
+            a.fill new it.key it.title label
+          else new
+        | none => new
       -- The `meta` view leaves its source location to the profile (DESIGN §11).
       let new ← if (new.splitOn metaSourceMarker).length > 1 then
           match renderRef o.links o.commit e with
@@ -220,7 +256,8 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
         else merged
       let content := withEol eol (toLf content)
       -- Content that would change the document's structure is refused.
-      let endMarker := "\\end{" ++ it.name ++ "}"
+      let isComment := ((cfg.alias? it.name).map (·.comment)).getD false
+      let endMarker := if isComment then "%END" ++ it.name else "\\end{" ++ it.name ++ "}"
       if (it.kind == .block && (content.splitOn endMarker).length > 1) ||
           (it.kind != .block && !bracesBalance content) then
         let why := if it.kind == .block then "it contains " ++ endMarker else "its braces don't balance"

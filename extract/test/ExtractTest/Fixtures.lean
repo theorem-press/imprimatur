@@ -51,8 +51,14 @@ def fixtures : Array Fixture := #[
     keys := #["Cat.main", "Cat.classical", "Cat.IsEven"] },
   { dir := "Notation", module := `Notation, strip := #[`Notation],
     keys := #["Notation.arith", "Notation.logic", "Notation.sets", "Notation.order",
-      "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.typed"],
-    views := #["math", "prose", "math:named"] },
+      "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.typed",
+      "Notation.binderRules"],
+    views := #["math", "prose", "math:named", "math:binders"] },
+  { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
+    keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
+      "Stlc.size", "Stlc.step_app", "Preservation"],
+    views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
+      "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist"] },
   { dir := "Trust", module := `Trust, strip := #[`Trust],
     keys := #["Trust.double_even", "Trust.double_even_renamed", "Trust.pairMap_fst",
       "Trust.pairMap_fst_renamed",
@@ -171,7 +177,7 @@ unsafe def tests : TestM Unit := group "fixtures" do
     match f.dir with
     | "Basic" =>
       checkEq "extract/keys/unknown-is-warning" r.warnings
-        #["Basic.no_such_thing: no declaration with this name"]
+        #["Basic.no_such_thing: no declaration or group with this name"]
       checkEq "extract/trust/custom-axiom" (axioms r.bundle "Basic.uses_oracle") #["Basic.oracle"]
       checkEq "extract/trust/classical-axioms" (axioms r.bundle "Basic.em'")
         #["Classical.choice", "Quot.sound", "propext"]

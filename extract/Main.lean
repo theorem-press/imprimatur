@@ -55,10 +55,8 @@ unsafe def main (args : List String) : IO UInt32 := do
   -- the imports are imported.
   let base : System.FilePath := (flag args "--base").getD "."
   let load : IO Lean.Environment :=
-    match settings.notationFiles.toList with
-    | [] => Compat.importPrivate settings.imports
-    | [f] => Compat.elaborateNotation (base / f) settings.imports
-    | _ => throw (IO.userError "only one notation file is supported; import the others from it")
+    if settings.notationFiles.isEmpty then Compat.importPrivate settings.imports
+    else Compat.elaborateNotation (settings.notationFiles.map fun f => base / System.FilePath.mk f) settings.imports
   let (entries, warnings) ← match ← load.toBaseIO with
     | .ok env => exportEntries env root settings main (args.contains "--verbose")
     | .error e =>

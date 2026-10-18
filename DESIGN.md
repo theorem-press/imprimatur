@@ -222,11 +222,22 @@ latex_notation Ctx.lookup spec i = true    => r"\cbX \in L(#i)"
 latex_notation Judg.time i                  => r"\judge{time}(#i)"
 latex_notation Tm.app A B                 => r"\app{#A}{#B}"   width := 5
 
-latex_group "Analysis rules" := rules
+latex_group "Analysis rules" :=
   [Der.t_cb, Der.t_max, Der.ord, Der.m_ord, Der.w_nr, Der.m_cb, Der.i_cb,
    Der.i_ord, Der.t_int, ProjB.Factors.DerF.m_mf, ProjB.Factors.DerF.i_mf,
-   Der.i_nest, Der.w_nest, Der.i_cross]
+   Der.i_nest, Der.w_nest, Der.i_cross_l]
+
+latex_entry "Soundness" => MyPaper.Results.theorem1_main  options := "forall"
+latex_style names := raw
 ```
+
+Its commands (M5): `latex_notation`, `latex_metavar`, `latex_style` (§7.5);
+`latex_entry`, a key of the document that is a title rather than a name, with
+block options that apply to all its views (§9.1); `latex_group`,
+`latex_rules`, `latex_rule_label` (§7.4); `latex_metavar_convention`,
+`latex_hide_premise` (§7.6); `latex_category` (§7.3); and `@[latex_view]`.
+In external mode the module may be several files, elaborated in turn in one
+environment, so a large one can keep its tables apart.
 
 The notation module is not itself a `module` file, so that elaborating it
 sees `private` data (constraint 7).
@@ -369,8 +380,13 @@ resulting `Syntax`, to avoid exposing instance arguments
 
 **Projects can add their own views.** A project registers
 `@[latex_view "name"] def myView : ViewFn` in its notation module. The
-extractor discovers it through the attribute and runs it with `evalConst`.
-project-a keeps its BigStep-specific rendering choices this way.
+extractor discovers it through the attribute and runs it with `evalConst`, in
+the renderer's monad, with the key, the declaration (if any) and the block's
+options. It also sees the document's inventory (§10.1): the blocks, with the
+labels the splicer gives them, and the paper's `\label`s, in document order.
+A grammar whose forms are hand-written TeX is a custom view rather than the
+generic `grammar` view, as are project-a's theorem prose and provenance index
+(§16).
 
 ### 7.4 Rule labels
 
@@ -380,6 +396,13 @@ The label of a `rules` entry is chosen in this order:
 2. otherwise, a docstring that starts `Label: …` or `Label.` supplies
    `Label`, following the `/-- T-CB: … -/` convention project B already uses;
 3. otherwise, the constructor name, prettified (`i_nest` becomes `I-Nest`).
+
+`latex_rules I` sets, per inductive, the template the label goes in, the
+macro that anchors each rule (`\rulelabel{Key}{label}%`), the text between
+the words of a name (`sep := " "` gives `Scalar Lit`), and whether docstrings
+supply labels (`doc_labels := false` when they are prose such as
+`Variables: …`). A `latex_group` may mix constructors of several inductives;
+each takes its own inductive's style.
 
 ### 7.5 Notation rules
 
@@ -401,6 +424,13 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
     unknown type, so notation such as `=` and `¬` works in patterns.
   - **`hide x := v`.** `v` is itself a pattern, so `Fin.elim0` matches
     whatever its implicit arguments are.
+  - **Binders (M5).** A pattern may bind a variable: `fun x => e`, `∀ x, p`,
+    `p → q`, and a constant applied to a `fun` (`∃ x, p`, `∑' x, f`,
+    `{x | p}`). Matching opens the binder, so the variable renders as its
+    bound name and the body in scope. `∀ x, p` matches a quantifier whose
+    body mentions `x`, `p → q` an implication or function type; both
+    override the built-in forms. A constant applied to fewer arguments than
+    it takes matches that partial application.
 - **Template.** `#x` inserts the rendering of a pattern variable, as with
   K's positional placeholders and Ott's homomorphisms.
 - **`prec`** sets the precedence of the result when nested. A variable inside
@@ -411,13 +441,23 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
   uses instead of the length of the LaTeX source. Without it, long macro
   names cause premature line breaks; this is a lesson from HOL4's munger.
 - **`hide x := v`** applies the rule only when `x` is definitionally equal to
-  `v`, and leaves `x` out of the output.
+  `v`, and leaves `x` out of the output; **`when x := v`** applies it only
+  when `x` matches the pattern `v`, and shows `x` (M5).
 - **`variant`** names an alternative notation for the same constant. A block
   selects it with `notation=named`, after sTeX's multiple notations per
   symbol.
 - **`flatten`** applies to associative operators: a nested chain renders as
   one n-ary call (`\lub{a, b, c}`, or `a + b + c` for infix operators),
-  after sTeX's `seq`.
+  after sTeX's `seq`. On a binder rule it folds a chain of binders into one
+  list of variables (`\exists\, a,\, b,\; p`), separated by **`sep`**.
+- **`assoc`** is `left` (the default), `right`, or `none`, which
+  parenthesises both operands at the rule's own precedence, as project-a does
+  for `∧` next to `∨`.
+- **`latex_style`** fixes conventions of the renderer for the whole paper:
+  `names := raw` writes binder names as they are (they are TeX: `l_c`),
+  rather than escaped and in `\mathit`; `applied_variables := call` writes
+  an applied variable as `f(a)(b)`. Greek binder names are always macros
+  (`\varepsilon`).
 - **Order of lookup.**
   1. The project's rules. The most specific pattern wins, and declaration
      order breaks ties.
@@ -601,6 +641,18 @@ The options of `leanblock`:
 The `[aliases]` table maps existing environment names (`leantheorem`,
 `leanrules`, …) onto `leanblock`, so projects keep their current markup.
 
+An alias can also shape its blocks' content (M5), so that markup the old
+tool generated keeps being generated:
+
+- **`label = "thm:{key}"`** writes a `\label` from the key, and
+  **`repeat_suffix = "-appendix"`** distinguishes a key stated again
+  (`-appendix`, `-appendix2`, …), counted per alias;
+- **`template`** is the content, over `{content}`, `{label}`, `{key}` and
+  `{title}`: `"\\label{{label}}\n\\({content}\\)"`;
+- **`comment = true`** makes the alias a region delimited by comments,
+  `%NAME{key}{title}` … `%ENDNAME`, for a row of a tabbing display where an
+  environment would disturb TeX.
+
 ### 9.3 Blueprint compatibility
 
 - **Reading blueprints.** With `manifests.blueprint = true`, the scanner
@@ -677,9 +729,17 @@ to TeX environments.
 ### 10.1 `scan`
 
 - `scan` starts from `main` and follows `\input`, `\include` and `\subfile`.
-  Commented-out lines are skipped.
+  Commented-out lines are skipped. Branches of conditionals are all scanned,
+  and their blocks maintained, but the scanner records which are typeset
+  (M5): not those in a branch that is off (`\iffalse`, the `\else` of
+  `\iftrue`, a switch declared with `\newif\ifNAME` and set with
+  `\NAMEfalse`, as project-a turns appendices off), nor those in a file reached
+  only from one. Other conditionals count as on in both branches.
 - It also collects keys from the manifests (§10.5).
-- It writes every requested key and view to `requests.json`.
+- It writes every requested key and view to `requests.json`, with the
+  document's inventory: the blocks, with the labels the splicer will give
+  them and whether they are typeset, and the paper's typeset `\label`s, in
+  document order, for views that index the paper.
 
 ### 10.2 `apply`
 
@@ -936,6 +996,27 @@ imprimatur/
      splicing in `OldTool.lean`.
 
   The diff in step 2 also lists every rendering special case still to port.
+
+**As done (M5).** The parity gate passed byte for byte on `paper-a` and
+`paper-a2`, after which project-a deleted its old exporter (`OldRules.lean`,
+`OldGrammar.lean`, `OldTranslation.lean` and `old_tool`'s Lean
+splicing) and the gate with it. project-a keeps the port in its own repository
+(`imprimatur/`, shared by its documents): notation for every arm of the old
+renderer, the groups, labels and entries, and four custom views (theorem
+prose, `≜` definitions, the hand-written grammar tables, and the
+conventions, dispatch and provenance tables). Its three documents are built
+with imprimatur in external mode, and `old_tool` keeps only the `codeblock`
+blocks. The binder linter and its conventions table stay in project-a's Lean
+sources, and a custom view splices the table from there. In `proj/doc` the gate found two blocks the old tool had left frozen,
+stale, because their theorems were not registered: one is now generated, the
+other (its theorem gone) became plain text. It also showed the old
+renderer's mistakes kept for parity, such as a dropped premise, each now one
+line to delete. Generic features came out of the port: binder patterns,
+`latex_style`, `latex_entry`, `when` guards, decorated metavariables, alias
+labels and templates, comment-delimited blocks, the scanner's reading of
+`\newif` switches (so an index leaves out appendices switched off while
+their blocks are kept up to date), and the document inventory, which
+`\leanindex` (M6) will also use.
 
 **Math catalogue** (external, §6.3 A)
 

@@ -1,0 +1,25 @@
+{
+ "entries": {
+  "Pair": {
+   "decl": "Pair",
+   "kind": "structure",
+   "views": {
+    "math": "p \\in \\mathrm{Pair}(A, B) \\mathrel{:=} (a, b)"
+   }
+  },
+  "Soundness": {
+   "decl": "Demo.sound",
+   "kind": "theorem",
+   "views": {
+    "prose": "If\n$\\vdash e : t$,\nthen\n$\\models e : t$."
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

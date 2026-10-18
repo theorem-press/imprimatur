@@ -3,7 +3,8 @@
 *For authors of papers that use imprimatur: what each view produces, and the
 macros `tex/imprimatur.sty` defines for it. Redefine any of these macros to
 change the style. [DESIGN.md](../DESIGN.md) §7.3 lists all the planned views.
-This page covers the ones that exist: `lean`, `meta`, `math` and `prose`.*
+This page covers `lean`, `meta`, `math`, `prose`, `rules`, `grammar` and
+custom views.*
 
 ## `lean`: the signature as Lean prints it
 
@@ -99,6 +100,87 @@ The prose is built in four parts:
   only if", and `∃ x, p` reads "there is x such that p".
 - **A definition** reads "We define …".
 
-## Views to come
+## `rules`: an inductive predicate as inference rules
 
-`rules` and `grammar` come in PLAN M5.
+```latex
+\begin{mathpar}
+
+\rulelabel{Beta}{($\longrightarrow$-Beta)}%
+\inferrule[($\longrightarrow$-Beta)]
+  { }
+  { (\lambda{:}t.\, e)\; \val \longrightarrow e[\val] }
+
+\and
+
+\inferrule[($\longrightarrow$-App Left)]
+  {
+    e_{1} \longrightarrow e_{1}'
+  }
+  { e_{1}\; e_{2} \longrightarrow e_{1}'\; e_{2} }
+
+\end{mathpar}
+```
+
+The key is an inductive predicate, one constructor, or a `latex_group`.
+Each constructor becomes a mathpartir `\inferrule`, so the document needs
+`\usepackage{mathpartir}`:
+
+- **Premises** are the constructor's explicit binders whose type is a
+  proposition, in source order. Premise conventions
+  ([notation.md](notation.md)) hide some: `latex_hide_premise` drops those
+  matching a pattern, and `latex_metavar_convention` drops them and renders
+  the variable they constrain as a metavariable (`\val`).
+- **The conclusion** is the constructor's result type. Formulas never break
+  across lines.
+- **Labels** come, in order, from `latex_rule_label`, a docstring starting
+  `Label:`, or the constructor's name (`app_left` gives `App-Left`); the
+  inductive's `latex_rules` places the label in a template and, with
+  `label_macro`, writes `\macro{Key}{label}%` before the rule.
+- **`include=` and `exclude=`** on the block select constructors by their
+  last name component: `[include=beta, app_right]`.
+
+## `grammar`: an inductive type as a grammar
+
+```latex
+\begin{LeanGrammar}
+\LeanProduction{e}{terms}{x_{i}}{\leanslot{Tm.var}{a variable}}
+\LeanAlternative{\lambda{:}\tau.\, e}{\leanslot{Tm.lam}{an abstraction}}
+\end{LeanGrammar}
+```
+
+The key is an inductive type (`latex_category T => "e"` names its
+metavariable) or a structure (`\LeanStructure` and `\LeanField`). Each
+constructor is one alternative, rendered with the notation in scope applied
+to metavariables; its description is a slot whose default is the
+constructor's docstring, so the paper's wording survives regeneration. A
+grammar whose forms are hand-written TeX is better served by a custom view.
+
+## Theorem modifiers of `math`
+
+| Option | Effect |
+|---|---|
+| `rule` | the hypotheses over the conclusion, as `\inferrule` |
+| `forall` | the statement with its outer quantifiers shown |
+| `def` | a definition as its equation lemmas, aligned |
+| `names=full` | no namespaces left out |
+
+Options are written on the block, `[view=math, rule]`, or on a
+`latex_entry`.
+
+## Custom views
+
+A project adds a view in its notation module:
+
+```lean
+@[latex_view "paper.theorem"]
+def theoremView : Imprimatur.ViewFn := fun key c opts => do …
+```
+
+It gets the key, the declaration it names (if any) and the block's options,
+and runs in the renderer's monad, so `Imprimatur.Render.render` gives it the
+notation in scope. The document's inventory, `(← read).document`, lists the
+blocks (with the labels the splicer gives them, and whether they are
+typeset) and the typeset `\label`s of the paper in document order, for views
+that index it. A view's exception becomes
+an error for that block. An alias selects it like any view:
+`leantheorem = { view = "paper.theorem" }`.

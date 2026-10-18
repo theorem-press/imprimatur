@@ -54,6 +54,29 @@ where
         else go body (vars.push (n, x, t)) hyps
     | _ => k vars hyps e
 
+/-- Apply the premise conventions (DESIGN §7.6) to hypotheses: those a
+convention hides are dropped, and variables a metavariable convention names
+get its rendering. Then continue with the remaining hypotheses. -/
+def withConventions {α : Type} (hyps : Array (Name × Expr))
+    (k : Array (Name × Expr) → RenderM α) : RenderM α := do
+  let conventions := projectConventions (← getEnv)
+  let mut kept : Array (Name × Expr) := #[]
+  let mut overrides : Array (FVarId × String) := #[]
+  for (n, h) in hyps do
+    let mut hidden := false
+    for cv in conventions do
+      if let some bs ← cv.pat.matchExpr h then
+        hidden := true
+        if let some (v, tex) := cv.metavar then
+          if let some (_, .fvar f) := bs.find? (·.1 == v) then
+            let plain := varTeX #[] (← f.getUserName)
+            let sub := match plain.splitOn "_" with
+              | _ :: rest@(_ :: _) => "_" ++ "_".intercalate rest
+              | _ => ""
+            overrides := overrides.push (f, tex ++ sub)
+    unless hidden do kept := kept.push (n, h)
+  withReader (fun ctx => { ctx with overrides := ctx.overrides ++ overrides }) (k kept)
+
 /-- The conjuncts of `a ∧ (b ∧ c)`. -/
 partial def conjuncts (e : Expr) : Array Expr :=
   if e.isAppOfArity ``And 2 then #[e.appFn!.appArg!] ++ conjuncts e.appArg! else #[e]
@@ -96,12 +119,50 @@ three quarters of it (60 characters by default). -/
 def mathView (c : ConstantInfo) (width : Nat) : RenderM String := do
   return s!"\\LeanMath\{{(← mathDoc c).render (width * 3 / 4)}}"
 
+/-- `lhs = rhs` of an equation statement, with its variables introduced. -/
+def equationRow (eqn : Expr) : RenderM String :=
+  statementParts eqn fun _ _ concl => do
+    if concl.isAppOfArity ``Eq 3 then
+      let lhs := (← render concl.appFn!.appArg!).render 100000
+      let rhs := (← render concl.appArg!).render 100000
+      return s!"{lhs} &= {rhs}"
+    return (← render concl).render 100000
+
+/-- The `math` view with theorem modifiers (DESIGN §9.1):
+
+- `rule`: a theorem's hypotheses over its conclusion, as an inference rule;
+- `forall`: the statement with its outer quantifiers;
+- `def`: a definition as its equations, aligned;
+- `names=full`: no namespaces are left out. -/
+def mathViewWith (c : ConstantInfo) (width : Nat) (opts : Array (String × String)) :
+    RenderM String := do
+  let has (k : String) := opts.any (·.1 == k)
+  let full := opts.any (· == ("names", "full"))
+  let isThm := c matches .thmInfo _ | .axiomInfo _
+  let isDef := c matches .defnInfo _
+  let wrap (body : String) : String := "\\LeanMath{" ++ body ++ "}"
+  withReader (fun ctx => if full then { ctx with strip := #[] } else ctx) do
+    if has "rule" && isThm then
+      statementParts c.type fun _ hyps concl => withConventions hyps fun hyps => do
+        let ps ← hyps.mapM fun (_, h) => do return (← render h).render 100000
+        let cs := (← render concl).render 100000
+        return wrap ("\\inferrule{" ++ " \\\\ ".intercalate ps.toList ++ "}{" ++ cs ++ "}")
+    else if has "forall" then
+      return wrap ((← render c.type).render (width * 3 / 4))
+    else if has "def" && isDef then
+      match ← getEqnsFor? c.name with
+      | some es =>
+        let rows ← es.mapM fun e => do equationRow (← getConstInfo e).type
+        return wrap ("\\begin{aligned}" ++ " \\\\ ".intercalate rows.toList ++ "\\end{aligned}")
+      | none => mathView c width
+    else mathView c width
+
 /-- The `prose` view of a constant. -/
 partial def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
   unless c matches .thmInfo _ | .axiomInfo _ do
     let formula := (← mathDoc c).render 100000
     return s!"\\LeanProse\{We define ${formula}$.}"
-  statementParts c.type fun vars hyps concl => do
+  statementParts c.type fun vars hyps concl => withConventions hyps fun hyps => do
     let mut sentences : Array String := #[]
     -- Variables, grouped by type.
     let mut groups : Array (Array Name × Expr) := #[]
@@ -112,7 +173,7 @@ partial def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
       | none => groups := groups.push (#[n], t)
     let mut phrases : Array String := #[]
     for (ns, t) in groups do
-      let names := ", ".intercalate (ns.map (varTeX (← read).metavars ·)).toList
+      let names := ", ".intercalate (← ns.toList.mapM varName)
       if t.isProp then
         phrases := phrases.push s!"${names}$ be {if ns.size == 1 then "a proposition" else "propositions"}"
       else if t.isSort then
@@ -140,7 +201,7 @@ where
       if let .lam n t b bi := concl.appArg! then
         return ← withLocalDecl n bi t fun x => do
           let body := b.instantiate1 x
-          return s!"there is ${varTeX (← read).metavars n}$ such that {← conclusion body}"
+          return s!"there is ${← varName n}$ such that {← conclusion body}"
     let cs := conjuncts concl
     if cs.size > 1 then
       let items ← (cs.toList.zip (List.range cs.size)).mapM fun (x, i) => do

@@ -29,3 +29,20 @@ latex_metavar spec => "L"
 -- A typed pattern (the `@` form names implicit arguments): it applies only
 -- where the type is a `MySet`.
 latex_notation @LE.le (MySet _) _ a b => r"#a \sqsubseteq #b" prec := 50
+
+-- Binder patterns, in a variant so that the built-in forms stay in use in
+-- the default notation. A chain of binders folds (`flatten`) into one list,
+-- separated by `sep`.
+latex_notation (variant := "binders") ∃ x, p => r"\exists #x.\, #p" flatten sep := ", " prec := 10
+latex_notation (variant := "binders") ∀ x, p => r"\forall #x.\, #p" flatten prec := 10
+latex_notation (variant := "binders") p → q => r"#p \Rightarrow #q" prec := 20 assoc := right
+latex_notation (variant := "binders") fun x => e => r"(#x \mapsto #e)"
+latex_notation (variant := "binders") bigsum (fun k => f) => r"\sum_{#k} #f"
+latex_notation (variant := "binders") bigsum f => r"\sum #f"
+-- A nested binder pattern, and an operator whose chains are parenthesised on
+-- both sides.
+latex_notation (variant := "binders") p ∧ q => r"#p \wedge #q" prec := 35 assoc := none
+-- A guard: the rule applies only when `p` is an existential, and shows it.
+latex_notation (variant := "binders") ¬ p => r"\neg(#p)" when p := (Exists _)
+-- A metavariable renamed under subscripts too: `acc₁` is `a_{1}`.
+latex_metavar acc => "a" decorated

@@ -7,7 +7,7 @@ main.tex:1:1: error[stale]: the generated content of Lambda is out of date
    \entry{\lambda x.\, e}{abstraction, as the authors put it}\\
   -\entry{e_1\; e_2}{application}
   +\entry{e_1\; e_2}{application}\\
-  +\entry{\syn{recv}}{an extra form}
+  +\entry{\mathsf{unit}}{the unit value}
 check: 1 stale, 1 error, 0 warnings
 [exit 1]
 
@@ -20,11 +20,11 @@ check: 0 stale, 0 errors, 0 warnings
 [exit 0]
 
 == main.tex
-\begin{leangrammar}[sum=oupRaZH-h8]{Lambda}{Lambda terms:}%
+\begin{leangrammar}[sum=tWPeHRPtnb]{Lambda}{Terms:}%
 \Category{e}{expressions}\\
 \entry{x}{variable}\\
 \entry{\lambda x.\, e}{abstraction, as the authors put it}\\
 \entry{e_1\; e_2}{application}\\
-\entry{\syn{recv}}{an extra form}
+\entry{\mathsf{unit}}{the unit value}
 \end{leangrammar}
 

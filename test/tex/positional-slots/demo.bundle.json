@@ -4,7 +4,7 @@
    "decl": "Lambda",
    "kind": "inductive",
    "views": {
-    "grammar": "\\Category{e}{expressions}\\\\\n\\entry{x}{variable}\\\\\n\\entry{\\lambda x.\\, e}{abstraction}\\\\\n\\entry{e_1\\; e_2}{application}\\\\\n\\entry{\\syn{recv}}{an extra form}"
+    "grammar": "\\Category{e}{expressions}\\\\\n\\entry{x}{variable}\\\\\n\\entry{\\lambda x.\\, e}{abstraction}\\\\\n\\entry{e_1\\; e_2}{application}\\\\\n\\entry{\\mathsf{unit}}{the unit value}"
    }
   }
  },

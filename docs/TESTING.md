@@ -89,13 +89,14 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic`, `integration/projb-lean-view` | M2 |
 | D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
 | D§7.3 | `math` and `prose` views | `extract/golden/Notation`, `e2e/minimal`, `e2e/fixture-views`, `integration/math-prose` | M4 |
-| D§7.3 | `rules` and `grammar` views | — | M5 |
-| D§7.3 | custom views through `@[latex_view]` | — | M5 |
-| D§7.4 | rule label precedence | — | M5 |
+| D§7.3 | `rules` and `grammar` views | `extract/golden/Semantics`, `e2e/fixture-views`, `integration/projb-rules`, project-a's parity gate | M5 |
+| D§7.3 | custom views through `@[latex_view]`, with the document inventory | `extract/golden/Semantics` (`fixture.rulelist`), project-a's parity gate (four custom views) | M5 |
+| D§7.4 | rule label precedence; `latex_rules` templates, anchors, `sep`, `doc_labels`; groups across inductives | `extract/golden/Semantics`, project-a's parity gate | M5 |
 | D§7.5 | notation rules: patterns, templates, `prec`, `width`, `hide`, `variant`, `flatten`, typed patterns, lookup order, metavariables | `extract/golden/Notation`, `extract/doc/template-prime`, `extract/doc/template-longest`, `extract/doc/template-unknown`, `extract/doc/metavar-subscript`, `extract/doc/metavar-digits`, `extract/doc/metavar-prime`, `extract/doc/metavar-long`, `extract/doc/metavar-renamed`, `splice/golden/notation-config` | M4 |
 | D§7.5 | packs: every rule has a golden use, and the output typesets with both engines | `extract/notation/every-pack-rule-used`, `e2e/fixture-views` | M4 |
 | D§7.5 | the bundle records the macros each rendering uses | `extract/golden/Notation` | M4 |
-| D§7.6 | premise conventions | — | M5 |
+| D§7.5 | binder patterns, partial applications, `flatten` with `sep`, `assoc`, `latex_style`, `latex_entry`, Greek letters, several notation files | `extract/golden/Notation` (`math:binders`), `extract/golden/Semantics`, project-a's parity gate | M5 |
+| D§7.6 | premise conventions | `extract/golden/Semantics`, `e2e/fixture-views` | M5 |
 | D§7.7 | axioms and `sorry` | `extract/trust/direct-sorry`, `extract/trust/custom-axiom`, `extract/trust/classical-axioms`, `extract/trust/sorry-in-proof-chain`, `extract/trust/sorry-in-statement`, `extract/trust/custom-axiom-trust`, `extract/modules/private-sorry-seen` | M2 |
 | D§7.7 | dependency cone up to `trusted_prefixes`, with reasons | `extract/trust/cone-sorry`, `extract/trust/cone-partial`, `extract/trust/cone-clean`, `splice/golden/cone` | M3 |
 | D§7.7 | `stmtHash`: insensitive to binder and universe names, sensitive to meaning, stable across toolchains | `extract/prop/hash-binder-names`, `extract/prop/hash-universe-names`, `extract/prop/hash-sees-constants`, `extract/prop/hash-ignores-mdata`, `extract/hash/sorry-tag-ignored`, `extract/hash/binder-kind-matters`, `extract/trust/same-hash-renamed-binder`, `extract/trust/same-hash-renamed-universes`, `extract/trust/weakened-hypothesis-drifts`, `extract/golden/Trust` | M3 |
@@ -105,7 +106,9 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§8 | bundles are read and checked against the rules of `schema/bundle.schema.json`; golden bundles validate against the schema | `splice/bundle/parses`, `splice/bundle/schema-version`, `splice/bundle/absolute-path`, `splice/bundle/missing-views`, `splice/golden/bundle-errors`, `lint/bundle-schema` | M1 |
 | D§8 | a view that fails to render is recorded in `errors`, and is an error only if requested | `extract/golden/Basic`, `splice/golden/failures` | M2 |
 | D§9.1 | `leanblock`, `\leaninline`, `\leanref`, `\leancheck`, `\leanindex` are recognised | `splice/scan/forms`, `splice/scan/options`, `splice/scan/check-keys`, `splice/golden/basic` | M1 |
-| D§9.1 | block options, including `include`/`exclude`, `show`/`hide` and theorem modifiers | — | M5 |
+| D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
+| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases`, project-a's parity gate | M5 |
+| D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases`, project-a's parity gate | M5 |
 | D§9.2 | aliases map existing environments onto `leanblock` | `splice/config/alias-slots`, `splice/golden/basic`, `splice/golden/positional-slots` | M1 |
 | D§9.3 | blueprint `\lean{…}` read as check-only references; `\leanok` cross-checked | `splice/golden/blueprint` | M3 |
 | D§9.3 | `--blueprint-compat` writes `\lean{…}` | — | M6 |
@@ -137,8 +140,9 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§14 | testing (this file) | — | n/a |
 | D§15 | repository layout | — | n/a |
 | D§16 | project-a's `paper.tex` goes through `scan` and `strip` with every byte outside its blocks kept | `integration/project-a-scan-strip` | M1 |
-| D§16 | project-a parity gate | — | M5 |
-| D§16 | project B rules figure and `check --anonymous` | — | M6 |
+| D§16 | project-a parity gate | `imprimatur/parity.sh` in project-a, passed for each of its three documents, then retired with the old exporter (project-a commit `0114fd4`) | M5 |
+| D§16 | project B rules figure | `integration/projb-rules` | M5 |
+| D§16 | project B `check --anonymous` | — | M6 |
 | D§16 | math catalogue comparator manifests import cleanly | `integration/math-manifests` | M3 |
 | D§17 | roadmap | — | n/a |
 | D§18 | open questions | — | n/a |

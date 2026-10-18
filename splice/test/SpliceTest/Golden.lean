@@ -112,10 +112,12 @@ def transcript (name : String) : IO String := do
 /-- The cases, by test name. A case directory not listed here is an error,
 so none is skipped by accident. -/
 def cases : Array String := #[
+  "splice/golden/aliases",
   "splice/golden/basic",
   "splice/golden/blueprint",
   "splice/golden/bundle-errors",
   "splice/golden/comments-verbatim",
+  "splice/golden/conditionals",
   "splice/golden/cone",
   "splice/golden/config-errors",
   "splice/golden/crlf",

@@ -75,6 +75,18 @@ theorem project (n m k : Nat) (ρ : Fin 0 → Nat) (spec : Nat) (hd : double n =
 theorem typed (s t : MySet Nat) (m n : Nat) : s ≤ t ∧ m ≤ n := by
   sorry
 
+/-- A sum over a function, for a binder pattern `bigsum (fun k => f)`. -/
+def bigsum (f : Nat → Nat) : Nat := f 0 + f 1
+
+/-- Binder patterns (the `binders` variant): chains of ∃ and ∀ folded into
+one list, an implication, a λ, a function taken by a binder pattern, and an
+operator with `assoc := none`. -/
+theorem binderRules (f : Nat → Nat) (p : Prop) :
+    (∃ a b : Nat, a = b) ∧ (∀ a b : Nat, a = a → b = b → p) ∧
+      bigsum (fun k => k + 1) = bigsum f ∧ (fun n => n) 1 = 1 ∧ (p ∧ p) ∧ ¬ ∃ c : Nat, c = c ∧
+      ¬ p ∧ ∀ acc₁ : Nat, acc₁ = acc₁ := by
+  sorry
+
 /-- A definition, shown as `f x ≔ body`. -/
 def triple (n : Nat) : Nat := double n + n
 

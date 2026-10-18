@@ -16,6 +16,10 @@ $ imprimatur-splice --config good.toml scan
   "schema": "imprimatur-requests/1",
   "config": {"imports": ["Paper", "Cat.Classical", "Cat.Constructive"], "open_scoped": [], "strip_namespaces": [],
     "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {"Cat.classical": "Challenges.Classical", "Cat.constructive": "Challenges.Constructive", "Cat.gone": "Challenges.Constructive"}},
+  "document": {"blocks": [
+    ],
+    "labels": [
+    ]},
   "requests": {
     "Cat.classical": {"views": []},
     "Cat.constructive": {"views": []},
