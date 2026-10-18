@@ -1,0 +1,216 @@
+\documentclass{article}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{url}
+\usepackage{imprimatur}
+\newtheorem{theorem}{Theorem}
+% The paper's environments, as imprimatur.toml's [aliases] declares them.
+\leanblockalias{leangrammar}{}
+\leanblockalias{leantheorem}{theorem}
+
+\title{imprimatur: papers that say what Lean proved}
+\author{The imprimatur authors}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+A paper about a Lean development restates its definitions and theorems in
+mathematical notation. imprimatur generates those restatements from the
+development, keeps the text the authors wrote around them, and checks that
+the paper still says what Lean proved. We state what that check guarantees,
+and prove it for a model of imprimatur's splicer in Lean. This paper is
+itself built with imprimatur: every displayed definition and theorem below
+is generated from that Lean development, and every hand-written claim about
+it is checked against it.
+\end{abstract}
+
+\section{Introduction}
+
+A paper and its Lean development drift apart. A theorem is weakened in Lean
+and not in the paper; a definition gains a case; a lemma the paper cites is
+proved with \texttt{sorry}. imprimatur closes the gap in two ways. Blocks of
+the paper are \emph{generated}: the extractor renders a Lean constant's
+statement in the paper's notation, and the splicer writes it into the paper,
+keeping any text the authors wrote in its \emph{slots}. Hand-written prose
+about a constant is \emph{attested}: a \verb|\leancheck| beside it records the
+hash of the statement the prose was checked against, and the check fails if
+the statement changes.
+
+What does it mean for this to be correct? A paper is correct with respect to
+its development when what it shows is what Lean proved. We state that as two
+theorems. The first, about the splicer, says what a successful
+\texttt{imprimatur check} guarantees; we prove it for a model of the
+splicer (Section~\ref{sec:check}). The second, about the notation, says that
+a rendering can be read back as the statement it came from; imprimatur
+checks it for each formula it renders (Section~\ref{sec:faithful}).
+
+\section{Documents and bundles}
+
+A document is a list of pieces: hand-written text, generated blocks, and
+checks on hand-written prose. A block's body is a list of segments: text
+generated from Lean, and slots, whose text the authors own.
+
+\begin{leangrammar}[sum=UNYo3GAjOs]{SpliceModel.Seg}{Segments}
+\begin{LeanGrammar}
+\LeanProduction{s}{A segment of a generated block.}{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}
+\LeanAlternative{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+\begin{leangrammar}[sum=ZTtokTSrDa]{SpliceModel.Piece}{Pieces}
+\begin{LeanGrammar}
+\LeanProduction{p}{A piece of a document.}{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}
+\LeanAlternative{\mathsf{block}_{k}(\mathit{body})}{\leanslot{SpliceModel.Piece.block}{a generated block for a key}}
+\LeanAlternative{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{hand-written prose, checked against hash $h$}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+A \emph{bundle}, exported from a Lean environment, gives each key the
+rendering of its statement, the statement's hash, and whether its proof is
+trusted, that is, uses no \texttt{sorry} and only the permitted
+axioms\leancheck[stmt=81ba55cf6570, sig=401766da2f98]{SpliceModel.Entry, SpliceModel.extract}.
+
+Regenerating a block fills the rendering's slots with the text the authors
+wrote in the old block, slot by slot, and with the rendering's own text for a
+slot they have not written:
+
+\begin{center}
+\begin{leanblock}[view=math, def, sum=BhwOfgB0yt]{SpliceModel.fill}{Filling slots}
+\LeanMath{\begin{aligned}\mathsf{fill}(\mathit{old}, []) &= [] \\ \mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) &= \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r) \\ \mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) &= \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)\end{aligned}}
+\end{leanblock}
+\end{center}
+
+\verb|imprimatur apply| regenerates every block whose key has an entry,
+and leaves every other piece as it
+is\leancheck[stmt=6deca83854c0, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
+reports what is not as the bundle says:
+
+\begin{leangrammar}[sum=2bK5uzMauZ]{SpliceModel.Diag}{Diagnostics}
+\begin{LeanGrammar}
+\LeanProduction{x}{What \LeanCodeInline{check} reports.}{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}
+\LeanAlternative{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}
+\LeanAlternative{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}
+\LeanAlternative{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+A key without an entry is a broken reference; an entry whose proof is not
+trusted is reported; a block that is not the rendering, with its slots
+filled, is stale; and a check whose recorded hash is not the statement's is
+drift\leancheck[stmt=40c927a974cb, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
+
+\section{The splicer's laws}
+
+Four laws make \verb|apply| safe to run on a paper the authors are editing.
+First, it changes nothing they wrote outside generated blocks. Write
+$\lfloor d \rfloor$ for the outline of document $d$: its text, its checks,
+and its blocks without their bodies.
+
+\begin{leantheorem}[sum=3p5XLvWAci]{Locality}{Locality}
+\label{thm:Locality}
+\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Then $\lfloor \mathsf{apply}_{b}(d) \rfloor = \lfloor d \rfloor$.}
+\end{leantheorem}
+
+Second, running it again changes nothing more. This needs each rendering's
+slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=9891fff10987, sig=9d550ab02488]{SpliceModel.WF}.
+
+\begin{leantheorem}[sum=rUqQQUgoM3]{Idempotence}{Idempotence}
+\label{thm:Idempotence}
+\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{wf}(b)$. Then $\mathsf{apply}_{b}(\mathsf{apply}_{b}(d)) = \mathsf{apply}_{b}(d)$.}
+\end{leantheorem}
+
+Third, \verb|check| agrees with \verb|apply|: after it, no block is stale.
+
+\begin{leantheorem}[sum=ajKQ-ezoOC]{Fixed point}{Fixed point}
+\label{thm:Fixed-point}
+\LeanProse{Let $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$ and $k \in \mathit{Key}$. Assume $\mathsf{wf}(b)$. Then $\mathsf{stale}(k) \notin \mathsf{check}_{b}(\mathsf{apply}_{b}(d))$.}
+\end{leantheorem}
+
+Fourth, the text the authors wrote in a slot survives regeneration, as long
+as the rendering still has that slot.
+
+\begin{leantheorem}[sum=4WbuqUPxi1]{Slot preservation}{Slot preservation}
+\label{thm:Slot-preservation}
+\LeanProse{Let $i \in \mathit{SlotId}$, $t \in \mathit{String}$, $\mathit{old} \in \mathsf{List}(\mathit{SlotId} \times \mathit{String})$ and $r \in \mathit{Body}$. Assume $i \in \mathsf{ids}(r)$ and $\mathit{old}[i] = t$. Then $\mathsf{slots}(\mathsf{fill}(\mathit{old}, r))[i] = t$.}
+\end{leantheorem}
+
+Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
+drift for \verb|check| to report\leancheck[stmt=ac37d7be7013, sig=2d6e269c5e16]{SpliceModel.not_drift_after_accept}.
+
+\section{What \texttt{check} guarantees}
+\label{sec:check}
+
+An environment, for a paper, is the statement of each constant and whether
+its proof is trusted. The bundle the extractor exports from it renders and
+hashes each statement. If \verb|check| reports nothing against that bundle,
+the paper shows what Lean proved: every block is the rendering of a trusted
+constant's statement, with the authors' slot text in it,
+
+\begin{leantheorem}[sum=xC0mGigpH_]{Soundness for blocks}{Soundness for blocks}
+\label{thm:Soundness-for-blocks}
+\LeanProse{Let $\mathit{Stmt}$ be a type, $\mathit{render} \in \mathit{Stmt} \to \mathit{Body}$, $\mathit{hash} \in \mathit{Stmt} \to \mathbb{N}$, $E \in \mathit{Env}(\mathit{Stmt})$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $\mathit{body} \in \mathit{Body}$. Assume $\mathsf{check}_{\mathsf{export}(E)}(d) = []$ and $\mathsf{block}_{k}(\mathit{body}) \in d$. Then there is $T$ such that (1)~$\mathit{stmt}_{E}(k) = T$, (2)~$\mathit{trusted}_{E}(k)$ and (3)~$\mathit{body} = \mathsf{fill}(\mathsf{slots}(\mathit{body}), \mathit{render}(T))$.}
+\end{leantheorem}
+
+and every hand-written claim faces a trusted constant whose statement has
+the hash recorded when the claim was checked.
+
+\begin{leantheorem}[sum=V_NF2sG0U7]{Soundness for checked prose}{Soundness for checked prose}
+\label{thm:Soundness-for-checked-prose}
+\LeanProse{Let $\mathit{Stmt}$ be a type, $\mathit{render} \in \mathit{Stmt} \to \mathit{Body}$, $\mathit{hash} \in \mathit{Stmt} \to \mathbb{N}$, $E \in \mathit{Env}(\mathit{Stmt})$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $h \in \mathbb{N}$. Assume $\mathsf{check}_{\mathsf{export}(E)}(d) = []$ and $\mathsf{checked}_{k}(h) \in d$. Then there is $T$ such that (1)~$\mathit{stmt}_{E}(k) = T$, (2)~$\mathit{trusted}_{E}(k)$ and (3)~$\mathit{hash}(T) = h$.}
+\end{leantheorem}
+
+The hash stands for the statement only when hashes do not collide. Assuming
+that, prose checked against a statement still faces that statement.
+
+\begin{leantheorem}[sum=nUracosHsM]{Attested prose}{Attested prose}
+\label{thm:Attested-prose}
+\LeanProse{Let $\mathit{Stmt}$ be a type, $\mathit{render} \in \mathit{Stmt} \to \mathit{Body}$, $\mathit{hash} \in \mathit{Stmt} \to \mathbb{N}$, $E \in \mathit{Env}(\mathit{Stmt})$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $T_{0} \in \mathit{Stmt}$. Assume $\forall T : \mathit{Stmt},\ \forall T' : \mathit{Stmt},\ \mathit{hash}(T) = \mathit{hash}(T') \implies T = T'$, $\mathsf{check}_{\mathsf{export}(E)}(d) = []$ and $\mathsf{checked}_{k}(\mathit{hash}(T_{0})) \in d$. Then $\mathit{stmt}_{E}(k) = T_{0}$.}
+\end{leantheorem}
+
+The splicer that runs on real papers works on \TeX{} source, not on
+documents already parsed into pieces. Its scanner and its edits are what the
+model leaves out, and they are property-tested against the same four laws.
+
+\section{Rendering is faithful}
+\label{sec:faithful}
+
+Soundness says the text is the \emph{rendering} of the statement. A reader
+must also recover the statement from it: this is Pollack's question of
+believing a machine-checked proof~\cite{Pollack98}, and Wiedijk's
+\emph{Pollack-consistency}, that printing a term and parsing it back gives
+the same term~\cite{Wiedijk12}.
+
+The notation module defines both directions. Read as a grammar, each of its
+rules is a mixfix production whose holes are typed by Lean's types and
+grouped by precedence. A rendering is faithful when it has exactly one
+reading in that grammar, up to what the notation declares invisible:
+implicit arguments, coercions, the names of hypotheses and bound variables.
+imprimatur checks this by translation validation. As it renders each
+formula, the extractor reads it back, and \verb|imprimatur check| warns
+where a typeset formula has two readings, showing both, or none. The
+formulas in this paper read back with one reading each.
+
+\section{The trusted base}
+
+Lean's kernel; the extractor's reading of the environment; the hash's
+resistance to collisions; the notation module as the paper's dictionary,
+since Lean checks its names but not its choice of symbols; \TeX{}, since
+these theorems stop at \TeX{} source; and, for attested claims, the person
+who checked the prose.
+
+\begin{thebibliography}{1}
+\bibitem{Pollack98}
+R.~Pollack.
+\newblock How to believe a machine-checked proof.
+\newblock In \emph{Twenty-Five Years of Constructive Type Theory}. Oxford
+  University Press, 1998.
+\bibitem{Wiedijk12}
+F.~Wiedijk.
+\newblock Pollack-inconsistency.
+\newblock \emph{Electronic Notes in Theoretical Computer Science}, 285,
+  2012.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,12 @@
+schema = 1
+main = "imprimatur-paper.tex"
+lean_project = "lean"
+mode = "external"
+imports = ["SpliceModel"]
+notation = ["notation/SpliceTeX.lean"]
+strip_namespaces = ["SpliceModel"]
+
+[aliases]
+# The paper's own environments, each with the view it shows.
+leangrammar = { view = "grammar" }
+leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
