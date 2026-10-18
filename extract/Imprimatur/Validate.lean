@@ -123,13 +123,30 @@ structure Prod where
 must agree (DESIGN §18.3). -/
 def isTyVar (s : String) : Bool := s.startsWith "?"
 
-/-- A sort as a term: a function sort `(A → B)` has parts. -/
+/-- A sort as a term: a function sort `(A → B)`, and a type applied to type
+arguments `Option(Label)`, have parts. -/
 inductive STerm where
   /-- A sort without parts. -/
   | atom (s : String)
   /-- A function sort. -/
   | arrow (a b : STerm)
+  /-- A type constant applied to types. -/
+  | app (head : String) (args : Array STerm)
   deriving Inhabited, BEq
+
+/-- Split at the commas that are not nested in parentheses. -/
+def splitTop (s : String) : Array String := Id.run do
+  let mut out : Array String := #[]
+  let mut cur := ""
+  let mut depth := 0
+  for c in s.toList do
+    if c == '(' then depth := depth + 1
+    if c == ')' then depth := depth - 1
+    if c == ',' && depth == 0 then
+      out := out.push cur.trimAscii.toString
+      cur := ""
+    else cur := cur.push c
+  return out.push cur.trimAscii.toString
 
 /-- Read a sort (`sortKey`'s format). -/
 partial def STerm.parse (s : String) : STerm := Id.run do
@@ -144,29 +161,45 @@ partial def STerm.parse (s : String) : STerm := Id.run do
         let l := String.ofList (cs.extract 0 (i - 1)).toList
         let r := String.ofList (cs.extract (i + 2) cs.size).toList
         return .arrow (STerm.parse l) (STerm.parse r)
+  if s.endsWith ")" then
+    if let some k := s.toList.findIdx? (· == '(') then
+      if k > 0 then
+        let head := String.ofList (s.toList.take k)
+        let inner := String.ofList ((s.toList.drop (k + 1)).dropLast)
+        return .app head ((splitTop inner).map STerm.parse)
   return .atom s
 
 /-- Write a sort back. -/
 partial def STerm.render : STerm → String
   | .atom s => s
   | .arrow a b => s!"({a.render} → {b.render})"
+  | .app h as => s!"{h}({", ".intercalate (as.map STerm.render).toList})"
 
-/-- Sorts compatible: equal up to unknowns (`*`, and type variables, which
-are unknown until bound), part by part. -/
+/-- Sorts compatible, the first found where the second is expected: equal up
+to unknowns (`*`, and type variables, which are unknown until bound), part
+by part. A type written without its arguments (as the packs write `Option`)
+stands for it with any. -/
 partial def STerm.compat : STerm → STerm → Bool
   | .atom a, .atom b => a == b || unknown a || unknown b
-  | .atom a, _ => unknown a
-  | _, .atom b => unknown b
+  | .app h as, .app h' bs =>
+    h == h' && (as.size != bs.size || (as.zip bs).all fun (x, y) => x.compat y)
+  | .app h _, .atom b => unknown b || h == b
+  | .atom a, .app h _ => unknown a || a == h
+  -- What is found (on the left) may be of a named type that is a function
+  -- type by definition (`Matrix R C α` is `R → C → α`), which the reader does
+  -- not unfold; but a function is not of a named type.
+  | .atom a, .arrow .. => unknown a || named a
+  | .app .., .arrow .. => true
+  | .arrow .., .atom b => unknown b
+  | .arrow .., .app .. => false
   | .arrow a b, .arrow c d => a.compat c && b.compat d
 where
   unknown (s : String) : Bool := s == "*" || s.startsWith "?"
+  named (s : String) : Bool := s != "Prop" && s != "Sort" && !s.startsWith "'"
 
 /-- Sorts compatible (see `STerm.compat`). -/
 def compat (a b : String) : Bool :=
-  a == b || a == "*" || b == "*" || isTyVar a || isTyVar b ||
-    match STerm.parse a, STerm.parse b with
-    | .atom x, .atom y => x == y
-    | x, y => x.compat y
+  a == b || a == "*" || b == "*" || isTyVar a || isTyVar b || (STerm.parse a).compat (STerm.parse b)
 
 /-- The productions of the built-in forms of `Render.render`. An applied
 variable is written `f(a)` or `f_{a}` only under the style that asks for it
@@ -179,6 +212,9 @@ def builtins (call subscript : Bool := false) : Array Prod :=
     syms := #[.hole "Sort" 26, .tok "\\to", .hole "Sort" 25] },
   { name := "∀", sort := "Prop", prec := 0,
     syms := #[.tok "\\forall", .var, .tok ":", .hole "Sort" 1, .tok ",", .tok "\\ ", .hole "Prop" 0] },
+  -- A dependent function type, written the same way; the same reading.
+  { name := "∀", sort := "Sort", prec := 0,
+    syms := #[.tok "\\forall", .var, .tok ":", .hole "Sort" 1, .tok ",", .tok "\\ ", .hole "Sort" 0] },
   { name := "bounded ∀", sort := "Prop", prec := 0,
     syms := #[.tok "\\forall", .var, .tok "\\in", .hole "*" 50, .tok ",", .tok "\\ ", .hole "Prop" 0] },
   { name := "∃", sort := "Prop", prec := 0,
@@ -243,7 +279,9 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
   let mut topIdx := 0
   let mut chainSep : Array String := #[]
   let mut shownVars : Array String := #[]
+  let mut partIdx := 0
   for p in parts do
+    partIdx := partIdx + 1
     match p with
     | .inl t =>
       let ts := tokenize t
@@ -255,7 +293,9 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
         holeIdx := holeIdx + 1
         continue
       let need :=
-        if depth > 0 || r.prec ≥ Doc.maxPrec then 0
+        if depth > 0 then 0
+        else if r.prec ≥ Doc.maxPrec then
+          if partIdx == 1 || partIdx == parts.size then Doc.maxPrec else 0
         else
           let first := topIdx == 0
           let last := topIdx + 1 == topCount
@@ -263,7 +303,11 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
           | "left" => if first then r.prec else r.prec + 1
           | "right" => if last then r.prec else r.prec + 1
           | _ => r.prec + 1
-      let hole := Sym.hole (sortOf v) need
+      -- A chain's operands may each be of their own type (a tuple
+      -- `(a, b, c)`), so a type variable among them is left open.
+      let so := sortOf v
+      let so := if chain && so.contains '?' then "*" else so
+      let hole := Sym.hole so need
       shownVars := shownVars.push v
       if chain && holeIdx == 1 then
         syms := syms.push (.list #[hole] chainSep 1)
@@ -279,7 +323,10 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
     | _ => false
   let hasList := syms.any fun | .list .. => true | _ => false
   let order := if hasList then none else some (shownVars.map fun v => vars.idxOf v)
-  return some { name, sort := r.sort, prec := r.prec, syms, coercion, chain, order }
+  -- Likewise the sort of a chain whose type the pattern leaves open is known
+  -- only by its head (`Prod`).
+  let sort := if chain && r.sort.contains '?' then (r.sort.splitOn "(")[0]! else r.sort
+  return some { name, sort, prec := r.prec, syms, coercion, chain, order }
 
 /-! ## Counting readings -/
 
@@ -360,22 +407,43 @@ structure CState where
   active : Std.HashMap (String × Nat × Option Nat × Nat × Nat) Unit := {}
   /-- Work done, against a budget. -/
   steps : Nat := 0
+  /-- Whether to log what is read (`IMPRIMATUR_VALIDATE_DEBUG`). -/
+  trace : Bool := false
+  /-- The log. -/
+  log : Array String := #[]
   /-- `reachable`, by sort: those that start with a token, by the token,
   and the others. -/
-  reach : Std.HashMap String
-    (Std.HashMap String (Array (Nat × Option String)) × Array (Nat × Option String)) := {}
+  reach : Std.HashMap String (Std.HashMap String (Array Nat) × Array Nat) := {}
 
 /-- The reader's monad. -/
 abbrev CountM := StateM CState
 
-/-- At most two of a list of readings, without repeats by `key`: two
-readings that are written the same are the same reading. -/
-def keep2 {α : Type} (key : α → String) (xs : Array α) : Array α := Id.run do
+/-- The readings to keep of a list: at most two different readings (by
+`key`; two readings that are written the same are the same reading), each
+with up to 32 different sorts or bindings (by `variant`), since a reading
+can be of several sorts (an atom, or the same atom through a coercion). A
+variant that is `top` (an unknown sort, no bindings) is as good as any other
+for what follows, so it stands alone. -/
+def keep2 {α : Type} (key : α → String) (variant : α → String) (xs : Array α)
+    (top : String := "*") : Array α := Id.run do
   let mut out : Array α := #[]
+  let mut keys : Array String := #[]
   for x in xs do
-    if out.size ≥ 2 then break
-    unless out.any (key · == key x) do out := out.push x
+    let k := key x
+    if !keys.contains k then
+      if keys.size ≥ 2 then continue
+      keys := keys.push k
+    if out.any (fun y => key y == k && variant y == top) then continue
+    if variant x == top then
+      out := (out.filter (key · != k)).push x
+      continue
+    if (out.filter (key · == k)).size ≥ 32 then continue
+    unless out.any (fun y => key y == k && variant y == variant x) do out := out.push x
   return out
+
+/-- The number of different readings among some. -/
+def distinct {α : Type} (key : α → String) (xs : Array α) : Nat :=
+  (xs.foldl (fun (acc : Array String) x => if acc.contains (key x) then acc else acc.push (key x)) #[]).size
 
 /-- The work budget: past it, a formula is not validated. -/
 def budget : Nat := 3000000
@@ -383,33 +451,19 @@ def budget : Nat := 3000000
 section
 variable (g : Grammar) (ts : Array String)
 
-/-- The productions reachable from sort `s` through coercions, each once,
-with the sort of the outermost coercion on the way (none when reached
-directly, `*` when the paths disagree). A bound variable's name is not an expression, so is not among
-them. -/
-partial def reachable (s : String) : Array (Nat × Option String) := Id.run do
-  let mut sorts : Array (String × Option String) := #[(s, none)]
-  let mut changed := true
-  while changed do
-    changed := false
-    for (p, b) in g.prods do
-      if !p.coercion then continue
-      if let some (_, via) := sorts.find? (compat p.sort ·.1) then
-        if let some (ASym.hole s' _ _) := b[0]? then
-          let s' := if isTyVar s' then "*" else s'
-          unless sorts.any (·.1 == s') do
-            sorts := sorts.push (s', some (via.getD p.sort))
-            changed := true
+/-- The productions that can make an expression of sort `s`: those of a
+compatible sort, coercions included. A bound variable's name is not an
+expression, so is not among them. -/
+def reachable (s : String) : Array Nat := Id.run do
   let mut out := #[]
   for i in [0:g.prods.size] do
     let (p, _) := g.prods[i]!
-    if p.coercion || p.isVar then continue
-    -- Reached on several paths that give it different sorts (directly, and
-    -- through a coercion), its sort is unknown.
-    let vias := (sorts.filter (compat p.sort ·.1)).map (·.2)
-    if let some v := vias[0]? then
-      out := out.push (i, if vias.all (· == v) then v else some "*")
+    if !p.isVar && compat p.sort s then out := out.push i
   return out
+
+/-- The productions that are application. -/
+def appNames : List String :=
+  ["application", "application f(a)", "application f_{a}", "DFunLike.coe", "CoeFun.coe"]
 
 /-- A reading: the production's name, with its children's readings, in the
 order of the rule's pattern. -/
@@ -421,7 +475,19 @@ def reading (p : Prod) (children : Array String) : String :=
           (fun (x : Nat × String) => x.2)
       else children
     | none => children
-  if children.isEmpty then p.name else s!"{p.name}[{"; ".intercalate children.toList}]"
+  -- Application, however written, is one reading: `f\,a`, `f(a)`, `f_{a}`,
+  -- and `⇑f a` through the coercion to a function, which is invisible; and
+  -- `f(a)(b)` is `f` applied to `a` and `b`.
+  if appNames.contains p.name then
+    let (f, rest) := match children[0]? with
+      | some c =>
+        if c.startsWith "app[" then
+          let inner := ((c.drop 4).dropEnd 1).toString
+          (inner, children.extract 1 children.size)
+        else (c, children.extract 1 children.size)
+      | none => ("", #[])
+    s!"app[{"; ".intercalate (f :: rest.toList)}]"
+  else if children.isEmpty then p.name else s!"{p.name}[{"; ".intercalate children.toList}]"
 
 /-- The sort a hole expects, under the type variables bound so far. -/
 partial def expected (env : Env) (s : String) : String :=
@@ -429,8 +495,10 @@ partial def expected (env : Env) (s : String) : String :=
   else if isTyVar s then ((env.find? (·.1 == s)).map (·.2)).getD "*"
   else
     let rec go : STerm → STerm
-      | .atom a => if isTyVar a then .atom (((env.find? (·.1 == a)).map (·.2)).getD "*") else .atom a
+      | .atom a =>
+        if isTyVar a then STerm.parse (((env.find? (·.1 == a)).map (·.2)).getD "*") else .atom a
       | .arrow a b => .arrow (go a) (go b)
+      | .app h as => .app h (as.map go)
     (go (STerm.parse s)).render
 
 /-- Bind a hole's type variables to the parts of the sort of what fills it. -/
@@ -442,6 +510,8 @@ partial def bind (env : Env) (s found : String) : Env :=
         let fr := f.render
         if isTyVar a && fr != "*" && !isTyVar fr && !env.any (·.1 == a) then env.push (a, fr) else env
       | .arrow a b, .arrow c d => go (go env a c) b d
+      | .app h as, .app h' bs =>
+        if h == h' && as.size == bs.size then (as.zip bs).foldl (fun e (x, y) => go e x y) env else env
       | _, _ => env
     go env (STerm.parse s) (STerm.parse found)
 
@@ -458,19 +528,23 @@ mutual
     let (byTok, others) ← match (← get).reach[s]? with
       | some r => pure r
       | none =>
-        let mut byTok : Std.HashMap String (Array (Nat × Option String)) := {}
+        let mut byTok : Std.HashMap String (Array Nat) := {}
         let mut others := #[]
-        for (k, via) in reachable g s do
+        for k in reachable g s do
           match g.prods[k]!.2[0]? with
-          | some (ASym.tok t) => byTok := byTok.insert t ((byTok.getD t #[]).push (k, via))
-          | _ => others := others.push (k, via)
+          | some (ASym.tok t) => byTok := byTok.insert t ((byTok.getD t #[]).push k)
+          | _ => others := others.push k
         modify fun st => { st with reach := st.reach.insert s (byTok, others) }
         pure (byTok, others)
+    let known := s != "*" && !isTyVar s
     let mut out : Array (String × String) := #[]
-    for (k, via) in byTok.getD ts[i]! #[] ++ others do
-      if out.size ≥ 2 then break
+    -- Every production is tried, even after two readings: a reading found
+    -- again can be of another sort, which a hole's binding may need.
+    let cands := byTok.getD ts[i]! #[] ++ others
+    for k in cands do
       if excl == some k then continue
       let (pr, body) := g.prods[k]!
+      if pr.coercion then continue
       if pr.prec < p then continue
       -- A body that starts or ends with a token must match it.
       if let some (ASym.tok t) := body[0]? then
@@ -478,18 +552,34 @@ mutual
       if let some (ASym.tok t) := body.back? then
         if ts[j - 1]! != t then continue
       for (cs, env) in ← seq s!"p{k}" body 0 #[] i j do
-        -- The sort of the reading: the production's, under its bindings, or
-        -- the outermost coercion's when it was reached through coercions.
-        let so := match via with
-          | some c => if isTyVar c then "*" else c
-          | none => expected env pr.sort
-        if via.isNone && !compat so s then continue
-        let known := s != "*" && !isTyVar s
-        out := keep2 (·.1) (out.push (reading pr cs, if known then s else so))
-    -- The emitter's parentheses.
-    if out.size < 2 && j - i ≥ 3 && ts[i]! == "(" && ts[j - 1]! == ")" then
-      out := keep2 (·.1) (out ++ (← expr s 0 none (i + 1) (j - 1)))
+        -- The sort of the reading: the production's, under its bindings.
+        let so := expected env pr.sort
+        if !compat so s then continue
+        out := keep2 (·.1) (·.2) (out.push (reading pr cs, if known then s else so))
+    -- Coercions are invisible: a reading through one is its argument's, at
+    -- the precedence asked for, and its sort is the coercion's, with the
+    -- argument's sort bound (`Option.some` of a label is an `Option(Label)`).
+    -- An argument of the sort asked for is among the readings above, and
+    -- others are read afresh.
+    for k in cands do
+      let (pr, body) := g.prods[k]!
+      if !pr.coercion then continue
+      let some (ASym.hole s' _ _) := body[0]? | continue
+      let es' := expected #[] s'
+      let args ← if es' == s then pure out else expr es' p none i j
+      for (r, so) in args do
+        let sort := expected (bind #[] s' so) pr.sort
+        if !compat sort s then continue
+        out := keep2 (·.1) (·.2) (out.push (r, if known then s else sort))
+    -- The emitter's parentheses, and its TeX groups (`{k_{1}}_{x}`), which
+    -- do not print.
+    if distinct (·.1) out < 2 && j - i ≥ 3 && ts[i]! == "(" && ts[j - 1]! == ")" then
+      out := keep2 (·.1) (·.2) (out ++ (← expr s 0 none (i + 1) (j - 1)))
+    if distinct (·.1) out < 2 && j - i ≥ 3 && ts[i]! == "{" && ts[j - 1]! == "}" then
+      out := keep2 (·.1) (·.2) (out ++ (← expr s p none (i + 1) (j - 1)))
     modify fun st => { st with memo := st.memo.insert key out, active := st.active.erase key }
+    if (← get).trace then
+      modify fun st => { st with log := st.log.push s!"{s} @{p} [{i},{j}) {ts.extract i j}: {out}" }
     return out
 
   /-- Readings of `ts[i:j]` as a bound variable's name. -/
@@ -535,12 +625,11 @@ mutual
       | .tail .. => i
       | _ => i + 1
     for m in [start:j + 1] do
-      if out.size ≥ 2 then break
       if let some t := next then
         if ts[m]? != some t then continue
       for (as, env₁) in ← nt env i m do
         for (rest, env₂) in ← seq id body (pos + 1) env₁ m j do
-          out := keep2 (fun (cs, _) => toString cs) (out.push (as ++ rest, env₂))
+          out := keep2 (fun (cs, _) => toString cs) (fun (_, e) => toString e) (out.push (as ++ rest, env₂)) (top := "#[]")
     return out
 
   /-- Readings of `ts[i:j]` as the rest of list `l`, `r` more required. -/
@@ -549,13 +638,14 @@ mutual
     let mut out : Array (Array String × Env) := if r == 0 && i == j then #[(#[], env)] else #[]
     if i < j then
       let more := sep ++ elem ++ #[ASym.tail l (r - 1)]
-      out := keep2 (fun (cs, _) => toString cs) (out ++ (← seq s!"t{l}.{r}" more 0 env i j))
+      out := keep2 (fun (cs, _) => toString cs) (fun (_, e) => toString e) (out ++ (← seq s!"t{l}.{r}" more 0 env i j)) (top := "#[]")
     return out
 end
 
 /-- The readings of a whole formula as sort `s`: at most two. -/
 def readings (s : String) : CountM (Array String) := do
-  return (← expr g ts s 0 none 0 ts.size).map (·.1)
+  let rs := (← expr g ts s 0 none 0 ts.size).map (·.1)
+  return rs.foldl (fun acc r => if acc.contains r then acc else acc.push r) #[]
 
 end
 
@@ -564,6 +654,11 @@ end
 def readBack (g : Grammar) (ts : Array String) (s : String) : Array String × Bool :=
   let (rs, st) := (readings g ts s).run {}
   (rs, st.steps > budget)
+
+/-- `readBack`, with a log of what was read where. -/
+def readBackLog (g : Grammar) (ts : Array String) (s : String) : Array String × Array String :=
+  let (rs, st) := (readings g ts s).run { trace := true }
+  (rs, st.log)
 
 /-- The number of readings (0, 1, or 2 for "more than one"), and whether
 the budget ran out. -/

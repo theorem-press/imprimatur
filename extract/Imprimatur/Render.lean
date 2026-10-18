@@ -205,6 +205,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
     -- IMPRIMATUR_VALIDATE_DEBUG=1 shows the tokens and the grammar.
     if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
       IO.eprintln s!"validate: {ts} as {← sortOf e}"
+      for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
       for (p, b) in g.prods do IO.eprintln s!"  {p.name} : {p.sort} @{p.prec} := {repr b}"
     problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
   else if rs.size ≥ 2 then
@@ -304,7 +305,14 @@ mutual
         | none => delab e
       | .fvar _ =>
         if (← read).subscriptVars then
-          let mut parts : Array Doc := #[.child Doc.maxPrec (← render f), .tex "_{"]
+          let fd ← render f
+          -- A function that has a script already (`k_{1}`) is grouped, as
+          -- `{k_{1}}_{x}`: TeX allows one subscript.
+          let t := fd.render 100000
+          let scripted := t.endsWith "}" || t.endsWith "'"
+          let mut parts : Array Doc :=
+            if scripted then #[.tex "{", .child Doc.maxPrec fd, .tex "}_{"]
+            else #[.child Doc.maxPrec fd, .tex "_{"]
           for (a, i) in e.getAppArgs.toList.zip (List.range e.getAppNumArgs) do
             if i > 0 then parts := parts.push (.tex ", ")
             parts := parts.push (.child 0 (← render a))
@@ -378,7 +386,9 @@ mutual
     let mut holeIdx := 0
     let mut topIdx := 0
     let mut textW := r.width
+    let mut partIdx := 0
     for p in parts do
+      partIdx := partIdx + 1
       match p with
       | .inl t =>
         if r.breakBefore && holeIdx > 0 && depth == 0 then out := out.push .brk
@@ -393,9 +403,13 @@ mutual
           holeIdx := holeIdx + 1
           continue
         let need :=
-          -- Inside braces, or in an atomic template, which delimits its own
-          -- arguments (`(#a, #b)`, `\\max(#a, #b)`), nothing is needed.
-          if depth > 0 || r.prec ≥ Doc.maxPrec then 0
+          -- Inside braces nothing is needed, nor in an atomic template
+          -- between its own tokens (`(#a, #b)`, `\\max(#a, #b)`); at its
+          -- edge (`#e(#c)`, `#n!`) the template does not delimit the
+          -- argument, which must be atomic.
+          if depth > 0 then 0
+          else if r.prec ≥ Doc.maxPrec then
+            if partIdx == 1 || partIdx == parts.size then Doc.maxPrec else 0
           else
             let first := topIdx == 0
             let last := topIdx + 1 == topCount
@@ -454,8 +468,8 @@ mutual
         if mem.isAppOfArity ``Membership.mem 5 && mem.appArg! == x then
           let s ← render mem.appFn!.appArg!
           let p ← render body.appArg!
-          return some (.node 0 #[.tex s!"\\exists {v} \\in ", .child 50 s, .tex ",\\ ", .child 0 p])
-      return some (.node 0 #[.tex s!"\\exists {v},\\ ", .child 0 (← render body)])
+          return some (.node 0 #[.tex s!"\\exists {v} \\in ", .child 50 s, .tex ",\\ ", .brk, .child 0 p])
+      return some (.node 0 #[.tex s!"\\exists {v},\\ ", .brk, .child 0 (← render body)])
 
   /-- `∀` and implication. -/
   partial def renderForall (e : Expr) : RenderM Doc := do
@@ -477,9 +491,9 @@ mutual
       if let .forallE _ dom rest _ := body then
         if !rest.hasLooseBVars && dom.isAppOfArity ``Membership.mem 5 && dom.appArg! == x then
           let s ← render dom.appFn!.appArg!
-          return .node 0 #[.tex s!"\\forall {v} \\in ", .child 50 s, .tex ",\\ ", .child 0 (← render rest)]
+          return .node 0 #[.tex s!"\\forall {v} \\in ", .child 50 s, .tex ",\\ ", .brk, .child 0 (← render rest)]
       let ty ← render t
-      return .node 0 #[.tex s!"\\forall {v} : ", .child 1 ty, .tex ",\\ ", .child 0 (← render body)]
+      return .node 0 #[.tex s!"\\forall {v} : ", .child 1 ty, .tex ",\\ ", .brk, .child 0 (← render body)]
 
   /-- Lean's own rendering, in monospace, for what nothing else covers. -/
   partial def delab (e : Expr) : RenderM Doc := do

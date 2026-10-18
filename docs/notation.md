@@ -84,12 +84,15 @@ taken, so `#k'` is variable `k` followed by a prime.
 | `sep := ", "` | the text between the variables of a folded binder rule |
 | `assoc := left` | which side of a chain at the rule's own precedence needs no parentheses: `left` (the default), `right`, or `none` (both sides parenthesised, as for `∧` next to `∨` in some papers) |
 | `(variant := "v")` | an alternative notation, chosen per block with `notation=v` |
+| `synonym` | the rule writes an expression as another rule writes one it equals, by definition or by a lemma (`Nat.card R` as `\|R\|`, like `Fintype.card R`), so reading a formula back identifies the two |
 
 **Parentheses** are added from precedences:
 
 - **Inside braces.** A variable inside braces (`\app{#A}{#B}`) needs none.
 - **In an atomic template.** A variable in a template without `prec`, such as
-  `\max(#a, #b)`, needs none.
+  `\max(#a, #b)`, needs none, except at the template's edge: in `#e(#c)` or
+  `#n!` the template does not delimit `#e` or `#n`, which must be atomic, so
+  `(a = e)(c)` and `(n + 1)!` keep their parentheses.
 - **At the top level.** Any other variable needs the rule's precedence:
   equal on the left and higher on the right, since operators associate to
   the left.
@@ -206,6 +209,10 @@ takes a segment when it takes a string:
 ```
 warning[unfaithful-rendering]: SpliceModel.Seg (grammar): the variable s prints as $s$, which stands for SpliceModel.Seg (latex_category), but has type String: name it differently, or change the metavariable $s$
 ```
+
+**Synonyms.** Two rules may write equal things alike on purpose: `Nat.card R`
+and `Fintype.card R` as `|R|`, or a definition and what it unfolds to. Mark
+one `synonym`, and the two readings are one.
 
 **Not validated** formulas have no reading: the notation does not model
 what the renderer wrote. Please report one as a bug.

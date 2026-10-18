@@ -77,6 +77,16 @@ All notable changes to imprimatur are recorded here. Versions follow
   Lean's warnings about notation files now reach the user in external mode,
   at the files' own line numbers. See
   [docs/notation.md](docs/notation.md#reading-back).
+- Reading back is typed more precisely, and found three rendering bugs on
+  the project B paper. Sorts carry type arguments (`Option(Label)`); coercions
+  are read with the sorts they make; `latex_notation … synonym` declares
+  two notations for equal things; application is one reading however
+  written. The bugs: an atomic template's edge hole (`#e(#c)`, `#n!`) got no
+  parentheses; an applied variable with a subscript printed `k_{1}_{x}`; and
+  `imprimatur.sty` loaded `amssymb` under acmart, which defines its symbols.
+  Quantifiers may break after their comma, a definition's long right-hand
+  side breaks within its alignment, and a structure's description spans the
+  grammar.
 - Translation validation also reports a variable that prints as another
   type's category letter (`latex_category`), as `s ::= gen(s)` did in the
   paper about imprimatur, where `s` was both a segment and a string.
