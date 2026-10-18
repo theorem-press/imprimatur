@@ -100,7 +100,10 @@ for dir in examples/*/; do
     # -raw keeps the text in the order TeX wrote it. Without it, pdftotext
     # guesses a reading order from the layout, and versions guess differently
     # (poppler 24 reorders a grammar's description column; poppler 22 doesn't).
-    pdftotext -raw "$work/out-$engine/paper.pdf" - | normalise > "$work/$engine.txt"
+    # The crop leaves out the page numbers (at 696pt on A4, below the text
+    # block, which ends by 675pt): engines write them at different points in
+    # the content stream, so in raw order they move about.
+    pdftotext -raw -x 0 -y 0 -W 600 -H 685 "$work/out-$engine/paper.pdf" - | normalise > "$work/$engine.txt"
     compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
