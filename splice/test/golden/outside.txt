@@ -4,6 +4,10 @@ doc/main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so i
   "schema": "imprimatur-requests/1",
   "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
     "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    ],
+    "labels": [
+    ]},
   "requests": {
     "X": {"views": []}
   }
@@ -16,6 +20,10 @@ main.tex:3:1: warning[absolute-input]: /etc/passwd is an absolute path, so it wa
   "schema": "imprimatur-requests/1",
   "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
     "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    ],
+    "labels": [
+    ]},
   "requests": {
     "X": {"views": []}
   }

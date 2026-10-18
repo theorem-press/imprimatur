@@ -1,0 +1,4 @@
+scan
+apply --bundle demo.bundle.json
+check --bundle demo.bundle.json
+strip -o stripped

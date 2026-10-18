@@ -83,6 +83,10 @@ structure Item where
   /-- Which LaTeX environment the item is in: an id unique within the file,
   or 0 outside every environment. Pairs blueprint `\leanok` with `\lean{…}`. -/
   env : Nat := 0
+  /-- Whether the item is typeset: false inside a conditional branch that is
+  off (`\iffalse`, a `\newif` switch set false), or in a file reached only
+  from one. Such items are still maintained. -/
+  live : Bool := true
   deriving Repr, Inhabited
 
 /-- The value of an option. -/
@@ -93,8 +97,12 @@ def Item.opt? (it : Item) (k : String) : Option String :=
 structure ScanResult where
   /-- Markup, in order. -/
   items : Array Item := #[]
-  /-- Files to follow: the macro, the path as written, and its position. -/
-  inputs : Array (String × String × Nat) := #[]
+  /-- Files to follow: the macro, the path as written, its position, and
+  whether the input is typeset. -/
+  inputs : Array (String × String × Nat × Bool) := #[]
+  /-- The typeset `\label{name}`s, with their positions: the document's own
+  anchors, which an index view can refer to. -/
+  labels : Array (String × Nat) := #[]
   deriving Repr, Inhabited
 
 /-- The scanner's monad: errors carry a diagnostic. -/
@@ -297,6 +305,35 @@ def block (cfg : Config) (s : Src) (env : String) (start afterEnv : Nat) : ScanM
            optsSpan := span, opts, key := s.slice ka kb, title := s.slice ta tb,
            headerEnd, regionStart, regionEnd := max regionStart regionEnd, endStart }
 
+/-- The end marker of a comment-delimited block, `%ENDNAME` at the start of a
+line (after spaces) from `i`: its index, and the index after it. -/
+def findCommentEnd (s : Src) (name : String) (i : Nat) (opener : Nat) : ScanM (Nat × Nat) := do
+  let marker := "%END" ++ name
+  let mut k := i
+  while k < s.size do
+    let a := skipSpaces s k
+    if (List.range marker.length).all (fun d => a + d < s.size && s.get (a + d) == marker.toList[d]!) then
+      return (a, a + marker.length)
+    k := lineEnd s k + 1
+  throw (parseError s opener s!"%{name} is never closed by {marker}")
+
+/-- A comment-delimited block, `%NAME{key}{title}` … `%ENDNAME`, whose
+marker ends at `afterName`. -/
+def commentBlock (s : Src) (name : String) (start afterName : Nat) : ScanM Item := do
+  let (span, opts, ka, kb, k) ← optsAndKey s afterName
+  let t := skipSpaces s k
+  if s.get t != '{' then
+    throw (parseError s t s!"%{name} takes a key and a title: %{name}\{key}\{title}")
+  let (ta, tb, headerEnd) ← group s t
+  let regionStart := min (lineEnd s headerEnd + 1) s.size
+  let (endStart, stop) ← findCommentEnd s name regionStart start
+  let ls := s.lineStart endStart
+  let regionEnd := if ls ≥ regionStart && s.blankBetween ls endStart then ls else endStart
+  let (ka, kb) := trimSpan s ka kb
+  return { kind := .block, name, start, stop, insertAt := afterName,
+           optsSpan := span, opts, key := s.slice ka kb, title := s.slice ta tb,
+           headerEnd, regionStart, regionEnd := max regionStart regionEnd, endStart }
+
 /-- `\leaninline` or `\leanref` after its name; `none` if no arguments follow
 (as in `\newcommand\leaninline…`). -/
 def inlineItem (s : Src) (kind : ItemKind) (name : String) (start afterName : Nat) :
@@ -339,22 +376,109 @@ def findStr (s : Src) (pat : String) (i : Nat) : Option Nat := Id.run do
 
 end Scan
 
+/-- The switches declared with `\newif`, and their values. They are threaded
+through the files of a document, in the order the files are scanned. -/
+abbrev Switches := Array (String × Bool)
+
+namespace Scan
+
+/-- Control sequences that start with `if` but are macros taking braced
+arguments, not conditionals closed by `\fi` (`ifthen` and `etoolbox`). -/
+def notConditionals : List String :=
+  ["ifthenelse", "ifstrequal", "ifstrempty", "ifblank", "ifnumequal", "ifnumless",
+   "ifnumgreater", "ifnumcomp", "ifnumodd", "ifdimequal", "ifdimless", "ifdimgreater", "ifdimcomp",
+   "ifdefempty", "ifdefvoid", "ifcsdef", "ifcsundef", "ifundef", "ifdef", "ifboolexpr",
+   "iftoggle", "ifnottoggle", "ifcsstring", "ifdefstring", "ifdefequal", "ifcsequal",
+   "ifstrmacro", "ifdefmacro", "ifcsmacro", "ifdefparam", "ifcsparam", "ifdefprefix",
+   "ifcsprefix", "ifdefprotected", "ifcsprotected", "ifdefltxprotect", "ifcsltxprotect",
+   "ifdefchar", "ifcschar", "ifpatchable", "ifbool", "ifdeflength", "ifcslength",
+   "ifdefcounter", "ifcscounter", "ifltxcounter", "ifinlist", "ifinlistcs", "ifrmnum",
+   "ifcsvoid", "ifdefmacro", "ifx"]
+
+/-- Whether a control sequence opens a TeX conditional (closed by `\fi`).
+`\ifx` is one, but takes no part in nesting decisions of its own: it is
+listed above only to keep the list honest. -/
+def isConditional (name : String) : Bool :=
+  name.startsWith "if" && name.length > 2 && (name == "ifx" || !notConditionals.contains name)
+
+end Scan
+
 open Scan in
-/-- Scan one file. -/
-def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult := do
+/-- Scan one file, starting with the switches declared so far; `live` says
+whether the file is typeset. The scanner reads conditionals as TeX does for
+the simple cases, to know which items are typeset (`Item.live`):
+`\iffalse`, `\iftrue` and switches declared with `\newif\ifNAME` and set
+with `\NAMEtrue` or `\NAMEfalse`, with their `\else` branches. Both
+branches are scanned, and their items maintained, whatever the switches;
+other conditionals (`\ifx`, `\ifnum`, switches from packages) count as on.
+A switch set inside a branch that is off is not changed. -/
+def scanSrcWith (cfg : Config) (s : Src) (switches : Switches) (live : Bool := true) :
+    ScanM (ScanResult × Switches) := do
   let mut r : ScanResult := {}
+  let mut switches := switches
   let mut i := 0
   -- Open environments (other than blocks and verbatim ones), innermost last.
   let mut envs : Array Nat := #[]
   let mut nextEnv := 1
+  -- Open conditionals, innermost last: whether the branch being scanned is
+  -- on, or `none` for a conditional the scanner can't evaluate (both on).
+  let mut conds : Array (Option Bool) := #[]
+  -- Aliases that are comment-delimited: `%NAME{…}`.
+  let commentAliases := cfg.aliases.filter (·.comment)
   while i < s.size do
     let c := s.get i
     if c == '%' then
-      i := lineEnd s i
+      let (name, j) := ctrlName s i
+      if commentAliases.any (·.name == name) && (s.get j == '{' || s.get j == '[') then
+        let it ← commentBlock s name i j
+        r := { r with items := r.items.push { it with env := envs.back?.getD 0, live := conds.all (·.getD true) } }
+        i := it.stop
+      else
+        i := lineEnd s i
     else if c != '\\' then
       i := i + 1
     else
       let (name, j) := ctrlName s i
+      -- Items record whether they are on within this file; the loader then
+      -- applies whether the file is typeset. Switches change only where on.
+      let here := conds.all (·.getD true)
+      let on := live && here
+      -- Switches: `\newif\ifNAME`, `\NAMEtrue`, `\NAMEfalse`.
+      if name == "newif" then
+        let (sw, k) := ctrlName s j
+        if sw.startsWith "if" && sw.length > 2 then
+          let sw := (sw.drop 2).toString
+          if on then switches := (switches.filter (·.1 != sw)).push (sw, false)
+          i := k
+        else
+          i := j
+        continue
+      if name.endsWith "true" || name.endsWith "false" then
+        let value := name.endsWith "true"
+        let sw := (name.dropEnd (if value then 4 else 5)).toString
+        if switches.any (·.1 == sw) then
+          if on then
+            switches := switches.map fun (n, v) => if n == sw then (n, value) else (n, v)
+          i := j
+          continue
+      -- Conditionals.
+      if name == "fi" then
+        conds := conds.pop
+        i := j
+        continue
+      if name == "else" then
+        if let some b := conds.back? then conds := conds.pop.push (b.map (!·))
+        i := j
+        continue
+      if isConditional name then
+        let known : Option Bool :=
+          if name == "iffalse" then some false
+          else if name == "iftrue" then some true
+          else (switches.find? (·.1 == (name.drop 2).toString)).map (·.2)
+        -- An unknown conditional counts as on, in both branches.
+        conds := conds.push known
+        i := j
+        continue
       match name with
       | "verb" =>
         let d := if s.get j == '*' then j + 1 else j
@@ -375,7 +499,7 @@ def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult := do
           | none => throw (Diag.err "parse-error" (s.locString i) s!"\\begin\{{env}} is never closed")
         else if (cfg.alias? env).isSome then
           let it ← block cfg s env i after
-          r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }
+          r := { r with items := r.items.push { it with env := envs.back?.getD 0, live := here } }
           i := it.stop
         else
           envs := envs.push nextEnv
@@ -388,37 +512,49 @@ def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult := do
         let g := skipSpaces s j
         if s.get g == '{' then
           let (a, b, after) ← group s g
-          r := { r with inputs := r.inputs.push (name, (s.slice a b).trimAscii.toString, i) }
+          r := { r with inputs := r.inputs.push (name, (s.slice a b).trimAscii.toString, i, here) }
           i := after
         else
           i := j
       | "leaninline" | "leanref" =>
         match ← inlineItem s (if name == "leanref" then .ref else .inline) name i j with
-        | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }; i := it.stop
+        | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0, live := here } }; i := it.stop
         | none => i := j
       | "leancheck" =>
         match ← checkItem s name i j with
-        | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }; i := it.stop
+        | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0, live := here } }; i := it.stop
         | none => i := j
       | "lean" =>
         if cfg.blueprint then
           match ← checkItem s name i j with
-          | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0 } }; i := it.stop
+          | some it => r := { r with items := r.items.push { it with env := envs.back?.getD 0, live := here } }; i := it.stop
           | none => i := j
         else i := j
       | "leanok" =>
         if cfg.blueprint then
           let it : Item := { kind := .leanok, name, start := i, stop := j, insertAt := j,
                              regionStart := j, regionEnd := j, env := envs.back?.getD 0 }
-          r := { r with items := r.items.push it }
+          r := { r with items := r.items.push { it with live := here } }
         i := j
       | "leanindex" =>
         let it : Item := { kind := .index, name, start := i, stop := j, insertAt := j,
                            regionStart := j, regionEnd := j }
-        r := { r with items := r.items.push it }
+        r := { r with items := r.items.push { it with live := here } }
         i := j
+      | "label" =>
+        let g := skipSpaces s j
+        if s.get g == '{' then
+          let (a, b, after) ← group s g
+          if here then r := { r with labels := r.labels.push ((s.slice a b).trimAscii.toString, i) }
+          i := after
+        else
+          i := j
       | _ => i := j
-  return r
+  return (r, switches)
+
+/-- Scan one file, with no switches declared. -/
+def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult :=
+  (·.1) <$> scanSrcWith cfg s #[]
 
 /-- Scan the text of one file. -/
 def scanText (cfg : Config) (path text : String) : ScanM ScanResult :=

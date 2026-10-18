@@ -3,6 +3,12 @@ $ imprimatur-splice scan
   "schema": "imprimatur-requests/1",
   "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
     "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}, "notation_packs": ["core", "logic"], "notation": ["tex/PaperTeX.lean"], "width": 60},
+  "document": {"blocks": [
+    {"key": "Demo.thm", "env": "leantheorem", "view": "math", "order": 1},
+    {"key": "Demo.thm", "env": "leantheorem", "view": "math:named", "order": 2},
+    {"key": "Demo.thm", "env": "leanblock", "view": "prose", "order": 3}],
+    "labels": [
+    ]},
   "requests": {
     "Demo.thm": {"views": ["math", "math:named", "prose"]}
   }

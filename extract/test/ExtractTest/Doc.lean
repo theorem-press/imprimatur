@@ -63,5 +63,8 @@ def tests : TestM Unit := group "doc" do
   checkEq "extract/doc/metavar-prime" (Render.varTeX mv `x') "x'"
   checkEq "extract/doc/metavar-long" (Render.varTeX mv `acc) "\\mathit{acc}"
   checkEq "extract/doc/metavar-renamed" (Render.varTeX mv `spec) "L"
+  checkEq "extract/doc/metavar-whole-name-only" (Render.varTeX mv `spec₁) "\\mathit{spec}_{1}"
+  let dec : Array MetavarRule := #[{ name := `idx, tex := "i", decorated := true }]
+  checkEq "extract/doc/metavar-decorated" (Render.varTeX dec `idx₁') "i_{1}'"
 
 end ExtractTest.DocTests

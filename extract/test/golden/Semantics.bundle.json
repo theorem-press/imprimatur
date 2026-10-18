@@ -1,0 +1,264 @@
+{
+  "entries": {
+    "Preservation": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.step_app",
+      "doc": "A theorem with hypotheses (for the `rule` and `forall` modifiers).",
+      "errors": {
+        "grammar": "the grammar view needs an inductive type",
+        "rules": "the rules view needs an inductive predicate or a constructor",
+        "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
+        "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
+      },
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanSorryFree", "\\forall", "\\implies", "\\inferrule", "\\leanmetasource", "\\longrightarrow", "\\textsf", "\\val"],
+      "sigHash": "dd711a6407392d08262187f389e7c358b6610cb33985edda9dde876aaa59e39b",
+      "sorry": false,
+      "source": {
+        "line": 72,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "a89b1dbdcec418d3aed4cb5fa598881a30819d69a4bd5e0006f63648a3dec5d2",
+      "views": {
+        "fixture.rulelist": "\\textsf{Preservation}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{step\\_app} \\{\\LeanBound{e₁} \\LeanBound{e₁'} \\LeanBound{e₂} : \\LeanConst{Tm}\\} (\\LeanBound{h} : \\LeanConst{Step} \\LeanBound{e₁} \\LeanBound{e₁'}) (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{e₂}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Step} (\\LeanBound{e₁}.app \\LeanBound{e₂}) (\\LeanBound{e₁'}.app \\LeanBound{e₂})}",
+        "math|def=": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Tm},\\ \\forall e_{1}' : \\LeanMathConst{Tm},\\ \\forall e_{2} : \\LeanMathConst{Tm},\\ (e_{1} \\longrightarrow e_{1}') \\implies \\LeanMathConst{IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|forall=": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Tm},\\ \\forall e_{1}' : \\LeanMathConst{Tm},\\ \\forall e_{2} : \\LeanMathConst{Tm},\\ (e_{1} \\longrightarrow e_{1}') \\implies \\LeanMathConst{IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|names=full": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Stlc.Tm},\\ \\forall e_{1}' : \\LeanMathConst{Stlc.Tm},\\ \\forall e_{2} : \\LeanMathConst{Stlc.Tm},\\ (e_{1} \\longrightarrow e_{1}') \\LeanBreak \\implies \\LeanMathConst{Stlc.IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|rule=": "\\LeanMath{\\inferrule{e_{1} \\longrightarrow e_{1}'}{e_{1}\\; \\val_{2} \\longrightarrow e_{1}'\\; \\val_{2}}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with hypotheses (for the \\LeanCodeInline{rule} and \\LeanCodeInline{forall} modifiers).}"
+      }
+    },
+    "Stlc.HasType": {
+      "axioms": ["propext"],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.HasType",
+      "doc": "Typing. Labels come from docstrings.",
+      "errors": {
+        "grammar": "Stlc.HasType is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
+      },
+      "kind": "inductive",
+      "macros": ["\\Gamma", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\mathrm", "\\mathsf", "\\textsf", "\\to", "\\vdash"],
+      "sigHash": "33f14f31f89139554247f6cd80a6ca6ee0c4a79654839694f6683d0704154e7d",
+      "sorry": false,
+      "source": {
+        "line": 46,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "bcd5ea338db26567bb6b94bdb39bb976c43ce9cc88b3cfdf909cb0e25c08eb36",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{HasType} : \\LeanConst{Ctx} → \\LeanConst{Tm} → \\LeanConst{Ty} → \\LeanSort{Prop}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{HasType} : \\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
+        "math|forall=": "\\LeanMath{\\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.HasType} : \\LeanMathConst{Stlc.Ctx} \\to \\LeanMathConst{Stlc.Tm} \\to \\LeanMathConst{Stlc.Ty} \\to \\mathrm{Prop}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{HasType} : \\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{propext}{\\LeanSorryFree}{Typing. Labels come from docstrings.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[T-Var]\n  {\n    \\Gamma(i) = t\n  }\n  { \\Gamma \\vdash x_{i} : t }\n\n\\and\n\n\\inferrule[T-Abs]\n  {\n    \\Gamma, t_{1} \\vdash e : t_{2}\n  }\n  { \\Gamma \\vdash (\\lambda{:}t_{1}.\\, e) : t_{1} \\to t_{2} }\n\n\\and\n\n\\inferrule[T-App]\n  {\n    \\Gamma \\vdash e_{1} : t_{1} \\to t_{2} \\\\\n    \\Gamma \\vdash e_{2} : t_{1}\n  }\n  { \\Gamma \\vdash e_{1}\\; e_{2} : t_{2} }\n\n\\and\n\n\\inferrule[T-Unit]\n  { }\n  { \\Gamma \\vdash () : \\mathsf{b} }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\inferrule[T-Var]\n  {\n    \\Gamma(i) = t\n  }\n  { \\Gamma \\vdash x_{i} : t }\n\n\\and\n\n\\inferrule[T-Abs]\n  {\n    \\Gamma, t_{1} \\vdash e : t_{2}\n  }\n  { \\Gamma \\vdash (\\lambda{:}t_{1}.\\, e) : t_{1} \\to t_{2} }\n\n\\and\n\n\\inferrule[T-App]\n  {\n    \\Gamma \\vdash e_{1} : t_{1} \\to t_{2} \\\\\n    \\Gamma \\vdash e_{2} : t_{1}\n  }\n  { \\Gamma \\vdash e_{1}\\; e_{2} : t_{2} }\n\n\\and\n\n\\inferrule[T-Unit]\n  { }\n  { \\Gamma \\vdash () : \\mathsf{b} }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\\end{mathpar}"
+      }
+    },
+    "Stlc.Step": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.Step",
+      "doc": "Small-step reduction. Labels come from the constructor names.",
+      "errors": {
+        "grammar": "Stlc.Step is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
+      },
+      "kind": "inductive",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\longrightarrow", "\\mathrm", "\\rulelabel", "\\textsf", "\\to", "\\val"],
+      "sigHash": "050a4fcd8fcd2b2a42d83dca4dda99586670bd274a99d9835174608c672866e6",
+      "sorry": false,
+      "source": {
+        "line": 58,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "e76370a2950fdd08ee59ebd5aa660ed4a3f08a206b7de94adeceed2c40323e36",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.Step}: beta, app_left, app_right",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Step} : \\LeanConst{Tm} → \\LeanConst{Tm} → \\LeanSort{Prop}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Step} : \\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",
+        "math|forall=": "\\LeanMath{\\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.Step} : \\LeanMathConst{Stlc.Tm} \\to \\LeanMathConst{Stlc.Tm} \\to \\mathrm{Prop}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{Step} : \\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Small-step reduction. Labels come from the constructor names.}",
+        "rules": "\\begin{mathpar}\n\n\\rulelabel{Beta}{($\\longrightarrow$-Beta)}%\n\\inferrule[($\\longrightarrow$-Beta)]\n  { }\n  { (\\lambda{:}t.\\, e)\\; \\val \\longrightarrow e[\\val] }\n\n\\and\n\n\\rulelabel{AppLeft}{($\\longrightarrow$-App Left)}%\n\\inferrule[($\\longrightarrow$-App Left)]\n  {\n    e_{1} \\longrightarrow e_{1}'\n  }\n  { e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2} }\n\n\\and\n\n\\rulelabel{AppRight}{($\\longrightarrow$-App-R)}%\n\\inferrule[($\\longrightarrow$-App-R)]\n  {\n    e_{2} \\longrightarrow e_{2}'\n  }\n  { \\val\\; e_{2} \\longrightarrow \\val\\; e_{2}' }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\rulelabel{AppLeft}{($\\longrightarrow$-App Left)}%\n\\inferrule[($\\longrightarrow$-App Left)]\n  {\n    e_{1} \\longrightarrow e_{1}'\n  }\n  { e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2} }\n\n\\and\n\n\\rulelabel{AppRight}{($\\longrightarrow$-App-R)}%\n\\inferrule[($\\longrightarrow$-App-R)]\n  {\n    e_{2} \\longrightarrow e_{2}'\n  }\n  { \\val\\; e_{2} \\longrightarrow \\val\\; e_{2}' }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\n\\rulelabel{Beta}{($\\longrightarrow$-Beta)}%\n\\inferrule[($\\longrightarrow$-Beta)]\n  { }\n  { (\\lambda{:}t.\\, e)\\; \\val \\longrightarrow e[\\val] }\n\n\\and\n\n\\rulelabel{AppRight}{($\\longrightarrow$-App-R)}%\n\\inferrule[($\\longrightarrow$-App-R)]\n  {\n    e_{2} \\longrightarrow e_{2}'\n  }\n  { \\val\\; e_{2} \\longrightarrow \\val\\; e_{2}' }\n\n\\end{mathpar}"
+      }
+    },
+    "Stlc.Tm": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 8,
+        "untrusted": []
+      },
+      "decl": "Stlc.Tm",
+      "doc": "Terms, with de Bruijn variables.",
+      "kind": "inductive",
+      "macros": ["\\LeanAlternative", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\textsf"],
+      "sigHash": "b60631772fb50b61f4c48115854a1a9c8c33b5caaee027e921640f1eb57aedc5",
+      "sorry": false,
+      "source": {
+        "line": 18,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "8cfc6f91ea41d3a118e34916502a747519762ee3516598d311beff5f21dae928",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.Tm}: var, lam, app, unit",
+        "grammar": "\\begin{LeanGrammar}\n\\LeanProduction{e}{Terms, with de Bruijn variables.}{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable.}}\n\\LeanAlternative{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction.}}\n\\LeanAlternative{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application.}}\n\\LeanAlternative{()}{\\leanslot{Stlc.Tm.unit}{The unit value.}}\n\\end{LeanGrammar}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Tm} : \\LeanSort{Type}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Tm} : \\mathrm{Type}}",
+        "math|forall=": "\\LeanMath{\\mathrm{Type}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.Tm} : \\mathrm{Type}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{Tm} : \\mathrm{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Terms, with de Bruijn variables.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[Var]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\and\n\n\\inferrule[Lam]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\and\n\n\\inferrule[App]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\and\n\n\\inferrule[Unit]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\inferrule[Var]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\and\n\n\\inferrule[Lam]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\and\n\n\\inferrule[App]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\and\n\n\\inferrule[Unit]\n  { }\n  { \\LeanMathConst{Tm} }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\\end{mathpar}"
+      }
+    },
+    "Stlc.Ty": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 3,
+        "untrusted": []
+      },
+      "decl": "Stlc.Ty",
+      "doc": "Types.",
+      "kind": "inductive",
+      "macros": ["\\LeanAlternative", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to"],
+      "sigHash": "b134d77a3ceebfc192a39accc49f4a801d7fd4e641d376fa886a0f6586f3d26a",
+      "sorry": false,
+      "source": {
+        "line": 11,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "d19cac7ea59c8bfca71dd1d5660d58a6a09c49ccd248b8a09c603bf42c1c491d",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.Ty}: base, arrow",
+        "grammar": "\\begin{LeanGrammar}\n\\LeanProduction{\\tau}{Types.}{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type.}}\n\\LeanAlternative{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions.}}\n\\end{LeanGrammar}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Ty} : \\LeanSort{Type}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Ty} : \\mathrm{Type}}",
+        "math|forall=": "\\LeanMath{\\mathrm{Type}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.Ty} : \\mathrm{Type}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{Ty} : \\mathrm{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Types.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[Base]\n  { }\n  { \\LeanMathConst{Ty} }\n\n\\and\n\n\\inferrule[Functions]\n  { }\n  { \\LeanMathConst{Ty} }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\inferrule[Base]\n  { }\n  { \\LeanMathConst{Ty} }\n\n\\and\n\n\\inferrule[Functions]\n  { }\n  { \\LeanMathConst{Ty} }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\\end{mathpar}"
+      }
+    },
+    "Stlc.size": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 9,
+        "untrusted": []
+      },
+      "decl": "Stlc.size",
+      "doc": "The size of a term, by recursion (for the `def` modifier).",
+      "errors": {
+        "grammar": "the grammar view needs an inductive type",
+        "rules": "the rules view needs an inductive predicate or a constructor",
+        "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
+        "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
+      },
+      "kind": "definition",
+      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\lambda", "\\leanmetasource", "\\mathbb", "\\textsf", "\\to"],
+      "sigHash": "e2b7c5d63bcf8722ed871cc6b816ecdb1de5cfdc12b6f564253261a992c5cdd8",
+      "sorry": false,
+      "source": {
+        "line": 65,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "1023a99e325d3da1e08812cdb3962a3e3e4f6cf68660997333e3a8967a0d3b63",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.size}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{size} : \\LeanConst{Tm} → \\LeanConst{Nat}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{size}\\,x_{i} &= 1 \\\\ \\LeanMathConst{size}\\,(\\lambda{:}t.\\, e) &= \\LeanMathConst{size}\\,e + 1 \\\\ \\LeanMathConst{size}\\,(e_{1}\\; e_{2}) &= \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1 \\\\ \\LeanMathConst{size}\\,() &= 1\\end{aligned}}",
+        "math|forall=": "\\LeanMath{\\LeanMathConst{Tm} \\to \\mathbb{N}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.size} : \\LeanMathConst{Stlc.Tm} \\to \\mathbb{N}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{size} : \\LeanMathConst{Tm} \\to \\mathbb{N}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier).}"
+      }
+    },
+    "Stlc.step_app": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.step_app",
+      "doc": "A theorem with hypotheses (for the `rule` and `forall` modifiers).",
+      "errors": {
+        "grammar": "the grammar view needs an inductive type",
+        "rules": "the rules view needs an inductive predicate or a constructor",
+        "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
+        "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
+      },
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanSorryFree", "\\forall", "\\implies", "\\inferrule", "\\leanmetasource", "\\longrightarrow", "\\textsf", "\\val", "\\wedge"],
+      "sigHash": "dd711a6407392d08262187f389e7c358b6610cb33985edda9dde876aaa59e39b",
+      "sorry": false,
+      "source": {
+        "line": 72,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "a89b1dbdcec418d3aed4cb5fa598881a30819d69a4bd5e0006f63648a3dec5d2",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.step_app}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{step\\_app} \\{\\LeanBound{e₁} \\LeanBound{e₁'} \\LeanBound{e₂} : \\LeanConst{Tm}\\} (\\LeanBound{h} : \\LeanConst{Step} \\LeanBound{e₁} \\LeanBound{e₁'}) (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{e₂}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Step} (\\LeanBound{e₁}.app \\LeanBound{e₂}) (\\LeanBound{e₁'}.app \\LeanBound{e₂})}",
+        "math|def=": "\\LeanMath{(e_{1} \\longrightarrow e_{1}') \\wedge \\LeanMathConst{IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|forall=": "\\LeanMath{\\forall e_{1} : \\LeanMathConst{Tm},\\ \\forall e_{1}' : \\LeanMathConst{Tm},\\ \\forall e_{2} : \\LeanMathConst{Tm},\\ (e_{1} \\longrightarrow e_{1}') \\implies \\LeanMathConst{IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|names=full": "\\LeanMath{(e_{1} \\longrightarrow e_{1}') \\wedge \\LeanMathConst{Stlc.IsValue}\\,e_{2} \\implies (e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2})}",
+        "math|rule=": "\\LeanMath{\\inferrule{e_{1} \\longrightarrow e_{1}'}{e_{1}\\; \\val_{2} \\longrightarrow e_{1}'\\; \\val_{2}}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with hypotheses (for the \\LeanCodeInline{rule} and \\LeanCodeInline{forall} modifiers).}"
+      }
+    },
+    "Typing and evaluation": {
+      "axioms": [],
+      "decl": "Typing and evaluation",
+      "errors": {
+        "grammar": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not grammar",
+        "math|def=": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|def=",
+        "math|forall=": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|forall=",
+        "math|names=full": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|names=full",
+        "math|rule=": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|rule="
+      },
+      "kind": "group",
+      "macros": ["\\Gamma", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\longrightarrow", "\\rulelabel", "\\textsf", "\\to", "\\val", "\\vdash"],
+      "sorry": false,
+      "views": {
+        "fixture.rulelist": "\\textsf{Typing and evaluation}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[T-App]\n  {\n    \\Gamma \\vdash e_{1} : t_{1} \\to t_{2} \\\\\n    \\Gamma \\vdash e_{2} : t_{1}\n  }\n  { \\Gamma \\vdash e_{1}\\; e_{2} : t_{2} }\n\n\\and\n\n\\rulelabel{Beta}{($\\longrightarrow$-Beta)}%\n\\inferrule[($\\longrightarrow$-Beta)]\n  { }\n  { (\\lambda{:}t.\\, e)\\; \\val \\longrightarrow e[\\val] }\n\n\\and\n\n\\rulelabel{AppLeft}{($\\longrightarrow$-App Left)}%\n\\inferrule[($\\longrightarrow$-App Left)]\n  {\n    e_{1} \\longrightarrow e_{1}'\n  }\n  { e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2} }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\inferrule[T-App]\n  {\n    \\Gamma \\vdash e_{1} : t_{1} \\to t_{2} \\\\\n    \\Gamma \\vdash e_{2} : t_{1}\n  }\n  { \\Gamma \\vdash e_{1}\\; e_{2} : t_{2} }\n\n\\and\n\n\\rulelabel{AppLeft}{($\\longrightarrow$-App Left)}%\n\\inferrule[($\\longrightarrow$-App Left)]\n  {\n    e_{1} \\longrightarrow e_{1}'\n  }\n  { e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2} }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\n\\rulelabel{Beta}{($\\longrightarrow$-Beta)}%\n\\inferrule[($\\longrightarrow$-Beta)]\n  { }\n  { (\\lambda{:}t.\\, e)\\; \\val \\longrightarrow e[\\val] }\n\n\\end{mathpar}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

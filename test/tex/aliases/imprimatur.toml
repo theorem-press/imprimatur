@@ -1,0 +1,10 @@
+schema = 1
+main = "main.tex"
+
+[aliases]
+# A label from the key; a key stated again gets -appendix, then -appendix2.
+leanlemma  = { view = "prose", wrap = "lemma", label = "lem:{key}", repeat_suffix = "-appendix", template = "\\label{{label}}\n\n{content}" }
+# A template wrapping the content.
+leandef    = { view = "math", wrap = "definition", label = "def:{key}", template = "\\label{{label}}\n\\({content}\\)" }
+# A region delimited by comments, with the title in its template.
+LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{title}}" }

@@ -3,6 +3,11 @@ $ imprimatur-splice scan
   "schema": "imprimatur-requests/1",
   "config": {"imports": [], "open_scoped": [], "strip_namespaces": [],
     "trusted_prefixes": ["Mathlib", "Std", "Batteries", "Lean", "Init"], "challenges": {}},
+  "document": {"blocks": [
+    ],
+    "labels": [
+    {"name": "thm:done", "order": 1},
+    {"name": "lem:open", "order": 4}]},
   "requests": {
     "Bp.done": {"views": []},
     "Bp.helper": {"views": []},

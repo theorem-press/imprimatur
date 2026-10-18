@@ -35,7 +35,34 @@ structure Alias where
   wrap : Option String := none
   /-- Slots declared by position. -/
   slots : Option SlotSpec := none
+  /-- A label the splicer writes for each block, from a template over `{key}`
+  (the key with spaces as `-`): `thm:{key}`. -/
+  label : Option String := none
+  /-- What a repeated key's label gets: `-appendix`, then `-appendix2`, … -/
+  repeatSuffix : Option String := none
+  /-- The content written, from a template over `{content}` (the view's
+  text), `{label}`, `{key}` and `{title}`. The default is `{content}`, or
+  `\label{{label}}` on a line of its own before it when `label` is set. -/
+  template : Option String := none
+  /-- A region delimited by comments, `%NAME{key}{title}` … `%ENDNAME`,
+  rather than an environment. -/
+  comment : Bool := false
   deriving Repr, BEq
+
+/-- The label of a block with key `key`: its `occurrence`-th (from 0) with
+this alias and key. -/
+def Alias.labelFor (a : Alias) (key : String) (occurrence : Nat) : Option String :=
+  a.label.map fun t =>
+    let base := t.replace "{key}" (key.replace " " "-")
+    match occurrence, a.repeatSuffix with
+    | 0, _ | _, none => base
+    | 1, some suffix => base ++ suffix
+    | n, some suffix => base ++ suffix ++ toString n
+
+/-- The content of a block from the view's text. -/
+def Alias.fill (a : Alias) (content key title : String) (label : Option String) : String :=
+  let t := a.template.getD (if a.label.isSome then "\\label{{label}}\n{content}" else "{content}")
+  (((t.replace "{content}" content).replace "{label}" (label.getD "")).replace "{key}" key).replace "{title}" title
 
 /-- How `\leanref` and the `meta` view refer to source code (DESIGN §11). -/
 inductive SourceLinks where
@@ -146,12 +173,19 @@ private def parseSlots (where_ : String) (v : Toml) : Except String SlotSpec := 
 private def parseAlias (name : String) (v : Toml) : Except String Alias := do
   let where_ := s!"[aliases].{name}"
   let kvs ← expectTable where_ v
-  checkKeys where_ kvs ["view", "wrap", "slots"]
+  checkKeys where_ kvs ["view", "wrap", "slots", "label", "repeat_suffix", "template", "comment"]
   let some view := v.find? "view" | throw s!"{where_} needs a view"
   let view ← expectStr s!"{where_}.view" view
   let wrap ← (v.find? "wrap").mapM (expectStr s!"{where_}.wrap")
   let slots ← (v.find? "slots").mapM (parseSlots s!"{where_}.slots")
-  return { name, view, wrap, slots }
+  let label ← (v.find? "label").mapM (expectStr s!"{where_}.label")
+  let repeatSuffix ← (v.find? "repeat_suffix").mapM (expectStr s!"{where_}.repeat_suffix")
+  if repeatSuffix.isSome && label.isNone then throw s!"{where_}: repeat_suffix needs label"
+  let template ← (v.find? "template").mapM (expectStr s!"{where_}.template")
+  if let some t := template then
+    unless (t.splitOn "{content}").length > 1 do throw s!"{where_}.template must contain \{content}"
+  let comment ← (v.find? "comment").mapM (expectBool s!"{where_}.comment")
+  return { name, view, wrap, slots, label, repeatSuffix, template, comment := comment.getD false }
 
 private def parseProfile (name : String) (v : Toml) : Except String SourceLinks := do
   let where_ := s!"[profile.{name}]"

@@ -41,15 +41,25 @@ syntax &"prec" " := " num : latexNotationOpt
 syntax &"width" " := " num : latexNotationOpt
 /-- `hide x := v`: apply only when `x` is `v`, and leave it out. -/
 syntax &"hide" ident " := " term:max : latexNotationOpt
-/-- `flatten`: render nested applications as one n-ary chain. -/
+/-- `flatten`: render nested applications as one n-ary chain, or nested
+binders as one list of variables. -/
 syntax &"flatten" : latexNotationOpt
+/-- `when x := v`: apply only when `x` matches the pattern `v`, and show it. -/
+syntax &"when" ident " := " term:max : latexNotationOpt
+/-- `sep := ", "`: the text between the variables of a flattened binder rule. -/
+syntax &"sep" " := " str : latexNotationOpt
+/-- `assoc := left | right | none`: which side of a chain at the rule's own
+precedence is left without parentheses. -/
+syntax &"assoc" " := " (&"left" <|> &"right" <|> &"none") : latexNotationOpt
 
 /-- `latex_notation (variant := "v")? PATTERN => "TEMPLATE" OPTIONS*` -/
 syntax (name := latexNotation)
   "latex_notation " (atomic("(" &"variant" " := " str ")"))? term " => " str latexNotationOpt* : command
 
-/-- `latex_metavar NAME => "TEX"`: render binders named `NAME` as `TEX`. -/
-syntax (name := latexMetavar) "latex_metavar " ident " => " str : command
+/-- `latex_metavar NAME => "TEX"`: render binders named `NAME` as `TEX`;
+with `decorated`, also `NAME` with a subscript or primes (`NAME₁` as
+`TEX_{1}`). -/
+syntax (name := latexMetavar) "latex_metavar " ident " => " str (&" decorated")? : command
 
 /-- The identifiers in a pattern that don't name constants. -/
 partial def patternVars (stx : Syntax) : TermElabM (Array Name) := do
@@ -70,13 +80,35 @@ wildcards, and applications of constants are matched on their explicit
 arguments. -/
 partial def toPat (vars : Array (Name × Expr)) (e : Expr) : MetaM Pat := do
   let e := (← instantiateMVars e).consumeMData
-  if e.isMVar then return .wild
+  -- An unknown term, possibly applied (`?k i` in the type `Fin (?k i)`).
+  if e.getAppFn.isMVar then return .wild
   if let .fvar _ := e then
     match vars.find? (·.2 == e) with
     | some (n, _) => return .var n
     | none => throwError "unexpected local {e} in a notation pattern"
   if let .const h _ := e then return .app h #[]
-  match ← explicitArgs e with
+  -- Binders written in the pattern (`fun x => p`, `∀ x, p`) bind a pattern
+  -- variable of the binder's name; an arrow (`p → q`) has a binder name
+  -- that is not a variable.
+  match e with
+  | .lam n t b _ =>
+    let some (_, x) := vars.find? (·.1 == n)
+      | throwError "the binder {n} must be a pattern variable (a name that isn't a constant)"
+    discard <| isDefEq (← inferType x) t
+    return .lam n (← toPat vars (b.instantiate1 x))
+  | .forallE n t b _ =>
+    match vars.find? (·.1 == n) with
+    | some (_, x) =>
+      discard <| isDefEq (← inferType x) t
+      return .pi n (← toPat vars t) (← toPat vars (b.instantiate1 x))
+    | none =>
+      if b.hasLooseBVar 0 then
+        throwError "the binder {n} must be a pattern variable (a name that isn't a constant)"
+      return .arrow (← toPat vars t) (← toPat vars b)
+  | _ => pure ()
+  -- A constant applied to its explicit arguments, fully or partly (a rule
+  -- for `f a` applies to the function `f a`, as in `Summable (f a)`).
+  match ← explicitArgsLoose e with
   | some (h, args) =>
     let pat : Pat := .app h (← args.mapM (toPat vars))
     -- Implicit arguments the pattern fixes, such as the type `Set ?α` in
@@ -95,8 +127,6 @@ partial def toPat (vars : Array (Name × Expr)) (e : Expr) : MetaM Pat := do
       unless p matches .wild do cs := cs.push (i, p)
     return if cs.isEmpty then pat else .constrained pat cs
   | none =>
-    -- A constant applied only to implicit arguments, such as `@Fin.elim0 ?α`.
-    if let some (h, #[]) ← explicitArgsLoose e then return .app h #[]
     if e.hasFVar || e.hasMVar then
       throwError "notation patterns must be applications of constants, not {e}"
     return .lit e
@@ -132,63 +162,221 @@ def splitTemplate (t : String) (vars : Array String) :
   unless text.isEmpty do out := out.push (.inl text)
   return .ok out
 
+/-- Elaborate a pattern (see the module docs): its `Pat`, and its variables. -/
+def elabPattern (patStx : Syntax) : TermElabM (Pat × Array Name) := do
+  let vars ← patternVars patStx
+  -- An unknown name at the head would be read as a pattern variable.
+  if patStx.getKind == ``Lean.Parser.Term.app && patStx[0].isIdent && vars.contains patStx[0].getId then
+    throwErrorAt patStx[0] "unknown constant {patStx[0].getId} at the head of the pattern \
+      (a name that isn't a constant is read as a pattern variable)"
+  -- Bind each pattern variable as a local whose type is unknown.
+  let rec withVars (i : Nat) (acc : Array (Name × Expr)) : TermElabM Pat := do
+    if h : i < vars.size then
+      let ty ← mkFreshTypeMVar
+      withLocalDeclD vars[i] ty fun x => withVars (i + 1) (acc.push (vars[i], x))
+    else
+      -- Instances cannot be found for variables of unknown type
+      -- (`Decidable p`), and don't matter: a pattern ignores them. No info
+      -- tree: the binders of `∀ x, p` would be reported as unused.
+      let e ← withReader (fun ctx => { ctx with ignoreTCFailures := true }) <|
+        withEnableInfoTree false <| withoutErrToSorry do
+          let e ← elabTerm patStx none
+          synthesizeSyntheticMVars (postpone := .yes)
+          -- Elaboration may be postponed (`binrel%` waits for its operands'
+          -- types, `spec.order` for the type of `spec`): resume it with
+          -- postponement off, so it completes or reports its error. Not
+          -- `synthesizeSyntheticMVarsNoPostponing`: that applies default
+          -- instances, which would fix the type of `OfNat.ofNat n` to `Nat`.
+          withoutPostponing <| synthesizeSyntheticMVars (postpone := .yes)
+          pure e
+      let pat ← toPat acc e
+      unless pat matches .app .. | .constrained .. | .lam .. | .pi .. | .arrow .. do
+        let head := ((← instantiateMVars e).getAppFn.fvarId?.bind fun f => acc.find? (·.2 == .fvar f)).map (·.1)
+        match head with
+        | some h => throwErrorAt patStx "{h} is not a constant, so it was read as a pattern \
+            variable; a pattern must have a constant at its head"
+        | none => throwErrorAt patStx "a pattern must have a constant at its head, not {repr pat}"
+      return pat
+  return (← withVars 0 #[], vars)
+
+/-- The atom of an option written as one of several keywords
+(`(&"left" <|> &"right")`), which the parser may wrap in a node. -/
+partial def choiceAtom (stx : Syntax) : String :=
+  if stx.isAtom then stx.getAtomVal
+  else match stx.getArgs[0]? with
+    | some a => choiceAtom a
+    | none => ""
+
 /-- Elaborate `latex_notation`. -/
 @[command_elab latexNotation] def elabLatexNotation : CommandElab := fun stx => do
   let variant := if stx[1].getNumArgs == 0 then none else stx[1][3].isStrLit?
-  let patStx := stx[2]
   let some template := stx[4].isStrLit? | throwErrorAt stx[4] "expected a string"
   let rule ← liftTermElabM do
-    let vars ← patternVars patStx
-    -- An unknown name at the head would be read as a pattern variable.
-    if patStx.getKind == ``Lean.Parser.Term.app && patStx[0].isIdent && vars.contains patStx[0].getId then
-      throwErrorAt patStx[0] "unknown constant {patStx[0].getId} at the head of the pattern \
-        (a name that isn't a constant is read as a pattern variable)"
-    -- Bind each pattern variable as a local whose type is unknown.
-    let rec withVars (i : Nat) (acc : Array (Name × Expr)) : TermElabM NotationRule := do
-      if h : i < vars.size then
-        let ty ← mkFreshTypeMVar
-        withLocalDeclD vars[i] ty fun x => withVars (i + 1) (acc.push (vars[i], x))
-      else
-        let e ← withoutErrToSorry <| elabTerm patStx none
+    let (pat, vars) ← elabPattern stx[2]
+    let mut r : NotationRule := { pat, template, variant, origin := toString (← getMainModule) }
+    for o in stx[5].getArgs do
+      -- Each option starts with its keyword.
+      match o[0].getAtomVal with
+      | "prec" => r := { r with prec := o[2].isNatLit?.getD 1024 }
+      | "width" => r := { r with width := o[2].isNatLit? }
+      | "flatten" => r := { r with flatten := true }
+      | "sep" => r := { r with sep := o[2].isStrLit?.getD ", " }
+      | "assoc" => r := { r with assoc := choiceAtom o[2] }
+      | "hide" | "when" =>
+        let x := o[1].getId
+        unless vars.contains x do
+          throwErrorAt o[1] "{x} is not a variable of the pattern"
+        -- The value is a pattern too, so `Fin.elim0` matches whatever its
+        -- implicit arguments are, and `Exists _` any existential.
+        let v ← instantiateMVars (← elabTerm o[3] none)
         synthesizeSyntheticMVars (postpone := .yes)
-        -- Elaboration may be postponed (as for `≤` with typed operands); finish
-        -- it if it can be, and otherwise keep what there is.
-        try synthesizeSyntheticMVarsNoPostponing catch _ => pure ()
-        let pat ← toPat acc e
-        unless pat matches .app .. | .constrained .. do
-          let head := ((← instantiateMVars e).getAppFn.fvarId?.bind fun f => acc.find? (·.2 == .fvar f)).map (·.1)
-          match head with
-          | some h => throwErrorAt patStx "{h} is not a constant, so it was read as a pattern \
-              variable; a notation pattern must have a constant at its head"
-          | none => throwErrorAt patStx "a notation pattern must have a constant at its head, not {repr pat}"
-        let mut r : NotationRule := { pat, template, variant, origin := toString (← getMainModule) }
-        for o in stx[5].getArgs do
-          -- Each option starts with its keyword.
-          match o[0].getAtomVal with
-          | "prec" => r := { r with prec := o[2].isNatLit?.getD 1024 }
-          | "width" => r := { r with width := o[2].isNatLit? }
-          | "flatten" => r := { r with flatten := true }
-          | "hide" =>
-            let x := o[1].getId
-            unless vars.contains x do
-              throwErrorAt o[1] "{x} is not a variable of the pattern"
-            -- The value is a pattern too, so `Fin.elim0` matches whatever its
-            -- implicit arguments are.
-            let v ← instantiateMVars (← elabTerm o[3] none)
-            synthesizeSyntheticMVars (postpone := .yes)
-            r := { r with hides := r.hides.push (x, ← toPat #[] v) }
-          | _ => throwErrorAt o "unknown notation option"
-        if let .error v := splitTemplate template (pat.vars.map (·.toString)) then
-          throwErrorAt stx[4] "the template uses #{v}, which is not a variable of the pattern"
-        if r.flatten && pat.arity != 2 then
-          throwErrorAt stx "flatten needs a pattern with exactly two arguments"
-        return r
-    withVars 0 #[]
+        let p ← toPat #[] v
+        if o[0].getAtomVal == "hide" then r := { r with hides := r.hides.push (x, p) }
+        else r := { r with guards := r.guards.push (x, p) }
+      | _ => throwErrorAt o "unknown notation option"
+    if let .error v := splitTemplate template (pat.vars.map (·.toString)) then
+      throwErrorAt stx[4] "the template uses #{v}, which is not a variable of the pattern"
+    if r.flatten && pat.arity != 2 && pat.binder?.isNone then
+      throwErrorAt stx "flatten needs a pattern with exactly two arguments, or a binder"
+    return r
   modifyEnv (notationExt.addEntry · (.rule rule))
 
 /-- Elaborate `latex_metavar`. -/
 @[command_elab latexMetavar] def elabLatexMetavar : CommandElab := fun stx => do
   let some tex := stx[3].isStrLit? | throwErrorAt stx[3] "expected a string"
-  modifyEnv (notationExt.addEntry · (.metavar { name := stx[1].getId, tex }))
+  let decorated := stx[4].getNumArgs > 0
+  modifyEnv (notationExt.addEntry · (.metavar { name := stx[1].getId, tex := tex, decorated }))
+
+/-- `latex_group "Title" := [c₁, c₂, …]`: constructors shown together by the
+`rules` view, as the block with key `Title` (DESIGN §6.2). -/
+syntax (name := latexGroup) "latex_group " str " := " "[" ident,* "]" : command
+
+/-- Elaborate `latex_group`. -/
+@[command_elab latexGroup] def elabLatexGroup : CommandElab := fun stx => do
+  let some title := stx[1].isStrLit? | throwErrorAt stx[1] "expected a string"
+  let ctors ← stx[4].getSepArgs.mapM fun id => liftCoreM (realizeGlobalConstNoOverloadWithInfo id)
+  for (c, id) in ctors.zip stx[4].getSepArgs do
+    unless (← getEnv).find? c matches some (.ctorInfo _) do
+      throwErrorAt id "{c} is not a constructor"
+  modifyEnv (notationExt.addEntry · (.group { title, ctors }))
+
+/-- `latex_rule_label C "T-App"`: the label of the rule for constructor `C`
+(DESIGN §7.4). -/
+syntax (name := latexRuleLabel) "latex_rule_label " ident ppSpace str : command
+
+/-- Elaborate `latex_rule_label`. -/
+@[command_elab latexRuleLabel] def elabLatexRuleLabel : CommandElab := fun stx => do
+  let c ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
+  let some label := stx[2].isStrLit? | throwErrorAt stx[2] "expected a string"
+  modifyEnv (notationExt.addEntry · (.ruleLabel c label))
+
+/-- An option of `latex_rules`. -/
+declare_syntax_cat latexRulesOpt (behavior := symbol)
+/-- `label := "($\\Downarrow$\\text{-#})"`: the label template; `#` is the rule's name. -/
+syntax &"label" " := " str : latexRulesOpt
+/-- `label_macro := "rulelabel"`: write `\rulelabel{Key}{label}%` before each rule. -/
+syntax &"label_macro" " := " str : latexRulesOpt
+
+/-- `sep := " "`: the text between the words of a label made from a
+constructor's name (`scalar_lit` gives `Scalar Lit`); `-` by default. -/
+syntax &"sep" " := " str : latexRulesOpt
+
+/-- `doc_labels := false`: don't read labels from the constructors'
+docstrings (DESIGN §7.4), when they start with prose such as `Variables: …`. -/
+syntax &"doc_labels" " := " (&"true" <|> &"false") : latexRulesOpt
+
+/-- `latex_rules I OPTIONS`: how the rules of inductive `I` are labelled. -/
+syntax (name := latexRules) "latex_rules " ident latexRulesOpt* : command
+
+/-- Elaborate `latex_rules`. -/
+@[command_elab latexRules] def elabLatexRules : CommandElab := fun stx => do
+  let i ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
+  unless (← getEnv).find? i matches some (.inductInfo _) do
+    throwErrorAt stx[1] "{i} is not an inductive type"
+  let mut st : RulesStyle := { induct := i }
+  for o in stx[2].getArgs do
+    match o[0].getAtomVal, o[2].isStrLit? with
+    | "label", some t => st := { st with label := t }
+    | "label_macro", some m => st := { st with labelMacro := some m }
+    | "sep", some t => st := { st with sep := t }
+    | "doc_labels", _ => st := { st with docLabels := choiceAtom o[2] == "true" }
+    | _, _ => throwErrorAt o "unknown option"
+  modifyEnv (notationExt.addEntry · (.rulesStyle st))
+
+/-- `latex_metavar_convention P v => "\\val"`: hide premises matching `P`,
+and render the variable they constrain, `v`, as `\\val` (DESIGN §7.6). -/
+syntax (name := latexMetavarConvention) "latex_metavar_convention " term " => " str : command
+
+/-- Elaborate `latex_metavar_convention`. -/
+@[command_elab latexMetavarConvention] def elabLatexMetavarConvention : CommandElab := fun stx => do
+  let some tex := stx[3].isStrLit? | throwErrorAt stx[3] "expected a string"
+  let (pat, vars) ← liftTermElabM (elabPattern stx[1])
+  let [v] := vars.toList
+    | throwErrorAt stx[1] "a metavariable convention's pattern must have exactly one variable"
+  modifyEnv (notationExt.addEntry · (.convention { pat, metavar := some (v, tex) }))
+
+/-- `latex_hide_premise P`: hide premises matching `P` (DESIGN §7.6). -/
+syntax (name := latexHidePremise) "latex_hide_premise " term : command
+
+/-- Elaborate `latex_hide_premise`. -/
+@[command_elab latexHidePremise] def elabLatexHidePremise : CommandElab := fun stx => do
+  let (pat, _) ← liftTermElabM (elabPattern stx[1])
+  modifyEnv (notationExt.addEntry · (.convention { pat }))
+
+/-- `latex_entry "Key" => decl (options := "forall, names=full")?`: the
+declaration a key of the document names, when the key is a title rather than
+a Lean name (DESIGN §6.2). The options are those of a block (DESIGN §9.1),
+and apply to every view of the key. -/
+syntax (name := latexEntry) "latex_entry " str " => " ident (&"options" " := " str)? : command
+
+/-- Elaborate `latex_entry`. -/
+@[command_elab latexEntry] def elabLatexEntry : CommandElab := fun stx => do
+  let some key := stx[1].isStrLit? | throwErrorAt stx[1] "expected a string"
+  let decl ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[3])
+  let opts : Array (String × String) := Id.run do
+    let some text := (if stx[4].getNumArgs == 0 then none else stx[4][2].isStrLit?) | return #[]
+    let mut out := #[]
+    for o in text.splitOn "," do
+      let o := o.trimAscii.toString
+      if o.isEmpty then continue
+      match o.splitOn "=" with
+      | [k, v] => out := out.push (k.trimAscii.toString, v.trimAscii.toString)
+      | _ => out := out.push (o, "")
+    return out
+  if (projectEntries (← getEnv)).any (·.1 == key) then
+    throwErrorAt stx[1] "the key {repr key} already has an entry"
+  modifyEnv (notationExt.addEntry · (.entry key decl opts))
+
+/-- `latex_style KEY := VALUE`: a style setting of the renderer (DESIGN §7.5):
+
+- `names := italic` (the default) sets binder names longer than one letter
+  in `\mathit`, and escapes them; `names := raw` writes them as they are, so
+  a binder name is TeX (`l_c`);
+- `applied_variables := juxtaposed` (the default) renders a variable applied
+  to arguments as `f\,a\,b`; `applied_variables := call` as `f(a)(b)`;
+  `applied_variables := subscript` as `f_{a, b}` (a family, as in `k_x`). -/
+syntax (name := latexStyle) "latex_style " ident " := " ident : command
+
+/-- Elaborate `latex_style`. -/
+@[command_elab latexStyle] def elabLatexStyle : CommandElab := fun stx => do
+  let key := stx[1].getId.toString
+  let value := stx[3].getId.toString
+  let known : List (String × List String) :=
+    [("names", ["italic", "raw"]), ("applied_variables", ["juxtaposed", "call", "subscript"])]
+  let some (_, values) := known.find? (·.1 == key)
+    | throwErrorAt stx[1] "unknown style {key}; the styles are {", ".intercalate (known.map (·.1))}"
+  unless values.contains value do
+    throwErrorAt stx[3] "{key} must be one of {", ".intercalate values}, not {value}"
+  modifyEnv (notationExt.addEntry · (.style key value))
+
+/-- `latex_category T => "e"`: the metavariable of grammar category `T`
+(the `grammar` view). -/
+syntax (name := latexCategory) "latex_category " ident " => " str : command
+
+/-- Elaborate `latex_category`. -/
+@[command_elab latexCategory] def elabLatexCategory : CommandElab := fun stx => do
+  let t ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
+  let some tex := stx[3].isStrLit? | throwErrorAt stx[3] "expected a string"
+  modifyEnv (notationExt.addEntry · (.category t tex))
 
 end Imprimatur

@@ -66,9 +66,30 @@ leantheorem = { view = "math", wrap = "theorem" }
 leangrammar = { view = "grammar", slots = { macros = ["\\entry"], arg = 2, id = "arg1" } }
 ```
 
-**Options** go in the optional argument: `view`, `wrap`, `label`, and `sum`.
-The splicer writes `sum=` itself. Later milestones add `notation`, `include`,
-`exclude`, `show`, `hide` and the theorem modifiers.
+An alias can also shape what is written into its blocks:
+
+```toml
+leanlemma  = { view = "prose", wrap = "lemma", label = "lem:{key}", repeat_suffix = "-appendix",
+               template = "\\label{{label}}\n\n{content}" }
+leandef    = { view = "math", label = "def:{key}", template = "\\label{{label}}\n\\({content}\\)" }
+LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{title}}" }
+```
+
+- **`label`** gives each block a label made from its key (spaces become
+  `-`). A key stated again, say in an appendix, gets **`repeat_suffix`** on
+  its second label, then the suffix with `2`, `3`, … on later ones.
+- **`template`** is the content, with `{content}` for the view's text, and
+  `{label}`, `{key}` and `{title}` (the block's second argument). The
+  default is `{content}`, after a `\label` line when `label` is set.
+- **`comment = true`** makes the alias a region delimited by comments,
+  `%NAME{key}{title}` … `%ENDNAME`, for places where an environment would
+  disturb TeX, such as a row of a tabbing display. The splicer writes
+  `[sum=…]` after the marker name.
+
+**Options** go in the optional argument: `view`, `wrap`, `label`, `sum`,
+`notation`, `include`, `exclude`, and the theorem modifiers `rule`, `def`,
+`forall` and `names` ([views.md](views.md)). The splicer writes `sum=`
+itself.
 
 ## Where generated content goes
 
@@ -85,6 +106,11 @@ The splicer writes `sum=` itself. Later milestones add `notation`, `include`,
 - **Verbatim text.** `\verb|…|`, `\verb*|…|`, and the environments
   `verbatim`, `verbatim*`, `Verbatim`, `lstlisting`, `minted`, `comment` and
   `alltt` are skipped. Add other environments with `verbatim_envs = […]`.
+- **Conditionals** are not skipped: blocks in a branch that is off are kept
+  up to date like any other. The scanner does note which blocks are typeset,
+  for views that index the paper: not those in a branch that is off
+  (`\iffalse`, or a switch declared with `\newif\ifNAME` and set with
+  `\NAMEfalse`), nor those in a file input only from one.
 - **Uses without arguments.** `\leaninline` that isn't followed by `[` or `{`
   is a definition, as in `\newcommand{\x}{\leaninline}`, not a use.
 
@@ -123,7 +149,7 @@ id and by occurrence. There are two forms:
   constructor name.
 - **Slots by position.** Declared in an alias: the given argument of each
   listed macro is a slot, identified by the text of another argument. This
-  matches llmbda's existing grammar markup without edits.
+  matches existing grammar markup without edits.
 
 A slot that the new content no longer has is dropped, and its text is
 printed as an `orphan-slot` warning. `--rename-slot OLD=NEW` keeps the text
@@ -135,7 +161,7 @@ position into `\leanslot` form. It matches each old slot to the new
 
 | Command | Does |
 |---|---|
-| `imprimatur-splice scan [-o requests.json]` | lists every key and view the document asks for |
+| `imprimatur-splice scan [-o requests.json]` | lists every key and view the document asks for, and the document's inventory: its blocks, with the labels they will get, and its `\label`s, in document order, for views that index the paper |
 | `imprimatur-splice apply --bundle B` | regenerates content. Writes nothing if there is any error. Options: `--force KEY`, `--keep-stale`, `--rename-slot OLD=NEW`, `--profile P`, `--commit SHA` |
 | `imprimatur-splice check --bundle B` | reports what `apply` would change, without writing. Options: `--diff`, `--check-fail-msg MSG` |
 | `imprimatur-splice strip -o DIR` | writes a copy without markers: blocks become their content, wrapped in `wrap` if given; slots become their text; `\leancheck` and `\leanindex` disappear |

@@ -36,17 +36,37 @@ unsafe def importPrivate (modules : Array Name) : IO Environment := do
 def moduleName? (env : Environment) (idx : ModuleIdx) : Option Name :=
   env.header.moduleNames[idx.toNat]?
 
-/-- Elaborate a notation file in-process (DESIGN §6.3 A, spike S1), after
-`import` lines for `modules`. The environment it returns holds the imported
-modules at the `private` level, and the file's notation. -/
-unsafe def elaborateNotation (path : System.FilePath) (modules : Array Name) : IO Environment := do
-  let text ← IO.FS.readFile path
+/-- Elaborate notation files in-process (DESIGN §6.3 A, spike S1). The first
+is elaborated after `import` lines for `modules`; each later file continues
+in the environment the previous one left, so its `import`s must already be
+imported (by the first file, or `modules`). The environment returned holds
+the imported modules at the `private` level, and the files' notation. -/
+unsafe def elaborateNotation (paths : Array System.FilePath) (modules : Array Name) :
+    IO Environment := do
+  let some first := paths[0]? | throw (IO.userError "no notation file")
+  let text ← IO.FS.readFile first
   let header := String.join (modules.toList.map fun m => s!"import {m}\n")
   enableInitializersExecution
-  let some env ← Elab.runFrontend (header ++ text) {} path.toString `_imprimatur_notation
-    | throw (IO.userError s!"{path} has errors (shown above)")
+  let some env ← Elab.runFrontend (header ++ text) {} first.toString `_imprimatur_notation
+    | throw (IO.userError s!"{first} has errors (shown above)")
   -- From v4.31, `runFrontend` turns initializer execution off (spike S1).
   enableInitializersExecution
+  let mut env := env
+  for path in paths[1:] do
+    let text ← IO.FS.readFile path
+    let inputCtx := Parser.mkInputContext text path.toString
+    let (hdr, parserState, messages) ← Parser.parseHeader inputCtx
+    for imp in Elab.headerToImports hdr do
+      unless env.header.moduleNames.contains imp.module do
+        throw (IO.userError s!"{path} imports {imp.module}, which the first notation file \
+          ({first}) must import too (later notation files share its environment)")
+    let st ← Elab.IO.processCommands inputCtx parserState (Elab.Command.mkState env messages {})
+    for m in st.commandState.messages.toList do
+      IO.eprint (← m.toString (includeEndPos := true))
+    if st.commandState.messages.hasErrors then
+      throw (IO.userError s!"{path} has errors (shown above)")
+    env := st.commandState.env
+    enableInitializersExecution
   return env
 
 end Imprimatur.Compat

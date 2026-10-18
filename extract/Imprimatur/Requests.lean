@@ -27,6 +27,39 @@ namespace Imprimatur
 
 open Lean (Json Name)
 
+/-- A block of the document, as the splicer found it. -/
+structure DocBlock where
+  /-- The key. -/
+  key : String
+  /-- The environment (or macro) it is written with. -/
+  env : String
+  /-- The view it asks for. -/
+  view : String
+  /-- The label the splicer gives it, if its alias has one. -/
+  label : Option String := none
+  /-- Its place in document order, shared with the labels. -/
+  order : Nat
+  /-- Whether it is typeset: false in a conditional branch that is off, or
+  in a file reached only from one. -/
+  live : Bool := true
+  deriving Repr, Inhabited
+
+/-- A `\label` of the document. -/
+structure DocLabel where
+  /-- The label. -/
+  name : String
+  /-- Its place in document order. -/
+  order : Nat
+  deriving Repr, Inhabited
+
+/-- The document's inventory, for views that index it. -/
+structure DocumentInfo where
+  /-- The blocks, in document order. -/
+  blocks : Array DocBlock := #[]
+  /-- The `\label`s, in document order. -/
+  labels : Array DocLabel := #[]
+  deriving Repr, Inhabited
+
 /-- Settings from `imprimatur.toml` that the extractor uses. -/
 structure Settings where
   /-- Modules to import. -/
@@ -48,6 +81,8 @@ structure Settings where
   notationPacks : Array String := #["core", "logic", "sets", "order"]
   /-- Notation modules given as files, elaborated in-process (external mode). -/
   notationFiles : Array String := #[]
+  /-- The document's blocks and labels. -/
+  document : DocumentInfo := {}
   deriving Repr
 
 /-- One requested key. -/
@@ -103,6 +138,31 @@ def parseRequests (text : String) : Except String (Settings × Array Request) :=
   let settings := match cfg.getObjVal? "notation_packs" with
     | .ok _ => { settings with notationPacks := (get "notation_packs").toOption.getD #[] }
     | .error _ => settings
+  let document : DocumentInfo ← match j.getObjVal? "document" with
+    | .ok d =>
+      let block (b : Json) : Except String DocBlock := do
+        let field (k : String) : Except String String := match b.getObjValAs? String k with
+          | .ok v => .ok v
+          | .error _ => .error s!"document.blocks: each block needs a string {k}"
+        let order : Nat ← match b.getObjValAs? Nat "order" with
+          | .ok n => .ok n
+          | .error _ => .error "document.blocks: each block needs an order"
+        return { key := ← field "key", env := ← field "env", view := ← field "view",
+                 label := (b.getObjValAs? String "label").toOption, order,
+                 live := (b.getObjValAs? Bool "live").toOption.getD true }
+      let label (l : Json) : Except String DocLabel :=
+        match l.getObjValAs? String "name", l.getObjValAs? Nat "order" with
+        | .ok name, .ok order => .ok { name, order }
+        | _, _ => .error "document.labels: each label needs a name and an order"
+      let blocks : Array DocBlock ← match d.getObjVal? "blocks" with
+        | .ok (.arr bs) => bs.mapM block
+        | _ => pure #[]
+      let labels : Array DocLabel ← match d.getObjVal? "labels" with
+        | .ok (.arr ls) => ls.mapM label
+        | _ => pure #[]
+      pure ({ blocks, labels } : DocumentInfo)
+    | .error _ => pure ({} : DocumentInfo)
+  let settings := { settings with document }
   let reqs ← match (j.getObjVal? "requests").toOption.bind (·.getObj?.toOption) with
     | some kvs => kvs.toArray.mapM fun ⟨k, v⟩ => do
         let views ← match v.getObjVal? "views" with

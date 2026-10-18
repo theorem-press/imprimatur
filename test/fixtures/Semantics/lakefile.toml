@@ -1,0 +1,11 @@
+# The `Semantics` fixture (PLAN §2.2): the rules and grammar views, rule
+# labels, premise conventions, include and exclude, and groups.
+name = "semantics-fixture"
+defaultTargets = ["Semantics"]
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"
+
+[[lean_lib]]
+name = "Semantics"

@@ -1,0 +1,42 @@
+\documentclass{article}
+\newif\ifappendix\appendixfalse
+\newif\ifshort\shorttrue
+\begin{document}
+\begin{leanblock}{Demo.a}{Shown}
+\end{leanblock}
+\iffalse
+\begin{leanblock}{Demo.hidden}{Commented out}
+\end{leanblock}
+\input{missing-file}
+\fi
+\ifappendix
+\input{appendix}
+\begin{leanblock}{Demo.hidden}{Switched off}
+\end{leanblock}
+\else
+\begin{leanblock}{Demo.b}{The else branch of a switch that is off}
+\end{leanblock}
+\fi
+\ifshort
+\begin{leanblock}{Demo.c}{The then branch of a switch that is on}
+\end{leanblock}
+\else
+\begin{leanblock}{Demo.hidden}{Its else branch}
+\end{leanblock}
+\fi
+\ifx\undefined\relax
+\begin{leanblock}{Demo.d}{An unknown conditional: both branches scanned}
+\end{leanblock}
+\else
+\begin{leanblock}{Demo.e}{Its else branch}
+\end{leanblock}
+\fi
+\appendixtrue
+\ifappendix
+\input{appendix}
+\fi
+\ifshort\iffalse
+\begin{leanblock}{Demo.hidden}{Nested, off}
+\end{leanblock}
+\fi\else\fi
+\end{document}
