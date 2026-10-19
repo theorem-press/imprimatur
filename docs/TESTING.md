@@ -99,9 +99,11 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.5 | binder patterns, partial applications, `flatten` with `sep`, `assoc`, `latex_style`, `latex_entry`, Greek letters, several notation files | `extract/golden/Notation` (`math:binders`), `extract/golden/Semantics`, project-a's parity gate | M5 |
 | D§18.2 | the splicer's laws and Theorem 1, proved for a model of the splicer; the paper presenting them is built and checked with no warnings | `e2e/about` | M5 |
 | D§18.4 | translation validation: tokens, productions of rules, readings counted up to two, sorts and type variables, coercions, chains, the built-in forms | `extract/validate/tokens`, `extract/validate/tokens-code`, `extract/validate/production`, `extract/validate/production-atomic`, `extract/validate/production-coercion`, `extract/validate/ambiguous`, `extract/validate/no-reading-without-parens`, `extract/validate/one-reading-with-parens`, `extract/validate/assoc-left`, `extract/validate/assoc-none`, `extract/validate/sorts`, `extract/validate/coercion-one-reading`, `extract/validate/flatten`, `extract/validate/builtin-implies`, `extract/validate/builtin-forall`, `extract/validate/tyvar-ill-sorted`, `extract/validate/tyvar-unknown`, `extract/validate/tyvar-binds`, `extract/validate/sort-arrow`, `extract/validate/sort-arrow-differs`, `extract/validate/sort-args-differ`, `extract/validate/sort-args-open`, `extract/validate/coercion-sorts`, `extract/validate/coercion-sorts-needed`, `extract/validate/application-curried`, `extract/validate/synonym`, `extract/validate/unmodelled` | M5 |
+| D§18.4 | list literals, and types such as `[n]` not read as lists; `Sort*`; a constant applied is one reading | `extract/validate/list-literal`, `extract/validate/list-or-type`, `extract/validate/type-not-list`, `extract/validate/sort-star-type`, `extract/validate/sort-star-not-value`, `extract/validate/app-constant` | M5 |
 | D§18.3 | side condition 5: a variable that prints as another type's category letter is reported | `extract/golden/Semantics` (`Stlc.size_pos`), `e2e/about` | M5 |
 | D§18.4 | the bundle records each view's problems; `check` warns at typeset blocks only, for the view they show | `extract/golden/Notation`, `extract/golden/Semantics`, `splice/golden/validation` | M5 |
 | D§18.4 | a template that drops a pattern variable is a warning | the `#guard_msgs` test in `extract/test/ExtractTest/Validate.lean` | M5 |
+| D§7.5 | `latex_style pattern_matching` and `lists`; case patterns and λ binders renamed when in scope; unused binders `_`; proof λs hidden; constructors shown in patterns; equation binders named by category or parameter, authors' names kept | `extract/golden/Patterns`, `extract/golden/Semantics`, `e2e/semantics` | M5 |
 | D§7.6 | premise conventions | `extract/golden/Semantics`, `e2e/fixture-views` | M5 |
 | D§7.7 | axioms and `sorry` | `extract/trust/direct-sorry`, `extract/trust/custom-axiom`, `extract/trust/classical-axioms`, `extract/trust/sorry-in-proof-chain`, `extract/trust/sorry-in-statement`, `extract/trust/custom-axiom-trust`, `extract/modules/private-sorry-seen` | M2 |
 | D§7.7 | dependency cone up to `trusted_prefixes`, with reasons | `extract/trust/cone-sorry`, `extract/trust/cone-partial`, `extract/trust/cone-clean`, `splice/golden/cone` | M3 |
@@ -153,9 +155,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§16 | math catalogue comparator manifests import cleanly | `integration/math-manifests` | M3 |
 | D§17 | roadmap | — | n/a |
 | D§18.1 | what a document claims | — | n/a |
-| D§18.2 | correctness: the splicer's laws (Theorem 1) | `splice/prop/locality`, `splice/prop/idempotence`, `splice/prop/fixed-point`, `splice/prop/slot-preservation` (property tests; proofs not yet scheduled) | M1 |
 | D§18.3 | correctness: faithful rendering (Theorem 2) | — | n/a |
-| D§18.4 | checking it: proofs of the splicer's laws, translation validation of renderings | — (not yet scheduled) | n/a |
 | D§18.5 | the trusted base | — | n/a |
 | D§19 | open questions | — | n/a |
 | D§A | claims still to check | — | n/a |

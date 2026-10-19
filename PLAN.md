@@ -5,6 +5,9 @@ imprimatur. DESIGN.md says what to build; this file says in what order, and
 how we will know each part is right. Section references like "D§10.2" point
 into DESIGN.md.*
 
+*Status (2026-10-19): M0 to M5 are done and merged; M6 is next (§4). No
+release has been tagged yet.*
+
 ## 1. Principles
 
 1. **Every requirement has a test, and every test names its requirement.**
@@ -59,6 +62,7 @@ part of the design:
 | `Basic` | theorems with implicit, instance and explicit binders; definitions; a structure; a docstring on every kind | the `lean`, `meta`, `math` and `prose` views; keys; entries |
 | `Semantics` | a small STLC with an inductive typing relation and a small-step relation; value predicates; well-formedness side conditions; docstring labels `/-- T-App: … -/` | the `rules` and `grammar` views, rule labels, premise conventions, `include`/`exclude`, slots |
 | `Notation` | constants used in every kind of notation rule: infix, nested pattern, `hide`, `variant`, `flatten`, `width`, `prec` | the notation language (D§7.5) |
+| `Patterns` | definitions by cases, nested cases that reuse a name, a case on a disjoint union, a dependent `if`, list literals | `latex_style pattern_matching` and `lists`, binder names in cases and equations (D§7.5) |
 | `Trust` | `sorry` directly in a proof, and three levels deep in the cone; a custom `axiom`; `partial` and `unsafe` definitions; a theorem whose hypothesis definition exists in two versions (`Weak := True`, `Strong := …`), switched by a build option | D§7.7, and the drift tests of D§10.3 |
 | `ModuleSys` | files with `module` headers, private proofs, and `import` with and without `all` | the `private`-level import (D§4, constraint 7) on the toolchains that have the module system |
 | `Manifests` | a comparator-style `ChallengeX.lean` plus a JSON manifest; a mini blueprint `.tex` using `\lean{}` and `\leanok` | D§10.5, D§9.3 |
@@ -139,34 +143,30 @@ needed a change to DESIGN.md.
 S1 and S2 run in the first week, since external mode and hashing shape
 milestones M2 and M3.
 
-**Results.**
+**Results.** All three spikes succeeded, and DESIGN.md revision 3 takes in
+S1 and S2.
+- S1 (external mode) worked on all three projects:
+  [docs/spikes/S1-external-mode.md](docs/spikes/S1-external-mode.md).
+- S2 (stable hashing) worked once definitions are hashed by their equation
+  lemmas, not their bodies:
+  [docs/spikes/S2-stable-hashing.md](docs/spikes/S2-stable-hashing.md).
 - S3 (2026-10-17) classified project-a's 254 rendering special cases: about
   half were notation, a fifth custom views, and the rest generic or
   conventions. Its report, which quotes project-a's code, is kept in project-a.
   It set M5's scope: binder patterns, `latex_style`, `latex_entry`, label
   styles, alias templates and labels, and comment-delimited blocks.
-- S1 succeeded on all three projects:
-  [docs/spikes/S1-external-mode.md](docs/spikes/S1-external-mode.md).
-- S2 succeeded once definitions are hashed by their equation lemmas, not their
-  bodies: [docs/spikes/S2-stable-hashing.md](docs/spikes/S2-stable-hashing.md).
-- DESIGN.md revision 3 takes in both results. S3 is still to do, before M5 is
-  planned.
 
 ## 4. Milestones
 
 Each milestone ends with green CI, an updated traceability matrix, and a
 tag. "Tests first" means the listed tests are merged, failing, before the
-code that makes them pass.
+code that makes them pass. M0 to M5 were merged as pull requests #2 to #7;
+their tags are still to be made.
 
 ### M0 — Foundations (no release)
 
-*Status: done on branch `m0-foundations` (2026-10-17), apart from green CI on
-GitHub, which needs the branch pushed. §7's decisions were taken at their
-defaults:*
-- *our own generator, not Plausible;*
-- *the toolchains v4.28.0-rc1, v4.31.0 and v4.34.1, plus v4.35.0, the latest
-  stable;*
-- *the repository stays private until v0.5.0.*
+*Status: done (2026-10-17, #2). §7's decisions were taken at their
+defaults.*
 
 - Repository layout as in D§15: two Lake packages, `test/` and `scripts/`,
   Apache headers, `CONTRIBUTING.md`, templates for pull requests and issues.
@@ -179,6 +179,8 @@ defaults:*
 - Spikes S1 and S2.
 
 ### M1 — The splicer (v0.1.0-alpha)
+
+*Status: done (2026-10-17, #3).*
 
 The splicer is pure text with no Lean internals, so it can be built
 completely, test-first, before the extractor exists. Its input is
@@ -202,6 +204,8 @@ hand-written golden bundles.
 
 ### M2 — The extractor, first views (v0.1.0)
 
+*Status: done (2026-10-17, #4).*
+
 - **Tests first:** golden bundles for `Basic`, covering the `lean` and
   `meta` views; trust fixtures for direct `sorry` and custom axioms; the
   `ModuleSys` fixture; the cross-toolchain job.
@@ -223,6 +227,8 @@ hand-written golden bundles.
 
 ### M3 — Trust and manifests (v0.2.0)
 
+*Status: done (2026-10-17, #5), external mode included.*
+
 - **Tests first:** the whole `Trust` fixture, including `Weak`/`Strong` drift
   and `sorry` three levels down; hash-invariance properties; the
   `Manifests` fixture; `\leancheck` and `accept` round trips.
@@ -240,6 +246,8 @@ hand-written golden bundles.
   - a deliberately weakened copy of a project B theorem is caught as drift.
 
 ### M4 — Notation and typeset maths (v0.3.0)
+
+*Status: done (2026-10-17, #6).*
 
 - **Tests first:** the `Notation` fixture with golden output for every
   feature of a notation rule; unit tests of the `Doc` emitter (precedence
@@ -259,13 +267,13 @@ hand-written golden bundles.
 
 ### M5 — Rules, grammars, and the project-a migration (v0.4.0)
 
-*Status: done on branch `m5-rules` (2026-10-18). The parity gate passes
-byte for byte. project-a's notation module and custom views live in project-a
-(`imprimatur/`, on project-a's `imprimatur` branch), whose three documents are
-now built with imprimatur in external mode; project-a's old exporter, and the
-gate with it, are deleted there. project B's rules
-are generated (`integration/projb-rules`), with Lift hand-written. `show=`
-and `hide=` are not implemented, and `migrate-slots` was not needed.*
+*Status: done (2026-10-18, #7, with follow-ups in #8). The parity gate
+passed byte for byte. project-a's notation module and custom views live in
+project-a (`imprimatur/`), whose three documents are now built with imprimatur
+in external mode; project-a's old exporter, and the gate with it, are deleted
+there. project B's rules are generated (`integration/projb-rules`), with Lift
+hand-written. `show=` and `hide=` are not implemented, and `migrate-slots`
+was implemented but not needed.*
 
 - **Tests first:** `Semantics` fixture golden files for `rules` and
   `grammar`; premise conventions; `include` and `exclude`; label precedence;
@@ -284,7 +292,21 @@ and `hide=` are not implemented, and `migrate-slots` was not needed.*
 - **Done when:** the parity gate passes, and project B's rule figure is
   generated, with Lift still hand-written.
 
+### Since M5 — correctness (D§18)
+
+Work outside the milestones, merged as #9 to #13:
+- `about/`, a paper about imprimatur built with it, whose theorems (the
+  splicer's laws and D§18.2's Theorem 1) are proved for a model of the
+  splicer in `about/lean`;
+- translation validation (D§18.4), typed by Lean sorts, with category
+  letters checked;
+- definitions by cases and list literals (`latex_style pattern_matching` and
+  `lists`), and faithful binder names, found by rendering every definition
+  of the project B development in a standalone document.
+
 ### M6 — Index, lint, anonymity, release (v0.5.0)
+
+*Status: not started.*
 
 - **Tests first:** a golden `\leanindex` output; lint fixtures; anonymity
   fixtures (an absolute path, a user name or a URL planted in each output
@@ -316,15 +338,17 @@ and `hide=` are not implemented, and `migrate-slots` was not needed.*
 | Lean internals change between toolchains (delaborator, `importModules`, frontend) | high, over time | everything version-specific lives in `Compat/`; CI covers the matrix; tags per toolchain if needed (D§13) |
 | Golden files get approved without being read | medium | the definition of done; golden diffs kept small by giving each fixture one concern |
 | project-a parity takes longer than planned because of its special cases | medium | spike S3 measures it before M5 is planned |
-| Mathlib integration is too heavy for CI and this machine (35 GB free disk) | high | Mathlib stays out of CI; integration runs locally, one toolchain at a time, reusing each project's existing `.lake` |
+| Mathlib integration is too heavy for CI and for a laptop's disk | high | Mathlib stays out of CI; integration runs locally, one toolchain at a time, reusing each project's existing `.lake` |
 | The private repository runs out of Actions minutes | low to medium | the extractor matrix runs on pull requests, and the full matrix nightly; or make the repository public before v0.5 |
 
-## 7. Decisions needed before M0
+## 7. Decisions taken at M0
 
-1. **When to make the repository public.** This affects CI minutes and
-   whether others can contribute. The suggestion is at v0.5.0.
-2. **Test-only dependencies.** Is Plausible acceptable in the test package
-   (§2.4), or do we write our own small generator? Our own generator is the
-   default.
-3. **Supported toolchains for v0.1.** The suggestion is exactly the three
-   used by the motivating projects, plus the latest stable release.
+Each was taken at its suggested default:
+
+1. **When to make the repository public:** at v0.5.0. This affects CI
+   minutes and whether others can contribute.
+2. **Test-only dependencies:** our own small seeded generator, not
+   Plausible (§2.4).
+3. **Supported toolchains for v0.1:** the three used by the motivating
+   projects (v4.28.0-rc1, v4.31.0, v4.34.1), plus the latest stable release
+   (v4.35.0).
