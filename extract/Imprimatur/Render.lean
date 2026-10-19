@@ -79,6 +79,13 @@ structure Ctx where
   callVars : Bool := false
   /-- `latex_style applied_variables := subscript`: `f_{a, b}` for an applied variable. -/
   subscriptVars : Bool := false
+  /-- `latex_style pattern_matching := cases`: a `match` as a case analysis. -/
+  casesMatch : Bool := false
+  /-- `latex_style lists := literal`: a list literal is written `[a, b]`. -/
+  listLiterals : Bool := false
+  /-- Rendering a `case`'s patterns: a constructor a rule writes as its bare
+  argument (`Sum.inl i` as `i`) is shown, since it is what the case tests. -/
+  inPattern : Bool := false
   /-- The document's blocks and labels, for views that index it. -/
   document : DocumentInfo := {}
   /-- The key being rendered, as the document writes it. -/
@@ -117,6 +124,8 @@ Greek letter becomes its macro; a name longer than one letter is set in
 names are written as they are. -/
 def varTeX (metavars : Array MetavarRule) (n : Name) (raw : Bool := false) : String :=
   let s := (n.eraseMacroScopes.toString.replace "✝" "")
+  -- `_`, a variable nothing uses, is TeX's subscript in any style.
+  if s == "_" then "\\_" else
   match metavars.find? (·.name.toString == s) with
   | some m => m.tex
   | none =>
@@ -125,6 +134,9 @@ def varTeX (metavars : Array MetavarRule) (n : Name) (raw : Bool := false) : Str
     let cs := cs.take (cs.length - primes)
     let digitsRev := cs.reverse.takeWhile fun c => c.isDigit || subscripts.any (·.1 == c)
     let base := String.ofList (cs.take (cs.length - digitsRev.length))
+    -- Lean's `a_1`: the underscore only separates the number.
+    let base := if !digitsRev.isEmpty && base.endsWith "_" && base.length > 1 then
+      (base.dropEnd 1).toString else base
     let digits := String.ofList (digitsRev.reverse.map fun c =>
       ((subscripts.find? (·.1 == c)).map (·.2)).getD c)
     let baseTeX := match metavars.find? (fun m => m.decorated && m.name.toString == base), greek.find? (·.1 == base) with
@@ -175,6 +187,14 @@ def metavarBase (t : String) : String := Id.run do
     if parts.length ≥ 2 then t := "_{".intercalate (parts.dropLast)
   return t
 
+/-- The elements of a list literal: a chain of `List.cons` ending in
+`List.nil`. -/
+partial def listLiteral? (e : Expr) : Option (Array Expr) :=
+  match e.consumeMData.getAppFnArgs with
+  | (``List.nil, #[_]) => some #[]
+  | (``List.cons, #[_, a, l]) => (listLiteral? l).map (#[a] ++ ·)
+  | _ => none
+
 /-- The sort of an expression, for reading back. -/
 def sortOf (e : Expr) : MetaM String := do
   try sortKey (← inferType e) catch _ => pure "*"
@@ -196,7 +216,8 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
     unless p.syms.isEmpty || leaves.any (fun q => q.name == p.name && q.sort == p.sort && q.isVar == p.isVar) do
       leaves := leaves.push p
   let base := ctx.grammar.getD
-    (Validate.notationGrammar ctx.rules ctx.variant ctx.callVars ctx.subscriptVars)
+    (Validate.notationGrammar ctx.rules ctx.variant ctx.callVars ctx.subscriptVars ctx.casesMatch
+      ctx.listLiterals)
   let g := base.extend leaves
   let (rs, over) := Validate.readBack g ts (← sortOf e)
   if over then
@@ -237,6 +258,8 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
     | none => none
   let mut seen : Array (FVarId × String) := #[]
   for (f, t) in free do
+    -- Variables nothing uses are all `_`.
+    if t == "\\_" then continue
     if let some (f', _) := seen.find? fun (f', t') => t' == t && f' != f then
       let n₁ := (lctx.find? f').map (·.userName.eraseMacroScopes.toString) |>.getD "?"
       let n₂ := (lctx.find? f).map (·.userName.eraseMacroScopes.toString) |>.getD "?"
@@ -256,6 +279,15 @@ mutual
       validate e d (← atoms.get) problems
       return d
     let e := e.consumeMData
+    -- `latex_style lists := literal`: `[a, b]`, not `a :: b :: []`.
+    if ctx.listLiterals then
+      if let some xs := listLiteral? e then
+        unless xs.isEmpty do
+          let mut parts : Array Doc := #[.tex "["]
+          for (x, i) in xs.toList.zip (List.range xs.size) do
+            if i > 0 then parts := parts ++ #[.tex ",\\ ", .brk]
+            parts := parts.push (.child 0 (← render x))
+          return .node Doc.maxPrec (parts.push (.tex "]"))
     -- Notation rules first: those for the head constant, or for the binder.
     let head : Name := match e with
       | .forallE _ _ b _ => if b.hasLooseBVar 0 then `_forall else `_arrow
@@ -264,7 +296,14 @@ mutual
         | .const h _ => h
         | _ => .anonymous
     unless head.isAnonymous do
-      for r in ← candidates head do
+      let bare (r : NotationRule) : Bool :=
+        r.pat.vars.any (fun v => r.template.trimAscii.toString == s!"#{v}")
+      let cands ← candidates head
+      -- In a pattern, a rule that writes a constructor as its bare argument
+      -- gives way to one that shows it, if the paper has one.
+      let shown := cands.any fun r => !bare r && r.pat.arity > 0
+      for r in cands do
+        if ctx.inPattern && shown && bare r then continue
         let fire (e : Expr) (bs : Array (Name × Expr)) : RenderM (Option Doc) := do
           (← read).used.modify (·.push s!"{r.origin}: {r.template}")
           return some (← applyRule r bs e)
@@ -293,8 +332,23 @@ mutual
       return .tex t
     | .forallE .. => renderForall e
     | .lam n t b bi =>
+      -- A binder Lean named that the body does not use is `_`; one whose
+      -- name is in scope already is renamed, so `λx.\,λx.` is not shown.
+      let lctx ← getLCtx
+      let n := if n.hasMacroScopes && !b.hasLooseBVar 0 then `_
+        else Id.run do
+          let base := n.eraseMacroScopes
+          let mut m := base
+          let mut i := 1
+          while (lctx.findFromUserName? m).isSome do
+            m := base.appendAfter s!"_{i}"
+            i := i + 1
+          return m
       withLocalDecl n bi t fun x => do
         let body ← render (b.instantiate1 x)
+        -- Proofs are not shown, so neither is a λ that binds one: the
+        -- branches of `if h : c then a else b` are `a` and `b`.
+        if ← isProp t then return body
         logAtom (← varName n) "*" (isVar := true)
         return .node 0 #[.tex s!"\\lambda {← varName n}.\\,", .child 0 body]
     | .const h _ =>
@@ -302,7 +356,8 @@ mutual
       logAtom t (← sortOf e)
       return .tex t
     | .app .. =>
-      if ← isMatcherApp e then return ← delab e
+      if ← isMatcherApp e then
+        return ← if (← read).casesMatch then renderMatch e else delab e
       let f := e.getAppFn
       match f with
       | .const h _ =>
@@ -503,6 +558,81 @@ mutual
           return .node 0 #[.tex s!"\\forall {v} \\in ", .child 50 s, .tex ",\\ ", .brk, .child 0 (← render rest)]
       let ty ← render t
       return .node 0 #[.tex s!"\\forall {v} : ", .child 1 ty, .tex ",\\ ", .brk, .child 0 (← render body)]
+
+  /-- A `match` as a case analysis: `\mathsf{case}\ d\ \mathsf{of}\ p_1
+  \Rightarrow e_1 \mid \dots`, a branch for each equation of the matcher,
+  its patterns and its right-hand side rendered in the notation in scope.
+  What cannot be read so is left to Lean's printer. -/
+  partial def renderMatch (e : Expr) : RenderM Doc := do
+    let some app ← matchMatcherApp? e | delab e
+    let some eqns ← (try some <$> Match.getEquationsFor app.matcherName catch _ => pure none)
+      | delab e
+    let nParams := app.params.size
+    let nDiscrs := app.discrs.size
+    let commaJoin (ds : Array Doc) : Array Doc := Id.run do
+      let mut out : Array Doc := #[]
+      for (d, i) in ds.toList.zip (List.range ds.size) do
+        if i > 0 then out := out.push (.tex ",\\ ")
+        out := out.push (.child 1 d)
+      return out
+    let discrs ← app.discrs.mapM render
+    let mut parts : Array Doc :=
+      #[.tex "\\mathsf{case}\\ "] ++ commaJoin discrs ++ #[.tex "\\ \\mathsf{of}\\ "]
+    let mut first := true
+    for eqn in eqns.eqnNames do
+      let ty := (← getConstInfo eqn).type
+      let branch? ← forallTelescope ty fun _ body => do
+        let some (_, lhs, rhs) := body.eq? | return none
+        let args := lhs.getAppArgs
+        let pats := args.extract (nParams + 1) (nParams + 1 + nDiscrs)
+        let alts := args.extract (nParams + 1 + nDiscrs) (nParams + 1 + nDiscrs + app.alts.size)
+        let some k := alts.findIdx? (· == rhs.getAppFn) | return none
+        let rhsBody := (app.alts[k]!).beta rhs.getAppArgs
+        -- The pattern variables take the names the alternative gives them,
+        -- made distinct from the names already in scope: a nested `case`
+        -- must not show two variables as one.
+        let lctx ← patternNames (app.alts[k]!) rhs.getAppArgs
+        withLCtx lctx (← getLocalInstances) do
+          let ps ← withReader (fun c => { c with inPattern := true }) (pats.mapM render)
+          let b ← render rhsBody
+          return some (commaJoin ps ++ #[.tex " \\Rightarrow ", .child 1 b])
+      let some branch := branch? | return ← delab e
+      unless first do parts := parts ++ #[.brk, .tex " \\mid "]
+      first := false
+      parts := parts ++ branch
+    let d : Doc := .node 0 parts
+    if app.remaining.isEmpty then return d else apply d app.remaining
+
+  /-- The local context with each pattern variable `xs[i]` named as the
+  alternative `alt` names its `i`th binder, unless that name is inaccessible,
+  and renamed when another variable in scope has the name already. -/
+  partial def patternNames (alt : Expr) (xs : Array Expr) : RenderM LocalContext := do
+    let mut lctx ← getLCtx
+    let mut body := alt
+    for x in xs do
+      let suggested := if body.isLambda then body.bindingName! else .anonymous
+      let unused := body.isLambda && !body.bindingBody!.hasLooseBVar 0
+      if body.isLambda then body := body.bindingBody!
+      let .fvar id := x | continue
+      let some decl := lctx.find? id | continue
+      -- A variable the branch does not use is written `_`, as in the source.
+      if unused then
+        lctx := lctx.setUserName id `_
+        continue
+      let base :=
+        if suggested.isAnonymous || suggested.hasMacroScopes || suggested.isInaccessibleUserName
+        then decl.userName.eraseMacroScopes else suggested
+      let clash (n : Name) (l : LocalContext) : Bool :=
+        l.decls.toList.any fun
+          | some d => d.fvarId != id && d.userName == n
+          | none => false
+      let mut name := base
+      let mut i := 1
+      while clash name lctx do
+        name := base.appendAfter s!"_{i}"
+        i := i + 1
+      lctx := lctx.setUserName id name
+    return lctx
 
   /-- Lean's own rendering, in monospace, for what nothing else covers. -/
   partial def delab (e : Expr) : RenderM Doc := do

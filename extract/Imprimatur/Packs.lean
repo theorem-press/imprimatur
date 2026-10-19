@@ -57,7 +57,7 @@ def core : Array NotationRule := #[
   -- `n + 1` is `Nat.succ n` by definition, and Lean writes it so.
   { rule "core" ``Nat.succ 1 "#a + 1" 65 (sort := "Nat") (holes := "Nat") with synonym := true },
   rule "core" ``Function.comp 2 "#a \\circ #b" 90,
-  rule "core" ``Prod.mk 2 "(#a, #b)",
+  rule "core" ``Prod.mk 2 "(#a, #b)" (sort := "Prod"),
   rule "core" ``Nat 0 "\\mathbb{N}" (sort := "Sort"),
   rule "core" ``Int 0 "\\mathbb{Z}" (sort := "Sort"),
   rule "core" ``Nat.cast 1 "#a" (holes := "Nat"),

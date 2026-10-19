@@ -197,7 +197,7 @@
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.size}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{size} : \\LeanConst{Tm} → \\LeanConst{Nat}}",
-        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{size}\\,x_{i} &= 1 \\\\ \\LeanMathConst{size}\\,(\\lambda{:}t.\\, e) &= \\LeanMathConst{size}\\,e + 1 \\\\ \\LeanMathConst{size}\\,(e_{1}\\; e_{2}) &= \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1 \\\\ \\LeanMathConst{size}\\,() &= 1\\end{aligned}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{size}\\,x_{\\_} &= 1 \\\\ \\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) &= \\LeanMathConst{size}\\,e + 1 \\\\ \\LeanMathConst{size}\\,(e_{1}\\; e_{2}) &= \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1 \\\\ \\LeanMathConst{size}\\,() &= 1\\end{aligned}}",
         "math|forall=": "\\LeanMath{\\LeanMathConst{Tm} \\to \\mathbb{N}}",
         "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.size} : \\LeanMathConst{Stlc.Tm} \\to \\mathbb{N}}",
         "math|rule=": "\\LeanMath{\\LeanMathConst{size} : \\LeanMathConst{Tm} \\to \\mathbb{N}}",

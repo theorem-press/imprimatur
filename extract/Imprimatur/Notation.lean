@@ -144,8 +144,9 @@ partial def sortKey (t : Expr) : MetaM String := do
   let t ← whnfR (← instantiateMVars t)
   match t with
   | .sort .zero => return "Prop"
-  -- A universe that may be zero (`Sort u`) is either.
-  | .sort u => return if u.isNeverZero then "Sort" else "*"
+  -- A universe that may be zero (`Sort u`) is either: `Sort*`, which is a
+  -- type or a proposition, but not a value of a datatype.
+  | .sort u => return if u.isNeverZero then "Sort" else "Sort*"
   | .forallE _ d b _ =>
     if b.hasLooseBVars then return "*"
     let d ← sortKey d

@@ -149,9 +149,11 @@ def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array Str
   let rawVars := style "names" "raw"
   let callVars := style "applied_variables" "call"
   let subscriptVars := style "applied_variables" "subscript"
+  let casesMatch := style "pattern_matching" "cases"
+  let listLiterals := style "lists" "literal"
   return { rules := projectRules env ++ Packs.select s.notationPacks,
            metavars := projectMetavars env, variant, strip := s.stripNamespaces, used, rawVars,
-           callVars, subscriptVars, document := s.document, key }
+           callVars, subscriptVars, casesMatch, listLiterals, document := s.document, key }
 
 /-- Run a view that renders mathematics. The formulas it renders are read
 back unless the configuration says not to (DESIGN §18.4); the problems
@@ -162,7 +164,8 @@ def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array S
   let problems ← IO.mkRef #[]
   let ctx := if s.validate then
       { ctx with problems := some problems,
-                 grammar := some (Validate.notationGrammar ctx.rules variant ctx.callVars ctx.subscriptVars) }
+                 grammar := some (Validate.notationGrammar ctx.rules variant ctx.callVars
+                   ctx.subscriptVars ctx.casesMatch ctx.listLiterals) }
     else ctx
   let r ← guarded (act ctx)
   return (r, ← problems.get)
