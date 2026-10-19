@@ -56,6 +56,23 @@ def tests : TestM Unit := group "validate" do
     (repr #[Sym.hole "Tm" Doc.maxPrec, .tok "[", .hole "Tm" 0, .tok "/", .hole "Nat" 0, .tok "]"]).pretty
   check "extract/validate/production-coercion"
     (ofRule (mk `Tm.var #[(`x, "Nat")] "#x" "Tm")).get!.coercion
+  -- `latex_style lists := literal`: a list literal is a list, and a type of
+  -- the form `[n]` (`Fin n`) is not read as one where a type is expected.
+  let fin := mk `Fin #[(`n, "Nat")] "[#n]" "Sort"
+  let lit (tex s : String) : Nat :=
+    (count (Grammar.of (#[fin].filterMap ofRule ++ builtins (lists := true) ++ atoms))
+      (tokenize tex) s).1
+  checkEq "extract/validate/list-literal" (lit "[a,\\ b]" "List(Nat)") 1
+  checkEq "extract/validate/list-or-type" (lit "[a]" "*") 2
+  checkEq "extract/validate/type-not-list" (lit "[a]" "Sort*") 1
+  -- `Sort*` (a universe that may be `Prop`) takes a type or a proposition,
+  -- but not a value of a datatype.
+  check "extract/validate/sort-star-type" (compat "Sort" "Sort*" && compat "Prop" "Sort*")
+  check "extract/validate/sort-star-not-value" (!compat "List(Nat)" "Sort*")
+  -- A constant applied, however the rules write it, is one reading.
+  checkEq "extract/validate/app-constant"
+    (reading { name := "application", sort := "*", prec := 0, syms := #[] } #["Sum.inr", "y"])
+    "Sum.inr[y]"
   -- Swapping next to application: ambiguous unless precedences separate them.
   checkEq "extract/validate/ambiguous" (readings #[app 1024, swap 1024] atoms "(a\\ b) \\cdot e\\; f" "Tm") 2
   -- With them, the formula needs parentheses, and has one reading with them.

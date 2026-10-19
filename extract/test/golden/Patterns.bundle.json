@@ -1,0 +1,130 @@
+{
+  "entries": {
+    "Patterns.konst": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Patterns.konst",
+      "doc": "Functions that ignore their arguments, and one whose binder is named as a\nvariable in scope.",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\lambda", "\\leanmetasource"],
+      "sigHash": "964d06b88c4b6fa936d0be63ea398c20d1d414da4604befb250e83f3e0fbb9a2",
+      "sorry": false,
+      "source": {
+        "line": 35,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "8972f6a60a300174968d2d2aae7f5c7c33c853e5f6cb1eddd9b1ed01a9ca42f4",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{konst} (\\LeanBound{x} : \\LeanConst{Nat}) : \\LeanConst{List} (\\LeanConst{Nat} → \\LeanConst{Nat} → \\LeanConst{Nat})}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{konst}\\,x &= [\\lambda \\_.\\,\\lambda \\_.\\,x,\\ \\lambda x_{1}.\\,\\lambda \\_.\\,x_{1} + 1]\\end{aligned}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Functions that ignore their arguments, and one whose binder is named as a\nvariable in scope.}"
+      }
+    },
+    "Patterns.nested": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 2,
+        "untrusted": []
+      },
+      "decl": "Patterns.nested",
+      "doc": "Nested cases whose patterns bind the same name: the inner `x` is not the\nouter one. (The discriminants are not variables, so the cases are not split\ninto equations.)",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\Rightarrow", "\\begin", "\\end", "\\leanmetasource", "\\mathsf", "\\mid"],
+      "sigHash": "6851d0f47d46072cb11af99cd905ecd8e2319691ce0584179508c378d96acbbf",
+      "sorry": false,
+      "source": {
+        "line": 16,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "3d5de668ab6c173fc4d2ff77927b5080a82ea4454600e3f6af53153e009cc409",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{nested} (\\LeanBound{o} \\LeanBound{p} : \\LeanConst{Option} (\\LeanConst{Nat} × \\LeanConst{Nat})) : \\LeanConst{Nat}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{nested}\\,o\\,p &= \\mathsf{case}\\ \\LeanMathConst{id}\\,o\\ \\mathsf{of}\\ \\mathsf{some}\\,(x, \\_) \\Rightarrow (\\mathsf{case}\\ \\LeanMathConst{id}\\,p\\ \\mathsf{of}\\ \\mathsf{some}\\,(x_{1}, y) \\Rightarrow x_{1} + y \\mid \\mathsf{none} \\Rightarrow x) \\mid \\mathsf{none} \\Rightarrow 0\\end{aligned}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Nested cases whose patterns bind the same name: the inner \\LeanCodeInline{x} is not the\nouter one. (The discriminants are not variables, so the cases are not split\ninto equations.)}"
+      }
+    },
+    "Patterns.safeHead": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Patterns.safeHead",
+      "doc": "A dependent `if`, whose branches bind a proof.",
+      "kind": "definition",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\leanmetasource", "\\mathsf", "\\ne"],
+      "sigHash": "ec06de703ee03c136688d61be656b64593bf9733acc0ae248fab9cf1e32a391c",
+      "sorry": false,
+      "source": {
+        "line": 30,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "d50600551dbd39aff150dbb37a9420fafd2bf9bb4317955216a5608ca2a7d2ca",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{safeHead} (\\LeanBound{l} : \\LeanConst{List} \\LeanConst{Nat}) : \\LeanConst{Nat}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{safeHead}\\,l &= \\mathsf{if}\\ l \\ne [\\,]\\ \\mathsf{then}\\ \\mathsf{head}(l)\\ \\mathsf{else}\\ 0\\end{aligned}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A dependent \\LeanCodeInline{if}, whose branches bind a proof.}"
+      }
+    },
+    "Patterns.side": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 2,
+        "untrusted": []
+      },
+      "decl": "Patterns.side",
+      "doc": "A case on a disjoint union, whose injections the patterns test.",
+      "kind": "definition",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\leanmetasource", "\\mathrm", "\\mathsf"],
+      "sigHash": "46c64ada509dbf71a089bbc49f3aa08e87b3633143160c3c882807a7c752d037",
+      "sorry": false,
+      "source": {
+        "line": 25,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "460b2e88800c61b3a74b40bc4cc283f695176db5ecdfecf628c3dd133a1addd3",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{side} : \\LeanConst{Nat} ⊕ \\LeanConst{Nat} → \\LeanConst{Bool}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{side}\\,(\\mathsf{inl}\\,\\_) &= \\mathrm{true} \\\\ \\LeanMathConst{side}\\,(\\mathsf{inr}\\,\\_) &= \\mathrm{false}\\end{aligned}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A case on a disjoint union, whose injections the patterns test.}"
+      }
+    },
+    "Patterns.three": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Patterns.three",
+      "doc": "A list literal.",
+      "kind": "definition",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\leanmetasource"],
+      "sigHash": "e9739a99171b783ac05072262b25b0651cfd60e6a34b1d53a7488a474fb8bec5",
+      "sorry": false,
+      "source": {
+        "line": 11,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "24f03e81dbeeb28b5be72619e573b37eb237f6343733011f9a28f539bfe46ea6",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{three} : \\LeanConst{List} \\LeanConst{Nat}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{three} &= [1,\\ 2,\\ 3]\\end{aligned}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A list literal.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

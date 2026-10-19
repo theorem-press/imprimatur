@@ -146,13 +146,121 @@ where
       .forallE n' t (rename names b) bi
     | e => e
 
+/-- The names the author gave binders in a definition: those of its type and
+value without macro scopes. Lean's own names (`x✝`) have them. -/
+partial def authorNames (c : ConstantInfo) : Array Name :=
+  go (go #[] c.type) (c.value?.getD (.sort .zero))
+where
+  go (acc : Array Name) : Expr → Array Name
+    | .forallE n t b _ | .lam n t b _ => go (go (keep acc n) t) b
+    | .letE n t v b _ => go (go (go (keep acc n) t) v) b
+    | .app f a => go (go acc f) a
+    | .mdata _ e | .proj _ _ e => go acc e
+    | _ => acc
+  keep (acc : Array Name) (n : Name) : Array Name :=
+    if n.hasMacroScopes || n.isAnonymous || acc.contains n then acc else acc.push n
+
+/-- Name the binders Lean gave generic names (`a`, `a_1`, `x✝`) in an
+equation lemma after their types' grammar categories, as BNF does
+(`latex_category Shape => "c"`): a `Shape` is `c`, two are `c₁` and `c₂`.
+A type is `T`, a function `f`, a number `n`, a list `l` and a Boolean `b`;
+binders of other types keep their names, as do binders the definition `defn`
+names itself (an author's `a` is not generic). -/
+def nameEqnBinders (e : Expr) (defn : Option Name := none) : MetaM Expr := do
+  let cats := projectCategories (← getEnv)
+  let (own, params) ← match defn with
+    | some d => do
+      let c ← getConstInfo d
+      -- The compiled value may have lost the patterns' names (structural
+      -- recursion uses the recursor), but the matchers' types keep them.
+      let mut own := authorNames c
+      let env ← getEnv
+      for i in [1:100] do
+        let some m := env.find? (d ++ Name.mkSimple s!"match_{i}") | break
+        own := (authorNames m).foldl (fun a n => if a.contains n then a else a.push n) own
+      pure (own, c.type.getForallBinderNames.toArray)
+    | none => pure (#[], #[])
+  -- A category's letter as a name: an ASCII letter, or a Greek macro's letter.
+  let letterName (tex : String) : Option String :=
+    if tex.length == 1 && tex.toList.all Char.isAlpha then some tex
+    else (Render.greek.find? (·.2 == tex)).map (·.1)
+  let base (n : Name) : String :=
+    ((n.eraseMacroScopes.toString.replace "✝" "").splitOn "_")[0]!
+  let generic (n : Name) : Bool := base n == "a" || base n == "x"
+  forallTelescope e fun xs body => do
+    -- A binder that is an argument of the definition on the left-hand side
+    -- (`@labels R C ι k (leaf spec)`, its first four binders) takes the name
+    -- the definition gives that argument, if no other binder has it.
+    let lhsArgs := match body.eq? with
+      | some (_, l, _) => l.getAppArgs
+      | none => #[]
+    let taken ← xs.mapM fun x => do return (← x.fvarId!.getDecl).userName
+    let param? (x : Expr) : Option Name := do
+      let i ← lhsArgs.findIdx? (· == x)
+      let n ← params[i]?
+      if n.hasMacroScopes || taken.contains n then none else some n
+    -- The letter for each binder, if it is to be renamed.
+    let letters ← xs.mapM fun x => do
+      let d ← x.fvarId!.getDecl
+      -- Lean's `x_1` for the author's second `x` is the author's.
+      if !generic d.userName || own.contains (Name.mkSimple (base d.userName)) then return none
+      if param? x |>.isSome then return none
+      let t ← whnfR (← instantiateMVars d.type)
+      -- A type is `T`, and a function `f`.
+      if t.isSort then return some "T"
+      if t.isForall then return some "f"
+      match t.getAppFn with
+      | .const c _ =>
+        if let some l := (cats.find? (·.1 == c)).bind fun (_, m) => letterName m then return some l
+        -- Otherwise a conventional letter for a few common types.
+        return match c with
+          | ``Nat => some "n"
+          | ``List => some "l"
+          | ``Bool => some "b"
+          | _ => none
+      | _ => return none
+    let subs := ["₁", "₂", "₃", "₄", "₅", "₆", "₇", "₈", "₉"]
+    let mut names : Array (Option Name) := #[]
+    for l in letters do
+      match l with
+      | none => names := names.push none
+      | some l =>
+        let total := (letters.filter (· == some l)).size
+        let idx := (names.filter fun n => n.isSome && (n.get!.toString.startsWith l)).size
+        names := names.push (some (if total == 1 then Name.mkSimple l
+          else Name.mkSimple (l ++ subs.getD idx s!"_{idx + 1}")))
+    -- A pattern variable Lean named (`val`, for the author's `_`) that the
+    -- right-hand side does not use is `_`.
+    let rhs := match body.eq? with
+      | some (_, _, r) => some r
+      | none => none
+    let mut lctx ← getLCtx
+    for (x, n) in xs.zip names do
+      let d ← x.fvarId!.getDecl
+      if (d.userName.hasMacroScopes || !own.contains d.userName.eraseMacroScopes) &&
+          n.isNone && (param? x).isNone then
+        if let some r := rhs then
+          let inTypes ← xs.anyM fun (y : Expr) => do
+            return (← y.fvarId!.getDecl).type.containsFVar x.fvarId!
+          if !r.containsFVar x.fvarId! && !inTypes then
+            lctx := lctx.setUserName x.fvarId! `_
+            continue
+      if let some n := n then lctx := lctx.setUserName x.fvarId! n
+      else if generic (← x.fvarId!.getDecl).userName then
+        if let some p := param? x then lctx := lctx.setUserName x.fvarId! p
+    withLCtx lctx (← getLocalInstances) do
+      mkForallFVars xs body
+
 /-- `lhs = rhs` of an equation statement, with its variables introduced. A
 right-hand side wider than `width` is broken, its lines aligned after the
 `=`. -/
 def equationRow (eqn : Expr) (width : Nat := 100000) : RenderM String :=
   statementParts eqn fun _ _ concl => do
     if concl.isAppOfArity ``Eq 3 then
-      let lhs := (← render concl.appFn!.appArg!).render 100000
+      -- The arguments on the left are patterns: an injection a rule writes as
+      -- its argument is shown (`Render.Ctx.inPattern`).
+      let lhs := (← withReader (fun c => { c with inPattern := true })
+        (render concl.appFn!.appArg!)).render 100000
       let rhs := (← render concl.appArg!).render width
       let rhs := rhs.replace " \\LeanBreak " " \\\\ &\\qquad "
       return s!"{lhs} &= {rhs}"
@@ -182,7 +290,8 @@ def mathViewWith (c : ConstantInfo) (width : Nat) (opts : Array (String × Strin
     else if has "def" && isDef then
       match ← getEqnsFor? c.name with
       | some es =>
-        let rows ← es.mapM fun e => do equationRow (restoreEqnNames (← getConstInfo e).type) (width * 3 / 4)
+        let rows ← es.mapM fun e => do
+          equationRow (← nameEqnBinders (restoreEqnNames (← getConstInfo e).type) c.name) (width * 3 / 4)
         return wrap ("\\begin{aligned}" ++ " \\\\ ".intercalate rows.toList ++ "\\end{aligned}")
       | none => mathView c width
     else mathView c width

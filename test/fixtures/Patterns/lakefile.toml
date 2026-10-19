@@ -1,0 +1,11 @@
+# The `Patterns` fixture: definitions by cases, written as the paper styles
+# `pattern_matching := cases` and `lists := literal` write them.
+name = "patterns-fixture"
+defaultTargets = ["Patterns"]
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"
+
+[[lean_lib]]
+name = "Patterns"
