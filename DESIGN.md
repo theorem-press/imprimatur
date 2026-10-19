@@ -1,8 +1,10 @@
 # imprimatur — design
 
-*Status: draft design. Revision 2 (2026-10-17) takes in a survey of prior art
-(§3). Revision 3 (2026-10-17) takes in spikes S1 (external mode) and S2
-(stable hashing), under [docs/spikes/](docs/spikes/).*
+*Status: the design as built through M5 (PLAN.md §4), with M6's parts marked
+"(M6)" where they are described. Revision 2 (2026-10-17) took in a survey of
+prior art (§3), and revision 3 (2026-10-17) spikes S1 (external mode) and S2
+(stable hashing), under [docs/spikes/](docs/spikes/). Later sections record
+what each milestone found, and §18 states what correctness means.*
 
 *Name: an imprimatur ("let it be printed") is the approval a work receives
 before publication. The tool's core job is to let only checked statements into
@@ -123,7 +125,7 @@ the blueprint ecosystem.
    for axioms and `sorry` need the proof bodies, which are only in `private`.
    In v4.34.1, `importModules` takes a `level` argument whose default is
    `.private` (verified in `Lean/Environment.lean`). The extractor always
-   passes it explicitly, through `Compat/` (§13).
+   passes it explicitly, through `Compat.lean` (§13).
 
 ## 5. Architecture
 
@@ -298,8 +300,9 @@ subDir = "extract"
 name = "PaperTeX"
 ```
 
-- `imprimatur init --sidecar` creates it, copies the host's toolchain, and pins
-  shared dependencies to the host's manifest.
+- `imprimatur init --sidecar` (M6) will create it, copy the host's
+  toolchain, and pin shared dependencies to the host's manifest. Until then
+  it is written by hand, as in `examples/sidecar`.
 - It costs one extra checkout of the dependencies; for Mathlib, use
   `lake exe cache get`.
 - Use it when the notation module needs Lake features: it spans several
@@ -311,7 +314,8 @@ name = "PaperTeX"
 - Because imprimatur has no dependencies, this cannot disturb Mathlib's pins
   (constraint 6).
 - It is the simplest mode when you own the project and its lakefile is not
-  an artifact in its own right. llmbda fits this case.
+  an artifact in its own right. llmbda was planned this way, but uses
+  external mode (§16).
 
 ## 7. The extractor (`imprimatur`)
 
@@ -454,24 +458,42 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
 - **`assoc`** is `left` (the default), `right`, or `none`, which
   parenthesises both operands at the rule's own precedence, as llmbda does
   for `∧` next to `∨`.
-- **`latex_style`** fixes conventions of the renderer for the whole paper:
-  `names := raw` writes binder names as they are (they are TeX: `l_c`),
-  rather than escaped and in `\mathit`; `applied_variables := call` writes
-  an applied variable as `f(a)(b)`. Greek binder names are always macros
-  (`\varepsilon`).
+- **`latex_style`** fixes conventions of the renderer for the whole paper
+  (the table is in [docs/notation.md](docs/notation.md)):
+  - `names := raw` writes binder names as they are (they are TeX: `l_c`),
+    rather than escaped and in `\mathit`;
+  - `applied_variables := call` or `subscript` writes an applied variable as
+    `f(a)(b)` or `f_{a, b}`;
+  - `pattern_matching := cases` writes a `match` as
+    `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots`;
+  - `lists := literal` writes a list literal as `[a, b]`.
+
+  Greek binder names are always macros (`\varepsilon`).
+- **Binder names.** A binder Lean named that nothing uses is written `_`; a
+  λ that binds a proof is not shown, since proofs are not (`if h : c then a
+  else b` is `if c then a else b`). The variables of a case's patterns, and
+  λ binders, are renamed when their names are already in scope. In an
+  equation lemma, binders with Lean's generic names (`a`, `x✝`) are named
+  after their types' categories (`latex_category`), or after the
+  definition's own parameters; names the author wrote are kept.
+- **Patterns.** In a pattern (a case's, or an argument on the left of an
+  equation), a rule that writes a constructor as its bare argument
+  (`Sum.inl a => "#a"`) gives way to one that shows the constructor, if the
+  module has one, since the constructor is what the pattern tests.
 - **Order of lookup.**
   1. The project's rules. The most specific pattern wins, and declaration
      order breaks ties.
-  2. Notation packs shipped with imprimatur (`core`, `logic`, `sets`, `order`,
-     `mathlib-common`). A pack is selected in `imprimatur.toml`, and its rules
-     are stored as names, so imprimatur still doesn't depend on Mathlib.
+  2. Notation packs shipped with imprimatur (`core`, `logic`, `sets`,
+     `order`; a `mathlib-common` pack is not yet written). A pack is
+     selected in `imprimatur.toml`, and its rules are stored as names, so
+     imprimatur still doesn't depend on Mathlib.
   3. The delaborator fallback (§7.2).
 - **Metavariables.** A trailing digit or a Unicode subscript becomes a LaTeX
   subscript. `latex_metavar` renames a binder, for example rendering
   `spec` as `L`.
 - **Macros come from the paper.** The bundle records the macros each
   rendering uses (§8), so the splicer can warn about macros that are not
-  defined anywhere in the document.
+  defined anywhere in the document (M6).
 
 ### 7.6 Premise conventions (for `rules` and `prose`)
 
@@ -486,8 +508,8 @@ latex_hide_premise Ctx.WF _
 latex_hide_premise (_ : Fintype _)
 ```
 
-Instance binders are always hidden. Each block can override these choices
-with `show=` and `hide=` options.
+Instance binders are always hidden. Block options `show=` and `hide=`, to
+override these choices per block, are designed but not implemented.
 
 ### 7.7 Trust metadata
 
@@ -518,10 +540,11 @@ For every entry, the extractor imports the environment at `private` level
   - `partial` means the kernel sees an `opaque` constant with an
     `_unsafe_rec` implementation. Structural and well-founded recursion also
     generate `_unsafe_rec` helpers, but stay definitions, so they don't count.
-  - The bundle records each untrusted member with its reasons (`sorry`,
-    `axiom`, `partial`, `unsafe`). The splicer then accepts axioms that
-    `allowed_axioms` (or a manifest's `permitted_axioms`) lists. Each constant in the cone is itself checked for `sorry`,
-  for disallowed axioms, and for `unsafe` or `partial`.
+  - Each constant in the cone is itself checked for `sorry`, for disallowed
+    axioms, and for `unsafe` or `partial`. The bundle records each untrusted
+    member with its reasons (`sorry`, `axiom`, `partial`, `unsafe`), and the
+    splicer accepts the axioms that `allowed_axioms` (or a manifest's
+    `permitted_axioms`) lists.
   - Without this, someone could change a definition used in the hypotheses
     to `True`, and the theorem would become trivial while its own statement
     looked unchanged.
@@ -605,7 +628,7 @@ For every entry, the extractor imports the environment at `private` level
 \leaninline[sum=…]{SetFormula.choice}{…generated…}    % inline; regenerates arg 2
 \leanref{Planet.Paper.theorem1_main}{…generated…}     % source location, per profile (§11)
 \leancheck[stmt=b41c]{Planet.Paper.theorem1_main, Planet.Paper.theorem1_inter}
-\leanindex                                            % table of every key used in the document
+\leanindex                                            % table of every key used in the document (M6)
 ```
 
 The options of `leanblock`:
@@ -617,7 +640,8 @@ The options of `leanblock`:
 - **`include`** and **`exclude`**, which select constructors for a `rules` or
   `grammar` view, as PLT Redex does. With them, one inductive can be
   presented a few rules at a time across sections;
-- **`show`** and **`hide`**, which override premise conventions (§7.6);
+- **`show`** and **`hide`**, which would override premise conventions
+  (§7.6; not implemented);
 - **theorem modifiers**, after Isabelle's print modes and HOL4's `\HOLthm`
   options:
   - `rule` renders `A → B → C` as an inference rule;
@@ -634,8 +658,9 @@ The options of `leanblock`:
 - **`\leancheck`** generates nothing. It ties hand-written prose to Lean
   (§10.3). This is plectis's idea of a reviewed claim, kept inline in the
   paper.
-- **`\leanindex`** replaces llmbda's provenance table, and it is how PLanet's
-  Lean appendix lists every result.
+- **`\leanindex`** (M6) will replace llmbda's provenance table, which is a
+  custom view for now, and list every result in PLanet's Lean appendix. The
+  scanner already recognises it.
 
 ### 9.2 Aliases
 
@@ -660,9 +685,9 @@ tool generated keeps being generated:
   reads leanblueprint's `\lean{a, b}` as check-only references, the same as
   `\leancheck` without a recorded hash. `\leanok` is cross-checked: a node
   marked `\leanok` whose declarations depend on `sorry` is an error.
-- **Writing blueprint markers.** `imprimatur build --blueprint-compat` also
-  writes `\lean{…}` inside generated blocks, so a paper can feed a blueprint
-  dependency graph.
+- **Writing blueprint markers (M6).** `imprimatur build --blueprint-compat`
+  will also write `\lean{…}` inside generated blocks, so a paper can feed a
+  blueprint dependency graph.
 
 ### 9.4 `imprimatur.sty`
 
@@ -789,10 +814,13 @@ to TeX environments.
   person last checked the prose against it. `imprimatur accept <key>` records
   the new hash after re-reading the prose. A change in `sigHash` alone is a
   warning;
-- **undefined macros**: macros used by generated content that no scanned
-  file defines. This one is only a warning;
-- **orphaned slots**: slot text whose slot no longer exists in the
-  regenerated block (§9.5). Also only a warning.
+- **undefined macros** (M6): macros used by generated content that no
+  scanned file defines. This one is only a warning;
+- **orphaned slots** (M6; `apply` already prints them): slot text whose
+  slot no longer exists in the regenerated block (§9.5). Also only a
+  warning;
+- **unfaithful renderings**: formulas that do not read back as what they
+  render (§18.4). Also only a warning.
 
 `check` exits non-zero on anything except warnings, so it can gate CI and a
 pre-submission checklist.
@@ -841,8 +869,8 @@ Separately from the profile:
 
 - the bundle never contains absolute paths, user names, URLs or commit
   hashes (§8);
-- `check --anonymous` scans everything generated for strings like `/home/`,
-  `@` or `github.com`;
+- `check --anonymous` (M6) will scan everything generated for strings like
+  `/home/`, `@` or `github.com`;
 - external mode (§6.3 A) leaves no trace of imprimatur in the host project.
 
 Unlike leanblueprint and doc-gen4, nothing in the output templates contains a
@@ -853,16 +881,23 @@ repository URL.
 | Command | What it does |
 |---|---|
 | `imprimatur toolchain install <ver>` | build the extractor for a toolchain (external mode) |
-| `imprimatur init [--sidecar]` | create `imprimatur.toml`, and the sidecar package if asked |
-| `imprimatur build [--profile p] [--blueprint-compat]` | scan, then export, then apply |
-| `imprimatur check [--profile p] [--anonymous] [--diff]` | the checks in §10.3 |
-| `imprimatur accept <key>…` | record the current statement hash in `\leancheck` |
-| `imprimatur strip [-o dir]` | write a copy with the markers removed |
+| `imprimatur build [--profile p] [--commit sha] [--force key] [--keep-stale] [--rename-slot old=new]` | scan, then export, then apply |
+| `imprimatur check [--profile p] [--diff] [--check-fail-msg m] [--keep-stale]` | the checks in §10.3 |
+| `imprimatur accept <key>… \| --all` | record the current statement hash in `\leancheck` |
+| `imprimatur strip -o dir` | write a copy with the markers removed |
 | `imprimatur migrate-slots` | rewrite slots declared by position into `\leanslot` form (§9.5) |
+| `imprimatur-splice scan\|apply\|check\|strip\|migrate-slots\|accept` | the splicer on its own |
+| `imprimatur-export --requests r.json --out b.json` | the extractor on its own |
+
+Planned for M6:
+
+| Command | What it will do |
+|---|---|
+| `imprimatur init [--sidecar]` | create `imprimatur.toml`, and the sidecar package if asked |
+| `imprimatur build --blueprint-compat` | also write `\lean{…}` (§9.3) |
+| `imprimatur check --anonymous` | the anonymity scan (§11) |
 | `imprimatur show <key> [--view v]` | print one rendering, for working on notation |
 | `imprimatur lint` | report binder names that differ from the paper's naming convention (generalised from llmbda's `lint_binders`) |
-| `imprimatur-splice scan\|apply\|check\|strip` | the splicer on its own |
-| `imprimatur-export --requests r.json --out b.json` | the extractor on its own |
 
 A typical `Makefile` addition:
 
@@ -876,10 +911,11 @@ imprimatur:
 ## 13. Toolchain compatibility and versioning
 
 - **Supported range.** Each extractor release states the range of toolchains
-  it supports (at the time of writing, v4.28 to v4.34). CI builds and runs the
-  golden tests on every toolchain in the range.
+  it supports (at the time of writing, v4.28.0-rc1 to v4.35.0). CI builds
+  and runs the golden tests on v4.28.0-rc1, v4.31.0, v4.34.1 and v4.35.0.
+  Enforcing the range is M6.
 - **Where version differences live.** Differences between Lean versions are
-  confined to `Imprimatur/Compat/`. They include:
+  confined to `Imprimatur/Compat.lean`. They include:
   - the delaborator;
   - `importModules`, including whether it has a `level` argument and what
     its default is;
@@ -900,124 +936,87 @@ imprimatur:
 
 ## 14. Testing
 
-- **Golden tests for the extractor.** For each view, a fixture project with
-  known output, run for every supported toolchain. The fixture includes a
-  project that uses the module system.
-- **Golden tests for the splicer.** Pairs of TeX files before and after
-  `apply`, including:
-  - nested `\input`;
-  - blocks inside macro arguments;
-  - hand-edit protection;
-  - slots: edited slot text survives regeneration; a slot whose formal part
-    changes keeps its text when identified by `\leanslot` id; orphans are
-    reported; slots declared by position match llmbda's current behaviour;
-  - CRLF line endings and trailing whitespace;
-  - Unicode;
-  - blueprint `\lean{}`.
-- **Trust tests.** A fixture whose theorem has a hypothesis definition
-  silently changed to `True`, which must fail `check`. Also fixtures with
-  `sorry` deep in the cone, and with a disallowed axiom.
-- **Property tests.** `apply` is idempotent; `scan` followed by `apply` on a
-  generated document changes nothing; `strip` followed by compiling gives the
-  same PDF.
-- **End-to-end.** `examples/` builds a small paper and its PDF in CI, in all
-  three modes.
+[PLAN.md](PLAN.md) §2 describes the test layers: unit and property tests,
+golden tests of the extractor (fixture projects, run on every toolchain in
+the matrix) and of the splicer (TeX documents before and after `apply`),
+negative trust tests, end-to-end builds of `examples/` with pdflatex and
+lualatex, and integration with the real projects outside CI.
+[docs/TESTING.md](docs/TESTING.md) says how to run them, and keeps the
+traceability matrix from each section here to its tests.
 
 ## 15. Repository layout
 
 ```
 imprimatur/
-  README.md  DESIGN.md  CHANGELOG.md  LICENSE
+  README.md  DESIGN.md  PLAN.md  CHANGELOG.md  CONTRIBUTING.md  LICENSE
   extract/                        Lake package "imprimatur" (no dependencies)
-    lakefile.toml  lean-toolchain
-    Imprimatur.lean
     Imprimatur/Doc.lean           IR and LaTeX emitter (escaping, precedence, widths, flattening)
-    Imprimatur/Render.lean        Expr → Doc; delaborator fallback; telescopes, metavariables
-    Imprimatur/Notation.lean      registry, environment extension, latex_notation
-    Imprimatur/Conventions.lean   latex_metavar_convention, latex_hide_premise
-    Imprimatur/Entries.lean       latex_entry, latex_group, latex_rule_label
-    Imprimatur/Views/             Lean.lean Meta.lean Math.lean Prose.lean Rules.lean Grammar.lean
-    Imprimatur/Packs/             Core.lean Logic.lean Sets.lean Order.lean MathlibCommon.lean
+    Imprimatur/Render.lean        Expr → Doc; delaborator fallback; telescopes, metavariables, cases
+    Imprimatur/Notation.lean      the registry and its environment extension
+    Imprimatur/Commands.lean      latex_notation, latex_metavar, latex_style and the other commands
+    Imprimatur/Packs.lean         the notation packs
+    Imprimatur/Validate.lean      reading renderings back (§18.4)
+    Imprimatur/Views/             Lean.lean Math.lean Rules.lean Grammar.lean
+    Imprimatur/CustomViews.lean   @[latex_view]
+    Imprimatur/Entry.lean         bundle entries, and the views run for each
     Imprimatur/Trust.lean         axioms, sorry, dependency cone, stmtHash, sigHash
-    Imprimatur/Bundle.lean        JSON writer
-    Imprimatur/Lint.lean
-    Imprimatur/Compat/            differences between toolchains
+    Imprimatur/Export.lean        Requests.lean  Json.lean  TeX.lean  Sha256.lean  Version.lean
+    Imprimatur/Compat.lean        differences between toolchains
     Main.lean                     imprimatur-export (also the external-mode runner)
-    test/
+    test/                         unit tests and golden bundles of the fixtures
   splice/                         Lake package "imprimatur-splice"
-    lakefile.toml  lean-toolchain
     Splice/Text.lean  Splice/Sha256.lean  Splice/Toml.lean  Splice/Config.lean
     Splice/Bundle.lean  Splice/Diag.lean  Splice/Scan.lean  Splice/Doc.lean
     Splice/Slots.lean  Splice/Apply.lean  Splice/Check.lean  Splice/Strip.lean
-    Splice/Cli.lean  Splice/Manifests.lean (M3)
-    Main.lean                     imprimatur-splice, imprimatur (wrapper)
+    Splice/Manifests.lean  Splice/Cli.lean  Splice/Wrapper.lean  Splice/Version.lean
+    Main.lean  SpliceWrapper.lean imprimatur-splice, and the imprimatur wrapper
     test/
   testkit/                        test-only package: harness, golden files, seeded generator
   test/                           fixtures/ (Lean projects), tex/ (documents), bundles/
-  scripts/                        test-all.sh, lint.sh, e2e.sh, integration.sh
+  scripts/                        test-all.sh, lint.sh, e2e.sh, integration.sh, and the lint checks
   schema/bundle.schema.json
   tex/imprimatur.sty
-  docs/  blocks.md  notation.md  views.md  trust.md  bundle.md  anonymity.md  prior-art.md
-  examples/minimal/  examples/sidecar/  examples/external/  examples/blueprint/
-  .github/workflows/              toolchain matrix, release binaries
+  docs/                           blocks.md notation.md views.md trust.md TESTING.md spikes/
+  examples/                       minimal/ sidecar/ external/ semantics/
+  about/                          a paper about imprimatur, and lean/, its model of the splicer
+  .github/workflows/              ci.yml (the toolchain matrix), pages.yml
 ```
 
 ## 16. Adoption in the three projects
 
-**llmbda** (inside the project, §6.3 C)
+**llmbda** (external, §6.3 A; done in M5)
 
-- `RunLatex` keeps `runcode` and `codeoutput`. Its splicing code for the
-  `lean*` environments is deleted.
-- `defaultTheorems` and `defaultDefinitions` become `latex_entry` lines, and
-  `defaultGroups` becomes `latex_group` lines.
-- The symbol choices in `ruleName` and `metavar` become notation rules and
-  premise conventions. Whatever BigStep-specific rendering remains becomes an
-  `@[latex_view "llmbda.rules"]`.
-- `ExportTranslation` is replaced by `\leanindex`.
+- **The parity gate.** `oopsla2027/paper.tex` and `popl27` were built with
+  llmbda's old `run_latex` and with imprimatur from the same commit of
+  `deep/`, and the results differed only in the `sum=` options imprimatur
+  adds. The gate passed byte for byte, after which llmbda deleted its old
+  exporter (`ExportRules.lean`, `ExportGrammar.lean`,
+  `ExportTranslation.lean` and `run_latex`'s Lean splicing) and the gate
+  with it. `run_latex` keeps only the `runcode` blocks.
+- **What llmbda keeps.** The port lives in llmbda's own repository
+  (`imprimatur/`, shared by its three documents): notation for every arm of
+  the old renderer, the groups, labels and entries, and four custom views
+  (theorem prose, `≜` definitions, the hand-written grammar tables, and the
+  conventions, dispatch and provenance tables). The binder linter and its
+  conventions table stay in llmbda's Lean sources, and a custom view splices
+  the table from there.
 - **Hand-written grammar descriptions are kept.** The `leangrammar` alias
   declares the description arguments of `\entry`, `\defentry` and
-  `\Category` as slots identified by their first argument (§9.5). This
-  reproduces `mergeGrammarDescriptions` exactly. The defaults in
-  `ExportGrammar.lean` become constructor docstrings or `latex_entry`
-  options.
-- **Content specific to llmbda moves into llmbda.** The binder-convention
-  table (`leanconventions`) and the dispatch table become custom views in
-  llmbda's notation module, not features of imprimatur.
-- **The paper is unchanged**, thanks to the alias table. `/paper-rebuild`
-  runs `run_latex` for the `runcode` blocks, then `imprimatur build`.
-- **Llmbda's Lean version must be supported.** It uses `v4.28.0-rc1`, a
-  release candidate, so that version must be in imprimatur's supported range
-  (§13).
-- **A parity test gates the migration.**
-  1. Build `oopsla2027/paper.tex` with the old `run_latex` and with
-     imprimatur, from the same commit of `deep/`.
-  2. Diff the results. The only allowed differences are the `sum=` options
-     that imprimatur adds to each block on its first run.
-  3. Only then delete the `Export*.lean` rendering code and the `lean*`
-     splicing in `RunLatex.lean`.
-
-  The diff in step 2 also lists every rendering special case still to port.
-
-**As done (M5).** The parity gate passed byte for byte on `oopsla2027` and
-`popl27`, after which llmbda deleted its old exporter (`ExportRules.lean`,
-`ExportGrammar.lean`, `ExportTranslation.lean` and `run_latex`'s Lean
-splicing) and the gate with it. llmbda keeps the port in its own repository
-(`imprimatur/`, shared by its documents): notation for every arm of the old
-renderer, the groups, labels and entries, and four custom views (theorem
-prose, `≜` definitions, the hand-written grammar tables, and the
-conventions, dispatch and provenance tables). Its three documents are built
-with imprimatur in external mode, and `run_latex` keeps only the `runcode`
-blocks. The binder linter and its conventions table stay in llmbda's Lean
-sources, and a custom view splices the table from there. In `deep/doc` the gate found two blocks the old tool had left frozen,
-stale, because their theorems were not registered: one is now generated, the
-other (its theorem gone) became plain text. It also showed the old
-renderer's mistakes kept for parity, such as a dropped premise, each now one
-line to delete. Generic features came out of the port: binder patterns,
-`latex_style`, `latex_entry`, `when` guards, decorated metavariables, alias
-labels and templates, comment-delimited blocks, the scanner's reading of
-`\newif` switches (so an index leaves out appendices switched off while
-their blocks are kept up to date), and the document inventory, which
-`\leanindex` (M6) will also use.
+  `\Category` as slots identified by their first argument (§9.5), which
+  reproduces llmbda's `mergeGrammarDescriptions`.
+- **Llmbda's Lean version is supported.** It uses `v4.28.0-rc1`, a release
+  candidate, which is in the supported range (§13).
+- **What the gate found.** In `deep/doc`, two blocks the old tool had left
+  frozen, because their theorems were not registered: one is now generated,
+  the other (its theorem gone) became plain text. It also showed the old
+  renderer's mistakes kept for parity, such as a dropped premise, each now
+  one line to delete.
+- **What came out of it.** Generic features: binder patterns,
+  `latex_style`, `latex_entry`, `when` guards, decorated metavariables,
+  alias labels and templates, comment-delimited blocks, the scanner's
+  reading of `\newif` switches (so an index leaves out appendices switched
+  off while their blocks are kept up to date), and the document inventory,
+  which `\leanindex` (M6) will also use.
 
 **Math catalogue** (external, §6.3 A)
 
@@ -1049,26 +1048,35 @@ their blocks are kept up to date), and the document inventory, which
 
 **PLanet** (external, `submission` profile)
 
-- The rules figure in `analysis.tex` becomes a generated `rules` group taken
-  from `Der` and `DerF`. Labels come from the existing constructor docstrings.
-  Premise conventions hide the `Fintype` data.
-- The schematic **Lift** rule, a single rule in the paper that stands for four
-  constructors, either stays hand-written or gets a small custom view.
-- Theorem and proposition prose stays hand-written, with
-  `\leancheck[stmt=…]` against the `Planet.Paper.*` restatements.
-- `lean-appendix.tex` gains a `\leanindex` and `lean`-view statements.
-- The supplement and `make_lean_supplement.py` are unaffected, and
-  `check --anonymous` runs alongside `check-anonymity.sh`.
+- **The paper's prose stays hand-written.** About sixty `\leancheck`s, in
+  the section and appendix files, tie its theorems and propositions to the
+  `Planet.Paper.*` restatements.
+- **The rules figure.** `integration/planet-rules` generates the analysis
+  rules from `Der` and `DerF`, with labels from the constructor docstrings
+  and the `Fintype` data hidden by premise conventions, and compares them
+  with an agreed target text. The paper's `analysis.tex` still typesets its
+  hand-written figure; `standalone/` uses the generated one. The schematic **Lift** rule, a
+  single rule in the paper that stands for four constructors, stays
+  hand-written (§19, question 3).
+- **`standalone/`** is a document generated from the development: every
+  definition and result up to Theorem 1, with the paper's core syntax as
+  Lean inductive types, in the paper's display style. Only its headings,
+  descriptions and connecting sentences are written by hand. Rendering all
+  of the definitions found the case, list-literal and binder-name features
+  of §7.5.
+- **Still to do (M6):** `lean-appendix.tex` gains a `\leanindex`, and
+  `check --anonymous` runs alongside `check-anonymity.sh`. The supplement
+  and `make_lean_supplement.py` are unaffected.
 
 ## 17. Roadmap
 
-| Version | Scope |
-|---|---|
-| 0.1 | Splicer: scan, apply, check, `--diff`, checksums with normalisation, author-owned slots (both forms), multi-file documents, aliases, strip. Bundle schema 1. Extractor (sidecar and in-project modes) with the `lean` view (semantic macros) and the `meta` view; axioms and `sorry`; profiles with `relative` as the default. **Useful for all three projects with no notation work.** |
-| 0.2 | Dependency cones, `stmtHash`/`sigHash`, `\leancheck`, `imprimatur accept`. Comparator and blueprint manifests. External mode with `toolchain install`. |
-| 0.3 | `Doc` IR, notation DSL (`width`, `variant`, `flatten`), delaborator fallback, `math` and `prose` views, notation packs. |
-| 0.4 | `rules` and `grammar` views ported from llmbda, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate llmbda, gated by the parity test (§16). |
-| 0.5 | `\leanindex`, `lint`, `check --anonymous`, undefined-macro warnings, `--blueprint-compat`, release binaries, toolchain CI across the full range. |
+| Version | Scope | Status |
+|---|---|---|
+| 0.1 | Splicer: scan, apply, check, `--diff`, checksums with normalisation, author-owned slots (both forms), multi-file documents, aliases, strip. Bundle schema 1. Extractor (sidecar and in-project modes) with the `lean` view (semantic macros) and the `meta` view; axioms and `sorry`; profiles with `relative` as the default. **Useful for all three projects with no notation work.** | done, untagged |
+| 0.2 | Dependency cones, `stmtHash`/`sigHash`, `\leancheck`, `imprimatur accept`. Comparator and blueprint manifests. External mode with `toolchain install`. | done, untagged |
+| 0.3 | `Doc` IR, notation DSL (`width`, `variant`, `flatten`), delaborator fallback, `math` and `prose` views, notation packs. | done, untagged |
+| 0.4 | `rules` and `grammar` views ported from llmbda, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate llmbda, gated by the parity test (§16). | done, untagged |
+| 0.5 | `\leanindex`, `lint`, `check --anonymous`, undefined-macro warnings, `--blueprint-compat`, release binaries, toolchain CI across the full range. | M6, not started |
 
 The trust features moved earlier than in revision 1. They are where the
 survey found the clearest gap, and they don't depend on the notation work.
@@ -1139,10 +1147,12 @@ grouping (Danielsson and Norell's mixfix operators).
 `≈_N` erases exactly what `N` declares invisible, and nothing else:
 
 - implicit and instance arguments, and arguments a rule `hide`s;
+- proofs, and a λ that binds one (the branches of a dependent `if`);
 - premises a convention hides: `latex_hide_premise` premises are erased;
   `latex_metavar_convention P v` premises are restored from the reading
   "the metavariable stands for a `v` with `P v`";
-- the names of hypotheses, and the choice of bound names (α-equivalence);
+- the names of hypotheses, and the choice of bound names (α-equivalence),
+  including `_` for a variable nothing uses;
 - the association of a `flatten` chain, which the rule declares associative;
 - synonyms: a rule that writes a constant as what it equals, by definition
   or by a lemma (the `core` pack writes `Nat.succ n` as `n + 1`, as Lean
@@ -1199,9 +1209,10 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
 
 - **The grammar** is `G_N` over TeX tokens: a production for each rule, with
   its holes at the precedences the emitter gives them; the built-in forms
-  (`∀`, `∃`, `→`, `λ`, application, and `f(a)` or `f_{a}` under the style that
-  writes them); the emitter's parentheses; and the formula's own atoms
-  (variables, literals, constants without notation, Lean's fallback text).
+  (`∀`, `∃`, `→`, `λ`, application, and, under the styles that write them,
+  `f(a)` or `f_{a}`, `case`, and list literals); the emitter's parentheses;
+  and the formula's own atoms (variables, literals, constants without
+  notation, Lean's fallback text).
 - **Sorts** are Lean types: a head constant with its type arguments
   (`Option(Label)`), `Prop`, a function sort `(A → B)`, a type parameter of
   the statement, or unknown. A named type found where a function is expected
@@ -1209,10 +1220,15 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   type the pattern leaves open (`a ⊔ b` for any `a b : α`) is a type
   variable, bound by what fills the first such hole, so `a = b = c` does not
   read as comparing a proposition with a label. A rule elaborated with a
-  defaulted universe applies at any sort.
+  defaulted universe applies at any sort, unless its head has no universe
+  to default (`Fin n` is a type). A universe that may be `Prop` is `Sort*`:
+  it takes a type or a proposition, but not a value of a datatype, so the
+  type `[n]` is not read as a one-element list. A proposition is read where
+  a type is expected, but not the other way round.
 - **Readings** are trees named by the shapes of the rules' patterns, so
   rules for the same expressions (a variant's and a pack's) give the same
-  reading. Coercions, chain association and synonyms are invisible (`≈_N`).
+  reading. Coercions, chain association and synonyms are invisible (`≈_N`),
+  and a constant applied is one reading however the rules write it.
   A coercion is read as a production that adds nothing to the reading, and
   gives it the coercion's sort, with its argument's bound (`inl x` for
   `x : A` is of sort `Sum(A, *)`); a reading can therefore be of several
@@ -1234,10 +1250,11 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   turns the reading back off.
 
 Reading back llmbda's OOPSLA paper adds about a second to a 50-second
-extraction. It reads every formula, and finds about 200 ambiguities, all puns
-of its notation: two constants written alike (`stamp` and `labeled`,
-`PSSVal` and `PSSShapeVal`), and coercions both ways between `Expr` and
-`FExpr`, which side condition 2 excludes.
+extraction. It reads every formula, and finds 70 ambiguities (about 200
+before reading back was typed), all puns of its notation: two constants
+written alike (`stamp` and `labeled`; in `popl27`, also `PSSVal` and
+`PSSShapeVal`), and coercions both ways between `Expr` and `FExpr`, which
+side condition 2 excludes.
 
 ### 18.5 The trusted base
 
@@ -1254,11 +1271,12 @@ at TeX source; and, for attested claims, the person who checked the prose.
 ## 19. Open questions
 
 1. **Name availability.** In October 2026, a GitHub search found no Lean or
-   LaTeX project called "imprimatur". Before creating the repository, also
-   check Reservoir, and any other registry the release binaries will be
+   LaTeX project called "imprimatur", and the repository is now
+   `theorem-press/imprimatur`. Before the first release, also check
+   Reservoir, and any other registry the release binaries will be
    published to.
 2. **Toolchain support window.** How far back should support go? Each
-   additional toolchain adds to the CI matrix and to `Compat/`.
+   additional toolchain adds to the CI matrix and to `Compat.lean`.
 3. **Schematic rules.** Lift in PLanet, and the ⊕-merged rules elsewhere,
    are single paper rules that stand for several constructors. Should
    merging them be a built-in feature of the `rules` view, or stay a custom
@@ -1270,15 +1288,16 @@ at TeX source; and, for attested claims, the person who checked the prose.
    `trusted_prefixes` catches definitions that were weakened. It can also
    flag harmless refactors of definitions in the project. Should those
    refactors produce a separate, softer kind of drift?
-6. ~~**Whether external mode works in practice.**~~ Resolved by spike S1: it
-   works on v4.28.0-rc1, v4.31.0 and v4.34.1 against the three motivating
-   projects. Custom views compiled in the notation module were not tested, and
-   sidecar mode remains the answer for them.
+**Resolved.**
 
-Overleaf, an open question in revision 1, is resolved. Splicing in place
-leaves ordinary `.tex` files, which Overleaf compiles as-is; CI runs `check`;
-and checksum normalisation (§10.2) handles the line endings introduced by the
-git bridge.
+- **Whether external mode works in practice.** Spike S1 showed it working
+  on v4.28.0-rc1, v4.31.0 and v4.34.1 against the three motivating projects,
+  and since M5 all three of llmbda's documents and PLanet are built in it.
+  Custom views in the notation module work too: they are elaborated, not
+  compiled, and run by `evalConst`.
+- **Overleaf.** Splicing in place leaves ordinary `.tex` files, which
+  Overleaf compiles as-is; CI runs `check`; and checksum normalisation
+  (§10.2) handles the line endings introduced by the git bridge.
 
 ---
 
