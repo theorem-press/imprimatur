@@ -149,6 +149,13 @@ def Doc.render (d : Doc) (limit : Nat := 80) : String := Id.run do
     let widthOf (s : String) := texWidth s
     if best.all (widthOf · ≤ limit) then break
     best := breakLines ps limit k
-  return " \\LeanBreak ".intercalate (best.map (·.trimAscii.toString)).toList
+  -- Each line trimmed; a control space at the end of a line (`,\ ` before a
+  -- break) is dropped with it, not left as a lone `\` that would escape
+  -- what follows.
+  let trim (l : String) : String := Id.run do
+    let mut l := l.trimAscii.toString
+    while l.endsWith "\\" && !l.endsWith "\\\\" do l := (l.dropEnd 1).trimAscii.toString
+    return l
+  return " \\LeanBreak ".intercalate (best.map trim).toList
 
 end Imprimatur

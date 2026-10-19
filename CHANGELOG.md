@@ -86,7 +86,8 @@ All notable changes to imprimatur are recorded here. Versions follow
   `imprimatur.sty` loaded `amssymb` under acmart, which defines its symbols.
   Quantifiers may break after their comma, a definition's long right-hand
   side breaks within its alignment, and a structure's description spans the
-  grammar.
+  grammar. A line break after `,\ ` no longer leaves a lone backslash that
+  escapes what follows. A category letter may stand for several types.
 - Translation validation also reports a variable that prints as another
   type's category letter (`latex_category`), as `s ::= gen(s)` did in the
   paper about imprimatur, where `s` was both a segment and a string.
