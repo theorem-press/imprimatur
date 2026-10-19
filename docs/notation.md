@@ -127,6 +127,14 @@ Settings of the renderer, for conventions a paper fixes once:
 |---|---|---|
 | `names` | `italic` (default), `raw` | with `raw`, a binder name is written as it is: it is TeX, so `l_c` sets a subscript |
 | `applied_variables` | `juxtaposed` (default), `call`, `subscript` | a variable applied to arguments: `f\,a\,b`, `f(a)(b)`, or `f_{a, b}` |
+| `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots` |
+| `lists` | `cons` (default), `literal` | a list literal: by the rules for `List.cons`, or `[a,\ b]` |
+
+In a pattern (a `case`'s, or an argument on the left of a definition's
+equation), a rule whose template is its bare argument (`latex_notation
+Sum.inl a => "#a"`) is passed over, so that the constructor the pattern tests
+is shown by the next rule (`latex_notation Sum.inl a => r"\mathsf{inl}\,#a"
+prec := 1023`).
 
 ## `latex_entry`
 

@@ -91,6 +91,25 @@ All notable changes to imprimatur are recorded here. Versions follow
 - Translation validation also reports a variable that prints as another
   type's category letter (`latex_category`), as `s ::= gen(s)` did in the
   paper about imprimatur, where `s` was both a segment and a string.
+- Definitions by cases, as a paper writes them, and fixes found by rendering
+  every definition of the project B development:
+  - `latex_style pattern_matching := cases` writes a `match` as
+    `case d of p ⇒ e | …`, and `lists := literal` writes a list literal as
+    `[a, b]`;
+  - a `case` inside another no longer shows two variables as one (the
+    patterns of `elab(nest D₁ D₂)` printed `nest(d₂, d₂)`): pattern
+    variables take the names the alternative gives them, renamed when in
+    scope, and a λ's binder is renamed likewise (no more `λx.\,λx.`);
+  - an unused binder Lean named is `_`; a λ that binds a proof is not shown,
+    so `if h : c then a else b` is `if c then a else b`;
+  - a constructor a rule writes as its bare argument (`Sum.inl i` as `i`)
+    is shown in a pattern, on the left of an equation or in a `case`;
+  - the generic binders of an equation lemma (`a`, `x✝`) are named after
+    their categories (`latex_category`), or after the definition's own
+    parameters (`R`, `C`, not `T₁`, `T₂`); an author's `a` or `x` is kept;
+  - reading back tells a type from a value: a universe that may be `Prop`
+    is `Sort*`, a type such as `Fin n` written `[n]` is not read as a
+    one-element list, and a pair is of sort `Prod`.
 - `about/imprimatur-paper.tex`, a paper about imprimatur built with
   imprimatur. Its theorems, the splicer's laws and Theorem 1, are proved in
   `about/lean`, a model of the splicer. CI rebuilds and checks it.

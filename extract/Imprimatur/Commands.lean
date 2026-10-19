@@ -210,13 +210,23 @@ def elabPatternSorted (patStx : Syntax) :
       -- `PlanMatrix R C ι k`) stands for whatever they match: the pattern's
       -- variables are type variables there.
       let loose (k : String) : String := Id.run do
-        if k == "Sort" then return "*"
+        if k == "Sort" || k == "Sort*" then return "*"
         let mut k := k
         for (_, x) in acc do
           k := k.replace s!"'{x.fvarId!.name}" s!"?{x.fvarId!.name}"
         return k
-      let sorts ← acc.mapM fun (n, x) => do return (n, loose (← sortKey (← inferType x)))
-      let sort ← try loose <$> sortKey (← inferType e) catch _ => pure "*"
+      -- But a type is known to be one when its head has no universe to
+      -- default (`Fin n`), and a variable whose type is a universe is a type
+      -- (or a proposition, which is read where a type is expected): `[n]`,
+      -- the type `Fin n`, is then not read as a list.
+      let closed ← match (← instantiateMVars e).getAppFn with
+        | .const c _ => do pure ((← getConstInfo c).levelParams.isEmpty)
+        | _ => pure false
+      let sorts ← acc.mapM fun (n, x) => do
+        let k ← sortKey (← inferType x)
+        return (n, if k == "Sort" || k == "Sort*" then k else loose k)
+      let sort ← try (fun k => if closed && k == "Sort" then k else loose k) <$> sortKey (← inferType e)
+        catch _ => pure "*"
       return (pat, sorts, sort)
   let (pat, sorts, sort) ← withVars 0 #[]
   return (pat, vars, sorts, sort)
@@ -392,7 +402,10 @@ syntax (name := latexEntry) "latex_entry " str " => " ident (&"options" " := " s
   a binder name is TeX (`l_c`);
 - `applied_variables := juxtaposed` (the default) renders a variable applied
   to arguments as `f\,a\,b`; `applied_variables := call` as `f(a)(b)`;
-  `applied_variables := subscript` as `f_{a, b}` (a family, as in `k_x`). -/
+  `applied_variables := subscript` as `f_{a, b}` (a family, as in `k_x`).
+- `pattern_matching := code` (the default) renders a `match` with Lean's printer;
+  `pattern_matching := cases` as a case analysis in the notation in scope,
+  `\mathsf{case}\ d\ \mathsf{of}\ p_1 \Rightarrow e_1 \mid \dots`. -/
 syntax (name := latexStyle) "latex_style " ident " := " ident : command
 
 /-- Elaborate `latex_style`. -/
@@ -400,7 +413,8 @@ syntax (name := latexStyle) "latex_style " ident " := " ident : command
   let key := stx[1].getId.toString
   let value := stx[3].getId.toString
   let known : List (String × List String) :=
-    [("names", ["italic", "raw"]), ("applied_variables", ["juxtaposed", "call", "subscript"])]
+    [("names", ["italic", "raw"]), ("applied_variables", ["juxtaposed", "call", "subscript"]),
+     ("pattern_matching", ["code", "cases"]), ("lists", ["cons", "literal"])]
   let some (_, values) := known.find? (·.1 == key)
     | throwErrorAt stx[1] "unknown style {key}; the styles are {", ".intercalate (known.map (·.1))}"
   unless values.contains value do

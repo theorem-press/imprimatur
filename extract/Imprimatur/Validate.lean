@@ -180,7 +180,8 @@ to unknowns (`*`, and type variables, which are unknown until bound), part
 by part. A type written without its arguments (as the packs write `Option`)
 stands for it with any. -/
 partial def STerm.compat : STerm → STerm → Bool
-  | .atom a, .atom b => a == b || unknown a || unknown b
+  -- A proposition is a type.
+  | .atom a, .atom b => a == b || unknown a || unknown b || univFits a b
   | .app h as, .app h' bs =>
     h == h' && (as.size != bs.size || (as.zip bs).all fun (x, y) => x.compat y)
   | .app h _, .atom b => unknown b || h == b
@@ -195,7 +196,14 @@ partial def STerm.compat : STerm → STerm → Bool
   | .arrow a b, .arrow c d => a.compat c && b.compat d
 where
   unknown (s : String) : Bool := s == "*" || s.startsWith "?"
-  named (s : String) : Bool := s != "Prop" && s != "Sort" && !s.startsWith "'"
+  -- Propositions and types: a universe (`Sort*` is one that may be `Prop`).
+  univ (s : String) : Bool := s == "Prop" || s == "Sort" || s == "Sort*"
+  -- A proposition is read where a type is expected, and `Sort*` (either) is
+  -- read where either is; but a type is not a proposition.
+  univFits (a b : String) : Bool :=
+    (a == "Prop" && (b == "Sort" || b == "Sort*")) || (a == "Sort" && b == "Sort*") ||
+    (a == "Sort*" && (b == "Prop" || b == "Sort"))
+  named (s : String) : Bool := !univ s && !s.startsWith "'"
 
 /-- Sorts compatible (see `STerm.compat`). -/
 def compat (a b : String) : Bool :=
@@ -204,7 +212,8 @@ def compat (a b : String) : Bool :=
 /-- The productions of the built-in forms of `Render.render`. An applied
 variable is written `f(a)` or `f_{a}` only under the style that asks for it
 (`latex_style applied_variables`), so those forms are read only then. -/
-def builtins (call subscript : Bool := false) : Array Prod :=
+def builtins (call subscript : Bool := false) (cases : Bool := false) (lists : Bool := false) :
+    Array Prod :=
   let forms : Array Prod := #[
   { name := "implication", sort := "Prop", prec := 25,
     syms := #[.hole "Prop" 26, .tok "\\implies", .hole "Prop" 25] },
@@ -232,7 +241,18 @@ def builtins (call subscript : Bool := false) : Array Prod :=
   { name := "application f_{a}", sort := "*", prec := Doc.maxPrec,
     syms := #[.hole "*" Doc.maxPrec, .tok "_", .tok "{",
       .list #[.hole "*" 0] #[","] 1, .tok "}"] }
-  forms ++ (if call then #[callForm] else #[]) ++ (if subscript then #[subscriptForm] else #[])
+  -- `latex_style pattern_matching := cases`: a case analysis.
+  let caseForm : Prod :=
+  { name := "case", sort := "*", prec := 0,
+    syms := (tokenize "\\mathsf{case}\\ ").map .tok ++
+      #[.list #[.hole "*" 1] #[",", "\\ "] 1] ++ (tokenize "\\ \\mathsf{of}\\ ").map .tok ++
+      #[.list #[.list #[.hole "*" 1] #[",", "\\ "] 1, .tok "\\Rightarrow", .hole "*" 1] #["\\mid"] 1] }
+  -- `latex_style lists := literal`: a list literal.
+  let listForm : Prod :=
+  { name := "list", sort := "List(*)", prec := Doc.maxPrec,
+    syms := #[.tok "[", .list #[.hole "*" 0] #[",", "\\ "] 1, .tok "]"] }
+  forms ++ (if call then #[callForm] else #[]) ++ (if subscript then #[subscriptForm] else #[]) ++
+    (if cases then #[caseForm] else #[]) ++ (if lists then #[listForm] else #[])
 
 /-- The shape of a pattern, without its variables' names: a reading names
 the expression a rule matches by its pattern's shape, so two rules for the
@@ -387,10 +407,10 @@ def Grammar.of (ps : Array Prod) : Grammar := Grammar.extend { prods := #[], lis
 
 /-- The grammar of the notation in scope, for a notation variant: its rules
 and the built-in forms. A formula's atoms are added to it (`Grammar.extend`). -/
-def notationGrammar (rules : Array NotationRule) (variant : Option String) (call subscript : Bool) :
-    Grammar :=
+def notationGrammar (rules : Array NotationRule) (variant : Option String) (call subscript : Bool)
+    (cases lists : Bool := false) : Grammar :=
   let rules := rules.filter fun r => r.variant.isNone || r.variant == variant
-  Grammar.of (rules.filterMap ofRule ++ builtins call subscript)
+  Grammar.of (rules.filterMap ofRule ++ builtins call subscript cases lists)
 
 /-- A binding of a production's type variables to sorts. -/
 abbrev Env := Array (String × String)
@@ -486,7 +506,11 @@ def reading (p : Prod) (children : Array String) : String :=
           (inner, children.extract 1 children.size)
         else (c, children.extract 1 children.size)
       | none => ("", #[])
-    s!"app[{"; ".intercalate (f :: rest.toList)}]"
+    -- A constant applied is the constant's own reading: `\mathsf{inr}\,y`
+    -- by a rule for `Sum.inr` alone and by one for `Sum.inr j` is one term.
+    if !f.contains '[' && f.contains '.' && !f.contains '\\' then
+      s!"{f}[{"; ".intercalate rest.toList}]"
+    else s!"app[{"; ".intercalate (f :: rest.toList)}]"
   else if children.isEmpty then p.name else s!"{p.name}[{"; ".intercalate children.toList}]"
 
 /-- The sort a hole expects, under the type variables bound so far. -/
