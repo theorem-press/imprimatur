@@ -49,6 +49,10 @@ def tests : TestM Unit := group "doc" do
     "aaaaaaaaaa + bbbbbbbbbb \\LeanBreak \\implies cccccccccc + dddddddddd"
   checkEq "extract/doc/breaks-deeper-when-needed" (long.render 15)
     "aaaaaaaaaa \\LeanBreak + bbbbbbbbbb \\LeanBreak \\implies cccccccccc \\LeanBreak + dddddddddd"
+  -- A break after a control space drops it, not leaving a lone backslash.
+  checkEq "extract/doc/break-after-control-space"
+    ((Doc.node 0 #[.tex "\\forall x,\\ ", .brk, .tex "aaaaaaaaaaaa"]).render 10)
+    "\\forall x, \\LeanBreak aaaaaaaaaaaa"
   -- Templates: the longest pattern variable wins, and unknown ones are errors.
   checkEq "extract/doc/template-prime" (splitTemplate "#k'" #["k"]).toOption
     (some #[.inr "k", .inl "'"])

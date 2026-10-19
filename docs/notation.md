@@ -214,6 +214,9 @@ warning[unfaithful-rendering]: SpliceModel.Seg (grammar): the variable s prints 
 and `Fintype.card R` as `|R|`, or a definition and what it unfolds to. Mark
 one `synonym`, and the two readings are one.
 
+A letter may stand for several types, one `latex_category` each: `P` for the
+paper's core programs and for the development's representation of them.
+
 **Not validated** formulas have no reading: the notation does not model
 what the renderer wrote. Please report one as a bug.
 

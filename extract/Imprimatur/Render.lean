@@ -216,10 +216,19 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
   let cats := projectCategories (← getEnv)
   for a in atoms do
     if a.fvar.isNone || a.sort == "*" || Validate.isTyVar a.sort || a.sort.startsWith "'" then continue
-    if let some (ty, m) := cats.find? (·.2 == metavarBase a.tex) then
-      if a.sort != ty.toString then
+    -- A letter may stand for several types (the paper's programs, and a
+    -- development's representation of them); a type is compared by its head.
+    let tys := (cats.filter (·.2 == metavarBase a.tex)).map (·.1)
+    if let some ty := tys[0]? then
+      let head (k : String) : String := (k.splitOn "(")[0]!
+      -- A category's type is compared as a variable's is, after unfolding
+      -- (`Decls := List (Name × List Name)` is a list).
+      let keys ← tys.mapM fun t => do
+        try pure (head (← sortKey (.const t ((← getConstInfo t).levelParams.map Level.param))))
+        catch _ => pure t.toString
+      unless tys.any (·.toString == head a.sort) || keys.contains (head a.sort) do
         let p := s!"the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
-          (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${m}$"
+          (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${metavarBase a.tex}$"
         unless (← problems.get).contains p do problems.modify (·.push p)
   -- Free variables that print alike.
   let lctx ← getLCtx
