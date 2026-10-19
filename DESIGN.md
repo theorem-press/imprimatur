@@ -1172,6 +1172,9 @@ constructors; the `def` view reads as the equation lemmas.
    (`latex_category T => "e"`) stands for `T` wherever it appears, as in BNF,
    where `e ::= e₁\;e₂` says the arguments are expressions. A variable of
    another type must not print as it, with or without subscripts and primes.
+   A letter may stand for several types, as a paper's programs and a
+   development's representation of them, declared by one `latex_category`
+   each; types are compared after unfolding reducible definitions.
 
 **Source and glyphs.** The theorem is about TeX source. A reader sees
 glyphs, and two tokens can print alike: `\;` (application) prints as space,
