@@ -272,30 +272,30 @@ The notation, grouped by where it is defined: the paper's own (\textit{Stlc})
 and Lean's. Each is written as the paper writes it, with the Lean constant it
 stands for.
 
-\begin{leannotation}[sum=LBK-Px3c45]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=wgbTFD2MXK]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
 $\Gamma, x{:}\tau$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
 \multicolumn{3}{@{}l}{\textit{Stlc}}\\
-$e =_{\alpha} e'$ & \texttt{Stlc.Alpha} & \leanslot{Stlc.Alpha/0}{α-equivalence}\\
-$\mathit{Name}$ & \texttt{Stlc.Atom} & \leanslot{Stlc.Atom/0}{Names of variables}\\
-$\mathit{Context}$ & \texttt{Stlc.Ctx} & \leanslot{Stlc.Ctx/0}{Contexts: names with their types, the most recent first}\\
-$(a\ b) \cdot \Gamma$ & \texttt{Stlc.Ctx.swap} & \leanslot{Stlc.Ctx.swap/0}{Swapping two names in a context}\\
-$\Gamma \vdash e : \tau$ & \texttt{Stlc.HasType} & \leanslot{Stlc.HasType/0}{Typing}\\
-$\vdash e : \tau$ & \texttt{Stlc.HasType} & \leanslot{Stlc.HasType/1}{Typing}\\
-$v \in \mathit{Val}$ & \texttt{Stlc.IsValue} & \leanslot{Stlc.IsValue/0}{Values}\\
-$e \longrightarrow e'$ & \texttt{Stlc.Step} & \leanslot{Stlc.Step/0}{Small-step reduction, call by value}\\
-$e_{1}\; e_{2}$ & \texttt{Stlc.Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
-$c \mathrel{\#} a, b, e, e'$ & \texttt{Stlc.Tm.atoms} & \leanslot{Stlc.Tm.atoms/0}{The names that occur in a term, bound or free}\\
-$\lambda x{:}\tau.\, e$ & \texttt{Stlc.Tm.lam} & \leanslot{Stlc.Tm.lam/0}{an abstraction, binding $x$ in $e$}\\
-$(a\ b) \cdot e$ & \texttt{Stlc.Tm.swap} & \leanslot{Stlc.Tm.swap/0}{Swapping two names throughout a term: bound, binding and free occurrences alike}\\
-$()$ & \texttt{Stlc.Tm.unit} & \leanslot{Stlc.Tm.unit/0}{the unit value}\\
-$x$ & \texttt{Stlc.Tm.var} & \leanslot{Stlc.Tm.var/0}{a variable}\\
-$\tau_{1} \to \tau_{2}$ & \texttt{Stlc.Ty.arrow} & \leanslot{Stlc.Ty.arrow/0}{functions}\\
-$\mathsf{b}$ & \texttt{Stlc.Ty.base} & \leanslot{Stlc.Ty.base/0}{the base type}\\
-$\Gamma(x) = \tau$ & \texttt{Stlc.lookup} & \leanslot{Stlc.lookup/0}{The type of a name in a context}\\
-$e[u/x]$ & \texttt{Stlc.subst} & \leanslot{Stlc.subst/0}{Capture-avoiding substitution of \LeanCodeInline{u} for \LeanCodeInline{x} in \LeanCodeInline{e}}\\
-$(a\ b)(c)$ & \texttt{Stlc.swapAtom} & \leanslot{Stlc.swapAtom/0}{Swapping two names: \LeanCodeInline{a} becomes \LeanCodeInline{b}, \LeanCodeInline{b} becomes \LeanCodeInline{a}, and other names are unchanged}\\
+$e =_{\alpha} e'$ & \texttt{Alpha} & \leanslot{Stlc.Alpha/0}{α-equivalence}\\
+$\mathit{Name}$ & \texttt{Atom} & \leanslot{Stlc.Atom/0}{Names of variables}\\
+$\mathit{Context}$ & \texttt{Ctx} & \leanslot{Stlc.Ctx/0}{Contexts: names with their types, the most recent first}\\
+$(a\ b) \cdot \Gamma$ & \texttt{Ctx.swap} & \leanslot{Stlc.Ctx.swap/0}{Swapping two names in a context}\\
+$\Gamma \vdash e : \tau$ & \texttt{HasType} & \leanslot{Stlc.HasType/0}{Typing}\\
+$\vdash e : \tau$ & \texttt{HasType} & \leanslot{Stlc.HasType/1}{Typing}\\
+$v \in \mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/0}{Values}\\
+$e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction, call by value}\\
+$e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
+$c \mathrel{\#} a, b, e, e'$ & \texttt{Tm.atoms} & \leanslot{Stlc.Tm.atoms/0}{The names that occur in a term, bound or free}\\
+$\lambda x{:}\tau.\, e$ & \texttt{Tm.lam} & \leanslot{Stlc.Tm.lam/0}{an abstraction, binding $x$ in $e$}\\
+$(a\ b) \cdot e$ & \texttt{Tm.swap} & \leanslot{Stlc.Tm.swap/0}{Swapping two names throughout a term: bound, binding and free occurrences alike}\\
+$()$ & \texttt{Tm.unit} & \leanslot{Stlc.Tm.unit/0}{the unit value}\\
+$x$ & \texttt{Tm.var} & \leanslot{Stlc.Tm.var/0}{a variable}\\
+$\tau_{1} \to \tau_{2}$ & \texttt{Ty.arrow} & \leanslot{Stlc.Ty.arrow/0}{functions}\\
+$\mathsf{b}$ & \texttt{Ty.base} & \leanslot{Stlc.Ty.base/0}{the base type}\\
+$\Gamma(x) = \tau$ & \texttt{lookup} & \leanslot{Stlc.lookup/0}{The type of a name in a context}\\
+$e[u/x]$ & \texttt{subst} & \leanslot{Stlc.subst/0}{Capture-avoiding substitution of \LeanCodeInline{u} for \LeanCodeInline{x} in \LeanCodeInline{e}}\\
+$(a\ b)(c)$ & \texttt{swapAtom} & \leanslot{Stlc.swapAtom/0}{Swapping two names: \LeanCodeInline{a} becomes \LeanCodeInline{b}, \LeanCodeInline{b} becomes \LeanCodeInline{a}, and other names are unchanged}\\
 \end{longtable}
 \end{leannotation}
 

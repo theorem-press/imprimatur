@@ -8,5 +8,8 @@ strip_namespaces = ["SpliceModel"]
 
 [aliases]
 # The paper's own environments, each with the view it shows.
-leangrammar = { view = "grammar" }
+leangrammar = { view = "grammar", label = "gram:{key}", template = "\\label{{label}}{content}" }
 leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
+# Appendix A: the metavariables, and the notation the paper uses.
+leanconventions = { view = "conventions" }
+leannotation    = { view = "vocabulary|scope=all" }
