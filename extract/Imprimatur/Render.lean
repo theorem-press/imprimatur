@@ -59,6 +59,23 @@ structure Atom where
   /-- The variable's name. -/
   name : String := ""
 
+/-- What a view rendered, for the views that index the document: a notation
+rule that fired, a category's metavariable that appeared, or a declaration a
+view displayed (a grammar's type, a definition). Each is tagged with the key
+of the block. -/
+inductive IndexEvent where
+  /-- A notation rule fired. -/
+  | rule (key : String) (r : NotationRule)
+  /-- A variable printed as the metavariable of the category of `ty`. -/
+  | category (key : String) (ty : Name)
+  /-- The block displays the declaration `n`. -/
+  | shows (key : String) (n : Name)
+  deriving Inhabited
+
+/-- The events of an export, in the order the blocks were rendered. The
+views that index the document are rendered after all the others. -/
+initialize indexEvents : IO.Ref (Array IndexEvent) ← IO.mkRef #[]
+
 /-- What rendering needs. -/
 structure Ctx where
   /-- The rules, project first, then packs. -/
@@ -90,6 +107,11 @@ structure Ctx where
   document : DocumentInfo := {}
   /-- The key being rendered, as the document writes it. -/
   key : String := ""
+  /-- The project's root, for source locations. -/
+  root : System.FilePath := "."
+  /-- The modules the document imports: the project's, whose first
+  components tell its constants from the library's. -/
+  imports : Array Name := #[]
   /-- Where to report formulas that do not read back faithfully, when they
   are to be checked (DESIGN §18.4). -/
   problems : Option (IO.Ref (Array String)) := none
@@ -101,6 +123,12 @@ structure Ctx where
 
 /-- The renderer's monad. -/
 abbrev RenderM := ReaderT Ctx MetaM
+
+/-- Record that the block being rendered displays the declaration `n`: a
+grammar's type, or a definition. The table of conventions says where each
+category's type is shown. -/
+def noteShown (n : Name) : RenderM Unit := do
+  indexEvents.modify (·.push (.shows (← read).key n))
 
 /-- Unicode subscript digits, and their values. -/
 def subscripts : List (Char × Char) :=
@@ -252,6 +280,10 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
           let c := Expr.const t (ci.levelParams.map Level.param)
           forallTelescope ci.type fun xs _ => do pure (head (← sortKey (mkAppN c xs)))
         catch _ => pure t.toString
+      -- The categories that appear, for the table of conventions.
+      for (t, k) in tys.zip keys do
+        if t.toString == head a.sort || k == head a.sort then
+          indexEvents.modify (·.push (.category (← read).key t))
       unless tys.any (·.toString == head a.sort) || keys.contains (head a.sort) do
         let p := s!"the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
           (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${metavarBase a.tex}$"
@@ -311,6 +343,7 @@ mutual
         if ctx.inPattern && shown && bare r then continue
         let fire (e : Expr) (bs : Array (Name × Expr)) : RenderM (Option Doc) := do
           (← read).used.modify (·.push s!"{r.origin}: {r.template}")
+          indexEvents.modify (·.push (.rule (← read).key r))
           return some (← applyRule r bs e)
         let ctx ← read
         if let some d ← r.tryMatchK e (fun bs => (fire e bs).run ctx) then return d

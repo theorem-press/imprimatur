@@ -168,9 +168,52 @@ def untrustedOf (bundle key : String) : Array String :=
       s!"{n}: {", ".intercalate rs.toList}"
   | none => #["(no cone)"]
 
+/-- The views that index the document (`Views/Index.lean`), on the
+`Semantics` fixture: a document of two grammars, a theorem and the three
+indexes, with the indexes asked for first. They are rendered last, so they
+see every other block. -/
+unsafe def indexTest : TestM Unit := group "index" do
+  let f := (fixtures.find? (·.dir == "Semantics")).get!
+  let dir := fixturesDir / f.dir
+  let lib := dir / ".lake" / "build" / "lib" / "lean"
+  initSearchPath (← findSysroot) [lib]
+  let env ← Compat.importPrivate #[f.module]
+  let blk (key view : String) (order : Nat) (label : Option String := none) : DocBlock :=
+    { key, env := "leanblock", view, label, order }
+  let document : DocumentInfo := { blocks := #[
+    blk "Conventions" "conventions" 0, blk "Vocabulary" "vocabulary" 1,
+    blk "Stlc.Ty" "grammar" 2 (some "gram:Ty"), blk "Stlc.Tm" "grammar" 3 (some "gram:Tm"),
+    blk "Stlc.size_pos" "prose" 4 (some "thm:Stlc.size_pos"),
+    blk "Provenance" "provenance" 5] }
+  let settings : Settings := { imports := #[f.module], stripNamespaces := f.strip, document }
+  let reqs : Array Request := #[
+    { key := "Conventions", views := #["conventions"] }, { key := "Vocabulary", views := #["vocabulary"] },
+    { key := "Provenance", views := #["provenance"] },
+    { key := "Stlc.Ty", views := #["grammar"] }, { key := "Stlc.Tm", views := #["grammar"] },
+    { key := "Stlc.size_pos", views := #["prose"] }]
+  let (entries, warnings) ← exportEntries env dir settings reqs
+  checkEq "extract/index/no-warnings" warnings #[]
+  let bundle := renderBundle entries none
+  let view (k v : String) : String :=
+    ((entry? bundle k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String v)).toOption).getD ""
+  let conv := view "Conventions" "conventions"
+  let vocab := view "Vocabulary" "vocabulary"
+  let prov := view "Provenance" "provenance"
+  -- The grammars' categories, where they are shown, in document order.
+  check "extract/index/conventions-shown"
+    ((conv.splitOn "\\pageref{gram:Ty}").length > 1 && (conv.splitOn "\\pageref{gram:Tm}").length > 1) conv
+  check "extract/index/conventions-order"
+    ((conv.splitOn "gram:Ty")[0]!.length < (conv.splitOn "gram:Tm")[0]!.length) conv
+  check "extract/index/provenance-theorem"
+    ((prov.splitOn "Theorem~\\ref{thm:Stlc.size_pos}").length > 1) prov
+  check "extract/index/vocabulary-library-only" ((vocab.splitOn "Stlc").length == 1) vocab
+  golden "extract/index/golden" ("golden" / "Index.tex")
+    (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
+
 /-- Golden bundles, and trust checks on them. -/
 unsafe def tests : TestM Unit := group "fixtures" do
   driftTest
+  indexTest
   challengeTest
   IO.FS.createDirAll "out"
   for f in fixtures do
