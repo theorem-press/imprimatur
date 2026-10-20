@@ -203,7 +203,9 @@ view notes what it displays). Each table is a `longtable`, which
   has `packs=true`.
 - **`provenance`**: each theorem the document states, in document order, with
   its kind and number (from its label's prefix: `thm:`, `lem:`, `prop:`,
-  `cor:`, `def:`), its declaration, its source location and the axioms beyond
+  `cor:`, `def:`, written Thm., Lemma, Prop., Cor., Def.), its declaration
+  without the namespaces the document strips, its source location and the
+  axioms beyond
   `propext`, `Classical.choice` and `Quot.sound`; definitions too with
   `kinds=all`.
 
