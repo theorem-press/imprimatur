@@ -1,0 +1,18 @@
+% conventions
+\begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
+\textit{Variable} & \textit{Type} & & \textit{Shown in}\\
+\hline\endhead
+$\tau$ & $\LeanMathConst{Ty}$ & \leanslot{Stlc.Ty}{Types} & \textit{Ty}, p.~\pageref{gram:Ty}\\
+$e$ & $\LeanMathConst{Tm}$ & \leanslot{Stlc.Tm}{Terms, with de Bruijn variables} & \textit{Tm}, p.~\pageref{gram:Tm}\\
+\end{longtable}
+A variable with a prime or a subscript ($\tau'$, $\tau_{1}$) ranges over the same type.
+% vocabulary
+\begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
+\end{longtable}
+% provenance
+\begin{longtable}{@{}l@{\quad}l@{\quad}l@{\quad}l@{}}
+\textit{Result} & \textit{Lean} & \textit{Source} & \textit{Axioms}\\
+\hline\endhead
+Theorem~\ref{thm:Stlc.size_pos}, p.~\pageref{thm:Stlc.size_pos} & \texttt{Stlc.size\_pos} & \texttt{Semantics/Lang.lean:78} & standard\\
+\end{longtable}
+The standard axioms are \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}.

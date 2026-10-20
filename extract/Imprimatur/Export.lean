@@ -53,6 +53,12 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
   -- equation lemmas) reads the limit from there.
   let options := Lean.maxHeartbeats.set ({} : Options) s.maxHeartbeats
   let coreCtx : Core.Context := { fileName := "<imprimatur>", fileMap := default, maxHeartbeats, options }
+  -- The views that index the document come last, so that they see what
+  -- every other block rendered.
+  let isIndex (r : Request) : Bool := !r.views.isEmpty && r.views.all fun v =>
+    Views.indexViews.contains (parseViewSpec v).base
+  let reqs := reqs.filter (!isIndex ·) ++ reqs.filter isIndex
+  Render.indexEvents.set #[]
   for r in reqs do
     let declKey := if r.key.endsWith challengeSuffix then
       (r.key.dropEnd challengeSuffix.length).toString else r.key
@@ -71,9 +77,10 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
       | -- A key that names no declaration may name a group of rules.
         let group := (projectGroups env).find? (·.title == r.key)
         let custom := !r.views.isEmpty && r.views.all fun v =>
-          (projectViews env).any (·.1 == (parseViewSpec v).base)
+          (projectViews env).any (·.1 == (parseViewSpec v).base) ||
+            Views.indexViews.contains (parseViewSpec v).base
         if group.isSome || custom then
-          let act : CoreM J := (groupEntry s r group used extra).run' {} {}
+          let act : CoreM J := (groupEntry s r group used extra root).run' {} {}
           match ← (act.toIO coreCtx { env }).toBaseIO with
           | .ok (j, _) => entries := entries.push (r.key, j)
           | .error e => warnings := warnings.push s!"{r.key}: {e}"

@@ -234,6 +234,9 @@ inductive NotationEntry where
   | convention (c : PremiseConvention)
   /-- The metavariable of a grammar category (`latex_category`). -/
   | category (ty : Name) (tex : String)
+  /-- The arguments a category's type is shown at (`latex_category T A => "m"`),
+  when it is not shown at its own parameters. -/
+  | categoryArgs (ty : Name) (args : Array Name)
   /-- A custom view (`@[latex_view "name"]`) and the function that renders it. -/
   | view (name : String) (fn : Name)
   /-- A key of the document and the declaration it names (`latex_entry`),
@@ -308,6 +311,12 @@ def projectStyles (env : Environment) : Array (String × String) :=
 def projectCategories (env : Environment) : Array (Name × String) :=
   (notationExt.getState env).filterMap fun
     | .category t m => some (t, m)
+    | _ => none
+
+/-- The arguments categories' types are shown at, when declared. -/
+def projectCategoryArgs (env : Environment) : Array (Name × Array Name) :=
+  (notationExt.getState env).filterMap fun
+    | .categoryArgs t as => some (t, as)
     | _ => none
 
 /-- The explicit arguments of an application, given the head's type: implicit
