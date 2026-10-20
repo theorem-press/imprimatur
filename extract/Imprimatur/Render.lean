@@ -244,8 +244,13 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
       let head (k : String) : String := (k.splitOn "(")[0]!
       -- A category's type is compared as a variable's is, after unfolding
       -- (`Decls := List (Name × List Name)` is a list).
+      -- A type with parameters (`PlanMatrix Δ d`) is compared at its
+      -- parameters, as a variable's type is that type applied.
       let keys ← tys.mapM fun t => do
-        try pure (head (← sortKey (.const t ((← getConstInfo t).levelParams.map Level.param))))
+        try
+          let ci ← getConstInfo t
+          let c := Expr.const t (ci.levelParams.map Level.param)
+          forallTelescope ci.type fun xs _ => do pure (head (← sortKey (mkAppN c xs)))
         catch _ => pure t.toString
       unless tys.any (·.toString == head a.sort) || keys.contains (head a.sort) do
         let p := s!"the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
