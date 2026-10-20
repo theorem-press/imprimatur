@@ -205,7 +205,10 @@ def vocabularyView (opts : Array (String × String)) : RenderM String := do
       out := out ++ s!"\\multicolumn\{3}\{@\{}l}\{\\textit\{{TeX.escape g}}}\\\\\n"
     n := if head == prev then n + 1 else 0
     prev := head
-    out := out ++ s!"${← ruleTeX r}$ & \\texttt\{{TeX.escape head.toString}} & \\leanslot\{{head}/{n}}\{{← docSentence head}}\\\\\n"
+    -- The project's constants as the paper names them, without the
+    -- namespaces it strips.
+    let shown := Views.stripName (← read).strip head
+    out := out ++ s!"${← ruleTeX r}$ & \\texttt\{{TeX.escape shown.toString}} & \\leanslot\{{head}/{n}}\{{← docSentence head}}\\\\\n"
   out := out ++ "\\end{longtable}\n"
   return out
 
