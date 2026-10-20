@@ -513,6 +513,35 @@ def reading (p : Prod) (children : Array String) : String :=
     else s!"app[{"; ".intercalate (f :: rest.toList)}]"
   else if children.isEmpty then p.name else s!"{p.name}[{"; ".intercalate children.toList}]"
 
+/-- The reading of a form the renderer does not say how to read: it matches
+any reading. -/
+def anyReading : String := "⁇"
+
+/-- A reading matches what was expected (`expected`, with `anyReading` for any
+subterm). -/
+partial def readingMatches (expected found : String) : Bool :=
+  go expected.toList found.toList
+where
+  /-- Match, with `⁇` matching any balanced subterm. -/
+  go : List Char → List Char → Bool
+    | [], g => g.isEmpty
+    | '⁇' :: e, g => Id.run do
+      -- The subterm ends at the first `;` or `]` outside its own brackets,
+      -- or at the end.
+      let mut depth := 0
+      let mut rest := g
+      let mut taken := 0
+      for c in g do
+        if depth == 0 && (c == ';' || c == ']') then
+          return taken > 0 && go e rest
+        if c == '[' then depth := depth + 1
+        if c == ']' then depth := depth - 1
+        rest := rest.tail
+        taken := taken + 1
+      return depth == 0 && taken > 0 && go e rest
+    | c :: e, d :: g => c == d && go e g
+    | _ :: _, [] => false
+
 /-- The sort a hole expects, under the type variables bound so far. -/
 partial def expected (env : Env) (s : String) : String :=
   if !s.contains '?' then s

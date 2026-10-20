@@ -40,8 +40,28 @@ def swap (prec : Nat) (assoc := "left") : NotationRule :=
 def atoms : Array Prod :=
   #[atom "a" "Nat", atom "b" "Nat", atom "e" "Tm", atom "f" "Tm", atom "P" "Prop", atom "Q" "Prop"]
 
+/-- The one reading of `tex` as sort `s`, if it has exactly one. -/
+def theReading (rules : Array NotationRule) (atoms : Array Prod) (tex s : String) : Option String :=
+  match readBack (Grammar.of (rules.filterMap ofRule ++ builtins ++ atoms)) (tokenize tex) s with
+  | (#[r], false) => some r
+  | _ => none
+
 /-- All the validation tests. -/
 def tests : TestM Unit := group "validate" do
+  -- The one reading is compared with the reading the renderer expected
+  -- (`Render.Expect`); `⁇` stands for a subterm it does not say how to read.
+  checkEq "extract/validate/matches"
+    (#[("app[a; b]", "app[a; b]"), ("app[⁇; b]", "app[f[x; y]; b]"), ("⁇", "anything[at; all]"),
+      ("app[⁇; ⁇]", "app[a; b]"), ("app[a; b]", "app[b; a]"), ("app[⁇]", "app[a; b]"),
+      ("app[⁇; c]", "app[a; b]")].map fun (e, g) => readingMatches e g)
+    #[true, true, true, true, false, false, false]
+  -- Left-associated application reads `e\; f\; e` as `(e f) e`. Had the
+  -- renderer rendered `e (f e)` without its parentheses, the one reading
+  -- would not be what it expected, and the check reports it.
+  let r := theReading #[app 100] atoms "e\\; f\\; e" "Tm"
+  checkEq "extract/validate/reading-left" r (some "app[app[e; f]; e]")
+  check "extract/validate/misread-caught"
+    (r.any fun r => !readingMatches "app[e; app[f; e]]" r && readingMatches "app[app[e; f]; ⁇]" r)
   -- Tokens: control words and symbols, characters; spaces and breaks dropped.
   checkEq "extract/validate/tokens" (tokenize "\\Gamma \\vdash e_{1}\\; x\\,y \\LeanBreak z")
     #["\\Gamma", "\\vdash", "e", "_", "{", "1", "}", "\\;", "x", "\\,", "y", "z"]

@@ -76,6 +76,16 @@ inductive IndexEvent where
 views that index the document are rendered after all the others. -/
 initialize indexEvents : IO.Ref (Array IndexEvent) ← IO.mkRef #[]
 
+/-- What a formula being rendered should read back as (DESIGN §18.4): the
+expected readings of the subterms rendered so far, at this level, and how the
+form being rendered makes its own from them. A form without a frame reads as
+`Validate.anyReading`. -/
+structure Expect where
+  /-- The expected readings of the subterms rendered at this level. -/
+  kids : Array String := #[]
+  /-- This form's reading, from its subterms'. -/
+  frame : Option (Array String → String) := none
+
 /-- What rendering needs. -/
 structure Ctx where
   /-- The rules, project first, then packs. -/
@@ -117,6 +127,8 @@ structure Ctx where
   problems : Option (IO.Ref (Array String)) := none
   /-- The atoms written in the formula being rendered. -/
   atoms : Option (IO.Ref (Array Atom)) := none
+  /-- The expected reading of the formula being rendered. -/
+  expect : Option (IO.Ref Expect) := none
   /-- The grammar of the notation in scope (`Validate.notationGrammar`),
   built once for the formulas a view renders. -/
   grammar : Option Validate.Grammar := none
@@ -270,8 +282,8 @@ def sortOf (e : Expr) : MetaM String := do
 /-- Read a rendered formula back (DESIGN §18.4): it must have exactly one
 reading as an expression of `e`'s sort, and its free variables must print
 differently. Problems go to the context's `problems`. -/
-def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array String)) :
-    RenderM Unit := do
+def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : String)
+    (problems : IO.Ref (Array String)) : RenderM Unit := do
   let ctx ← read
   let tex := d.render 100000
   let ts := Validate.tokenize tex
@@ -299,6 +311,10 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
     problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
   else if rs.size ≥ 2 then
     problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!} and as {rs[1]!}")
+  else if !Validate.readingMatches expected rs[0]! then
+    -- The one reading is not what was rendered: the grammar does not mirror
+    -- the renderer here, or the emitter left out parentheses a reader needs.
+    problems.modify (·.push s!"misread: ${tex}$ reads as {rs[0]!}, but was rendered from {expected}")
   -- A grammar category's metavariable stands for that category (the BNF
   -- convention: `e ::= e₁\;e₂`), so a variable of another type must not
   -- print as it.
@@ -355,6 +371,25 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
       unless (← problems.get).contains p do problems.modify (·.push p)
     unless seen.any (·.1 == f) do seen := seen.push (f, t)
 
+/-- Set the frame of the form being rendered, if its reading is expected. -/
+def expectFrame (f : Option (Array String → String)) : RenderM Unit := do
+  if let some ex := (← read).expect then ex.modify ({ · with frame := f })
+
+/-- The form being rendered is an atom, which reads as its TeX. -/
+def expectLeaf (t : String) : RenderM Unit := expectFrame (some fun _ => t)
+
+/-- The form being rendered is a built-in form (`Validate.builtins`) with
+these bound variables and `n` subterms. -/
+def expectForm (name : String) (vars : Array String) (n : Nat) : RenderM Unit :=
+  expectFrame (some fun kids =>
+    if kids.size == n then Validate.reading { name, sort := "*", prec := 0, syms := #[] } (vars ++ kids)
+    else Validate.anyReading)
+
+/-- The form being rendered is an application of `pre` and the subterms. -/
+def expectApp (pre : Array String) : RenderM Unit :=
+  expectFrame (some fun kids =>
+    Validate.reading { name := "application", sort := "*", prec := 0, syms := #[] } (pre ++ kids))
+
 mutual
 
   /-- Render an expression. A formula a view renders (not a part of one) is
@@ -363,9 +398,28 @@ mutual
     let ctx ← read
     if let (some problems, none) := (ctx.problems, ctx.atoms) then
       let atoms ← IO.mkRef #[]
-      let d ← withReader (fun c => { c with atoms := some atoms }) (render e)
-      validate e d (← atoms.get) problems
+      let ex ← IO.mkRef ({} : Expect)
+      let d ← withReader (fun c => { c with atoms := some atoms, expect := some ex }) (render e)
+      validate e d (← atoms.get) (((← ex.get).kids[0]?).getD Validate.anyReading) problems
       return d
+    let some ex := ctx.expect | renderForm e
+    -- This form's subterms' readings are collected afresh, and its own is
+    -- added to its parent's.
+    let saved ← ex.get
+    ex.set {}
+    let d ← try renderForm e catch err =>
+      ex.set { saved with kids := saved.kids.push Validate.anyReading }
+      throw err
+    let st ← ex.get
+    let r := match st.frame with
+      | some f => f st.kids
+      | none => Validate.anyReading
+    ex.set { saved with kids := saved.kids.push r }
+    return d
+
+  /-- Render an expression, without reading it back. -/
+  partial def renderForm (e : Expr) : RenderM Doc := do
+    let ctx ← read
     let e := e.consumeMData
     -- `latex_style lists := literal`: `[a, b]`, not `a :: b :: []`.
     if ctx.listLiterals then
@@ -402,7 +456,9 @@ mutual
         if let some (pre, rest) ← splitAfterExplicit e r.pat.arity then
           if !rest.isEmpty then
             if let some d ← r.tryMatchK pre (fun bs => (fire pre bs).run ctx) then
-              return ← apply d rest
+              let d ← apply d rest
+              expectFrame none
+              return d
       if head == ``Exists then
         if let some d ← renderExists e then return d
     match e with
@@ -411,13 +467,15 @@ mutual
         | some (_, t) => pure t
         | none => do varNameT (← f.getUserName) (← f.getType)
       logAtom t (← sortOf e) (fvar := some f) (name := (← f.getUserName).eraseMacroScopes.toString)
+      expectLeaf t
       return .tex t
-    | .sort .zero => logAtom "\\mathrm{Prop}" "Sort"; return .tex "\\mathrm{Prop}"
-    | .sort _ => logAtom "\\mathrm{Type}" "Sort"; return .tex "\\mathrm{Type}"
-    | .lit (.natVal n) => logAtom (toString n) "Nat"; return .tex (toString n)
+    | .sort .zero => logAtom "\\mathrm{Prop}" "Sort"; expectLeaf "\\mathrm{Prop}"; return .tex "\\mathrm{Prop}"
+    | .sort _ => logAtom "\\mathrm{Type}" "Sort"; expectLeaf "\\mathrm{Type}"; return .tex "\\mathrm{Type}"
+    | .lit (.natVal n) => logAtom (toString n) "Nat"; expectLeaf (toString n); return .tex (toString n)
     | .lit (.strVal s) =>
       let t := s!"\\text\{``{TeX.escape s}''}"
       logAtom t "String"
+      expectLeaf t
       return .tex t
     | .forallE .. => renderForall e
     | .lam n t b bi =>
@@ -437,12 +495,17 @@ mutual
         let body ← render (b.instantiate1 x)
         -- Proofs are not shown, so neither is a λ that binds one: the
         -- branches of `if h : c then a else b` are `a` and `b`.
-        if ← isProp t then return body
+        if ← isProp t then
+          expectFrame (some fun kids => kids[0]?.getD Validate.anyReading)
+          return body
         logAtom (← varNameT n t) "*" (isVar := true)
-        return .node 0 #[.tex s!"\\lambda {← varNameT n t}.\\,", .child 0 body]
+        let v ← varNameT n t
+        expectForm "λ" #[v] 1
+        return .node 0 #[.tex s!"\\lambda {v}.\\,", .child 0 body]
     | .const h _ =>
       let t := constTeX (← read).strip h
       logAtom t (← sortOf e)
+      expectLeaf t
       return .tex t
     | .app .. =>
       if ← isMatcherApp e then
@@ -454,7 +517,9 @@ mutual
         | some (_, args) =>
           let t := constTeX (← read).strip h
           logAtom t "*"
-          apply (.tex t) args
+          let d ← apply (.tex t) args
+          expectApp #[t]
+          return d
         | none => delab e
       | .fvar _ =>
         if (← read).subscriptVars then
@@ -469,14 +534,21 @@ mutual
           for (a, i) in e.getAppArgs.toList.zip (List.range e.getAppNumArgs) do
             if i > 0 then parts := parts.push (.tex ", ")
             parts := parts.push (.child 0 (← render a))
+          expectApp #[]
           return .node Doc.maxPrec (parts.push (.tex "}"))
         if (← read).callVars then
           let mut parts : Array Doc := #[.child Doc.maxPrec (← render f)]
           for a in e.getAppArgs do
             parts := parts ++ #[.tex "(", .child 0 (← render a), .tex ")"]
+          expectApp #[]
           return .node Doc.maxPrec parts
-        apply (← render f) e.getAppArgs
-      | .lam .. => apply (← render f) e.getAppArgs
+        let d ← apply (← render f) e.getAppArgs
+        expectApp #[]
+        return d
+      | .lam .. =>
+        let d ← apply (← render f) e.getAppArgs
+        expectApp #[]
+        return d
       | _ => delab e
     | _ => delab e
 
@@ -522,7 +594,11 @@ mutual
     let get (v : String) := (bs.find? (·.1.toString == v)).map (·.2)
     -- A template that is one variable shows that variable as it is.
     if let #[.inr v] := parts then
-      if let some a := get v then return ← render a
+      if let some a := get v then
+        let d ← render a
+        -- A coercion is invisible: its reading is its argument's.
+        expectFrame (some fun kids => kids[0]?.getD Validate.anyReading)
+        return d
     -- Flatten a chain: `a ∘ (b ∘ c)` becomes one n-ary node.
     let operands ← if r.flatten && r.pat.binder?.isNone then collect r e else pure #[]
     let topHoles := Id.run do
@@ -594,6 +670,13 @@ mutual
           | none => out := out.push (.tex s!"?{v}")
         holeIdx := holeIdx + 1
         if depth == 0 then topIdx := topIdx + 1
+    -- The reading: the rule's production with its holes' readings. Chains,
+    -- folded binders and synonyms are left unchecked.
+    match (if r.flatten || !multi.isEmpty then none else Validate.ofRule r) with
+    | some p =>
+      let n := (p.order.map (·.size)).getD 0
+      expectFrame (some fun kids => if kids.size == n then Validate.reading p kids else Validate.anyReading)
+    | none => expectFrame none
     return .node r.prec out
 
   /-- The operands of a chain of a flattening rule. -/
@@ -621,8 +704,11 @@ mutual
         if mem.isAppOfArity ``Membership.mem 5 && mem.appArg! == x then
           let s ← render mem.appFn!.appArg!
           let p ← render body.appArg!
+          expectForm "bounded ∃" #[v] 2
           return some (.node 0 #[.tex s!"\\exists {v} \\in ", .child 50 s, .tex ",\\ ", .brk, .child 0 p])
-      return some (.node 0 #[.tex s!"\\exists {v},\\ ", .brk, .child 0 (← render body)])
+      let p ← render body
+      expectForm "∃" #[v] 1
+      return some (.node 0 #[.tex s!"\\exists {v},\\ ", .brk, .child 0 p])
 
   /-- `∀` and implication. -/
   partial def renderForall (e : Expr) : RenderM Doc := do
@@ -633,6 +719,7 @@ mutual
       let arrow := if isProp then "\\implies" else "\\to"
       let lhs ← render t
       let rhs ← render b
+      expectForm (if isProp then "implication" else "function type") #[] 2
       return .node 25 #[.child 26 lhs, .brk, .tex s!" {arrow} ", .child 25 rhs]
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
