@@ -1201,8 +1201,13 @@ The extractor is meta-programming and will not be verified. Instead:
 - **the splicer's laws** and Theorem 1 are proved in Lean for a model of the
   splicer (`about/lean`); the splicer's scanner and edits are property-tested;
 - **Theorem 2 by translation validation** (`Imprimatur.Validate`), below;
-- **the `Doc` emitter's parenthesisation**, a few dozen lines, is proved
-  correct with respect to precedence.
+- **the `Doc` emitter's parenthesisation**, a few dozen lines, is
+  unit-tested (`extract/doc/*`), not proved. Its errors are caught formula
+  by formula, as misreads (below).
+
+Nothing yet proves the validator itself: the parser that reads formulas
+back and the matching of readings are trusted. PLAN, "Next: a proved
+validator", is the plan for a theorem.
 
 **Translation validation.** The extractor reads back every formula a view
 renders, as it renders it, and records what it finds in the bundle
