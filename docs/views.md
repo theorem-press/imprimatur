@@ -170,6 +170,46 @@ grammar whose forms are hand-written TeX is better served by a custom view.
 Options are written on the block, `[view=math, rule]`, or on a
 `latex_entry`.
 
+## Views that index the document
+
+Three views tabulate what the other blocks of the document render. Their keys
+are the authors' and name no declaration; an alias selects each:
+
+```toml
+leanconventions = { view = "conventions" }
+leanvocabulary  = { view = "vocabulary" }
+leanprovenance  = { view = "provenance" }
+```
+
+The extractor renders them after every other block, from a log of what each
+block rendered: the notation rules that fired, the categories' metavariables
+that appeared, and the declarations a view displayed (`noteShown`; the
+`grammar` view and the `math` view's `def` modifier note theirs, and a custom
+view notes what it displays). Each table is a `longtable`, which
+`imprimatur.sty` loads.
+
+- **`conventions`**: for each `latex_category` whose type the document shows
+  or whose metavariable it uses, the metavariable, the type (applied to its
+  parameters, or to the arguments of `latex_category T A … => "m"`), a
+  description, and the first block that shows the type, with its page when
+  the block has a label. Rows are in document order, those that share a
+  metavariable together. Translation validation already checks that a
+  variable printed as a category's metavariable has that category's type, so
+  the table states a property `check` verifies.
+- **`vocabulary`**: the notation of the library (Lean core, Batteries,
+  Mathlib) that the document uses: each rule whose pattern mentions no
+  constant of the project's modules, as it is written, with the constant and
+  a gloss, grouped by package. Notation packs are left out unless the block
+  has `packs=true`.
+- **`provenance`**: each theorem the document states, in document order, with
+  its kind and number (from its label's prefix: `thm:`, `lem:`, `prop:`,
+  `cor:`, `def:`), its declaration, its source location and the axioms beyond
+  `propext`, `Classical.choice` and `Quot.sound`; definitions too with
+  `kinds=all`.
+
+Descriptions and glosses are slots: the first sentence of the docstring is
+the default, and the authors' text is kept.
+
 ## Custom views
 
 A project adds a view in its notation module:
