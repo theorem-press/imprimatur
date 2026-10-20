@@ -35,6 +35,9 @@ def testTokens : TestM Unit := group "tokens" do
     .space 1, .sym "∧", .space 1, .ident "h", .sym ".", .num "1"]
   checkEq "extract/tokens/subscripts-and-primes" (Views.tokenize "h₁' x!")
     #[.ident "h₁'", .space 1, .ident "x!"]
+  -- What a variable keeps of its name under `latex_style categories := strict`.
+  checkEq "extract/names/decorations" (#[`P, `D₁, `a', `x12', `σ₂₃].map Render.nameDecorations)
+    #["", "_{1}", "'", "_{12}'", "_{23}"]
   checkEq "extract/names/strip" (Views.stripName #[`A, `A.B] `A.B.c) `c
   checkEq "extract/names/strip-not-self" (Views.stripName #[`A] `A) `A
   checkEq "extract/names/from-key" (toName "MyPaper.Results.theorem1_main") `MyPaper.Results.theorem1_main

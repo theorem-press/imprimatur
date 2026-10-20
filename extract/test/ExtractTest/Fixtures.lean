@@ -210,10 +210,45 @@ unsafe def indexTest : TestM Unit := group "index" do
   golden "extract/index/golden" ("golden" / "Index.tex")
     (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
 
+/-- `latex_style categories := strict`, on the `Categories` fixture. Its two
+notation modules give `Prog` the metavariable $P$, and `Rep` either its own
+($\overline{P}$, in `Strict`) or $P$ too (`Clash`). The style is the project's,
+so each is imported on its own. -/
+unsafe def categoriesTest : TestM Unit := group "categories" do
+  let dir := fixturesDir / "Categories"
+  let lib := dir / ".lake" / "build" / "lib" / "lean"
+  initSearchPath (← findSysroot) [lib]
+  let run (m : Name) : IO String := do
+    let env ← Compat.importPrivate #[m]
+    let settings : Settings := { imports := #[m], stripNamespaces := #[`Cats] }
+    let reqs := #["Cats.lower_eq", "Cats.symm"].map fun k => { key := k, views := #["math"] }
+    let (entries, _) ← exportEntries env dir settings reqs
+    return renderBundle entries none
+  let math (b k : String) : String :=
+    ((entry? b k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String "math")).toOption).getD ""
+  let problems (b k : String) : Array String :=
+    ((entry? b k).bind fun e =>
+      (e.getObjVal? "validation" >>= (·.getObjValAs? (Array String) "math")).toOption).getD #[]
+  let strict ← run `Categories.Strict
+  -- `q : Prog` and `r : Rep` are written with their types' metavariables.
+  let m := math strict "Cats.lower_eq"
+  check "extract/categories/strict-renames"
+    (m == "\\LeanMath{\\mathsf{lower}(P) = \\overline{P} \\implies \\mathsf{lower}(P) = \\overline{P}}") m
+  checkEq "extract/categories/strict-clean" (problems strict "Cats.lower_eq") #[]
+  -- `a b : Prog` are both $P$: an error, not a warning.
+  check "extract/categories/strict-print-alike"
+    ((problems strict "Cats.symm").any (·.startsWith "category: variables a and b both print as $P$"))
+    (toString (problems strict "Cats.symm"))
+  let clash ← run `Categories.Clash
+  check "extract/categories/unique-letter"
+    ((problems clash "Cats.lower_eq").any (·.startsWith "category: the metavariable $P$ stands for Cats.Prog, Cats.Rep"))
+    (toString (problems clash "Cats.lower_eq"))
+
 /-- Golden bundles, and trust checks on them. -/
 unsafe def tests : TestM Unit := group "fixtures" do
   driftTest
   indexTest
+  categoriesTest
   challengeTest
   IO.FS.createDirAll "out"
   for f in fixtures do
