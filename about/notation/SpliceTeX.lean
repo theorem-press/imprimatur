@@ -9,6 +9,9 @@ open SpliceModel
 
 -- Applied variables are written as calls: b(k), render(T).
 latex_style applied_variables := call
+-- Each metavariable stands for one type, and a variable of that type is
+-- written with it.
+latex_style categories := strict
 
 -- The splicer's functions.
 latex_notation apply b d => r"\mathsf{apply}_{#b}(#d)"
@@ -68,6 +71,9 @@ latex_notation SlotId => r"\mathit{SlotId}"
 latex_category Seg => r"\sigma"
 latex_category Piece => "p"
 latex_category Diag => "x"
+latex_category Bundle => "b"
+latex_category Doc => "d"
+latex_category Key => "k"
 
 -- The results, by title.
 latex_entry "Locality" => SpliceModel.apply_outline

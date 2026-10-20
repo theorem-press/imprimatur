@@ -213,7 +213,7 @@ unsafe def indexTest : TestM Unit := group "index" do
   let own := view "Notation" "vocabulary|scope=project"
   check "extract/index/vocabulary-project"
     ((own.splitOn "\\textit{Semantics}").length == 2 && (own.splitOn "\\textit{Lean}").length == 1 &&
-      (own.splitOn "\\texttt{Stlc.Tm.app}").length > 1 && (own.splitOn "\\texttt{Stlc.Ty}").length == 1) own
+      (own.splitOn "\\texttt{Tm.app}").length > 1 && (own.splitOn "\\texttt{Ty}").length == 1) own
   golden "extract/index/golden" ("golden" / "Index.tex")
     (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
 

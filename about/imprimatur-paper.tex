@@ -7,6 +7,8 @@
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
 \leanblockalias{leangrammar}{}
 \leanblockalias{leantheorem}{theorem}
+\leanblockalias{leanconventions}{}
+\leanblockalias{leannotation}{}
 
 \title{imprimatur: papers that say what Lean proved}
 \author{The imprimatur authors}
@@ -52,15 +54,15 @@ A document is a list of pieces: hand-written text, generated blocks, and
 checks on hand-written prose. A block's body is a list of segments: text
 generated from Lean, and slots, whose text the authors own.
 
-\begin{leangrammar}[sum=OyTWUtn6ng]{SpliceModel.Seg}{Segments}
-\begin{LeanGrammar}
+\begin{leangrammar}[sum=g4GdhZSliS]{SpliceModel.Seg}{Segments}
+\label{gram:SpliceModel.Seg}\begin{LeanGrammar}
 \LeanProduction{\sigma}{A segment of a generated block.}{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}
 \LeanAlternative{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
 \end{LeanGrammar}
 \end{leangrammar}
 
-\begin{leangrammar}[sum=ZTtokTSrDa]{SpliceModel.Piece}{Pieces}
-\begin{LeanGrammar}
+\begin{leangrammar}[sum=iQOwawJZY6]{SpliceModel.Piece}{Pieces}
+\label{gram:SpliceModel.Piece}\begin{LeanGrammar}
 \LeanProduction{p}{A piece of a document.}{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}
 \LeanAlternative{\mathsf{block}_{k}(\mathit{body})}{\leanslot{SpliceModel.Piece.block}{a generated block for a key}}
 \LeanAlternative{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{hand-written prose, checked against hash $h$}}
@@ -87,8 +89,8 @@ and leaves every other piece as it
 is\leancheck[stmt=6deca83854c0, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
 reports what is not as the bundle says:
 
-\begin{leangrammar}[sum=2bK5uzMauZ]{SpliceModel.Diag}{Diagnostics}
-\begin{LeanGrammar}
+\begin{leangrammar}[sum=5CDH8zS1mO]{SpliceModel.Diag}{Diagnostics}
+\label{gram:SpliceModel.Diag}\begin{LeanGrammar}
 \LeanProduction{x}{What \LeanCodeInline{check} reports.}{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}
 \LeanAlternative{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}
 \LeanAlternative{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}
@@ -184,21 +186,74 @@ the same term~\cite{Wiedijk12}.
 
 The notation module defines both directions. Read as a grammar, each of its
 rules is a mixfix production whose holes are typed by Lean's types and
-grouped by precedence. A rendering is faithful when it has exactly one
-reading in that grammar, up to what the notation declares invisible:
-implicit arguments, coercions, the names of hypotheses and bound variables.
-imprimatur checks this by translation validation. As it renders each
-formula, the extractor reads it back, and \verb|imprimatur check| warns
-where a typeset formula has two readings, showing both, or none. The
-formulas in this paper read back with one reading each.
+grouped by precedence. A rendering is \emph{faithful} when it has exactly
+one reading in that grammar, and that reading is the statement it was
+rendered from, up to what the notation declares invisible: implicit
+arguments, coercions, proofs, the names of hypotheses and bound variables,
+and the premises and synonyms it names.
+
+imprimatur checks this for each formula, by translation validation. As the
+extractor renders a formula, it also builds the reading the formula should
+have: an atom reads as itself, and a rule's rendering as the rule's pattern
+with its holes' readings. It then parses the typeset formula, and
+\verb|imprimatur check| reports, where the formula is, a formula with two
+readings (showing both), with none, or with one that is not the expected
+reading, a \emph{misread}. The last is what the check is for. A renderer
+that left out the parentheses its holes need would print
+$(\lambda r\, q.\, e) = M$ as $\lambda r\, q.\, e = M$, a formula that
+reads back uniquely, and wrongly. Made to do so, imprimatur reports six
+misreads in a twenty-page paper about another Lean development.
+
+A few forms (a quantifier's binders, a case analysis, an associative chain)
+are not given an expected reading, and only what is below them is
+compared. There the check rests on the grammar mirroring the renderer, as
+both are built from the same rules. In that twenty-page paper, 610 of the
+662 formulas with one reading are compared in full, 21 in part, and 31 not
+at all.
+
+\paragraph{What the reader knows.} Reading back uses the types of the
+formula's variables, which a reader has only if the text gives them. The
+\verb|prose| view states the type of each variable it binds (\emph{Let
+$b \in \mathit{Bundle}$}). A variable that a grammar or a figure leaves
+free is known by its letter, as in BNF, where $p ::= \ldots$ says what $p$
+ranges over. With \verb|latex_style categories := strict|, as in this
+paper, imprimatur makes the convention exact: a variable whose type has a
+metavariable is written with it and its own subscripts and primes, a
+metavariable stands for one type, and two variables of one formula never
+print alike. Each exception is an error. Appendix~\ref{app:notation} lists
+the metavariables and the notation, both generated. A reader who knows
+them has the grammar the formulas were checked in.
+
+\paragraph{Together.} Theorem~\ref{thm:Soundness-for-blocks} and
+translation validation make one claim. If the check reports nothing,
+warnings included, then every block is the rendering of a trusted
+constant's statement, and each formula in it reads back, in the paper's
+notation, as that statement up to what the notation declares invisible.
+The first half is proved for a model of the splicer; the second is checked,
+for each formula of the paper, each time it is built.
 
 \section{The trusted base}
 
-Lean's kernel; the extractor's reading of the environment; the hash's
-resistance to collisions; the notation module as the paper's dictionary,
-since Lean checks its names but not its choice of symbols; \TeX{}, since
-these theorems stop at \TeX{} source; and, for attested claims, the person
-who checked the prose.
+What the two halves do not cover is trusted:
+\begin{itemize}
+\item Lean's kernel, and the extractor's reading of the environment.
+\item The hash's resistance to collisions.
+\item The parser that reads formulas back, and, where an expected reading
+  is incomplete, the grammar's mirroring of the renderer.
+\item The notation module, as the paper's dictionary. Lean checks its names,
+  not its choice of symbols: a rule that wrote addition as $a - b$ would read
+  back faithfully. Appendix~\ref{app:notation} puts the dictionary in the
+  paper, where a reader can check it.
+\item What the notation declares invisible. A hidden premise makes the
+  theorem shown stronger than the one proved; a synonym is an equation the
+  notation asserts and nothing checks.
+\item The text of a block that is not a formula: the authors' text in
+  slots, and the sentences of the \verb|prose| view (\emph{Let \ldots\
+  Assume \ldots\ Then \ldots}), whose reading the view fixes.
+\item \TeX{}. The checks stop at \TeX{} source, and two macros may print
+  alike.
+\item For attested claims, the person who checked the prose.
+\end{itemize}
 
 \begin{thebibliography}{1}
 \bibitem{Pollack98}
@@ -212,5 +267,64 @@ F.~Wiedijk.
 \newblock \emph{Electronic Notes in Theoretical Computer Science}, 285,
   2012.
 \end{thebibliography}
+
+\appendix
+\section{Notation}\label{app:notation}
+
+The metavariables of this paper, and the notation it uses, generated from
+its notation module. A variable with a subscript or a prime ranges over the
+same type as its letter.
+
+\begin{leanconventions}[sum=y0BasabyJh]{Conventions}{Metavariables and the types they range over}
+\begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
+\textit{Variable} & \textit{Type} & & \textit{Shown in}\\
+\hline\endhead
+$\sigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
+$p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
+$k$ & $\mathit{Key}$ & \leanslot{SpliceModel.Key}{Keys: the names of Lean constants} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
+$x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
+$b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle: the entries of the keys a document uses} & \textit{Locality}, p.~\pageref{thm:Locality}\\
+$d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
+\end{longtable}
+A variable with a prime or a subscript ($\sigma'$, $\sigma_{1}$) ranges over the same type.
+\end{leanconventions}
+
+\begin{leannotation}[sum=wlP0ROlKQw]{Notation}{The notation of the paper}
+\begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
+\multicolumn{3}{@{}l}{\textit{Lean}}\\
+$\mathsf{List}(\alpha)$ & \texttt{List} & \leanslot{List/0}{Linked lists: ordered lists, in which each element has a reference to the next element}\\
+$a \mathbin{::} l$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
+$[]$ & \texttt{List.nil} & \leanslot{List.nil/0}{The empty list, usually written \LeanCodeInline{[]}}\\
+$a \notin l$ & \texttt{Not} & \leanslot{Not/0}{\LeanCodeInline{Not p}, or \LeanCodeInline{¬p}, is the negation of \LeanCodeInline{p}}\\
+$o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{Gets an optional value, returning a given default on \LeanCodeInline{none}}\\
+$x$ & \texttt{Option.some} & \leanslot{Option.some/0}{Some value of type \LeanCodeInline{α}}\\
+$\alpha \times \beta$ & \texttt{Prod} & \leanslot{Prod/0}{The product type, usually written \LeanCodeInline{α × β}}\\
+$\mathit{String}$ & \texttt{String} & \leanslot{String/0}{A string is a sequence of Unicode scalar values}\\
+\multicolumn{3}{@{}l}{\textit{SpliceModel}}\\
+$\mathit{Body}$ & \texttt{Body} & \leanslot{SpliceModel.Body/0}{The body of a generated block}\\
+$\mathsf{broken}(k)$ & \texttt{Diag.brokenRef} & \leanslot{SpliceModel.Diag.brokenRef/0}{the key has no entry}\\
+$\mathsf{drift}(k)$ & \texttt{Diag.drift} & \leanslot{SpliceModel.Diag.drift/0}{the statement has changed since the prose was checked}\\
+$\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{the block is not the key's rendering}\\
+$\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
+$\mathit{Env}(S)$ & \texttt{Env} & \leanslot{SpliceModel.Env/0}{A Lean environment: each key's statement, if it is a constant, and whether its proof is trusted}\\
+$\mathit{stmt}_{E}(k)$ & \texttt{Env.stmt} & \leanslot{SpliceModel.Env.stmt/0}{the statement of each constant}\\
+$\mathit{trusted}_{E}(k)$ & \texttt{Env.trusted} & \leanslot{SpliceModel.Env.trusted/0}{whether the proof of each constant is trusted}\\
+$\mathsf{block}_{k}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block for a key}\\
+$\mathsf{checked}_{k}(h)$ & \texttt{Piece.check} & \leanslot{SpliceModel.Piece.check/0}{a check that hand-written prose matches the statement with this hash}\\
+$\mathsf{text}(s)$ & \texttt{Piece.text} & \leanslot{SpliceModel.Piece.text/0}{hand-written text}\\
+$\mathsf{gen}(s)$ & \texttt{Seg.gen} & \leanslot{SpliceModel.Seg.gen/0}{text generated from Lean}\\
+$\mathsf{slot}_{i}(t)$ & \texttt{Seg.slot} & \leanslot{SpliceModel.Seg.slot/0}{a slot, whose text the authors own}\\
+$\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots}\\
+$\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
+$\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
+$\mathsf{check}_{b}(d)$ & \texttt{check} & \leanslot{SpliceModel.check/0}{\LeanCodeInline{imprimatur check}: what it reports about a document}\\
+$\mathsf{export}(E)$ & \texttt{extract} & \leanslot{SpliceModel.extract/0}{\LeanCodeInline{imprimatur-export}: the bundle of an environment, given how statements are rendered and hashed}\\
+$\mathsf{fill}(\mathit{old}, r)$ & \texttt{fill} & \leanslot{SpliceModel.fill/0}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}\\
+$\mathsf{ids}(r)$ & \texttt{ids} & \leanslot{SpliceModel.ids/0}{The identifiers of a body's slots}\\
+$l[i]$ & \texttt{lookup} & \leanslot{SpliceModel.lookup/0}{The text of slot \LeanCodeInline{i}, the first with that identifier}\\
+$\lfloor d \rfloor$ & \texttt{outline} & \leanslot{SpliceModel.outline/0}{The outline of a piece: a block without its body}\\
+$\mathsf{slots}(r)$ & \texttt{slots} & \leanslot{SpliceModel.slots/0}{The slots of a body, with their text}\\
+\end{longtable}
+\end{leannotation}
 
 \end{document}
