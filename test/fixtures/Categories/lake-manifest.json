@@ -1,0 +1,14 @@
+{"version": "1.3.0",
+ "packagesDir": ".lake/packages",
+ "packages":
+ [{"type": "path",
+   "scope": "",
+   "name": "imprimatur",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "../../../extract",
+   "copy": false,
+   "configFile": "lakefile.toml"}],
+ "name": "«categories-fixture»",
+ "lakeDir": ".lake",
+ "fixedToolchain": false}
