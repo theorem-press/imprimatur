@@ -1,0 +1,12 @@
+# The `Categories` fixture: `latex_style categories := strict`. `Strict` gives
+# two types their own metavariables; `Clash` gives them the same one.
+name = "categories-fixture"
+defaultTargets = ["Categories"]
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"
+
+[[lean_lib]]
+name = "Categories"
+globs = ["Categories.+"]

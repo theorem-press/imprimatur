@@ -348,7 +348,7 @@ where
       if let .lam n t b bi := concl.appArg! then
         return ← withLocalDecl n bi t fun x => do
           let body := b.instantiate1 x
-          return s!"there is ${← varName n}$ such that {← conclusion body}"
+          return s!"there is ${← varNameT n t}$ such that {← conclusion body}"
     let cs := conjuncts concl
     if cs.size > 1 then
       let items ← (cs.toList.zip (List.range cs.size)).mapM fun (x, i) => do

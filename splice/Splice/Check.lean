@@ -83,7 +83,12 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
           if (it.kind == .block || it.kind == .inline) && it.live then
             let view := itemView doc.cfg it
             for p in ((e.validation.find? (·.1 == view)).map (·.2)).getD #[] do
-              ds := ds.push (Diag.warn "unfaithful-rendering" loc s!"{key} ({view}): {p}")
+              -- A metavariable that does not tell the reader a variable's type
+              -- (`latex_style categories := unique` or `strict`) is an error.
+              if p.startsWith "category: " then
+                ds := ds.push (Diag.err "category" loc s!"{key} ({view}): {(p.drop 10).toString}")
+              else
+                ds := ds.push (Diag.warn "unfaithful-rendering" loc s!"{key} ({view}): {p}")
       -- Drift (DESIGN §10.3): the hashes recorded when the prose was checked.
       if it.kind == .check && it.name == "leancheck" then
         match it.opt? "stmt", checkHashes bundle it.keys with
