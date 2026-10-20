@@ -37,8 +37,8 @@ def indexViews : Array String := #["conventions", "vocabulary", "provenance"]
 /-- The first sentence of a docstring, as TeX, without its final stop. -/
 def docSentence (n : Name) : MetaM String := do
   let d := ((← findDocString? (← getEnv) n).getD "").trimAscii.toString
-  let d := (d.splitOn ". ")[0]!
-  let d := (if d.endsWith "." then (d.dropEnd 1).toString else d).replace "\n" " "
+  let d := ((d.replace "\n" " ").splitOn ". ")[0]!
+  let d := if d.endsWith "." then (d.dropEnd 1).toString else d
   return TeX.markdown d
 
 /-- A type as TeX: applied to the arguments its category names
@@ -151,13 +151,16 @@ def packageOf (mod : Name) : String :=
   | "Init" | "Std" | "Lean" => "Lean"
   | r => r
 
-/-- The library's notation that the document uses, grouped by package, with
-a gloss for each. Notation packs (logic and the like) are left out unless the
-block asks for them (`packs=true`). -/
+/-- The notation that the document uses, grouped by package, with a gloss for
+each: the library's (`scope=library`, the default), the project's
+(`scope=project`), or both (`scope=all`). Notation packs (logic and the like)
+are left out unless the block asks for them (`packs=true`). -/
 def vocabularyView (opts : Array (String × String)) : RenderM String := do
   let env ← getEnv
   let roots := (← read).imports.map (·.getRoot)
   let packs := opts.any (· == ("packs", "true"))
+  let scope := ((opts.find? (·.1 == "scope")).map (·.2)).getD "library"
+  let cats := projectCategories env
   let ev ← indexEvents.get
   let mut seen : Array (Name × String) := #[]
   let mut rows : Array (String × Name × NotationRule) := #[]
@@ -167,17 +170,28 @@ def vocabularyView (opts : Array (String × String)) : RenderM String := do
     if !packs && r.origin.startsWith "pack " then continue
     let head := r.pat.head
     -- The library's notation: rules whose patterns mention only constants of
-    -- modules outside the project.
+    -- modules outside the project. The project's: the others.
     let modOf (n : Name) : Option Name := do
       let idx ← env.getModuleIdxFor? n
       Compat.moduleName? env idx
     let some mod := modOf head | continue
-    if r.pat.consts.any fun n => match modOf n with
-        | some m => roots.contains m.getRoot
-        | none => false then continue
+    -- The project's constant the pattern mentions first, and its package.
+    let own := r.pat.consts.findSome? fun n => match modOf n with
+      | some m => if roots.contains m.getRoot then some (m.getRoot, n) else none
+      | none => none
+    if (scope == "library" && own.isSome) || (scope == "project" && own.isNone) then continue
+    -- A category's type is in the table of conventions.
+    if own.isSome && r.pat.consts.size == 1 && cats.any (·.1 == head) then continue
+    -- A project's rule headed by the library's constant (`Γ(x) = τ` is an
+    -- equation) is listed under the project's constant it mentions.
+    let head := match own, (modOf head).any (roots.contains ·.getRoot) with
+      | some (_, n), false => n
+      | _, _ => head
     if seen.contains (head, r.template) then continue
     seen := seen.push (head, r.template)
-    rows := rows.push (packageOf mod, head, r)
+    -- The project's notation is grouped under the project, though its head
+    -- be the library's (`Γ(x) = τ` is an equation).
+    rows := rows.push ((own.map (·.1.toString)).getD (packageOf mod), head, r)
   let sorted := rows.qsort fun a b =>
     a.1 < b.1 || (a.1 == b.1 && (a.2.1.toString < b.2.1.toString ||
       (a.2.1 == b.2.1 && a.2.2.template < b.2.2.template)))

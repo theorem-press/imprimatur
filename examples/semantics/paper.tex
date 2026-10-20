@@ -8,6 +8,8 @@
 \leanblockalias{leangrammar}{}
 \leanblockalias{leanrules}{}
 \leanblockalias{leantheorem}{theorem}
+\leanblockalias{leanconventions}{}
+\leanblockalias{leannotation}{}
 % Conventions of the generated rules: \val is a value, and \rulelabel{Key}{label}
 % makes a rule a target for \ref.
 \newcommand\val{v}
@@ -136,5 +138,23 @@ Andrew~M. Pitts.
 \newblock \emph{Journal of the ACM}, 53(3):459--506, 2006.
 \newblock \url{https://doi.org/10.1145/1147954.1147961}.
 \end{thebibliography}
+
+\appendix
+\section{Index of notation}\label{app:notation}
+
+Metavariables range over the types below; a variable with a subscript or a
+prime ranges over the same type. imprimatur generates the table from the
+categories the notation declares, and checks that every variable printed with
+a metavariable has its type.
+
+\begin{leanconventions}{Conventions}{Metavariables and the types they range over}
+\end{leanconventions}
+
+The notation, grouped by where it is defined: the paper's own (\textit{Stlc})
+and Lean's. Each is written as the paper writes it, with the Lean constant it
+stands for.
+
+\begin{leannotation}{Notation}{The notation of the paper}
+\end{leannotation}
 
 \end{document}
