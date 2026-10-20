@@ -217,8 +217,8 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
     -- The kind of a result, by the prefix of its label (`thm:`, `lem:`, …).
     let kind (l : String) : String :=
       match (l.splitOn ":")[0]! with
-      | "thm" => "Theorem~" | "lem" => "Lemma~" | "prop" => "Proposition~"
-      | "cor" => "Corollary~" | "def" => "Definition~" | _ => ""
+      | "thm" => "Thm.~" | "lem" => "Lemma~" | "prop" => "Prop.~"
+      | "cor" => "Cor.~" | "def" => "Def.~" | _ => ""
     let wh := match b.label with
       | some l => s!"{kind l}\\ref\{{l}}, p.~\\pageref\{{l}}"
       | none => ""
@@ -230,7 +230,12 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
     let axTeX := if ax.contains ``sorryAx then "\\textbf{sorry}"
       else if extra.isEmpty then "standard"
       else ", ".intercalate (extra.toList.map fun a => s!"\\texttt\{{TeX.escape a.toString}}")
-    out := out ++ s!"{wh} & \\texttt\{{TeX.escape c.name.toString}} & {src} & {axTeX}\\\\\n"
+    -- The name without the namespaces the document leaves out (the longest
+    -- that applies); the source says where it is.
+    let strip := (← read).strip.filter (·.isPrefixOf c.name)
+    let pre := strip.foldl (fun a n => if n.getNumParts > a.getNumParts then n else a) Name.anonymous
+    let shown := (c.name.replacePrefix pre .anonymous).toString
+    out := out ++ s!"{wh} & \\texttt\{{TeX.escape shown}} & {src} & {axTeX}\\\\\n"
   out := out ++ "\\end{longtable}\n"
   out := out ++ "The standard axioms are \\texttt{propext}, \\texttt{Classical.choice} and \\texttt{Quot.sound}.\n"
   return out
