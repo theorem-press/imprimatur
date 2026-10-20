@@ -10,6 +10,11 @@ Every definition and theorem displayed in the paper is generated from
 `lean/`; every hand-written claim about it carries a `\leancheck`. The
 notation is in `notation/SpliceTeX.lean`, read in external mode.
 
+It also states Theorem 2, that rendering is faithful, as what translation
+validation checks for each formula (DESIGN §18.3–§18.4), and what is left
+to the trusted base. The notation uses `latex_style categories := strict`,
+and Appendix A, the metavariables and the notation, is generated.
+
 To rebuild and check it:
 
 ```

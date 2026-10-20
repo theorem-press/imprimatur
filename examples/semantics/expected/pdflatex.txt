@@ -134,31 +134,31 @@ Lean
 where tail is the rest of the list
 Stlc
 e =α e′
-Stlc.Alpha α-equivalence
-Name Stlc.Atom Names of variables
-Context Stlc.Ctx Contexts: names with their types,
+Alpha α-equivalence
+Name Atom Names of variables
+Context Ctx Contexts: names with their types,
 the most recent first
-(a b) · Γ Stlc.Ctx.swap Swapping two names in a context
-Γ ⊢ e : τ Stlc.HasType Typing
-⊢ e : τ Stlc.HasType Typing
-v ∈ Val Stlc.IsValue Values
+(a b) · Γ Ctx.swap Swapping two names in a context
+Γ ⊢ e : τ HasType Typing
+⊢ e : τ HasType Typing
+v ∈ Val IsValue Values
 e −→ e′
-Stlc.Step Small-step reduction, call by value
-e1 e2 Stlc.Tm.app an application
+Step Small-step reduction, call by value
+e1 e2 Tm.app an application
 c # a, b, e, e′
-Stlc.Tm.atoms The names that occur in a term,
+Tm.atoms The names that occur in a term,
 bound or free
-λx:τ. e Stlc.Tm.lam an abstraction, binding x in e
-(a b) · e Stlc.Tm.swap Swapping two names throughout a
+λx:τ. e Tm.lam an abstraction, binding x in e
+(a b) · e Tm.swap Swapping two names throughout a
 term: bound, binding and free oc-
 currences alike
-() Stlc.Tm.unit the unit value
-x Stlc.Tm.var a variable
-τ1 → τ2 Stlc.Ty.arrow functions
-b Stlc.Ty.base the base type
-Γ(x) = τ Stlc.lookup The type of a name in a context
-e[u/x] Stlc.subst Capture-avoiding substitution of u
+() Tm.unit the unit value
+x Tm.var a variable
+τ1 → τ2 Ty.arrow functions
+b Ty.base the base type
+Γ(x) = τ lookup The type of a name in a context
+e[u/x] subst Capture-avoiding substitution of u
 for x in e
-(a b)(c) Stlc.swapAtom Swapping two names: a becomes b,
+(a b)(c) swapAtom Swapping two names: a becomes b,
 b becomes a, and other names are
 unchanged
