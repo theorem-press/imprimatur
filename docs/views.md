@@ -200,7 +200,11 @@ view notes what it displays). Each table is a `longtable`, which
   Mathlib) that the document uses: each rule whose pattern mentions no
   constant of the project's modules, as it is written, with the constant and
   a gloss, grouped by package. Notation packs are left out unless the block
-  has `packs=true`.
+  has `packs=true`. With `scope=project` it lists the project's notation
+  instead, and with `scope=all` both: an index of notation. A project's rule
+  headed by a library constant (`Γ(x) = τ`, an equation) is listed under the
+  project's constant it mentions, and the types the `conventions` table lists
+  are left out. `examples/semantics` ends with such an index.
 - **`provenance`**: each theorem the document states, in document order, with
   its kind and number (from its label's prefix: `thm:`, `lem:`, `prop:`,
   `cor:`, `def:`, written Thm., Lemma, Prop., Cor., Def.), its declaration
