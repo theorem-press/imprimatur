@@ -275,6 +275,8 @@ def equationRow (eqn : Expr) (width : Nat := 100000) : RenderM String :=
 def mathViewWith (c : ConstantInfo) (width : Nat) (opts : Array (String × String)) :
     RenderM String := do
   let has (k : String) := opts.any (·.1 == k)
+  -- A definition's equations display it.
+  if has "def" then noteShown c.name
   let full := opts.any (· == ("names", "full"))
   let isThm := c matches .thmInfo _ | .axiomInfo _
   let isDef := c matches .defnInfo _

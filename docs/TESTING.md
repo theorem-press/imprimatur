@@ -90,6 +90,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
 | D§7.3 | `prose` labels only hypotheses the paper refers to (`\leanhypref`) | `extract/prose/hyp-referred-labelled`, `extract/prose/hyp-unreferred-unlabelled`, `splice/golden/hyprefs` | M5 |
 | D§7.3 | `math` and `prose` views | `extract/golden/Notation`, `e2e/minimal`, `e2e/fixture-views`, `integration/math-prose` | M4 |
+| D§7.3 | the views that index the document (`conventions`, `vocabulary`, `provenance`) see every other block, list only the library's notation, and give results their kind and page | `extract/index/no-warnings`, `extract/index/conventions-shown`, `extract/index/conventions-order`, `extract/index/provenance-theorem`, `extract/index/vocabulary-library-only`, `extract/index/golden` | M6 |
 | D§7.3 | `rules` and `grammar` views | `extract/golden/Semantics`, `e2e/fixture-views`, `e2e/semantics`, `integration/projb-rules`, project-a's parity gate | M5 |
 | D§7.3 | custom views through `@[latex_view]`, with the document inventory | `extract/golden/Semantics` (`fixture.rulelist`), project-a's parity gate (four custom views) | M5 |
 | D§7.4 | rule label precedence; `latex_rules` templates, anchors, `sep`, `doc_labels`; groups across inductives | `extract/golden/Semantics`, project-a's parity gate | M5 |

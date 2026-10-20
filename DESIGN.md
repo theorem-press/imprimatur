@@ -660,7 +660,9 @@ The options of `leanblock`:
   paper.
 - **`\leanindex`** (M6) will replace project-a's provenance table, which is a
   custom view for now, and list every result in project B's Lean appendix. The
-  scanner already recognises it.
+  scanner already recognises it. The `provenance` view (docs/views.md) is its table, as a block; the
+  `conventions` and `vocabulary` views index the document's metavariables and
+  its library notation in the same way.
 
 ### 9.2 Aliases
 

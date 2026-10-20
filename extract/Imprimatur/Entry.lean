@@ -14,6 +14,7 @@ import Imprimatur.Views.Math
 import Imprimatur.Views.Rules
 import Imprimatur.Views.Grammar
 import Imprimatur.CustomViews
+import Imprimatur.Views.Index
 
 /-!
 # Bundle entries
@@ -143,7 +144,7 @@ def parseViewSpec (s : String) : ViewSpec :=
 /-- The rendering context for the notation in scope: the project's rules and
 the selected packs. `used` collects the rules that fire. -/
 def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array String))
-    (key : String := "") : MetaM Render.Ctx := do
+    (key : String := "") (root : System.FilePath := ".") : MetaM Render.Ctx := do
   let env ← getEnv
   let style (k v : String) := (projectStyles env).find? (·.1 == k) == some (k, v)
   let rawVars := style "names" "raw"
@@ -153,14 +154,16 @@ def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array Str
   let listLiterals := style "lists" "literal"
   return { rules := projectRules env ++ Packs.select s.notationPacks,
            metavars := projectMetavars env, variant, strip := s.stripNamespaces, used, rawVars,
-           callVars, subscriptVars, casesMatch, listLiterals, document := s.document, key }
+           callVars, subscriptVars, casesMatch, listLiterals, document := s.document, key,
+           root, imports := s.imports }
 
 /-- Run a view that renders mathematics. The formulas it renders are read
 back unless the configuration says not to (DESIGN §18.4); the problems
 found come back with the view's text. -/
 def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array String))
-    (key : String) (act : Render.Ctx → MetaM String) : MetaM (Except String String × Array String) := do
-  let ctx ← renderCtx s variant used key
+    (key : String) (act : Render.Ctx → MetaM String) (root : System.FilePath := ".") :
+    MetaM (Except String String × Array String) := do
+  let ctx ← renderCtx s variant used key root
   let problems ← IO.mkRef #[]
   let ctx := if s.validate then
       { ctx with problems := some problems,
@@ -178,15 +181,22 @@ def validationField (vs : Array (String × Array String)) : Array (String × J) 
 /-- The entry for a `latex_group`: a key that names a group of rules, not a
 declaration. Only the `rules` view applies. -/
 def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Ref (Array String))
-    (extra : Array (String × String) := #[]) : MetaM J := do
+    (extra : Array (String × String) := #[]) (root : System.FilePath := ".") : MetaM J := do
   let mut views : Array (String × J) := #[]
   let mut errors : Array (String × J) := #[]
   let mut validation : Array (String × Array String) := #[]
   for v in r.views do
     let spec := parseViewSpec v
     let spec := { spec with opts := spec.opts ++ extra }
-    let run := runRendered s spec.variant used r.key
-    if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == spec.base) then
+    let run := fun act => runRendered s spec.variant used r.key act root
+    if Views.indexViews.contains spec.base then
+      -- A view that indexes the document (`Views/Index.lean`).
+      let (res, ps) ← run (Views.runIndexView spec.base (sourceOf root) axiomsOf spec.opts).run
+      validation := validation.push (v, ps)
+      match res with
+      | .ok t => views := views.push (v, .str t)
+      | .error msg => errors := errors.push (v, .str msg)
+    else if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == spec.base) then
       let (res, ps) ← run (runCustomView fn r.key none spec.opts).run
       validation := validation.push (v, ps)
       match res with

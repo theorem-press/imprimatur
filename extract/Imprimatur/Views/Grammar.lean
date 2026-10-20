@@ -52,6 +52,7 @@ def alternative (c : ConstantInfo) : RenderM String := do
 def grammarView (c : ConstantInfo) : RenderM String := do
   let env ← getEnv
   let .inductInfo i := c | throwError "the grammar view needs an inductive type"
+  noteShown c.name
   let isPred ← forallTelescopeReducing c.type fun _ body => return body.isProp
   if isPred then
     throwError "{c.name} is an inductive predicate; the rules view shows predicates, \
