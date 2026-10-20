@@ -205,7 +205,7 @@ unsafe def indexTest : TestM Unit := group "index" do
   check "extract/index/conventions-order"
     ((conv.splitOn "gram:Ty")[0]!.length < (conv.splitOn "gram:Tm")[0]!.length) conv
   check "extract/index/provenance-theorem"
-    ((prov.splitOn "Theorem~\\ref{thm:Stlc.size_pos}").length > 1) prov
+    ((prov.splitOn "Thm.~\\ref{thm:Stlc.size_pos}").length > 1) prov
   check "extract/index/vocabulary-library-only" ((vocab.splitOn "Stlc").length == 1) vocab
   golden "extract/index/golden" ("golden" / "Index.tex")
     (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
