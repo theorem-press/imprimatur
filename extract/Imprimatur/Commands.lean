@@ -414,7 +414,8 @@ syntax (name := latexStyle) "latex_style " ident " := " ident : command
   let value := stx[3].getId.toString
   let known : List (String × List String) :=
     [("names", ["italic", "raw"]), ("applied_variables", ["juxtaposed", "call", "subscript"]),
-     ("pattern_matching", ["code", "cases"]), ("lists", ["cons", "literal"])]
+     ("pattern_matching", ["code", "cases"]), ("lists", ["cons", "literal"]),
+     ("categories", ["loose", "unique", "strict"])]
   let some (_, values) := known.find? (·.1 == key)
     | throwErrorAt stx[1] "unknown style {key}; the styles are {", ".intercalate (known.map (·.1))}"
   unless values.contains value do

@@ -181,6 +181,46 @@ def varName (n : Name) : RenderM String := do
   let ctx ← read
   return varTeX ctx.metavars n ctx.rawVars
 
+/-- How strictly the categories' metavariables are read
+(`latex_style categories`): `loose`, `unique` (a metavariable stands for one
+type) or `strict` (and a variable of a category's type is written with its
+metavariable). -/
+def categoriesStyle : MetaM String := do
+  return ((projectStyles (← getEnv)).find? (·.1 == "categories")).map (·.2) |>.getD "loose"
+
+/-- The metavariable of the category a type belongs to: its head's, or, for a
+type that unfolds (`abbrev`), the head's of what it unfolds to. -/
+def categoryLetter? (ty : Expr) : MetaM (Option String) := do
+  let cats := projectCategories (← getEnv)
+  let of (t : Expr) : Option String := match t.getAppFn with
+    | .const h _ => (cats.find? (·.1 == h)).map (·.2)
+    | _ => none
+  let ty ← instantiateMVars ty
+  if let some m := of ty then return some m
+  try return of (← whnfR ty) catch _ => return none
+
+/-- The decorations of a variable's name: its subscript (from trailing
+digits) and its primes, as TeX. -/
+def nameDecorations (n : Name) : String :=
+  let s := n.eraseMacroScopes.toString.replace "✝" ""
+  let cs := s.toList
+  let primes := (cs.reverse.takeWhile (· == '\'')).length
+  let cs := cs.take (cs.length - primes)
+  let digitsRev := cs.reverse.takeWhile fun c => c.isDigit || subscripts.any (·.1 == c)
+  let digits := String.ofList (digitsRev.reverse.map fun c =>
+    ((subscripts.find? (·.1 == c)).map (·.2)).getD c)
+  (if digits.isEmpty then "" else s!"_\{{digits}}") ++ String.ofList (List.replicate primes '\'')
+
+/-- The TeX of a variable of type `ty`. With `latex_style categories :=
+strict`, a variable of a category's type is written with the category's
+metavariable and its own decorations (`d : Design c` as $\overline{D}$, `D₁`
+as $\overline{D}_{1}$), so the reader knows its type from its letter. -/
+def varNameT (n : Name) (ty : Expr) : RenderM String := do
+  if (← categoriesStyle) == "strict" then
+    if let some m ← categoryLetter? ty then
+      return m ++ nameDecorations n
+  varName n
+
 /-- The TeX of a constant without notation. -/
 def constTeX (strip : Array Name) (n : Name) : String :=
   s!"\\LeanMathConst\{{TeX.escape (Views.stripName strip n).toString}}"
@@ -280,12 +320,22 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
           let c := Expr.const t (ci.levelParams.map Level.param)
           forallTelescope ci.type fun xs _ => do pure (head (← sortKey (mkAppN c xs)))
         catch _ => pure t.toString
+      -- A metavariable stands for one type (`latex_style categories := unique`
+      -- or `strict`): types that unfold to the same head are one.
+      let style ← categoriesStyle
+      let pre := if style == "loose" then "" else "category: "
+      let distinct := keys.foldl (fun a k => if a.contains k then a else a.push k) #[]
+      if distinct.size > 1 then
+        let p := s!"{pre}the metavariable ${metavarBase a.tex}$ stands for {", ".intercalate (tys.toList.map toString)}, \
+          so a reader cannot tell which type a variable written with it has: give each type its own \
+          metavariable (latex_category)"
+        unless (← problems.get).contains p do problems.modify (·.push p)
       -- The categories that appear, for the table of conventions.
       for (t, k) in tys.zip keys do
         if t.toString == head a.sort || k == head a.sort then
           indexEvents.modify (·.push (.category (← read).key t))
       unless tys.any (·.toString == head a.sort) || keys.contains (head a.sort) do
-        let p := s!"the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
+        let p := s!"{pre}the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
           (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${metavarBase a.tex}$"
         unless (← problems.get).contains p do problems.modify (·.push p)
   -- Free variables that print alike.
@@ -300,7 +350,8 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (problems : IO.Ref (Array
     if let some (f', _) := seen.find? fun (f', t') => t' == t && f' != f then
       let n₁ := (lctx.find? f').map (·.userName.eraseMacroScopes.toString) |>.getD "?"
       let n₂ := (lctx.find? f).map (·.userName.eraseMacroScopes.toString) |>.getD "?"
-      let p := s!"variables {n₁} and {n₂} both print as ${t}$, in ${tex}$"
+      let pre := if (← categoriesStyle) == "strict" then "category: " else ""
+      let p := s!"{pre}variables {n₁} and {n₂} both print as ${t}$, in ${tex}$"
       unless (← problems.get).contains p do problems.modify (·.push p)
     unless seen.any (·.1 == f) do seen := seen.push (f, t)
 
@@ -358,7 +409,7 @@ mutual
     | .fvar f =>
       let t ← match (← read).overrides.find? (·.1 == f) with
         | some (_, t) => pure t
-        | none => varName (← f.getUserName)
+        | none => do varNameT (← f.getUserName) (← f.getType)
       logAtom t (← sortOf e) (fvar := some f) (name := (← f.getUserName).eraseMacroScopes.toString)
       return .tex t
     | .sort .zero => logAtom "\\mathrm{Prop}" "Sort"; return .tex "\\mathrm{Prop}"
@@ -387,8 +438,8 @@ mutual
         -- Proofs are not shown, so neither is a λ that binds one: the
         -- branches of `if h : c then a else b` are `a` and `b`.
         if ← isProp t then return body
-        logAtom (← varName n) "*" (isVar := true)
-        return .node 0 #[.tex s!"\\lambda {← varName n}.\\,", .child 0 body]
+        logAtom (← varNameT n t) "*" (isVar := true)
+        return .node 0 #[.tex s!"\\lambda {← varNameT n t}.\\,", .child 0 body]
     | .const h _ =>
       let t := constTeX (← read).strip h
       logAtom t (← sortOf e)
@@ -562,7 +613,7 @@ mutual
     let some (_, #[.lam n t b bi]) ← explicitArgs e | return none
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
-      let v ← varName n
+      let v ← varNameT n t
       logAtom v "*" (isVar := true)
       -- `∃ x, x ∈ s ∧ p` is written `∃ x ∈ s, p`.
       if body.isAppOfArity ``And 2 then
@@ -587,7 +638,7 @@ mutual
       let body := b.instantiate1 x
       -- Instance binders are not shown.
       if bi.isInstImplicit then return ← render body
-      let v ← varName n
+      let v ← varNameT n t
       logAtom v "*" (isVar := true)
       -- `∀ x, x ∈ s → p` is written `∀ x ∈ s, p`.
       if let .forallE _ dom rest _ := body then

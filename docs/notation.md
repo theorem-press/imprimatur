@@ -129,6 +129,7 @@ Settings of the renderer, for conventions a paper fixes once:
 | `applied_variables` | `juxtaposed` (default), `call`, `subscript` | a variable applied to arguments: `f\,a\,b`, `f(a)(b)`, or `f_{a, b}` |
 | `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots` |
 | `lists` | `cons` (default), `literal` | a list literal: by the rules for `List.cons`, or `[a,\ b]` |
+| `categories` | `loose` (default), `unique`, `strict` | how strictly the metavariables of `latex_category` are held to their types: see [Metavariables](#metavariables) |
 
 In a pattern (a `case`'s, or an argument on the left of a definition's
 equation), a rule whose template is its bare argument (`latex_notation
@@ -222,8 +223,35 @@ warning[unfaithful-rendering]: SpliceModel.Seg (grammar): the variable s prints 
 and `Fintype.card R` as `|R|`, or a definition and what it unfolds to. Mark
 one `synonym`, and the two readings are one.
 
-A letter may stand for several types, one `latex_category` each: `P` for the
-paper's core programs and for the development's representation of them.
+### Metavariables
+
+A reader infers a variable's type from its letter: $P$ is a program, $D$ a
+design. `latex_style categories` says how far that inference is to be
+trusted.
+
+- **`loose`** (the default). A letter may stand for several types, one
+  `latex_category` each: `P` for the paper's core programs and for the
+  development's representation of them. A variable printed with a category's
+  letter but of another type is a warning, as above.
+- **`unique`**. A letter stands for one type: two `latex_category`s with the
+  same letter, for types that are not the same after unfolding, are an error
+  wherever a variable is written with it. So is a variable printed with a
+  category's letter but of another type.
+- **`strict`**. As `unique`, and a variable whose type has a category is
+  written with the category's letter, whatever its Lean name: only the name's
+  subscripts and primes are kept, so `q : Prog` is $P$, `D₁ : NDes c` is
+  $\overline{D}_1$ and `a' : Attr` is $a'$. Two variables of one formula
+  that then print alike (`a b : Prog`, both $P$) are an error: rename them
+  `a₁ a₂`.
+
+```lean
+latex_style categories := strict
+latex_category Prog => "P"
+latex_category Rep => r"\overline{P}"
+```
+
+Under `unique` and `strict`, `imprimatur check` reports these problems as
+`error[category]`, not as `unfaithful-rendering` warnings.
 
 **Not validated** formulas have no reading: the notation does not model
 what the renderer wrote. Please report one as a bug.
