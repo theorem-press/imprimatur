@@ -253,6 +253,11 @@ latex_category Rep => r"\overline{P}"
 Under `unique` and `strict`, `imprimatur check` reports these problems as
 `error[category]`, not as `unfaithful-rendering` warnings.
 
+**Misread** formulas have one reading, but not the one the renderer
+rendered: the TeX says something other than the Lean, and no reader could
+tell. That is a bug in imprimatur (its emitter left out parentheses, say),
+not in the notation; please report it.
+
 **Not validated** formulas have no reading: the notation does not model
 what the renderer wrote. Please report one as a bug.
 

@@ -1235,14 +1235,26 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   gives it the coercion's sort, with its argument's bound (`inl x` for
   `x : A` is of sort `Sum(A, *)`); a reading can therefore be of several
   sorts, and a hole's binding chooses among them.
-- **One reading** is the original expression, since the grammar mirrors the
-  emitter: the renderer's output is a parse of what it rendered. **Two** is
-  an ambiguity, reported with both readings. **None** means the grammar does
-  not model what the renderer did, and the formula is *not validated*;
-  that is a gap in the validator, or a rendering no reader could parse.
-- **The trusted part** is that mirroring, `Validate.ofRule` against
-  `Render.fillTemplate`, and a small chart parser that counts at most two
-  readings, with a work budget.
+- **One reading** must be the original expression. As it renders, the
+  renderer builds the reading it expects (`Render.Expect`): an atom reads as
+  its TeX, a rule as its pattern's shape with its holes' readings, and an
+  application, `∃`, `λ` or implication as the built-in form. A form it does
+  not say how to read (`∀` with its binders, `match`, chains, folded
+  binders, synonyms, Lean's fallback text) is `⁇`, which matches any
+  subterm. A reading that does not match is a *misread*, reported with both:
+  the emitter left out parentheses a reader needs, or the grammar does not
+  mirror the renderer. **Two** is an ambiguity, reported with both readings.
+  **None** means the grammar does not model what the renderer did, and the
+  formula is *not validated*; that is a gap in the validator, or a rendering
+  no reader could parse.
+- **The trusted part** is a small chart parser that counts at most two
+  readings, with a work budget, and, where the expected reading has a `⁇`,
+  the mirroring of `Validate.ofRule` against `Render.fillTemplate`. On the
+  project-b standalone paper, 610 of the 662 formulas with one reading
+  have an expected reading without `⁇`, 21 have one in part, and 31 have
+  none. Making the emitter drop the parentheses its holes need is caught
+  as 6 misreads there (`(\lambda r\, q.\, …) = M` read as
+  `\lambda r\, q.\, (… = M)`).
 - **Side conditions** are found per formula: ambiguity (conditions 1–3),
   variables that print alike (4), and variables that print as another
   type's category letter (5). One is checked when the notation module is
