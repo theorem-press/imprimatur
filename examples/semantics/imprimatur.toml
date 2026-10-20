@@ -8,6 +8,9 @@ strip_namespaces = ["Stlc"]
 
 [aliases]
 # The paper's own environments, each with the view it shows.
-leangrammar = { view = "grammar" }
+leangrammar = { view = "grammar", label = "gram:{key}", template = "\\label{{label}}{content}" }
 leanrules   = { view = "rules" }
 leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
+# The index of notation: the metavariables, and the notation the paper uses.
+leanconventions = { view = "conventions" }
+leannotation    = { view = "vocabulary|scope=all" }

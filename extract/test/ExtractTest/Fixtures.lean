@@ -184,11 +184,12 @@ unsafe def indexTest : TestM Unit := group "index" do
     blk "Conventions" "conventions" 0, blk "Vocabulary" "vocabulary" 1,
     blk "Stlc.Ty" "grammar" 2 (some "gram:Ty"), blk "Stlc.Tm" "grammar" 3 (some "gram:Tm"),
     blk "Stlc.size_pos" "prose" 4 (some "thm:Stlc.size_pos"),
-    blk "Provenance" "provenance" 5] }
+    blk "Provenance" "provenance" 5, blk "Notation" "vocabulary|scope=project" 6] }
   let settings : Settings := { imports := #[f.module], stripNamespaces := f.strip, document }
   let reqs : Array Request := #[
     { key := "Conventions", views := #["conventions"] }, { key := "Vocabulary", views := #["vocabulary"] },
     { key := "Provenance", views := #["provenance"] },
+    { key := "Notation", views := #["vocabulary|scope=project"] },
     { key := "Stlc.Ty", views := #["grammar"] }, { key := "Stlc.Tm", views := #["grammar"] },
     { key := "Stlc.size_pos", views := #["prose"] }]
   let (entries, warnings) ← exportEntries env dir settings reqs
@@ -207,6 +208,12 @@ unsafe def indexTest : TestM Unit := group "index" do
   check "extract/index/provenance-theorem"
     ((prov.splitOn "Thm.~\\ref{thm:Stlc.size_pos}").length > 1) prov
   check "extract/index/vocabulary-library-only" ((vocab.splitOn "Stlc").length == 1) vocab
+  -- `scope=project`: the project's notation, under the project, and not the
+  -- category types the table of conventions lists.
+  let own := view "Notation" "vocabulary|scope=project"
+  check "extract/index/vocabulary-project"
+    ((own.splitOn "\\textit{Semantics}").length == 2 && (own.splitOn "\\textit{Lean}").length == 1 &&
+      (own.splitOn "\\texttt{Stlc.Tm.app}").length > 1 && (own.splitOn "\\texttt{Stlc.Ty}").length == 1) own
   golden "extract/index/golden" ("golden" / "Index.tex")
     (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
 
