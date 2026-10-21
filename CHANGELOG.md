@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Displays (#73): the `clauses` view sets definitions as `lhs ≜ rhs` rows,
+  and `grammar|display` sets inductive types as grammar rows, each with its
+  description as a slot, for one declaration or a `latex_display "Title" :=
+  […]`. `imprimatur.sty` gains `LeanDisplay`, `LeanDisplayBox`,
+  `LeanRulesBox`, `\deq` and `\defeqq`.
+
 - `imprimatur show KEY [--view VIEW]…` prints one key's renderings, with the
   problems translation validation found in each, without touching the paper:
   for working on notation (#32).

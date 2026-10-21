@@ -76,11 +76,12 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
     let some c := decl?
       | -- A key that names no declaration may name a group of rules.
         let group := (projectGroups env).find? (·.title == r.key)
+        let disp := ((projectDisplays env).find? (·.1 == r.key)).map (·.2)
         let custom := !r.views.isEmpty && r.views.all fun v =>
           (projectViews env).any (·.1 == (parseViewSpec v).base) ||
             Views.indexViews.contains (parseViewSpec v).base
-        if group.isSome || custom then
-          let act : CoreM J := (groupEntry s r group used extra root).run' {} {}
+        if group.isSome || disp.isSome || custom then
+          let act : CoreM J := (groupEntry s r group used extra root disp).run' {} {}
           match ← (act.toIO coreCtx { env }).toBaseIO with
           | .ok (j, _) => entries := entries.push (r.key, j)
           | .error e => warnings := warnings.push s!"{r.key}: {e}"

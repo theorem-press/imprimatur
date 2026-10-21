@@ -226,6 +226,9 @@ inductive NotationEntry where
   | metavar (m : MetavarRule)
   /-- A group of rules. -/
   | group (g : RuleGroup)
+  /-- A display: definitions (or types) shown together by the `clauses` (or
+  `grammar|display`) view, as the block with key `title` (`latex_display`). -/
+  | display (title : String) (decls : Array Name)
   /-- A rule's label. -/
   | ruleLabel (ctor : Name) (label : String)
   /-- How an inductive's rules are labelled. -/
@@ -269,6 +272,12 @@ def projectMetavars (env : Environment) : Array MetavarRule :=
 def projectGroups (env : Environment) : Array RuleGroup :=
   (notationExt.getState env).filterMap fun
     | .group g => some g
+    | _ => none
+
+/-- The project's displays (`latex_display`): titles and their declarations. -/
+def projectDisplays (env : Environment) : Array (String × Array Name) :=
+  (notationExt.getState env).filterMap fun
+    | .display t ds => some (t, ds)
     | _ => none
 
 /-- Explicit rule labels. -/

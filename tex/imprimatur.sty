@@ -133,6 +133,54 @@
 % The grammar view (DESIGN 7.3): a production per inductive type, one row per
 % constructor, with the author-owned description in the last column.
 \newenvironment{LeanGrammar}{\[\begin{array}{@{}r@{\;}c@{\;}l@{\qquad}l@{}}}{\end{array}\]}
+
+% Displays (the `clauses` and `grammar|display` views): rows of a formula and
+% its description, set in LeanDisplay as one paragraph per row. A long
+% formula breaks after an operator or a comma; the description sits flush
+% right on the formula's line if it fits, else on the next, and one wider
+% than half the line is wrapped. A paper may redefine \deq (≜) and \defeqq
+% (::=), and the rows' macros.
+\providecommand\deq{\triangleq}
+\providecommand\defeqq{\mathrel{::=}}
+\newcommand\imprimatur@bra{\hbox to \linewidth{\vrule width0.3mm height 1.8mm depth-0.3mm
+  \leaders\hrule height1.8mm depth-1.5mm\hfill\vrule width0.3mm height 1.8mm depth-0.3mm}}
+\newcommand\imprimatur@ket{\hbox to \linewidth{\vrule width0.3mm height1.5mm
+  \leaders\hrule height0.3mm\hfill\vrule width0.3mm height1.5mm}}
+\newcommand\imprimatur@breakcommas{%
+  \begingroup\lccode`\~=`\,\lowercase{\endgroup\def~}{\mathchar"613B\penalty300\relax}%
+  \mathcode`\,="8000\relax}
+\newenvironment{LeanDisplay}{%
+  \par\begingroup\parindent0pt\parskip0pt\emergencystretch3em
+  \rightskip0pt plus 4em\relax
+  \imprimatur@breakcommas
+  \let\\\imprimatur@row}%
+  {\par\endgroup}
+\newcommand\imprimatur@row{\@ifnextchar[{\imprimatur@rowskip}{\par}}
+\def\imprimatur@rowskip[#1]{\par\vskip#1\relax}
+% \imprimatur@line{indent}{formula}{description}
+\newcommand\imprimatur@line[3]{%
+  \hangindent2.5em\hangafter1\leavevmode\kern.1em\hspace*{#1}$#2$%
+  \setbox0\hbox{#3}\ifdim\wd0>0pt
+    \ifdim\wd0>.5\linewidth
+      \setbox0\vtop{\hsize.5\linewidth\raggedleft\noindent#3}\fi
+    \unskip\nobreak\hfil\penalty50\hskip1.5em\hbox{}\nobreak\hfil\box0
+    {\parfillskip0pt\par}\else\par\fi}
+\newcommand\LeanClause[2]{\imprimatur@line{0pt}{#1}{#2}}
+\newcommand\LeanCategory[2]{\imprimatur@line{0pt}{#1\;\defeqq}{#2}}
+\newcommand\LeanEntry[2]{\imprimatur@line{1.5em}{#1}{#2}}
+% A titled box around a display or a block of rules: the wrapping
+% environment of an alias (wrap = "LeanDisplayBox"), which passes the block's
+% title as its optional argument.
+\newenvironment{LeanDisplayBox}[1][]{%
+  \par\vskip\smallskipamount\noindent{\raggedright\textbf{#1}\par}\nopagebreak\vskip-.6ex
+  \noindent\imprimatur@bra\par\nopagebreak\vskip-.4ex}%
+  {\par\nopagebreak\vskip-.6ex\noindent\imprimatur@ket\par\vskip\smallskipamount}
+\newenvironment{LeanRulesBox}[1][]{%
+  \par\medskip\noindent{\raggedright\textbf{#1}\par}\nopagebreak\vspace{-.8ex}%
+  \noindent\imprimatur@bra\nopagebreak
+  \setlength{\abovedisplayskip}{2pt}\setlength{\abovedisplayshortskip}{2pt}%
+  \setlength{\belowdisplayskip}{2pt}\setlength{\belowdisplayshortskip}{2pt}}%
+  {\par\nopagebreak\vspace{-.8ex}\noindent\imprimatur@ket\medskip}
 \newcommand\LeanProduction[4]{#1 & ::= & #3 & \text{#4}\\}
 \newcommand\LeanAlternative[2]{ & \mid & #1 & \text{#2}\\}
 % A structure: its name and description across the whole width, then its

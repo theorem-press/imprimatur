@@ -13,7 +13,9 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
 def main():
     errors = []
     for md in ROOT.glob("**/*.md"):
-        if ".lake" in md.parts:
+        # Build directories, and e2e-out/ (copies of the examples, made by
+        # scripts/e2e.sh, whose relative links point outside the copy).
+        if ".lake" in md.parts or "e2e-out" in md.parts:
             continue
         in_code = False
         for lineno, line in enumerate(md.read_text(encoding="utf-8").splitlines(), 1):

@@ -16,6 +16,7 @@ import Imprimatur.Render
 import Imprimatur.Views.Math
 import Imprimatur.Views.Rules
 import Imprimatur.Views.Grammar
+import Imprimatur.Views.Display
 import Imprimatur.CustomViews
 import Imprimatur.Requests
 import Imprimatur.Views.Lean

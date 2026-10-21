@@ -170,6 +170,17 @@ How the `rules` view ([views.md](views.md)) labels and groups rules:
 - **`latex_group`** names a set of constructors, from any inductives, shown
   together in display order; its title is the block's key.
 
+## `latex_display`
+
+```lean
+latex_display "Lookup and size" := [lookup, size]
+latex_display "Types and terms" := [Ty, Tm]
+```
+
+Names a set of definitions shown together by the `clauses` view, as
+`lhs ≜ rhs` rows, or of inductive types shown by the `grammar|display` view,
+as grammar rows ([views.md](views.md)). Its title is the block's key.
+
 ## Packs
 
 Rules for constants in Lean's core library are shipped with imprimatur, and

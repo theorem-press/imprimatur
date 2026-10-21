@@ -3,7 +3,7 @@
 *For authors of papers that use imprimatur: what each view produces, and the
 macros `tex/imprimatur.sty` defines for it. Redefine any of these macros to
 change the style. [DESIGN.md](../DESIGN.md) §7.3 lists all the planned views.
-This page covers `lean`, `meta`, `math`, `prose`, `rules`, `grammar` and
+This page covers `lean`, `meta`, `math`, `prose`, `rules`, `grammar`, `clauses` and
 custom views.*
 
 ## `lean`: the signature as Lean prints it
@@ -157,6 +157,47 @@ constructor is one alternative, rendered with the notation in scope applied
 to metavariables; its description is a slot whose default is the
 constructor's docstring, so the paper's wording survives regeneration. A
 grammar whose forms are hand-written TeX is better served by a custom view.
+
+## `clauses` and `grammar|display`: displays
+
+A paper often sets its definitions as a display: a titled box of rows, each
+a definition `lhs ≜ rhs` with its description flush right, and its grammars
+as rows `e ::=` followed by the alternatives. Two views write that form:
+
+```latex
+\begin{LeanDisplay}
+\LeanClause{\mathit{lookup}(\Gamma, i) \;\deq\; \Gamma[i]}{\leanslot{Stlc.lookup}{The type of a variable}}\\
+\LeanClause{\mathit{size}(()) \;\deq\; 1}{\leanslot{Stlc.size}{The size of a term}}
+\end{LeanDisplay}
+```
+
+- **`clauses`** sets each definition by its equations, `lhs ≜ rhs`; the
+  definition of a type shows its category's metavariable (`m ∈ T ≜ …`).
+- **`grammar|display`** sets each inductive type as `\LeanCategory{e \in
+  \mathit{Term}}{…}`, followed by its constructors as `\LeanEntry{…}{…}`
+  rows; a structure's fields are one record entry.
+
+A block shows its key's declaration, or the declarations of a display
+declared in the notation module, `latex_display "Title" := [d₁, d₂, …]`,
+whose title is the key ([notation.md](notation.md)). Descriptions are the
+docstrings' first sentences, as slots named after what they describe.
+
+`imprimatur.sty` sets the rows in `LeanDisplay`, one paragraph per row: a
+long formula breaks after an operator or a comma, and a description wider
+than half the line is wrapped, flush right. `LeanDisplayBox` and
+`LeanRulesBox` are titled boxes for a block's `wrap`, for displays and for
+`rules` blocks:
+
+```toml
+[aliases]
+leandisplay = { view = "clauses", wrap = "LeanDisplayBox" }
+leangrammar = { view = "grammar|display", wrap = "LeanDisplayBox" }
+leanrules   = { view = "rules", wrap = "LeanRulesBox" }
+```
+
+with `\leanblockalias{leandisplay}{LeanDisplayBox}` and so on in the paper.
+`\deq` (≜) and `\defeqq` (`::=`) are defined only if the paper has not
+defined them.
 
 ## Theorem modifiers of `math`
 

@@ -308,6 +308,17 @@ syntax (name := latexGroup) "latex_group " str " := " "[" ident,* "]" : command
       throwErrorAt id "{c} is not a constructor"
   modifyEnv (notationExt.addEntry · (.group { title, ctors }))
 
+/-- `latex_display "Title" := [d₁, d₂, …]`: definitions shown together by the
+`clauses` view, or inductive types by the `grammar|display` view, as the
+block with key `Title`. -/
+syntax (name := latexDisplay) "latex_display " str " := " "[" ident,* "]" : command
+
+/-- Elaborate `latex_display`. -/
+@[command_elab latexDisplay] def elabLatexDisplay : CommandElab := fun stx => do
+  let some title := stx[1].isStrLit? | throwErrorAt stx[1] "expected a string"
+  let decls ← stx[4].getSepArgs.mapM fun id => liftCoreM (realizeGlobalConstNoOverloadWithInfo id)
+  modifyEnv (notationExt.addEntry · (.display title decls))
+
 /-- `latex_rule_label C "T-App"`: the label of the rule for constructor `C`
 (DESIGN §7.4). -/
 syntax (name := latexRuleLabel) "latex_rule_label " ident ppSpace str : command
