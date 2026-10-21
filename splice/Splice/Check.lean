@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Splice.Apply
 import Splice.Sha256
 import Splice.StdMacros
-import Std.Data.HashSet
 
 /-!
 # Checking a document
@@ -192,20 +191,21 @@ a file of the document, not one of `extra` (the paper's own packages), and
 not listed in `known_macros`. A warning, once per macro, where it is first
 used in a typeset block. -/
 def macroDiags (doc : Doc) (bundle : Bundle) (extra : Array String) : Array Diag := Id.run do
-  let mut known : Std.HashSet String := {}
-  for m in stdMacros do known := known.insert ("\\" ++ m)
-  for m in doc.cfg.knownMacros ++ extra do known := known.insert m
+  -- Sorted, for binary search (the splicer imports nothing beyond core).
+  let mut known : Array String := (stdMacros.map ("\\" ++ ·)) ++ doc.cfg.knownMacros ++ extra
   for f in doc.files do
-    for m in definedMacros (String.ofList f.src.chars.toList) do known := known.insert m
-  let mut seen : Std.HashSet String := {}
+    known := known ++ definedMacros (String.ofList f.src.chars.toList)
+  let sorted := known.qsort (· < ·)
+  let isKnown (m : String) : Bool := (sorted.binSearch m (· < ·)).isSome
+  let mut seen : Array String := #[]
   let mut ds := #[]
   for f in doc.files do
     for it in f.scan.items do
       unless (it.kind == .block || it.kind == .inline) && it.live do continue
       let some e := bundle.find? it.key | continue
       for m in e.macros do
-        if known.contains m || seen.contains m then continue
-        seen := seen.insert m
+        if isKnown m || seen.contains m then continue
+        seen := seen.push m
         ds := ds.push (Diag.warn "undefined-macro" (f.src.locString it.start)
           s!"{m}, in the generated content of {it.key}, is defined by no file of the document, \
             nor by LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty. Define it, or, if a \
