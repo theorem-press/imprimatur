@@ -1083,7 +1083,7 @@ imprimatur/
 | 0.2 | Dependency cones, `stmtHash`/`sigHash`, `\leancheck`, `imprimatur accept`. Comparator and blueprint manifests. External mode with `toolchain install`. | done, untagged |
 | 0.3 | `Doc` IR, notation DSL (`width`, `variant`, `flatten`), delaborator fallback, `math` and `prose` views, notation packs. | done, untagged |
 | 0.4 | `rules` and `grammar` views ported from project-a, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate project-a, gated by the parity test (§16). | done, untagged |
-| 0.5 | `\leanindex`, `lint`, `check --anonymous`, undefined-macro warnings, `--blueprint-compat`, release binaries, toolchain CI across the full range. | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
+| 0.5 | `\leanindex` (the `provenance` table over every key the document cites), `check --anonymous`, undefined-macro warnings, `init`, `show`, release binaries, the toolchain range documented and enforced. `lint` and `--blueprint-compat` are later (#29, #30). | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
 
 The milestones M0 to M6, named in `CHANGELOG.md` and in comments in the
 code, built these versions: M0 the foundations (layout, harness, CI, spikes

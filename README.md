@@ -108,8 +108,8 @@ rules and results are generated, and a paper about imprimatur itself
 ([about/](about/)), whose theorems about the splicer are proved in Lean.
 
 The first release, v0.5.0, adds an index of every result a paper cites,
-`check --anonymous` for double-blind submission, `lint`, `init`, `show`, and
-release binaries: see the
+`check --anonymous` for double-blind submission, `init`, and release
+binaries: see the
 [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1).
 Other planned work is in the
 [issues](https://github.com/theorem-press/imprimatur/issues).
