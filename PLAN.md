@@ -5,8 +5,10 @@ imprimatur. DESIGN.md says what to build; this file says in what order, and
 how we will know each part is right. Section references like "D§10.2" point
 into DESIGN.md.*
 
-*Status (2026-10-19): M0 to M5 are done and merged; M6 is next (§4). No
-release has been tagged yet.*
+*Status (2026-10-21): M0 to M5 are done and merged; M6 is next (§4). No
+release has been tagged yet. Remaining work is tracked as GitHub issues,
+labelled `functionality`, `paper` or `outreach`; M6 is the
+[v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1).*
 
 ## 1. Principles
 
@@ -306,103 +308,29 @@ Work outside the milestones, merged as #9 to #13:
 
 ### Next: a proved validator (D§18.4)
 
-*Status: planned, not started.*
-
-Translation validation spares imprimatur a proof of its renderer, but the
-validator is then trusted: `Validate.readBack`, which finds a formula's
-readings, and `readingMatches`, which compares the one reading with the one
-the renderer expected. The aim is to prove them, as the splicer's laws are
-proved: for a Lean model, with the implementation property-tested against
-it. The about paper could then say that the validator is proved and each
-run is checked.
-
-**The theorem.** For a grammar `G`, tokens `ts`, a sort `s` and an expected
-reading `E`, write `Parses G ts s r` for "`r` is a reading of `ts` as an
-expression of sort `s` in `G`". It is an inductive relation that follows
-D§18.4's definition of a reading: productions at or above the precedence
-asked for, sorts compatible, type variables bound by the first hole they
-fill, parentheses and TeX groups invisible, coercions invisible, and
-application normalised (`Validate.reading`).
-
-1. **Soundness of reading back.** Every reading `readBack` returns is a
-   reading: `r ∈ readBack G ts s → Parses G ts s r`.
-2. **Completeness up to two.** If the budget is not exhausted, `readBack`
-   returns every reading when there is at most one, and two different ones
-   when there are more: `(readBack G ts s).size = min 2 #{r | Parses G ts s r}`.
-3. **Matching.** `readingMatches E r` holds exactly when `r` is `E` with each
-   `⁇` replaced by some reading (`Matches E r`, on trees).
-4. **Validation.** Together: if a formula is validated (one reading, which
-   matches), then every reading of it is that reading, and agrees with `E`
-   wherever `E` has no `⁇`. When `E` has no `⁇`, that is the source
-   expression up to `≈_N`, since `E` is built from it.
-
-Sorts are a parameter: the model takes `compat`, `expected` and `bind` as
-given functions, so the theorem is about the search, not the algebra of
-Lean sorts. That algebra stays tested, not proved.
-
-**Steps.**
-1. *Specification* (`about/lean/ValidateModel/Spec.lean`): tokens, symbols
-   (terminal, hole, bound variable, list), productions, grammars, readings as
-   trees with the printing to strings that the implementation uses, `Parses`,
-   and `Matches`.
-2. *Reference parser* (`Ref.lean`): a plain recursive enumerator over spans,
-   with no memo table, and fuel bounded by the number of sorts to cut cycles
-   of coercions. Prove theorems 1 and 2 for it, and theorem 3 for a
-   tree-based matcher. The model is executable.
-3. *The implementation against the model* (`extract/test`, beside
-   `HashProps`): random small grammars (infix and mixfix rules, coercions,
-   lists, type variables) and token strings, checking that
-   `Validate.readBack` and `Validate.count` agree with the reference parser,
-   and `readingMatches` with the tree matcher on printed trees. The test
-   package requires `about/lean` for the model.
-4. *Paper and docs*: the about paper states theorem 4, and the trusted base
-   loses "the parser that reads formulas back"; D§18.4 and TESTING follow.
-
-**Where the implementation may differ from the model,** so the property
-tests should aim at these:
-- *Memo and cycle cut.* `expr` memoises by (sort, precedence, excluded
-  production, span), and cuts re-entry of an active key to break coercion
-  cycles. A result computed while an outer key was cut is memoised as if it
-  were complete, which can lose readings.
-- *Pruning.* `keep2` keeps two readings and at most 32 sorts or bindings of
-  each. An outer hole may need a variant that was dropped, and miss a second
-  reading, which would turn an ambiguity into "one reading".
-- *Readings as strings.* Readings are compared as printed strings. An atom
-  whose TeX contains `;`, `[` or `]` can make two different trees print alike
-  (an ambiguity missed) and can confuse the matcher's `⁇`. The fix, if the
-  tests find it, is to keep readings as trees, or to escape atoms.
-- *Budget.* Past it the formula is "not validated", so theorem 2 is only
-  claimed when the budget is not exhausted.
-
-Each difference the tests find is either fixed in the implementation or
-written into the theorem as a hypothesis.
-
-**Out of scope.** That the grammar mirrors the renderer (`ofRule` against
-`fillTemplate`) where the expected reading has a `⁇`, and the `Doc`
-emitter's parenthesisation. Both are what translation validation checks, run
-by run, rather than proves.
-
-**Done when** theorems 1 to 4 are proved for the model with no `sorry`, the
-property tests pass on at least 10,000 cases per run in CI, any differences
-they found are fixed or stated, and the about paper and D§18.4 say so.
-
-**Size.** The specification and the reference parser are a few hundred lines
-of Lean. Completeness (theorem 2) is most of the proof. The property tests
-are about the size of `HashProps`.
+Planned, not started: prove the validator (reading back and matching) for
+a Lean model, and property-test the implementation against it. The theorem,
+the steps, and where the implementation may differ from the model are in
+[#22](https://github.com/theorem-press/imprimatur/issues/22).
 
 ### M6 — Index, lint, anonymity, release (v0.5.0)
 
-*Status: not started.*
+*Status: not started. Tracked as the
+[v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1).*
 
-- **Tests first:** a golden `\leanindex` output; lint fixtures; anonymity
-  fixtures (an absolute path, a user name or a URL planted in each output
-  channel must be caught).
-- **Code:** `\leanindex`, `lint`, `check --anonymous`, undefined-macro
-  warnings, `--blueprint-compat`, release binaries for Linux, macOS and
-  Windows, the toolchain range documented and enforced.
+- `\leanindex` (#25); `check --anonymous` (#26); undefined-macro warnings
+  (#27) and orphaned slots (#28) in `check`; `lint` (#29);
+  `--blueprint-compat` (#30); `init` (#31) and `show` (#32); the toolchain
+  range, documented and enforced (#33); release binaries and tags (#34).
 - **Done when:** PLanet builds with the `submission` profile and passes both
   `check --anonymous` and its own `check-anonymity.sh`. A release candidate
   is used for a week on a real paper before v0.5.0 is tagged.
+
+### Beyond M6
+
+Work not tied to a release is in issues: further features and fixes
+(label `functionality`), work towards a paper about imprimatur (`paper`),
+and getting users (`outreach`).
 
 ## 5. Definition of done (every pull request)
 
@@ -432,7 +360,8 @@ are about the size of `HashProps`.
 Each was taken at its suggested default:
 
 1. **When to make the repository public:** at v0.5.0. This affects CI
-   minutes and whether others can contribute.
+   minutes and whether others can contribute. (It was made public before
+   v0.5.0.)
 2. **Test-only dependencies:** our own small seeded generator, not
    Plausible (§2.4).
 3. **Supported toolchains for v0.1:** the three used by the motivating

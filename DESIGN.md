@@ -300,7 +300,7 @@ subDir = "extract"
 name = "PaperTeX"
 ```
 
-- `imprimatur init --sidecar` (M6) will create it, copy the host's
+- `imprimatur init --sidecar` (M6, #31) will create it, copy the host's
   toolchain, and pin shared dependencies to the host's manifest. Until then
   it is written by hand, as in `examples/sidecar`.
 - It costs one extra checkout of the dependencies; for Mathlib, use
@@ -484,7 +484,7 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
   1. The project's rules. The most specific pattern wins, and declaration
      order breaks ties.
   2. Notation packs shipped with imprimatur (`core`, `logic`, `sets`,
-     `order`; a `mathlib-common` pack is not yet written). A pack is
+     `order`; a `mathlib-common` pack is not yet written, #36). A pack is
      selected in `imprimatur.toml`, and its rules are stored as names, so
      imprimatur still doesn't depend on Mathlib.
   3. The delaborator fallback (§7.2).
@@ -493,7 +493,7 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
   `spec` as `L`.
 - **Macros come from the paper.** The bundle records the macros each
   rendering uses (§8), so the splicer can warn about macros that are not
-  defined anywhere in the document (M6).
+  defined anywhere in the document (M6, #27).
 
 ### 7.6 Premise conventions (for `rules` and `prose`)
 
@@ -509,7 +509,7 @@ latex_hide_premise (_ : Fintype _)
 ```
 
 Instance binders are always hidden. Block options `show=` and `hide=`, to
-override these choices per block, are designed but not implemented.
+override these choices per block, are designed but not implemented (#35).
 
 ### 7.7 Trust metadata
 
@@ -628,7 +628,7 @@ For every entry, the extractor imports the environment at `private` level
 \leaninline[sum=…]{SetFormula.choice}{…generated…}    % inline; regenerates arg 2
 \leanref{Planet.Paper.theorem1_main}{…generated…}     % source location, per profile (§11)
 \leancheck[stmt=b41c]{Planet.Paper.theorem1_main, Planet.Paper.theorem1_inter}
-\leanindex                                            % table of every key used in the document (M6)
+\leanindex                                            % table of every key used in the document (M6, #25)
 ```
 
 The options of `leanblock`:
@@ -641,7 +641,7 @@ The options of `leanblock`:
   `grammar` view, as PLT Redex does. With them, one inductive can be
   presented a few rules at a time across sections;
 - **`show`** and **`hide`**, which would override premise conventions
-  (§7.6; not implemented);
+  (§7.6; not implemented, #35);
 - **theorem modifiers**, after Isabelle's print modes and HOL4's `\HOLthm`
   options:
   - `rule` renders `A → B → C` as an inference rule;
@@ -658,7 +658,7 @@ The options of `leanblock`:
 - **`\leancheck`** generates nothing. It ties hand-written prose to Lean
   (§10.3). This is plectis's idea of a reviewed claim, kept inline in the
   paper.
-- **`\leanindex`** (M6) will replace llmbda's provenance table, which is a
+- **`\leanindex`** (M6, #25) will replace llmbda's provenance table, which is a
   custom view for now, and list every result in PLanet's Lean appendix. The
   scanner already recognises it. The `provenance` view (docs/views.md) is its table, as a block; the
   `conventions` and `vocabulary` views index the document's metavariables and
@@ -687,7 +687,7 @@ tool generated keeps being generated:
   reads leanblueprint's `\lean{a, b}` as check-only references, the same as
   `\leancheck` without a recorded hash. `\leanok` is cross-checked: a node
   marked `\leanok` whose declarations depend on `sorry` is an error.
-- **Writing blueprint markers (M6).** `imprimatur build --blueprint-compat`
+- **Writing blueprint markers (M6, #30).** `imprimatur build --blueprint-compat`
   will also write `\lean{…}` inside generated blocks, so a paper can feed a
   blueprint dependency graph.
 
@@ -816,9 +816,9 @@ to TeX environments.
   person last checked the prose against it. `imprimatur accept <key>` records
   the new hash after re-reading the prose. A change in `sigHash` alone is a
   warning;
-- **undefined macros** (M6): macros used by generated content that no
+- **undefined macros** (M6, #27): macros used by generated content that no
   scanned file defines. This one is only a warning;
-- **orphaned slots** (M6; `apply` already prints them): slot text whose
+- **orphaned slots** (M6, #28; `apply` already prints them): slot text whose
   slot no longer exists in the regenerated block (§9.5). Also only a
   warning;
 - **unfaithful renderings**: formulas that do not read back as what they
@@ -871,7 +871,7 @@ Separately from the profile:
 
 - the bundle never contains absolute paths, user names, URLs or commit
   hashes (§8);
-- `check --anonymous` (M6) will scan everything generated for strings like
+- `check --anonymous` (M6, #26) will scan everything generated for strings like
   `/home/`, `@` or `github.com`;
 - external mode (§6.3 A) leaves no trace of imprimatur in the host project.
 
@@ -895,11 +895,11 @@ Planned for M6:
 
 | Command | What it will do |
 |---|---|
-| `imprimatur init [--sidecar]` | create `imprimatur.toml`, and the sidecar package if asked |
-| `imprimatur build --blueprint-compat` | also write `\lean{…}` (§9.3) |
-| `imprimatur check --anonymous` | the anonymity scan (§11) |
-| `imprimatur show <key> [--view v]` | print one rendering, for working on notation |
-| `imprimatur lint` | report binder names that differ from the paper's naming convention (generalised from llmbda's `lint_binders`) |
+| `imprimatur init [--sidecar]` | create `imprimatur.toml`, and the sidecar package if asked (#31) |
+| `imprimatur build --blueprint-compat` | also write `\lean{…}` (§9.3, #30) |
+| `imprimatur check --anonymous` | the anonymity scan (§11, #26) |
+| `imprimatur show <key> [--view v]` | print one rendering, for working on notation (#32) |
+| `imprimatur lint` | report binder names that differ from the paper's naming convention (generalised from llmbda's `lint_binders`; #29) |
 
 A typical `Makefile` addition:
 
@@ -915,7 +915,7 @@ imprimatur:
 - **Supported range.** Each extractor release states the range of toolchains
   it supports (at the time of writing, v4.28.0-rc1 to v4.35.0). CI builds
   and runs the golden tests on v4.28.0-rc1, v4.31.0, v4.34.1 and v4.35.0.
-  Enforcing the range is M6.
+  Enforcing the range is M6 (#33).
 - **Where version differences live.** Differences between Lean versions are
   confined to `Imprimatur/Compat.lean`. They include:
   - the delaborator;
@@ -1066,8 +1066,8 @@ imprimatur/
   descriptions and connecting sentences are written by hand. Rendering all
   of the definitions found the case, list-literal and binder-name features
   of §7.5.
-- **Still to do (M6):** `lean-appendix.tex` gains a `\leanindex`, and
-  `check --anonymous` runs alongside `check-anonymity.sh`. The supplement
+- **Still to do (M6):** `lean-appendix.tex` gains a `\leanindex` (#25), and
+  `check --anonymous` runs alongside `check-anonymity.sh` (#26). The supplement
   and `make_lean_supplement.py` are unaffected.
 
 ## 17. Roadmap
@@ -1078,7 +1078,7 @@ imprimatur/
 | 0.2 | Dependency cones, `stmtHash`/`sigHash`, `\leancheck`, `imprimatur accept`. Comparator and blueprint manifests. External mode with `toolchain install`. | done, untagged |
 | 0.3 | `Doc` IR, notation DSL (`width`, `variant`, `flatten`), delaborator fallback, `math` and `prose` views, notation packs. | done, untagged |
 | 0.4 | `rules` and `grammar` views ported from llmbda, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate llmbda, gated by the parity test (§16). | done, untagged |
-| 0.5 | `\leanindex`, `lint`, `check --anonymous`, undefined-macro warnings, `--blueprint-compat`, release binaries, toolchain CI across the full range. | M6, not started |
+| 0.5 | `\leanindex`, `lint`, `check --anonymous`, undefined-macro warnings, `--blueprint-compat`, release binaries, toolchain CI across the full range. | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
 
 The trust features moved earlier than in revision 1. They are where the
 survey found the clearest gap, and they don't depend on the notation work.
@@ -1192,7 +1192,7 @@ constructors; the `def` view reads as the equation lemmas.
 glyphs, and two tokens can print alike: `\;` (application) prints as space,
 and in `examples/semantics` `\val` prints as `v`. A glyph-level reading needs
 one more condition: macros that print alike are reserved for one sort (`v`
-stands only for values).
+stands only for values). It is not checked yet (#43).
 
 ### 18.4 Checking it
 
@@ -1206,8 +1206,8 @@ The extractor is meta-programming and will not be verified. Instead:
   by formula, as misreads (below).
 
 Nothing yet proves the validator itself: the parser that reads formulas
-back and the matching of readings are trusted. PLAN, "Next: a proved
-validator", is the plan for a theorem.
+back and the matching of readings are trusted. #22 is the plan for a
+theorem, and #50 for a proof of the emitter.
 
 **Translation validation.** The extractor reads back every formula a view
 renders, as it renders it, and records what it finds in the bundle
@@ -1257,7 +1257,7 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   the mirroring of `Validate.ofRule` against `Render.fillTemplate`. On the
   exp-des-dsl standalone paper, 610 of the 662 formulas with one reading
   have an expected reading without `⁇`, 21 have one in part, and 31 have
-  none. Making the emitter drop the parentheses its holes need is caught
+  none (#41 would close the gap). Making the emitter drop the parentheses its holes need is caught
   as 6 misreads there (`(\lambda r\, q.\, …) = M` read as
   `\lambda r\, q.\, (… = M)`).
 - **Side conditions** are found per formula: ambiguity (conditions 1–3),
@@ -1266,7 +1266,8 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   elaborated: a pattern variable that the template neither
   shows nor constrains (`hide`, `when`) is a warning, since two expressions
   that differ there render alike. `validate = false` in `imprimatur.toml`
-  turns the reading back off.
+  turns the reading back off. A setting that makes these problems errors
+  is #40.
 
 Reading back llmbda's OOPSLA paper adds about a second to a 50-second
 extraction. It reads every formula, and finds 70 ambiguities (about 200
@@ -1293,20 +1294,21 @@ at TeX source; and, for attested claims, the person who checked the prose.
    LaTeX project called "imprimatur", and the repository is now
    `theorem-press/imprimatur`. Before the first release, also check
    Reservoir, and any other registry the release binaries will be
-   published to.
+   published to (#54).
 2. **Toolchain support window.** How far back should support go? Each
-   additional toolchain adds to the CI matrix and to `Compat.lean`.
+   additional toolchain adds to the CI matrix and to `Compat.lean` (#33).
 3. **Schematic rules.** Lift in PLanet, and the ⊕-merged rules elsewhere,
    are single paper rules that stand for several constructors. Should
    merging them be a built-in feature of the `rules` view, or stay a custom
-   view?
+   view? (#37)
 4. **Where the `\leancheck` hash lives.** Inline as `[stmt=…]`, which
    coauthors can see, or in a lock file, which keeps the TeX tidier. The draft
-   keeps it inline, as plectis keeps the reviewed wording next to the claim.
+   keeps it inline, as plectis keeps the reviewed wording next to the claim
+   (#38).
 5. **How far the dependency cone goes.** Following definition bodies until
    `trusted_prefixes` catches definitions that were weakened. It can also
    flag harmless refactors of definitions in the project. Should those
-   refactors produce a separate, softer kind of drift?
+   refactors produce a separate, softer kind of drift? (#39)
 **Resolved.**
 
 - **Whether external mode works in practice.** Spike S1 showed it working
@@ -1324,7 +1326,7 @@ at TeX source; and, for attested claims, the person who checked the prose.
 
 The survey was produced by an automated research tool. These claims affect
 the design and should be checked against primary sources before the work
-that depends on them.
+that depends on them. Those still to check are tracked in #48.
 
 | Claim | Affects | Status |
 |---|---|---|
