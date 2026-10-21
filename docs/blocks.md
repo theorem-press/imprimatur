@@ -183,6 +183,7 @@ position into `\leanslot` form. It matches each old slot to the new
 | `imprimatur build` | `scan`, then `imprimatur-export` in `lean_project`, then `apply`; takes `apply`'s options |
 | `imprimatur check` | the same, with `check` instead of `apply`; writes only the bundle, in `.imprimatur/` |
 | `imprimatur accept KEY…` / `--all` | the same, then records the current statement hashes in `\leancheck` ([trust.md](trust.md)) |
+| `imprimatur show KEY [--view VIEW]…` | runs the extractor for one key and prints its renderings, with the problems translation validation found in each, its axioms and whether it uses `sorry`; writes nothing. The views are those given, else those the document uses for the key, else `math`. For working on notation |
 | `imprimatur toolchain install VERSION` | builds the extractor for a toolchain, for external mode |
 
 The configuration is `imprimatur.toml` in the current directory, or

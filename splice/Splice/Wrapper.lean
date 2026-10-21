@@ -9,8 +9,9 @@ import Splice.Cli
 
 `imprimatur build` runs the whole flow (DESIGN §5): `scan`, then the
 extractor, then `apply`. `imprimatur check` and `imprimatur accept` do the
-same with `check` or `accept` instead of `apply`. Every other command is the
-splicer's.
+same with `check` or `accept` instead of `apply`. `imprimatur show KEY`
+runs the extractor for one key and prints its renderings, writing nothing.
+Every other command is the splicer's.
 
 How the extractor runs depends on the mode (DESIGN §6.3):
 
@@ -33,6 +34,7 @@ def usage : String :=
   "usage: imprimatur [--config FILE] build [apply options]
        imprimatur [--config FILE] check [check options]
        imprimatur [--config FILE] accept KEY... | --all
+       imprimatur [--config FILE] show KEY [--view VIEW]...
        imprimatur toolchain install VERSION   (for mode = \"external\")
        imprimatur [--config FILE] scan|apply|check|strip|migrate-slots ...  (see imprimatur-splice --help)"
 
@@ -90,8 +92,22 @@ def installToolchain (version : String) : ExceptT String IO String := do
   discard <| lake dst #["build", "-q", "imprimatur-export"]
   return s!"imprimatur: the extractor for Lean {version} is in {dst}\n"
 
-/-- `build` or `check`. -/
-def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × String) := do
+/-- The views the document asks for `key`, if it uses it. -/
+def docViews (doc : Doc) (key : String) : Option (Array String) := Id.run do
+  let mut vs : Array String := #[]
+  for f in doc.files do
+    for it in f.scan.items do
+      if (it.kind == .block || it.kind == .inline) && it.key == key then
+        let v := itemView doc.cfg it
+        unless vs.contains v do vs := vs.push v
+  return if vs.isEmpty then none else some vs
+
+/-- Load the document, write requests (all of the document's, or `only`
+one key's), and run the extractor. Returns the bundle's path relative to
+`root`, and the extractor's warnings; or, if the document has errors, those
+as `Except.error` of the exit code and report. -/
+def runExport (root : System.FilePath) (a : Args) (only : Option (String × Array String) := none) :
+    ExceptT String IO (Except (UInt32 × String) (Doc × String × String)) := do
   let cfgFile := a.config.getD "imprimatur.toml"
   let cfgText ← (IO.FS.readFile (root / cfgFile) : IO String)
   let cfg ← match Config.parse cfgText with
@@ -101,13 +117,15 @@ def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × Stri
   if cfg.imports.isEmpty && doc.manifests.all (·.solutionModule.isNone) then
     throw s!"{cfgFile}: set imports, the Lean modules to read declarations from"
   if hasErrors doc.diags then
-    return (1, "\n".intercalate (doc.diags.map (·.render)).toList ++ "\n")
+    return .error (1, "\n".intercalate (doc.diags.map (·.render)).toList ++ "\n")
   let work := root / ".imprimatur"
   IO.FS.createDirAll work
   let workAbs ← IO.FS.realPath work
   let reqs := workAbs / "requests.json"
   let bundle := workAbs / "bundle.json"
-  writeAtomic reqs (requests doc)
+  let only := only.map fun (k, vs) =>
+    (k, if vs.isEmpty then (docViews doc k).getD #["math"] else vs)
+  writeAtomic reqs (requests doc only)
   let leanDir := root / cfg.leanProject
   unless ← leanDir.pathExists do throw s!"lean_project {cfg.leanProject} does not exist"
   let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString,
@@ -135,8 +153,15 @@ def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × Stri
   let warnings := (exportOut.splitOn "\n").filter fun l =>
     l.startsWith "imprimatur-export: warning" || (l.splitOn ": warning: ").length > 1
   let rel := (bundle.toString.drop ((← IO.FS.realPath root).toString.length + 1)).toString
-  let (code, out) ← (Cli.run (cliArgs a rel) root : IO _)
-  return (code, String.join (warnings.map (· ++ "\n")) ++ out)
+  return .ok (doc, rel, String.join (warnings.map (· ++ "\n")))
+
+/-- The whole flow: export, then the splicer's `apply`, `check` or `accept`. -/
+def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × String) := do
+  match ← runExport root a with
+  | .error r => return r
+  | .ok (_, rel, warnings) =>
+    let (code, out) ← (Cli.run (cliArgs a rel) root : IO _)
+    return (code, warnings ++ out)
 where
   /-- The splicer's arguments for the same run. -/
   cliArgs (a : Args) (bundle : String) : List String :=
@@ -151,6 +176,38 @@ where
     (if a.diff then ["--diff"] else []) ++
     (match a.failMsg with | some m => ["--check-fail-msg", m] | none => [])
 
+/-- `imprimatur show KEY [--view VIEW]...`: one key's renderings, with the
+problems translation validation found in each, and its trust status. For
+working on notation (DESIGN §12): nothing in the document is written. -/
+def «show» (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × String) := do
+  let some key := a.keys[0]? | throw "show takes a key: imprimatur show KEY [--view VIEW]"
+  match ← runExport root a (some (key, a.views)) with
+  | .error r => return r
+  | .ok (doc, rel, warnings) =>
+    -- The views asked for, as `runExport` asked for them; the extractor adds
+    -- `lean` and `meta` to every key, which are not shown unless asked for.
+    let wanted := if a.views.isEmpty then (docViews doc key).getD #["math"] else a.views
+    let text ← (IO.FS.readFile (root / rel) : IO String)
+    let bundle ← match Bundle.parse text with
+      | .ok b => pure b
+      | .error e => throw s!"{rel}: {e}"
+    let some e := bundle.find? key | return (1, s!"{key}: no declaration or group with this name\n")
+    let mut out := warnings
+    let mut problems := 0
+    for (view, tex) in e.views.filter (wanted.contains ·.1) do
+      out := out ++ s!"== {key} ({view})\n{tex}\n"
+      for p in ((e.validation.find? (·.1 == view)).map (·.2)).getD #[] do
+        problems := problems + 1
+        out := out ++ s!"  {if p.startsWith "category: " then "error" else "warning"}: {p}\n"
+    for (view, err) in e.errors do
+      problems := problems + 1
+      out := out ++ s!"== {key} ({view})\n  error: {err}\n"
+    unless e.axioms.isEmpty do out := out ++ s!"axioms: {", ".intercalate e.axioms.toList}\n"
+    if e.usesSorry then out := out ++ "uses sorry\n"
+    let n := (e.views.filter (wanted.contains ·.1)).size
+    return (if e.errors.isEmpty then 0 else 1,
+      out ++ s!"show: {n} view{if n == 1 then "" else "s"}, {problems} problem{if problems == 1 then "" else "s"}\n")
+
 /-- Run `imprimatur` with arguments `args` in directory `root`. -/
 def run (args : List String) (root : System.FilePath) : IO (UInt32 × String) := do
   match args with
@@ -164,7 +221,13 @@ def run (args : List String) (root : System.FilePath) : IO (UInt32 × String) :=
   match parseArgs args with
   | .error e => return (2, s!"error: {e}\n\n{usage}\n")
   | .ok a =>
-    if a.command == "build" || ((a.command == "check" || a.command == "accept") && a.bundle.isNone) then
+    if a.command == "show" then
+      try
+        match ← («show» root a).run with
+        | .ok r => return r
+        | .error e => return (2, s!"error: {e}\n")
+      catch e => return (2, s!"error: {e}\n")
+    else if a.command == "build" || ((a.command == "check" || a.command == "accept") && a.bundle.isNone) then
       try
         match ← (flow root a).run with
         | .ok r => return r

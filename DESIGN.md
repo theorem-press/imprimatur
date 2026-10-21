@@ -886,6 +886,7 @@ repository URL.
 | `imprimatur build [--profile p] [--commit sha] [--force key] [--keep-stale] [--rename-slot old=new]` | scan, then export, then apply |
 | `imprimatur check [--profile p] [--diff] [--check-fail-msg m] [--keep-stale]` | the checks in §10.3 |
 | `imprimatur accept <key>… \| --all` | record the current statement hash in `\leancheck` |
+| `imprimatur show <key> [--view v]…` | print one key's renderings and their validation problems, writing nothing; for working on notation |
 | `imprimatur strip -o dir` | write a copy with the markers removed |
 | `imprimatur migrate-slots` | rewrite slots declared by position into `\leanslot` form (§9.5) |
 | `imprimatur-splice scan\|apply\|check\|strip\|migrate-slots\|accept` | the splicer on its own |
@@ -898,7 +899,6 @@ Planned for M6:
 | `imprimatur init [--sidecar]` | create `imprimatur.toml`, and the sidecar package if asked (#31) |
 | `imprimatur build --blueprint-compat` | also write `\lean{…}` (§9.3, #30) |
 | `imprimatur check --anonymous` | the anonymity scan (§11, #26) |
-| `imprimatur show <key> [--view v]` | print one rendering, for working on notation (#32) |
 | `imprimatur lint` | report binder names that differ from the paper's naming convention (generalised from project-a's `binder_lint`; #29) |
 
 A typical `Makefile` addition:

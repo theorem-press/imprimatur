@@ -42,7 +42,7 @@ normalise() {  # pdftotext output, independent of small TeX differences
 # One test per example, named so docs/TESTING.md can refer to it. An example
 # without a name here is an error, so none is skipped by accident.
 TESTS=(e2e/external e2e/minimal e2e/semantics e2e/sidecar)
-# And two tests that are not examples: e2e/fixture-views and e2e/about, below.
+# And three tests that are not examples: e2e/show, e2e/fixture-views and e2e/about, below.
 
 # External mode needs an extractor built for the examples' toolchain. It goes in
 # a cache inside e2e-out, so the run touches nothing outside the repository.
@@ -107,6 +107,19 @@ for dir in examples/*/; do
     compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
+# e2e/show: `imprimatur show` on the semantics example as built above. It
+# prints the views the document uses for a key, with their problems, and
+# fails on a key that does not exist; it writes nothing to the paper.
+echo "== e2e/show"
+if [ -d e2e-out/semantics ]; then
+  before=$(sha256sum e2e-out/semantics/paper.tex)
+  (cd e2e-out/semantics && "$IMPRIMATUR" show Preservation > show.txt 2>&1) || { echo "  FAIL: show Preservation"; status=1; }
+  compare e2e-out/semantics/show.txt examples/semantics/expected/show.txt "show output"
+  if (cd e2e-out/semantics && "$IMPRIMATUR" show Stlc.nonesuch > /dev/null 2>&1); then
+    echo "  FAIL: show of a missing key succeeded"; status=1
+  fi
+  [ "$(sha256sum e2e-out/semantics/paper.tex)" = "$before" ] || { echo "  FAIL: show changed the paper"; status=1; }
+fi
 # e2e/fixture-views: every math, prose, rules and grammar view of the
 # Notation and Semantics fixtures' golden bundles typesets with both engines.
 echo "== e2e/fixture-views"

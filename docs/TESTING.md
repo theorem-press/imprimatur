@@ -240,6 +240,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§10.5 | comparator manifests, including `@challenge` entries | `splice/golden/manifests`, `extract/manifests/challenge-keys`, `extract/manifests/challenge-statement-matches`, `extract/manifests/unknown-challenge`, `extract/golden/Manifests` | M3 |
 | D§11 | profiles `relative` (default), `url`, `none` for `\leanref` and the `meta` view | `splice/tex-escape`, `splice/config/url-needs-template`, `splice/golden/refs`, `splice/golden/meta-source` | M1 |
 | D§11 | `check --anonymous` | — | M6 |
+| D§12 | `show` prints one key's renderings and problems, fails on a missing key, and writes nothing | `e2e/show` | M6 |
 | D§12 | every command in the table exists and prints usage | — | M6 |
 | D§13 | the supported toolchain range is documented and enforced | — | M6 |
 | D§13 | the same fixture gives the same bundle on every toolchain, apart from `producer` | `extract/golden/Basic`, `extract/golden/ModuleSys`, `extract/golden/Trust` | M2 |
