@@ -49,8 +49,11 @@ python3 scripts/lean_index.py LEAN_DIR... > index.jsonl
 
 `paper_statements.py` lists every theorem-like environment with the number
 LaTeX gives it. `lean_index.py` lists every declaration with its full name,
-docstring and signature. Restrict the Lean side to the part of the
-development the paper is about, but keep enough to find helpers.
+docstring and signature. **Index the whole Lean source tree**, not only the
+directory named after the paper: a repository can hold several developments
+of one paper, and only one may follow the paper's proof. Then list the
+directories where the paper's key terms, labels and title words occur, and
+work with those.
 
 ## Phase 1b: triage (minutes, before Phase 2)
 
@@ -58,16 +61,20 @@ Before matching every statement, check three signals:
 
 1. **Does the Lean cite the paper?** Theorem numbers, titles or labels in
    docstrings or names (`grep -i` the index for "Theorem", the paper's
-   titles, its labels).
-2. **Does the main theorem match?** Find the Lean's headline theorem and
-   classify the paper's main theorems against it now (Phase 2's rules).
+   titles, its labels), anywhere in the repository.
+2. **Does the main theorem match?** For each of the paper's main theorems,
+   search the whole index for a declaration of its shape (a consistency
+   statement is `Consistent T → Consistent T'`; a model statement quantifies
+   over models), not only the headline theorem of the first development you
+   find. Classify each now (Phase 2's rules).
 3. **Is the paper's proof in the Lean?** Grep the index for the key objects
    the paper's proof is built from: the terms of its section titles and of its
    definitions.
 
 If the Lean cites the paper and its key objects occur, it formalises the
-paper's proof: go on to Phase 2 for every statement. If the main theorem
-differs and the key terms are absent, the Lean is an **independent
+paper's proof: go on to Phase 2 for every statement, against that
+development. If the main theorem differs and the key terms are absent
+**everywhere in the repository**, the Lean is an **independent
 formalisation**: classify the main results, report that, and ask the user
 before matching the rest, which is costly and will find little.
 
