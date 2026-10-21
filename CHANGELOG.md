@@ -113,3 +113,31 @@ All notable changes to imprimatur are recorded here. Versions follow
 - `about/imprimatur-paper.tex`, a paper about imprimatur built with
   imprimatur. Its theorems, the splicer's laws and Theorem 1, are proved in
   `about/lean`, a model of the splicer. CI rebuilds and checks it.
+- `latex_category T A … => "m"` names the category of a type with
+  parameters, and the category check compares such a type at its parameters
+  (#15).
+- Views that index the document (#16, #18), rendered after every other
+  block so they see the whole document:
+  - `conventions`: each metavariable, the type it ranges over, and where the
+    document first shows it;
+  - `vocabulary`: the notation the document uses, with its Lean constant and
+    a gloss, by default the library's; `scope=project` lists the project's
+    own and `scope=all` both, an index of notation;
+  - `provenance`: each result with its kind, number, source and axioms.
+
+  Descriptions and glosses are slots. See [docs/views.md](docs/views.md).
+- `latex_style categories := loose | unique | strict` (#17). Under `unique`
+  a metavariable stands for one type; under `strict` a variable of a
+  category's type is also written with the category's letter and its own
+  subscripts and primes, and variables that then print alike are errors.
+  `imprimatur check` reports these as `error[category]`. See
+  [docs/notation.md](docs/notation.md#metavariables).
+- Misreads (#19): the renderer builds the reading each formula should have,
+  and a formula whose one reading differs, because the emitter left out
+  parentheses a reader needs, say, is reported as `unfaithful-rendering`.
+- The paper about imprimatur states what translation validation guarantees
+  and what is trusted, uses strict metavariables, and ends with a generated
+  index of its notation (#20). `examples/semantics` has one too.
+- `PLAN.md` is retired: remaining work is tracked as GitHub issues, the
+  principles and definition of done are in `CONTRIBUTING.md`, and the test
+  architecture is in `docs/TESTING.md` (#59).
