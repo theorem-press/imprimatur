@@ -118,8 +118,10 @@ open Lean (Json) in
 the views it asks for. Check-only keys and references ask for no view. The
 `document` object is the inventory an index view works from: the blocks, with
 the labels the splicer gives them (and `"live": false` when not typeset), and
-the document's typeset `\label`s, in document order (`order` counts both). -/
-def requests (doc : Doc) : String := Id.run do
+the document's typeset `\label`s, in document order (`order` counts both).
+With `only := some (key, views)`, the requests are that key's alone (for
+`imprimatur show`), with the same settings and document. -/
+def requests (doc : Doc) (only : Option (String × Array String) := none) : String := Id.run do
   let mut keys : Array (String × Array String) := #[]
   let labels := blockLabels doc
   let q (t : String) : String := (Json.str t).compress
@@ -162,6 +164,7 @@ def requests (doc : Doc) : String := Id.run do
   for m in doc.manifests do
     for k in m.theorems do
       unless keys.any (·.1 == k) do keys := keys.push (k, #[])
+  if let some (k, vs) := only then keys := #[(k, vs)]
   -- Written by hand so that keys are sorted and each request is one line.
   let lines := (keys.qsort (·.1 < ·.1)).map fun (k, vs) =>
     s!"    {q k}: \{\"views\": [{", ".intercalate ((vs.qsort (· < ·)).map q).toList}]}"
