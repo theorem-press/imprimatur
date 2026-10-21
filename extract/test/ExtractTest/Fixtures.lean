@@ -251,61 +251,67 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
     ((problems clash "Cats.lower_eq").any (·.startsWith "category: the metavariable $P$ stands for Cats.Prog, Cats.Rep"))
     (toString (problems clash "Cats.lower_eq"))
 
-/-- Golden bundles, and trust checks on them. -/
-unsafe def tests : TestM Unit := group "fixtures" do
-  driftTest
-  indexTest
-  categoriesTest
-  challengeTest
+/-- The golden bundle of one fixture, and the checks on it. -/
+unsafe def goldenTest (f : Fixture) : TestM Unit := do
   IO.FS.createDirAll "out"
-  for f in fixtures do
-    let used ← IO.mkRef #[]
-    let r ← exportFixture f used
-    IO.FS.writeFile ("out" / s!"{f.dir}.bundle.json") r.bundle
-    golden s!"extract/golden/{f.dir}" ("golden" / s!"{f.dir}.bundle.json") (maskToolchain r.bundle)
-    match f.dir with
-    | "Basic" =>
-      checkEq "extract/keys/unknown-is-warning" r.warnings
-        #["Basic.no_such_thing: no declaration or group with this name"]
-      checkEq "extract/trust/custom-axiom" (axioms r.bundle "Basic.uses_oracle") #["Basic.oracle"]
-      checkEq "extract/trust/classical-axioms" (axioms r.bundle "Basic.em'")
-        #["Classical.choice", "Quot.sound", "propext"]
-      checkEq "extract/trust/direct-sorry" (usesSorry r.bundle "Basic.unfinished") (some true)
-      checkEq "extract/trust/no-sorry" (usesSorry r.bundle "Basic.add_comm'") (some false)
-    | "ModuleSys" =>
-      -- Only the private level shows the `sorry` in `pub_thm`'s private helper.
-      checkEq "extract/modules/private-sorry-seen" (usesSorry r.bundle "ModuleSys.pub_thm") (some true)
-      checkEq "extract/modules/sorry-through-import-all" (usesSorry r.bundle "ModuleSys.via_all") (some true)
-      checkEq "extract/modules/honest" (axioms r.bundle "ModuleSys.honest") #[]
-    | "Notation" =>
-      -- M4: every pack rule has a golden use.
-      let usedRules ← used.get
-      let unused := (Packs.all.toArray.flatMap (·.2)).filter fun r =>
-        !usedRules.contains s!"{r.origin}: {r.template}"
-      checkEq "extract/notation/every-pack-rule-used" (unused.map (·.template)) #[]
-      -- Prose labels a hypothesis only where the paper refers to it.
-      let one ← exportFixture { f with keys := #["Notation.project"], views := #["prose"] }
-        (document := { hypRefs := #[("Notation.project", "hd")] })
-      let prose := ((entry? one.bundle "Notation.project").bind fun e =>
-        (e.getObjVal? "views" >>= (·.getObjValAs? String "prose")).toOption).getD ""
-      check "extract/prose/hyp-referred-labelled" ((prose.splitOn "\\LeanHyp{hd}").length > 1) prose
-      check "extract/prose/hyp-unreferred-unlabelled" ((prose.splitOn "\\LeanHyp{hr}").length == 1) prose
-      checkEq "extract/notation/no-render-errors"
-        (f.keys.filter fun k => ((entry? r.bundle k).bind (·.getObjVal? "errors" |>.toOption)).isSome) #[]
-    | "Trust" =>
-      checkEq "extract/trust/same-hash-renamed-binder"
-        (field r.bundle "Trust.double_even" "stmtHash") (field r.bundle "Trust.double_even_renamed" "stmtHash")
-      checkEq "extract/trust/same-hash-renamed-universes"
-        (field r.bundle "Trust.pairMap_fst" "stmtHash") (field r.bundle "Trust.pairMap_fst_renamed" "stmtHash")
-      check "extract/trust/different-sig-renamed"
-        (field r.bundle "Trust.double_even" "sigHash" != field r.bundle "Trust.double_even_renamed" "sigHash")
-      checkEq "extract/trust/cone-sorry" (untrustedOf r.bundle "Trust.deep_sorry") #["Trust.Level3: sorry"]
-      checkEq "extract/trust/cone-partial" (untrustedOf r.bundle "Trust.collatz_stmt") #["Trust.collatz: partial"]
-      checkEq "extract/trust/cone-clean" (untrustedOf r.bundle "Trust.double_even") #[]
-      checkEq "extract/trust/sorry-in-proof-chain" (usesSorry r.bundle "Trust.uses_direct_sorry") (some true)
-      checkEq "extract/trust/sorry-in-statement" (usesSorry r.bundle "Trust.deep_sorry") (some true)
-      checkEq "extract/trust/custom-axiom-trust" (axioms r.bundle "Trust.uses_custom_axiom")
-        #["Trust.custom_axiom"]
-    | _ => pure ()
+  let used ← IO.mkRef #[]
+  let r ← exportFixture f used
+  IO.FS.writeFile ("out" / s!"{f.dir}.bundle.json") r.bundle
+  golden s!"extract/golden/{f.dir}" ("golden" / s!"{f.dir}.bundle.json") (maskToolchain r.bundle)
+  match f.dir with
+  | "Basic" =>
+    checkEq "extract/keys/unknown-is-warning" r.warnings
+      #["Basic.no_such_thing: no declaration or group with this name"]
+    checkEq "extract/trust/custom-axiom" (axioms r.bundle "Basic.uses_oracle") #["Basic.oracle"]
+    checkEq "extract/trust/classical-axioms" (axioms r.bundle "Basic.em'")
+      #["Classical.choice", "Quot.sound", "propext"]
+    checkEq "extract/trust/direct-sorry" (usesSorry r.bundle "Basic.unfinished") (some true)
+    checkEq "extract/trust/no-sorry" (usesSorry r.bundle "Basic.add_comm'") (some false)
+  | "ModuleSys" =>
+    -- Only the private level shows the `sorry` in `pub_thm`'s private helper.
+    checkEq "extract/modules/private-sorry-seen" (usesSorry r.bundle "ModuleSys.pub_thm") (some true)
+    checkEq "extract/modules/sorry-through-import-all" (usesSorry r.bundle "ModuleSys.via_all") (some true)
+    checkEq "extract/modules/honest" (axioms r.bundle "ModuleSys.honest") #[]
+  | "Notation" =>
+    -- M4: every pack rule has a golden use.
+    let usedRules ← used.get
+    let unused := (Packs.all.toArray.flatMap (·.2)).filter fun r =>
+      !usedRules.contains s!"{r.origin}: {r.template}"
+    checkEq "extract/notation/every-pack-rule-used" (unused.map (·.template)) #[]
+    -- Prose labels a hypothesis only where the paper refers to it.
+    let one ← exportFixture { f with keys := #["Notation.project"], views := #["prose"] }
+      (document := { hypRefs := #[("Notation.project", "hd")] })
+    let prose := ((entry? one.bundle "Notation.project").bind fun e =>
+      (e.getObjVal? "views" >>= (·.getObjValAs? String "prose")).toOption).getD ""
+    check "extract/prose/hyp-referred-labelled" ((prose.splitOn "\\LeanHyp{hd}").length > 1) prose
+    check "extract/prose/hyp-unreferred-unlabelled" ((prose.splitOn "\\LeanHyp{hr}").length == 1) prose
+    checkEq "extract/notation/no-render-errors"
+      (f.keys.filter fun k => ((entry? r.bundle k).bind (·.getObjVal? "errors" |>.toOption)).isSome) #[]
+  | "Trust" =>
+    checkEq "extract/trust/same-hash-renamed-binder"
+      (field r.bundle "Trust.double_even" "stmtHash") (field r.bundle "Trust.double_even_renamed" "stmtHash")
+    checkEq "extract/trust/same-hash-renamed-universes"
+      (field r.bundle "Trust.pairMap_fst" "stmtHash") (field r.bundle "Trust.pairMap_fst_renamed" "stmtHash")
+    check "extract/trust/different-sig-renamed"
+      (field r.bundle "Trust.double_even" "sigHash" != field r.bundle "Trust.double_even_renamed" "sigHash")
+    checkEq "extract/trust/cone-sorry" (untrustedOf r.bundle "Trust.deep_sorry") #["Trust.Level3: sorry"]
+    checkEq "extract/trust/cone-partial" (untrustedOf r.bundle "Trust.collatz_stmt") #["Trust.collatz: partial"]
+    checkEq "extract/trust/cone-clean" (untrustedOf r.bundle "Trust.double_even") #[]
+    checkEq "extract/trust/sorry-in-proof-chain" (usesSorry r.bundle "Trust.uses_direct_sorry") (some true)
+    checkEq "extract/trust/sorry-in-statement" (usesSorry r.bundle "Trust.deep_sorry") (some true)
+    checkEq "extract/trust/custom-axiom-trust" (axioms r.bundle "Trust.uses_custom_axiom")
+      #["Trust.custom_axiom"]
+  | _ => pure ()
+
+/-- The fixture tests, in parts. Each imports a Lean environment, and
+environments accumulate in a process, so the driver (`ExtractTests.lean`)
+runs each part in a process of its own (`--part NAME`). -/
+unsafe def parts : Array (String × TestM Unit) :=
+  #[("drift", driftTest), ("index", indexTest), ("categories", categoriesTest),
+    ("challenges", challengeTest)] ++ fixtures.map fun f => (f.dir, goldenTest f)
+
+/-- Every fixture test, in this process. -/
+unsafe def tests : TestM Unit := group "fixtures" do
+  for (_, t) in parts do t
 
 end ExtractTest.Fixtures
