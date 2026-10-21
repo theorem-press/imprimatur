@@ -1,0 +1,4 @@
+== Preservation (prose)
+\LeanProse{Let $e, e' \in \mathit{Term}$, $\Gamma \in \mathit{Context}$ and $\tau \in \mathit{Type}$. Assume $e \longrightarrow e'$ and $\Gamma \vdash e : \tau$. Then $\Gamma \vdash e' : \tau$.}
+axioms: Classical.choice, Quot.sound, propext
+show: 1 view, 0 problems

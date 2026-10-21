@@ -5,6 +5,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `imprimatur show KEY [--view VIEW]…` prints one key's renderings, with the
+  problems translation validation found in each, without touching the paper:
+  for working on notation (#32).
+
 - Repository layout, build settings, test harness and CI skeleton (M0).
 - `imprimatur-splice`, the splicer (M1): `scan`, `apply`, `check` (with
   `--diff`), `strip` and `migrate-slots`. It supports blocks, aliases,
