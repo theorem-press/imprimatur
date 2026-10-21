@@ -28,19 +28,30 @@ theorem preservation {e e' : Tm} (hs : Step e e') :
     ∀ {Γ : Ctx} {t : Ty}, HasType Γ e t → HasType Γ e' t
 ```
 
-In the paper, the author writes an empty block:
+In the paper, the author writes an empty block that names the theorem:
 
 ```latex
-\begin{leantheorem}{Preservation}{Preservation}
+\begin{leantheorem}{Stlc.preservation}{Preservation}
 \end{leantheorem}
 ```
 
-`imprimatur build` fills it in, using the notation the paper declares for
-`Step`, `HasType` and the rest:
+The first argument is the **key**, the Lean name of the declaration to show;
+the second is the theorem's title. `leantheorem` is an environment the
+paper's `imprimatur.toml` declares, as a sentence (the `prose` view) wrapped
+in `theorem`:
+
+```toml
+[aliases]
+leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
+```
+
+`imprimatur build` looks up `Stlc.preservation`, renders it with the
+notation the paper declares for `Step`, `HasType` and the rest, and fills in
+the block:
 
 ```latex
-\begin{leantheorem}[sum=VQLUk38uFC]{Preservation}{Preservation}
-\label{thm:Preservation}
+\begin{leantheorem}[sum=jU5x8J0Hfl]{Stlc.preservation}{Preservation}
+\label{thm:Stlc.preservation}
 \LeanProse{Let $e, e' \in \mathit{Term}$, $\Gamma \in \mathit{Context}$ and
 $\tau \in \mathit{Type}$. Assume $e \longrightarrow e'$ and
 $\Gamma \vdash e : \tau$. Then $\Gamma \vdash e' : \tau$.}
@@ -48,9 +59,14 @@ $\Gamma \vdash e : \tau$. Then $\Gamma \vdash e' : \tau$.}
 ```
 
 which typesets as a theorem: *Let e, e′ ∈ Term, Γ ∈ Context and τ ∈ Type.
-Assume e ⟶ e′ and Γ ⊢ e : τ. Then Γ ⊢ e′ : τ.* If the Lean theorem changes,
-`imprimatur check` reports the block as stale; if it comes to depend on
-`sorry`, as untrusted.
+Assume e ⟶ e′ and Γ ⊢ e : τ. Then Γ ⊢ e′ : τ.* The `sum=` checksum records
+what was generated. If the Lean theorem changes, `imprimatur check` reports
+the block as stale; if someone edits it by hand, as edited; if the theorem
+comes to depend on `sorry`, as untrusted.
+
+A key can also be a title the paper uses, mapped to the Lean name in the
+notation module (`latex_entry "Preservation" => Stlc.preservation`), as
+[examples/semantics](examples/semantics/paper.tex) does.
 
 ## What it does
 
