@@ -44,6 +44,9 @@ syntax &"hide" ident " := " term:max : latexNotationOpt
 /-- `flatten`: render nested applications as one n-ary chain, or nested
 binders as one list of variables. -/
 syntax &"flatten" : latexNotationOpt
+/-- `break`: a long rendering may break the line before each operator
+between the operands (`p \wedge q`), at the top level of the template. -/
+syntax &"break" : latexNotationOpt
 /-- `synonym`: the rule writes an expression as another rule writes one it
 equals (`Nat.card R` as `|R|`, like `Fintype.card R`), so reading a formula
 back identifies the two (DESIGN §18.3). -/
@@ -258,6 +261,7 @@ partial def choiceAtom (stx : Syntax) : String :=
       | "prec" => r := { r with prec := o[2].isNatLit?.getD 1024 }
       | "width" => r := { r with width := o[2].isNatLit? }
       | "flatten" => r := { r with flatten := true }
+      | "break" => r := { r with breakBefore := true }
       | "synonym" => r := { r with synonym := true }
       | "sep" => r := { r with sep := o[2].isStrLit?.getD ", " }
       | "assoc" => r := { r with assoc := choiceAtom o[2] }

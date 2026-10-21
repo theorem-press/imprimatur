@@ -34,4 +34,8 @@ def safeHead (l : List Nat) : Nat :=
 variable in scope. -/
 def konst (x : Nat) : List (Nat → Nat → Nat) := [fun _ _ => x, fun x _ => x + 1]
 
+/-- A constant applied only to an implicit argument (`@id Nat`), which shows
+no argument and reads back as an atom. -/
+def ident : Nat → Nat := id
+
 end Patterns

@@ -97,4 +97,14 @@ theorem long (a b c d e f g : Nat) (h₁ : a + b + c + d = e + f + g)
       c + d + e = e + d + c ∧ a * b * c * d * e = e * d * c * b * a := by
   sorry
 
+/-- The greater of two numbers, for a rule that may break the line. -/
+def join (a b : Nat) : Nat := max a b
+
+/-- A statement whose chain of `join`s is longer than a line, so it breaks
+before a `⊔` (`break`). -/
+theorem joins (alpha beta gamma delta epsilon zeta eta theta iota kappa lambda' mu : Nat) :
+    0 < join (join (join (join alpha beta) (join gamma delta)) (join (join epsilon zeta)
+      (join eta theta))) (join (join iota kappa) (join lambda' mu)) + 1 := by
+  sorry
+
 end Notation
