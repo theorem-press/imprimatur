@@ -10,7 +10,7 @@ fixture is byte-identical on v4.28.0-rc1, v4.31.0, v4.34.1 and v4.35.0. Run on
 Does a canonical serialisation of `Expr`, with binder names dropped and
 universe parameters renamed, give the same hash for the same declaration on
 every toolchain? Do the dependency-cone walk and `collectAxioms` behave the
-same way (PLAN §3)?
+same way?
 
 ## What was built
 
@@ -107,7 +107,7 @@ the cone check must (DESIGN §7.7).
   patterns, `match` with side conditions, mutual and nested recursion,
   `where` clauses) produce equations whose shape could change between
   toolchains. The fixture has only simple cases. M3 extends `Trust` with these
-  before the cross-toolchain golden test is trusted. PLAN's fallback stands:
+  before the cross-toolchain golden test is trusted. The planned fallback stands:
   per-toolchain hashes with "toolchain changed, run `accept`".
 - **Generated names enter the hash.** Cone entries include constant names, so
   an auto-generated instance name (`Trust.instAddPoint`) is part of the hash.
@@ -117,7 +117,7 @@ the cone check must (DESIGN §7.7).
   once per project definition in the cone (trusted modules are skipped).
   Measure it in the M3 integration run.
 
-The spike code is not kept in the repository (PLAN §3). The fixture is kept.
+The spike code is not kept in the repository. The fixture is kept.
 
 ## Revised in M3
 

@@ -1,4 +1,4 @@
-# The `Basic` fixture (PLAN §2.2): the lean and meta views, keys and entries.
+# The `Basic` fixture (docs/TESTING.md, Fixtures): the lean and meta views, keys and entries.
 name = "basic-fixture"
 defaultTargets = ["Basic"]
 

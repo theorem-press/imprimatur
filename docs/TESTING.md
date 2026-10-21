@@ -1,7 +1,97 @@
 # Testing imprimatur
 
-*For contributors. [PLAN.md](../PLAN.md) §2 describes the test layers; this
-file says how to run them and keeps the traceability matrix.*
+*For contributors. This file describes the test layers, says how to run
+them, and keeps the traceability matrix.*
+
+## Test architecture
+
+### Layers
+
+| Layer | What it covers | How it runs | Speed |
+|---|---|---|---|
+| **Unit** | pure functions: the TeX scanner and parser, balanced-brace extraction, checksum normalisation, slot extraction and merging, escaping, the `Doc` emitter (precedence, widths, flattening), canonical serialisation for hashing, TOML config, JSON reading and writing of the bundle | `lake test` in each package | seconds |
+| **Property** | invariants over generated inputs (Properties, below) | same, using a small seeded generator | seconds |
+| **Golden: extractor** | every view of every declaration in the fixture projects (Fixtures, below) | `lake test` in `extract/`, once per toolchain | about a minute per toolchain |
+| **Golden: splicer** | pairs of TeX files before and after `apply`, `check` reports, `strip` output | `lake test` in `splice/` | seconds |
+| **Trust (negative)** | each trust failure ([CONTRIBUTING.md](../CONTRIBUTING.md), principle 5) on purpose-built fixtures | runs with the extractor golden tests | about a minute |
+| **End-to-end** | the `imprimatur build` command line on the example projects in all three modes, then `latexmk` with pdflatex and lualatex: no LaTeX errors, and `pdftotext` output matches golden text | `scripts/e2e.sh`, in CI | a few minutes |
+| **Cross-toolchain** | the same fixture gives byte-identical bundles, apart from the `producer` field, and identical `stmtHash` values, on every supported toolchain | CI matrix job comparing bundles | a few minutes |
+| **Real-world integration** | project-a, project B and the math catalogue, all Mathlib-based (project-a's parity gate of M5 is retired) | `scripts/integration.sh`, run locally and before releases, not in CI (below) | tens of minutes |
+
+### Fixtures
+
+The fixtures are small Lean projects under `test/fixtures/`, with **no
+Mathlib**, so CI can build them on every toolchain in seconds. Each targets
+part of the design:
+
+| Fixture | Contents | Covers |
+|---|---|---|
+| `Basic` | theorems with implicit, instance and explicit binders; definitions; a structure; a docstring on every kind | the `lean`, `meta`, `math` and `prose` views; keys; entries |
+| `Semantics` | a small STLC with an inductive typing relation and a small-step relation; value predicates; well-formedness side conditions; docstring labels `/-- T-App: … -/` | the `rules` and `grammar` views, rule labels, premise conventions, `include`/`exclude`, slots |
+| `Notation` | constants used in every kind of notation rule: infix, nested pattern, `hide`, `variant`, `flatten`, `width`, `prec` | the notation language (D§7.5) |
+| `Patterns` | definitions by cases, nested cases that reuse a name, a case on a disjoint union, a dependent `if`, list literals | `latex_style pattern_matching` and `lists`, binder names in cases and equations (D§7.5) |
+| `Trust` | `sorry` directly in a proof, and three levels deep in the cone; a custom `axiom`; `partial` and `unsafe` definitions; a theorem whose hypothesis definition exists in two versions (`Weak := True`, `Strong := …`), switched by a build option | D§7.7, and the drift tests of D§10.3 |
+| `ModuleSys` | files with `module` headers, private proofs, and `import` with and without `all` | the `private`-level import (D§4, constraint 7) on the toolchains that have the module system |
+| `Categories` | two notation modules over one small language: `Strict`, with `latex_style categories := strict`, and `Clash`, which gives two types one letter | strict metavariables and their errors (D§7.5, D§18.3, condition 5) |
+| `Manifests` | a comparator-style `ChallengeX.lean` plus a JSON manifest; a mini blueprint `.tex` using `\lean{}` and `\leanok` | D§10.5, D§9.3 |
+
+The TeX fixtures live under `test/tex/`. Each is a small document exercising
+one splicer behaviour:
+- blocks inside macro arguments, nested `\input`, and `\include`;
+- commented-out blocks, and `verbatim` blocks containing fake markers;
+- CRLF line endings;
+- Unicode;
+- hand-edited blocks, and edited slots;
+- slots declared by position, as project-a uses them.
+
+### Properties
+
+The splicer is where a bug corrupts authors' files, so it gets the most
+property tests. A small seeded generator (Tooling, below) produces TeX documents with
+random prose, braces, comments, `verbatim`, blocks and slots, and random
+bundles.
+
+| Property | Statement |
+|---|---|
+| **Locality** | `apply` never changes a byte outside a block's generated region and its `sum=` option. This is checked by masking the blocks and comparing. |
+| **Idempotence** | `apply(apply(d, b), b) = apply(d, b)`. |
+| **Fixed point** | `check(apply(d, b), b)` reports nothing stale. |
+| **Slot preservation** | for every slot id present both before and after, the slot's text after `apply` equals its text before. |
+| **Edit detection** | for any single-character edit inside a generated region, outside slots, `check` reports a hand edit; inside a slot, it doesn't. |
+| **Normalisation** | converting a document to CRLF, or adding trailing whitespace, doesn't change any checksum's verdict. |
+| **Strip** | after `strip`, the output contains no imprimatur markers, and contains every generated region verbatim. |
+| **Scanner robustness** | on any input, including truncated files, unbalanced braces and markers inside `verbatim`, `scan` either succeeds or reports an error with a position. It never crashes, and never writes a file. |
+| **Hash invariance** | in the extractor, renaming bound variables or universe parameters doesn't change `stmtHash`; changing a hypothesis does. |
+
+### Tooling
+
+- **Our own small test harness** in a test-only package: `check`,
+  `checkEq`, golden comparison with `UPDATE_GOLDEN`, and a seeded generator
+  that reproduces failures from a printed seed.
+  - The project-a `OldTool/Test.lean` harness is the model.
+  - Not **Plausible** (the Lean property-testing library): decided at M0, so
+    that test packages need nothing that might not support every toolchain
+    in the range.
+- **Golden files** are stored next to their tests. Updating them requires
+  `UPDATE_GOLDEN=1` and shows up as a reviewable diff.
+- **`scripts/test-all.sh`** runs every layer that CI runs, so a contributor
+  can reproduce CI locally with a single command.
+
+### Continuous integration (GitHub Actions)
+
+| Job | Matrix | Contents |
+|---|---|---|
+| `splice` | one toolchain | build with warnings as errors; unit, property and golden tests |
+| `extract` | v4.28.0-rc1, v4.31.0, v4.34.1 (the three motivating projects), plus the latest stable | build the fixtures; unit, golden and trust tests |
+| `cross-toolchain` | needs `extract` | compare bundles and `stmtHash` values across the matrix |
+| `e2e` | one toolchain, with TeX Live (`pdflatex` and `lualatex`) | `scripts/e2e.sh` on `examples/` in all three modes |
+| `lint` | — | markdown links, JSON schema validation of golden bundles, the traceability matrix has no orphan entries |
+
+**Not in CI:** Mathlib-based integration. A Mathlib cache costs about 5 GB
+per toolchain, too much for CI, and for a laptop if kept for every
+toolchain, so integration reuses each project's existing `.lake`.
+`scripts/integration.sh` runs it locally against the real projects. It is
+required before every release, and its report is attached to the release.
 
 ## Running the tests
 
@@ -18,13 +108,13 @@ file says how to run them and keeps the traceability matrix.*
 
 Each test package is a separate Lake package that requires the package it
 tests and `testkit/`. The shipped packages therefore never depend on test
-code (PLAN §1.6). A test package has no `lean-toolchain` of its own; `elan`
+code ([CONTRIBUTING.md](../CONTRIBUTING.md), principle 6). A test package has no `lean-toolchain` of its own; `elan`
 finds the one in the package it tests.
 
 **Environment variables.**
 
 - `UPDATE_GOLDEN=1` rewrites golden files instead of comparing them. Review
-  the resulting diff line by line before committing it (PLAN §5).
+  the resulting diff line by line before committing it.
 - `IMPRIMATUR_CASES=n` sets the number of cases per property (default 100;
   M1's gate is 10,000).
 - `IMPRIMATUR_SEED=s` fixes the base seed. A failing property prints the
@@ -56,11 +146,11 @@ The test runs the steps and compares a transcript with
 
 ## Traceability matrix
 
-Lean has no coverage tool, so this matrix stands in for coverage (PLAN §1.1).
+Lean has no coverage tool, so this matrix stands in for coverage ([CONTRIBUTING.md](../CONTRIBUTING.md), principle 1).
 There is one row per requirement, and every numbered section of
 [DESIGN.md](../DESIGN.md) has at least one row. **Tests** lists test names,
 or `—` if there are none yet. **When** is the milestone that brings the tests
-(PLAN §4), or `n/a` for sections that describe no behaviour.
+(DESIGN §17), or `n/a` for sections that describe no behaviour.
 
 `scripts/check-traceability.py` (run by `scripts/lint.sh` and the `lint` CI
 job) fails if a section of DESIGN.md has no row, a row names a section that

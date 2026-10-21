@@ -13,7 +13,7 @@ Each fixture under `test/fixtures/` is built with the current toolchain
 level, exports a bundle for a fixed list of keys, and compares it with
 `golden/<fixture>.bundle.json`. The toolchain in `producer.lean` is masked as `v4.x`, so
 one golden file must hold on every toolchain: this is the cross-toolchain
-requirement (PLAN §2.1), checked directly. The unmasked bundle is also
+requirement (docs/TESTING.md, Layers), checked directly. The unmasked bundle is also
 written to `out/`, for CI's cross-toolchain job.
 -/
 
@@ -278,7 +278,7 @@ unsafe def tests : TestM Unit := group "fixtures" do
       checkEq "extract/modules/sorry-through-import-all" (usesSorry r.bundle "ModuleSys.via_all") (some true)
       checkEq "extract/modules/honest" (axioms r.bundle "ModuleSys.honest") #[]
     | "Notation" =>
-      -- PLAN M4: every pack rule has a golden use.
+      -- M4: every pack rule has a golden use.
       let usedRules ← used.get
       let unused := (Packs.all.toArray.flatMap (·.2)).filter fun r =>
         !usedRules.contains s!"{r.origin}: {r.template}"

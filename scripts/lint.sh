@@ -2,7 +2,7 @@
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
 #
-# The checks of the `lint` CI job (PLAN §2.5). Needs python3 with the
+# The checks of the `lint` CI job (docs/TESTING.md, Continuous integration). Needs python3 with the
 # `jsonschema` package (pip install -r scripts/requirements-test.txt).
 set -euo pipefail
 cd "$(dirname "$0")/.."

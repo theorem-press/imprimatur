@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
-"""The cross-toolchain check (PLAN §2.1): bundles produced from the same
+"""The cross-toolchain check (docs/TESTING.md, Layers): bundles produced from the same
 fixture on different toolchains must be byte-identical apart from the
 `producer` field.
 

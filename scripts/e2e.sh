@@ -2,7 +2,7 @@
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
 #
-# End-to-end tests (PLAN §2.1). For each project under examples/:
+# End-to-end tests (docs/TESTING.md, Layers). For each project under examples/:
 #   1. copy it to e2e-out/ (the same depth, so its relative paths still work);
 #   2. run its steps (examples/X/steps, or `imprimatur build` then
 #      `imprimatur check`), which must all succeed;

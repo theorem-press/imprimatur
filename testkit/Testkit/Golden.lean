@@ -9,7 +9,7 @@ import Testkit.Harness
 
 `golden name path actual` compares `actual` with the contents of `path`.
 With `UPDATE_GOLDEN=1` in the environment it writes `actual` to `path`
-instead, so that the change shows up as a diff to review (PLAN §1.4).
+instead, so that the change shows up as a diff to review (CONTRIBUTING.md, principle 4).
 -/
 
 namespace Testkit

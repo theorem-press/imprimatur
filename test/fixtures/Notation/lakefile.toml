@@ -1,4 +1,4 @@
-# The `Notation` fixture (PLAN §2.2): every feature of a notation rule
+# The `Notation` fixture (docs/TESTING.md, Fixtures): every feature of a notation rule
 # (DESIGN §7.5), and a use of every rule of the notation packs. It requires
 # imprimatur, as a project in in-project mode does.
 name = "notation-fixture"

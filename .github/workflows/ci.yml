@@ -1,4 +1,4 @@
-# Continuous integration (PLAN §2.5). Jobs with nothing to test yet pass
+# Continuous integration (docs/TESTING.md). Jobs with nothing to test yet pass
 # trivially; each milestone fills them in.
 name: CI
 

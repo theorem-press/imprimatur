@@ -7,7 +7,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 # Diagnostics
 
 Every error and warning the splicer reports has a stable code, so tests and
-CI scripts can rely on it (PLAN §1.5).
+CI scripts can rely on it (CONTRIBUTING.md, principle 5).
 -/
 
 namespace Splice

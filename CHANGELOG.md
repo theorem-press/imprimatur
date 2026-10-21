@@ -5,13 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
-- Repository layout, build settings, test harness and CI skeleton (PLAN M0).
-- `imprimatur-splice`, the splicer (PLAN M1): `scan`, `apply`, `check` (with
+- Repository layout, build settings, test harness and CI skeleton (M0).
+- `imprimatur-splice`, the splicer (M1): `scan`, `apply`, `check` (with
   `--diff`), `strip` and `migrate-slots`. It supports blocks, aliases,
   `\leaninline`, `\leanref`, `\leancheck`, slots in both forms, checksums
   that ignore line endings and trailing whitespace, multi-file documents, and
   `imprimatur.toml`. See [docs/blocks.md](docs/blocks.md).
-- `imprimatur-export`, the extractor (PLAN M2). It renders the `lean` view
+- `imprimatur-export`, the extractor (M2). It renders the `lean` view
   (the signature, with semantic token macros) and the `meta` view (source
   location, axioms, `sorry` status, docstring). It imports at the `private`
   level, so a `sorry` hidden in a `module` file's private proof is found.
@@ -20,7 +20,7 @@ All notable changes to imprimatur are recorded here. Versions follow
 - `imprimatur build` and `imprimatur check` run the whole flow in in-project
   and sidecar modes. `tex/imprimatur.sty` typesets the result with pdfLaTeX
   or LuaLaTeX. `examples/minimal` and `examples/sidecar` show both modes.
-- Trust checks (PLAN M3):
+- Trust checks (M3):
   - dependency cones, `stmtHash` and `sigHash`, the same on every toolchain;
   - `\leancheck[stmt=…, sig=…]` with drift detection, and `imprimatur accept`;
   - comparator manifests, with `KEY@challenge` entries;
@@ -30,7 +30,7 @@ All notable changes to imprimatur are recorded here. Versions follow
 - External mode: `imprimatur toolchain install VERSION`, then
   `mode = "external"` reads a host project without changing it.
   `examples/external` shows it.
-- Notation and typeset mathematics (PLAN M4):
+- Notation and typeset mathematics (M4):
   - `latex_notation`, with `prec`, `width`, `hide`, `variant`, `flatten` and
     typed `@` patterns, and `latex_metavar`;
   - the notation packs `core`, `logic`, `sets` and `order`;
@@ -38,7 +38,7 @@ All notable changes to imprimatur are recorded here. Versions follow
 
   Notation modules work in every mode. In external mode they are given as
   files and elaborated by the extractor. See [docs/notation.md](docs/notation.md).
-- Rules, grammars and the project-a migration (PLAN M5):
+- Rules, grammars and the project-a migration (M5):
   - the `rules` view (mathpartir), with `latex_rules`, `latex_rule_label`,
     `latex_group`, premise conventions (`latex_metavar_convention`,
     `latex_hide_premise`), `include`/`exclude`, and the `grammar` view;
