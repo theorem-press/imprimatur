@@ -81,6 +81,33 @@
         "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$ and (4)~$\\mathrm{true} \\ne \\mathrm{false}$.}"
       }
     },
+    "Notation.joins": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Notation.joins",
+      "doc": "A statement whose chain of `join`s is longer than a line, so it breaks\nbefore a `⊔` (`break`).",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\in", "\\leanmetasource", "\\mathbb", "\\mathit", "\\sqcup"],
+      "sigHash": "6fefdddecfb21402f3c8d2972277fb7612c58e9f9d2deff38e4c8596bf31ec31",
+      "sorry": true,
+      "source": {
+        "line": 105,
+        "path": "Notation/Defs.lean"
+      },
+      "stmtHash": "7095017a9ab620bc22fa869986d271f119381c11984b2bbde23c9f616f1f26fd",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{joins}\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{alpha} \\LeanBound{beta} \\LeanBound{gamma} \\LeanBound{delta} \\LeanBound{epsilon} \\LeanBound{zeta} \\LeanBound{eta} \\LeanBound{theta} \\LeanBound{iota} \\LeanBound{kappa} \\LeanBound{lambda'} \\LeanBound{mu} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanNumber{0} <\\LeanNewline\n\\LeanIndent{4}\\LeanConst{join}\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{join} (\\LeanConst{join} (\\LeanConst{join} \\LeanBound{alpha} \\LeanBound{beta}) (\\LeanConst{join} \\LeanBound{gamma} \\LeanBound{delta}))\\LeanNewline\n\\LeanIndent{10}(\\LeanConst{join} (\\LeanConst{join} \\LeanBound{epsilon} \\LeanBound{zeta}) (\\LeanConst{join} \\LeanBound{eta} \\LeanBound{theta})))\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{join} (\\LeanConst{join} \\LeanBound{iota} \\LeanBound{kappa}) (\\LeanConst{join} \\LeanBound{lambda'} \\LeanBound{mu})) +\\LeanNewline\n\\LeanIndent{6}\\LeanNumber{1}}",
+        "math": "\\LeanMath{0 < \\mathit{alpha} \\sqcup \\mathit{beta} \\sqcup (\\mathit{gamma} \\sqcup \\mathit{delta}) \\sqcup (\\mathit{epsilon} \\sqcup \\mathit{zeta} \\sqcup (\\mathit{eta} \\sqcup \\mathit{theta})) \\LeanBreak \\sqcup (\\mathit{iota} \\sqcup \\mathit{kappa} \\sqcup (\\mathit{lambda}' \\sqcup \\mathit{mu})) + 1}",
+        "math:binders": "\\LeanMath{0 < \\mathit{alpha} \\sqcup \\mathit{beta} \\sqcup (\\mathit{gamma} \\sqcup \\mathit{delta}) \\sqcup (\\mathit{epsilon} \\sqcup \\mathit{zeta} \\sqcup (\\mathit{eta} \\sqcup \\mathit{theta})) \\LeanBreak \\sqcup (\\mathit{iota} \\sqcup \\mathit{kappa} \\sqcup (\\mathit{lambda}' \\sqcup \\mathit{mu})) + 1}",
+        "math:named": "\\LeanMath{0 < \\mathit{alpha} \\sqcup \\mathit{beta} \\sqcup (\\mathit{gamma} \\sqcup \\mathit{delta}) \\sqcup (\\mathit{epsilon} \\sqcup \\mathit{zeta} \\sqcup (\\mathit{eta} \\sqcup \\mathit{theta})) \\LeanBreak \\sqcup (\\mathit{iota} \\sqcup \\mathit{kappa} \\sqcup (\\mathit{lambda}' \\sqcup \\mathit{mu})) + 1}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A statement whose chain of \\LeanCodeInline{join}s is longer than a line, so it breaks\nbefore a \\LeanCodeInline{⊔} (\\LeanCodeInline{break}).}",
+        "prose": "\\LeanProse{Let $\\mathit{alpha}, \\mathit{beta}, \\mathit{gamma}, \\mathit{delta}, \\mathit{epsilon}, \\mathit{zeta}, \\mathit{eta}, \\mathit{theta}, \\mathit{iota}, \\mathit{kappa}, \\mathit{lambda}', \\mathit{mu} \\in \\mathbb{N}$. Then $0 < \\mathit{alpha} \\sqcup \\mathit{beta} \\sqcup (\\mathit{gamma} \\sqcup \\mathit{delta}) \\sqcup (\\mathit{epsilon} \\sqcup \\mathit{zeta} \\sqcup (\\mathit{eta} \\sqcup \\mathit{theta})) \\sqcup (\\mathit{iota} \\sqcup \\mathit{kappa} \\sqcup (\\mathit{lambda}' \\sqcup \\mathit{mu})) + 1$.}"
+      }
+    },
     "Notation.logic": {
       "axioms": ["sorryAx"],
       "cone": {

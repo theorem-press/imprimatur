@@ -44,5 +44,7 @@ latex_notation (variant := "binders") bigsum f => r"\sum #f"
 latex_notation (variant := "binders") p ∧ q => r"#p \wedge #q" prec := 35 assoc := none
 -- A guard: the rule applies only when `p` is an existential, and shows it.
 latex_notation (variant := "binders") ¬ p => r"\neg(#p)" when p := (Exists _)
+-- `break`: a long chain of joins may break the line before each operator.
+latex_notation join a b => r"#a \sqcup #b" prec := 65 break
 -- A metavariable renamed under subscripts too: `acc₁` is `a_{1}`.
 latex_metavar acc => "a" decorated

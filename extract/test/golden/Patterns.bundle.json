@@ -1,5 +1,29 @@
 {
   "entries": {
+    "Patterns.ident": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Patterns.ident",
+      "doc": "A constant applied only to an implicit argument (`@id Nat`), which shows\nno argument and reads back as an atom.",
+      "kind": "definition",
+      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\leanmetasource"],
+      "sigHash": "8a6f2cfc64ee20e4b43d250d3699b5cc2bc46f8c51e9c63392e73f9f7448407a",
+      "sorry": false,
+      "source": {
+        "line": 39,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "0809ac25efe67013a129d25ce805a152a492663b0b446c819ffa597af710a4bf",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{ident} : \\LeanConst{Nat} → \\LeanConst{Nat}}",
+        "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{ident} &= \\LeanMathConst{id}\\end{aligned}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A constant applied only to an implicit argument (\\LeanCodeInline{@id Nat}), which shows\nno argument and reads back as an atom.}"
+      }
+    },
     "Patterns.konst": {
       "axioms": [],
       "cone": {
