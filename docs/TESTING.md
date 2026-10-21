@@ -101,10 +101,16 @@ required before every release, and its report is attached to the release.
 | integration with the real projects (not in CI) | `scripts/integration.sh` | repository root |
 | the test harness's own tests | `lake test` | `testkit/` |
 | extractor tests (build the fixtures first) | `lake test` | `extract/test/` |
+| one part of the extractor's fixture tests (`drift`, `index`, `categories`, `challenges`, or a fixture such as `Semantics`) | `lake test -- --part NAME` | `extract/test/` |
 | end-to-end examples (needs TeX Live) | `scripts/e2e.sh` | repository root |
 | splicer tests | `lake test` | `splice/test/` |
 | the extractor on another toolchain | `scripts/test-all.sh --toolchain v4.31.0` | repository root |
 | lint (links, schema, this matrix) | `scripts/lint.sh` | repository root |
+
+The extractor's fixture tests each import a Lean environment, and in one
+process those add up to more memory than a laptop has. So `lake test` in
+`extract/test/` runs each part of them in a process of its own, and adds up
+the results; peak memory is about 3.5 GB.
 
 Each test package is a separate Lake package that requires the package it
 tests and `testkit/`. The shipped packages therefore never depend on test

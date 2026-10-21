@@ -67,9 +67,8 @@ def group (name : String) (body : TestM Unit) : TestM Unit := do
   IO.println name
   body
 
-/-- Run a test suite, print a summary and return the process exit code. -/
-def runSuite (suite : TestM Unit) : IO UInt32 := do
-  let ((), r) ← suite.run {}
+/-- Print a summary of results and return the process exit code. -/
+def finish (r : Results) : IO UInt32 := do
   IO.println s!"{r.passed} passed, {r.failed} failed"
   if r.failed == 0 then
     return 0
@@ -77,5 +76,10 @@ def runSuite (suite : TestM Unit) : IO UInt32 := do
   for f in r.failures do
     IO.eprintln s!"  {f}"
   return 1
+
+/-- Run a test suite, print a summary and return the process exit code. -/
+def runSuite (suite : TestM Unit) : IO UInt32 := do
+  let ((), r) ← suite.run {}
+  finish r
 
 end Testkit
