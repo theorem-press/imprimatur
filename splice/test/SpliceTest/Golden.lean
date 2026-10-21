@@ -127,6 +127,7 @@ def cases : Array String := #[
   "splice/golden/hand-edit",
   "splice/golden/hyprefs",
   "splice/golden/macro-args",
+  "splice/golden/macros",
   "splice/golden/manifests",
   "splice/golden/meta-source",
   "splice/golden/migrate-slots",

@@ -116,6 +116,9 @@ itself.
 - **Verbatim text.** `\verb|…|`, `\verb*|…|`, and the environments
   `verbatim`, `verbatim*`, `Verbatim`, `lstlisting`, `minted`, `comment` and
   `alltt` are skipped. Add other environments with `verbatim_envs = […]`.
+- **`known_macros = […]`** lists macros that packages the paper loads define
+  (`["toprule", "midrule"]` for booktabs), so that generated content may use
+  them without an `undefined-macro` warning.
 - **Conditionals** are not skipped: blocks in a branch that is off are kept
   up to date like any other. The scanner does note which blocks are typeset,
   for views that index the paper: not those in a branch that is off
@@ -218,6 +221,7 @@ Every message has a stable code.
 | `leanok-untrusted` | error | a blueprint node marked `\leanok` depends on an untrusted declaration |
 | `bad-manifest`, `missing-manifest` | error, warning | a comparator manifest can't be read, or a pattern matches none |
 | `orphan-slot` | warning | a slot disappeared; its text is printed |
+| `undefined-macro` | warning | generated content uses a macro that nothing defines: not a file of the document, a package of the paper's own beside its main file (or a local file one loads), LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty. List a package's macros in `known_macros = ["toprule", …]` |
 | `missing-input` | warning | an `\input`ed file doesn't exist |
 | `absolute-input` | warning | an `\input` names an absolute path, which isn't followed |
 | `outside-project` | warning | `strip` skipped a file reached through `..`, outside the project |

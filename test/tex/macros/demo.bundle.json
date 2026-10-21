@@ -1,0 +1,37 @@
+{
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1",
+ "entries": {
+  "Demo.f": {
+   "decl": "Demo.f",
+   "kind": "theorem",
+   "views": {
+    "math": "$\\mine \\fromLocal \\fromDeeper \\fromPackage \\mathsf{x} \\missing$"
+   },
+   "macros": [
+    "\\fromDeeper",
+    "\\fromLocal",
+    "\\fromPackage",
+    "\\mathsf",
+    "\\mine",
+    "\\missing"
+   ]
+  },
+  "Demo.g": {
+   "decl": "Demo.g",
+   "kind": "theorem",
+   "views": {
+    "math": "$\\missing \\alsoMissing$"
+   },
+   "macros": [
+    "\\alsoMissing",
+    "\\missing"
+   ]
+  }
+ }
+}

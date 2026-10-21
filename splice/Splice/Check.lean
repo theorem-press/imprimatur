@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Apply
 import Splice.Sha256
+import Splice.StdMacros
+import Std.Data.HashSet
 
 /-!
 # Checking a document
@@ -15,9 +17,9 @@ import Splice.Sha256
   `\leancheck` and blueprint `\lean{…}`;
 - untrusted results: entries that depend on `sorry`, use an axiom outside
   `allowed_axioms`, or have untrusted constants in their cone;
-- everything `apply` reports (hand edits, orphaned slots, missing files).
-
-Drift and undefined macros come in later milestones (M3, M6).
+- everything `apply` reports (hand edits, orphaned slots, missing files);
+- drift, for `\leancheck`;
+- macros that generated content uses and nothing defines (`macroDiags`).
 -/
 
 namespace Splice
@@ -128,6 +130,86 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
       | some e =>
         for p in trustProblems allowed e do
           ds := ds.push (Diag.err "untrusted" m.path p)
+  return ds
+
+/-- Commands whose argument names a macro they define. -/
+def macroDefiners : List String :=
+  Scan.definingCommands ++ ["DeclareMathOperator", "DeclarePairedDelimiter", "DeclareMathSymbol",
+    "newif", "newlength", "newcounter", "chardef", "mathchardef"]
+
+/-- The macros a piece of TeX defines: the name after each defining command,
+as in `\newcommand{\x}`, `\newcommand*\x`, `\def\x` or
+`\DeclareMathOperator{\x}`, with its backslash. Commented-out definitions
+count too: the check errs towards silence. -/
+def definedMacros (s : String) : Array String := Id.run do
+  let cs := s.toList.toArray
+  let letters (i : Nat) : Nat := Id.run do
+    let mut j := i
+    while j < cs.size && cs[j]!.isAlpha do j := j + 1
+    return j
+  let mut out : Array String := #[]
+  let mut i := 0
+  while i < cs.size do
+    if cs[i]! != '\\' then
+      i := i + 1
+      continue
+    let j := letters (i + 1)
+    if j == i + 1 then
+      i := i + 2
+      continue
+    let name := String.ofList (cs.extract (i + 1) j).toList
+    if macroDefiners.contains name then
+      let mut k := j
+      while k < cs.size && (cs[k]! == ' ' || cs[k]! == '*' || cs[k]! == '{' || cs[k]! == '\n') do
+        k := k + 1
+      if k < cs.size && cs[k]! == '\\' then
+        let e := letters (k + 1)
+        if e > k + 1 then out := out.push ("\\" ++ String.ofList (cs.extract (k + 1) e).toList)
+    i := j
+  return out
+
+/-- The files a piece of TeX loads, as written: the arguments of `\input`,
+`\include`, `\usepackage` and `\RequirePackage` (each of a comma-separated
+list). The caller tries them as files, with `.tex` or `.sty` added. -/
+def loadedFiles (s : String) : Array String := Id.run do
+  let mut out : Array String := #[]
+  for cmd in ["\\input", "\\include", "\\usepackage", "\\RequirePackage"] do
+    for part in (s.splitOn cmd).drop 1 do
+      let part := part.trimAsciiStart.toString
+      -- Options of `\usepackage[…]{…}`.
+      let part := if part.startsWith "[" then ((part.splitOn "]").drop 1 |> "]".intercalate) else part
+      let part := part.trimAsciiStart.toString
+      if part.startsWith "{" then
+        let arg := ((part.drop 1).toString.splitOn "}")[0]!
+        for a in arg.splitOn "," do
+          let a := a.trimAscii.toString
+          unless a.isEmpty do out := out.push a
+  return out
+
+/-- Macros that generated content uses and nothing defines (DESIGN §10.3): not
+TeX, LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty (`stdMacros`), not
+a file of the document, not one of `extra` (the paper's own packages), and
+not listed in `known_macros`. A warning, once per macro, where it is first
+used in a typeset block. -/
+def macroDiags (doc : Doc) (bundle : Bundle) (extra : Array String) : Array Diag := Id.run do
+  let mut known : Std.HashSet String := {}
+  for m in stdMacros do known := known.insert ("\\" ++ m)
+  for m in doc.cfg.knownMacros ++ extra do known := known.insert m
+  for f in doc.files do
+    for m in definedMacros (String.ofList f.src.chars.toList) do known := known.insert m
+  let mut seen : Std.HashSet String := {}
+  let mut ds := #[]
+  for f in doc.files do
+    for it in f.scan.items do
+      unless (it.kind == .block || it.kind == .inline) && it.live do continue
+      let some e := bundle.find? it.key | continue
+      for m in e.macros do
+        if known.contains m || seen.contains m then continue
+        seen := seen.insert m
+        ds := ds.push (Diag.warn "undefined-macro" (f.src.locString it.start)
+          s!"{m}, in the generated content of {it.key}, is defined by no file of the document, \
+            nor by LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty. Define it, or, if a \
+            package defines it, list it in known_macros in imprimatur.toml.")
   return ds
 
 /-- A line diff of `a` against `b` (longest common subsequence), as lines

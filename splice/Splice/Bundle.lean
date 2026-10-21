@@ -54,6 +54,8 @@ structure Entry where
   /-- For each view, the formulas in it that do not read back faithfully
   (DESIGN §18.4). -/
   validation : Array (String × Array String) := #[]
+  /-- The macros its views use (DESIGN §8). -/
+  macros : Array String := #[]
   deriving Repr
 
 /-- A bundle. -/
@@ -145,8 +147,11 @@ private def entry (key : String) (j : Json) : Except String Entry := do
       | .ok kvs => kvs.toArray.mapM fun ⟨k, ps⟩ => do return (k, ← strs s!"{w}.validation.{k}" ps)
       | .error _ => throw s!"{w}.validation must be an object"
     | .error _ => pure #[]
+  let macros ← match j.getObjVal? "macros" with
+    | .ok m => strs s!"{w}.macros" m
+    | .error _ => pure #[]
   return { key, kind, source, axioms, usesSorry, untrusted, reasons, stmtHash, sigHash, views, errors,
-           validation }
+           validation, macros }
 
 /-- Read a bundle from JSON text. -/
 def Bundle.parse (text : String) : Except String Bundle := do

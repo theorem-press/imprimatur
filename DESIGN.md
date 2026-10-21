@@ -183,6 +183,7 @@ strip_namespaces = ["ProjB", "MyPaper.Results"]
 open_scoped = []                          # e.g. ["Topology", "BigOperators"], for the lean view
 notation_packs = ["core", "logic"]        # §7.5
 verbatim_envs = []                        # extra environments the scanner skips (§10.1)
+known_macros = []                         # macros packages define, e.g. ["toprule"] (§10.3)
 validate = true                           # read rendered formulas back (§18.4)
 default_profile = "submission"
 
@@ -492,8 +493,8 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
   subscript. `latex_metavar` renames a binder, for example rendering
   `spec` as `L`.
 - **Macros come from the paper.** The bundle records the macros each
-  rendering uses (§8), so the splicer can warn about macros that are not
-  defined anywhere in the document (M6, #27).
+  rendering uses (§8), so the splicer warns about macros that are not
+  defined anywhere in the document (§10.3).
 
 ### 7.6 Premise conventions (for `rules` and `prose`)
 
@@ -816,11 +817,15 @@ to TeX environments.
   person last checked the prose against it. `imprimatur accept <key>` records
   the new hash after re-reading the prose. A change in `sigHash` alone is a
   warning;
-- **undefined macros** (M6, #27): macros used by generated content that no
-  scanned file defines. This one is only a warning;
-- **orphaned slots** (M6, #28; `apply` already prints them): slot text whose
-  slot no longer exists in the regenerated block (§9.5). Also only a
-  warning;
+- **undefined macros**: macros used by generated content that nothing
+  defines: not a file of the document, a package of the paper's own (a
+  `.sty` or `.cls` beside the main file, and the local files it loads), the
+  standard set (TeX's primitives, the LaTeX kernel and article class,
+  amsmath, amssymb, mathpartir, and imprimatur.sty with the packages it
+  loads; `scripts/gen-std-macros.py` lists them), or `known_macros`. A
+  warning, once per macro, at its first use;
+- **orphaned slots**, as `apply` reports them: slot text whose slot no
+  longer exists in the regenerated block (§9.5). Also only a warning;
 - **unfaithful renderings**: formulas that do not read back as what they
   render (§18.4). Also only a warning.
 
