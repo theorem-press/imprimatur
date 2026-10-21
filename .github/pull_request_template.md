@@ -4,6 +4,7 @@
 
 ## Checklist (CONTRIBUTING.md, definition of done)
 
+- [ ] Every commit is signed off (`git commit -s`; CONTRIBUTING.md, Licensing and sign-off)
 - [ ] Tests came first, or the reason they didn't is stated above
 - [ ] Every new error or warning has a test that triggers it
 - [ ] `docs/TESTING.md` traceability matrix updated

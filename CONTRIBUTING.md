@@ -49,8 +49,8 @@ milestones.*
 
 ## Before you open a pull request
 
-`scripts/test-all.sh` must pass; it runs every layer CI runs. The definition
-of done:
+`scripts/test-all.sh` must pass; it runs every layer CI runs. Every commit
+is signed off (Licensing and sign-off, below). The definition of done:
 
 - **Tests** come first, or with the code, with the reason stated in the pull
   request. Every new error or warning has a test that triggers it.
@@ -77,6 +77,33 @@ of done:
   `String.mk` and `String.trim` are deprecated from v4.28; use
   `String.ofList` and `String.trimAscii`. Check an API in each toolchain's
   sources (`~/.elan/toolchains/*/src/lean`) before relying on it.
+
+## Licensing and sign-off
+
+imprimatur is licensed under the [Apache License 2.0](LICENSE). You keep the
+copyright in what you contribute; by submitting it for inclusion, you
+license it under Apache 2.0 (the licence's section 5), which includes its
+patent grant.
+
+Every commit must be signed off under the
+[Developer Certificate of Origin 1.1](https://developercertificate.org/). By
+adding the line
+
+```
+Signed-off-by: Your Name <you@example.org>
+```
+
+to a commit, you certify that you wrote it, or otherwise have the right to
+submit it under the project's licence: in particular, if your employer or
+university owns what you write, that you have its permission. The name and
+address must be the commit's author's. `git commit -s` adds the line; for
+commits already made, `git rebase --signoff main`, then push with
+`--force-with-lease`. CI's `dco` job (`scripts/check-dco.sh`) checks every
+commit of a pull request.
+
+The source files' headers say "Copyright (c) 2026 The imprimatur authors":
+the people listed in [AUTHORS](AUTHORS). Add yourself there in your first
+pull request.
 
 ## Branches and releases
 

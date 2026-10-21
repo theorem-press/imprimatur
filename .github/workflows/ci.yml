@@ -112,6 +112,18 @@ jobs:
       - name: End-to-end (examples/, both modes, pdflatex and lualatex)
         run: scripts/e2e.sh
 
+  # The Developer Certificate of Origin: every commit of a pull request is
+  # signed off by its author (CONTRIBUTING.md, Licensing and sign-off).
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit is signed off
+        run: scripts/check-dco.sh ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }}
+
   lint:
     runs-on: ubuntu-latest
     steps:
