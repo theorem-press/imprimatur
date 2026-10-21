@@ -17,7 +17,7 @@ import Splice.Sha256
   `allowed_axioms`, or have untrusted constants in their cone;
 - everything `apply` reports (hand edits, orphaned slots, missing files).
 
-Drift and undefined macros come in later milestones (PLAN M3, M6).
+Drift and undefined macros come in later milestones (M3, M6).
 -/
 
 namespace Splice

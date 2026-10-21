@@ -6,7 +6,7 @@ import Imprimatur
 import Testkit
 
 /-!
-# Hash invariance (PLAN §2.3)
+# Hash invariance (docs/TESTING.md, Properties)
 
 Properties of the canonical serialisation behind `stmtHash`, on random
 expressions:

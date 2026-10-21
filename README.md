@@ -35,8 +35,8 @@ It works in all three modes: in-project, sidecar, and external, which leaves
 the host project untouched. See [docs/blocks.md](docs/blocks.md) to set it
 up, [docs/views.md](docs/views.md) for the output, and
 [examples/](examples/) for three working papers, and
-[docs/notation.md](docs/notation.md) to write notation. Inference rules and
-grammars come next. [PLAN.md](PLAN.md) gives the build order, and
+[docs/notation.md](docs/notation.md) to write notation. Planned work is
+tracked as [issues](https://github.com/theorem-press/imprimatur/issues), and
 [CONTRIBUTING.md](CONTRIBUTING.md) explains how to work on the code. See
 [DESIGN.md](DESIGN.md) for:
 

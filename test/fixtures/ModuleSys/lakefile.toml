@@ -1,4 +1,4 @@
-# The `ModuleSys` fixture (PLAN §2.2): `module` files, whose proof bodies are
+# The `ModuleSys` fixture (docs/TESTING.md, Fixtures): `module` files, whose proof bodies are
 # only at the `private` level (DESIGN §4, constraint 7).
 name = "modulesys-fixture"
 defaultTargets = ["ModuleSys"]

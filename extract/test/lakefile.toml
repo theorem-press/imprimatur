@@ -1,4 +1,4 @@
-# Tests of the extractor (PLAN §2). A separate package, so that the test
+# Tests of the extractor (docs/TESTING.md). A separate package, so that the test
 # harness never becomes a dependency of the shipped `imprimatur` package. Its
 # toolchain is the parent directory's `lean-toolchain`.
 name = "imprimatur-test"

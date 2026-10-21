@@ -2,7 +2,7 @@
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
 #
-# Run every layer that CI runs (PLAN §2.4), so a contributor can reproduce CI
+# Run every layer that CI runs (docs/TESTING.md, Tooling), so a contributor can reproduce CI
 # with one command.
 #
 #   scripts/test-all.sh                       everything, on the pinned toolchains

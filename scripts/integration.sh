@@ -2,15 +2,15 @@
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
 #
-# Real-world integration (PLAN §2.1): run locally and before every release,
+# Real-world integration (docs/TESTING.md, Layers): run locally and before every release,
 # not in CI. Host projects are found next to this repository, or through
 # LLMBDA_ROOT, PLANET_ROOT and MATH_ROOT. The Mathlib-based runs need about
 # 7 GB of memory each and take a few minutes; they run one at a time.
 #
 # M1: llmbda's oopsla2027/paper.tex goes through `scan` and `strip` without a
-# byte outside its blocks changing (PLAN M1, "done when").
+# byte outside its blocks changing (M1, "done when").
 # M2: the lean view of PLanet's Planet.Paper.* and of the math catalogue's
-# partition-principle theorems, printed for review by hand (PLAN M2).
+# partition-principle theorems, printed for review by hand (M2).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
@@ -141,7 +141,7 @@ fi
 
 if [ -f "$MATH_ROOT/OAI/SetTheory/PartitionPrinciple/Models/Separation.lean" ]; then
   echo "== integration/math-prose: the partition-principle theorem in the prose view"
-  # PLAN M4, done when: rendered with the notation in scripts/integration/math,
+  # M4, done when: rendered with the notation in scripts/integration/math,
   # it must match the agreed text (target-prose.tex), and typeset.
   prose="$work/math-prose"; mkdir -p "$prose"
   tc=$(sed 's/.*://' "$MATH_ROOT/lean-toolchain")
@@ -170,8 +170,8 @@ PY
 fi
 
 if [ -f "$PLANET_ROOT/Planet/Paper.lean" ]; then
-  echo "== integration/planet-rules: PLanet's analysis rules, generated from Der and DerF (PLAN M5)"
-  # PLAN M5, done when: the rules figure is generated (Lift stays hand-written),
+  echo "== integration/planet-rules: PLanet's analysis rules, generated from Der and DerF (M5)"
+  # M5, done when: the rules figure is generated (Lift stays hand-written),
   # with the notation in scripts/integration/planet. It must match the agreed
   # text (target-rules.tex), and typeset.
   prules="$work/planet-rules"; mkdir -p "$prules"

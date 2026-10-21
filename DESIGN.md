@@ -1,6 +1,6 @@
 # imprimatur — design
 
-*Status: the design as built through M5 (PLAN.md §4), with M6's parts marked
+*Status: the design as built through M5 (§17), with M6's parts marked
 "(M6)" where they are described. Revision 2 (2026-10-17) took in a survey of
 prior art (§3), and revision 3 (2026-10-17) spikes S1 (external mode) and S2
 (stable hashing), under [docs/spikes/](docs/spikes/). Later sections record
@@ -938,7 +938,7 @@ imprimatur:
 
 ## 14. Testing
 
-[PLAN.md](PLAN.md) §2 describes the test layers: unit and property tests,
+[docs/TESTING.md](docs/TESTING.md) describes the test layers: unit and property tests,
 golden tests of the extractor (fixture projects, run on every toolchain in
 the matrix) and of the splicer (TeX documents before and after `apply`),
 negative trust tests, end-to-end builds of `examples/` with pdflatex and
@@ -950,7 +950,7 @@ traceability matrix from each section here to its tests.
 
 ```
 imprimatur/
-  README.md  DESIGN.md  PLAN.md  CHANGELOG.md  CONTRIBUTING.md  LICENSE
+  README.md  DESIGN.md  CHANGELOG.md  CONTRIBUTING.md  LICENSE
   extract/                        Lake package "imprimatur" (no dependencies)
     Imprimatur/Doc.lean           IR and LaTeX emitter (escaping, precedence, widths, flattening)
     Imprimatur/Render.lean        Expr → Doc; delaborator fallback; telescopes, metavariables, cases
@@ -1080,6 +1080,12 @@ imprimatur/
 | 0.4 | `rules` and `grammar` views ported from llmbda, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate llmbda, gated by the parity test (§16). | done, untagged |
 | 0.5 | `\leanindex`, `lint`, `check --anonymous`, undefined-macro warnings, `--blueprint-compat`, release binaries, toolchain CI across the full range. | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
 
+The milestones M0 to M6, named in `CHANGELOG.md` and in comments in the
+code, built these versions: M0 the foundations (layout, harness, CI, spikes
+S1 and S2), M1 and M2 version 0.1 (the splicer, then the extractor), M3 0.2,
+M4 0.3, M5 0.4, and M6 0.5. Each was merged as a pull request (M0 to M5 as
+#2 to #7). Work since is tracked as issues.
+
 The trust features moved earlier than in revision 1. They are where the
 survey found the clearest gap, and they don't depend on the notation work.
 
@@ -1128,7 +1134,7 @@ They are proved in Lean for a model of the splicer, in which a document is
 already parsed into pieces (`about/lean`, presented in
 `about/imprimatur-paper.tex`, a paper built and checked with imprimatur). The
 splicer itself, which works on TeX source, is property-tested against them
-(PLAN §2.3).
+(docs/TESTING.md, Properties).
 
 ### 18.3 Theorem 2: rendering is faithful
 

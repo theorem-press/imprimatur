@@ -1,4 +1,4 @@
-# The `Manifests` fixture (PLAN §2.2): a comparator-style challenge module and
+# The `Manifests` fixture (docs/TESTING.md, Fixtures): a comparator-style challenge module and
 # the solution module that proves it, with a manifest (DESIGN §10.5), and a
 # mini blueprint (DESIGN §9.3). The challenge and the solution declare the
 # same names, so they can't be imported together.

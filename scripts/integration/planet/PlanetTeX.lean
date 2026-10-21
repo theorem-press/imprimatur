@@ -6,7 +6,7 @@ import Planet.Paper
 import Imprimatur
 
 /-!
-# Notation for PLanet's analysis rules (DESIGN §16, PLAN M5)
+# Notation for PLanet's analysis rules (DESIGN §16, M5)
 
 The `rules` view of `Der` and `DerF` in the paper's notation: judgements
 `\judge{main}(x)`, labels `\lab{cb}(x)`, and the design left implicit. The

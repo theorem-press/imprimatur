@@ -8,7 +8,7 @@ recommended default (DESIGN §6.3 A). Run on 2026-10-17.*
 Can a prebuilt extractor combine its own `.olean` files with a host's
 `lake env` search path, elaborate a notation file in-process with Lean's
 frontend, and then see the host's modules at `private` level? This must work on
-v4.28.0-rc1, v4.31.0 and v4.34.1 (PLAN §3).
+v4.28.0-rc1, v4.31.0 and v4.34.1.
 
 ## What was built
 
@@ -99,4 +99,4 @@ In every run:
 - Hosts with `precompileModules` or native plugins.
 - macOS and Windows.
 
-The spike code is not kept in the repository (PLAN §3).
+The spike code is not kept in the repository.

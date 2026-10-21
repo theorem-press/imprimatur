@@ -6,7 +6,7 @@ import Imprimatur
 import Testkit
 
 /-!
-# Unit tests of the `Doc` emitter (PLAN M4)
+# Unit tests of the `Doc` emitter (M4)
 
 Escaping, widths, precedence and parentheses, line breaking and templates.
 -/

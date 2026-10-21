@@ -2,7 +2,7 @@ import OAI.SetTheory.PartitionPrinciple.Models.Separation
 import Imprimatur
 
 /-! Notation for the partition-principle results of the math catalogue
-(PLAN M4, done when). Used in external mode by scripts/integration.sh: the
+(M4, done when). Used in external mode by scripts/integration.sh: the
 catalogue itself is untouched. -/
 
 open OAI.PartitionPilot.Forcing
