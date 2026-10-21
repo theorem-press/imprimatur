@@ -5,6 +5,19 @@ instruction: what to do, when, and why. Lessons that changed SKILL.md say so.
 
 ## Lessons
 
+0. **Index the whole repository before concluding anything is absent.**
+   (SKILL.md Phases 1 and 1b since the correction of run 1.) A repository
+   can hold several developments of one paper. Index every Lean source
+   (not only the directory named after the paper), then grep the index for
+   the paper's key terms and for its labels and title words, and list every
+   directory where they occur. Look for a declaration that states each main
+   theorem, by its shape (`Consistent T → Consistent T'`), across the whole
+   index. *Why:* run 1 searched only `OAI/SetTheory/PartitionPrinciple/`
+   and reported Theorem 1.1 "not formalised" and the paper's machinery
+   "absent". A sibling, `OAI/SetTheory/PartitionConsistency/`, follows the
+   paper's proof, and `main_consistency` states Theorem 1.1 exactly; its
+   docstring even cites the paper's label `thm:main-consistency`. A
+   repository-wide index (3.5 million lines here) is cheap to build and grep.
 1. **Triage before matching statement by statement.** (Phase 1b in SKILL.md
    since run 1.) Before matching every statement, spend a few minutes on three
    signals: does the Lean cite the paper (theorem numbers or titles in
@@ -66,3 +79,10 @@ instruction: what to do, when, and why. Lessons that changed SKILL.md say so.
 - **Skill changes:** Phase 1b (triage) added; Phase 2's classes say what is
   not exact; Phase 4 wraps generated statements that follow a weaker
   statement in `quote` with an empty title.
+- **Correction (same day).** The run's headline was wrong. It indexed one
+  directory only, and missed `OAI/SetTheory/PartitionConsistency/`, which
+  formalises the paper's own proof and states Theorem 1.1 exactly
+  (`OAI.PartitionConsistency.main_consistency`). Found while generating a
+  self-contained statement of the main theorem. The copy now ties Theorem
+  1.1 to it with `\leancheck`; the classes for Sections 2–8 must be redone
+  against that development. Lesson 0 added; Phases 1 and 1b changed.
