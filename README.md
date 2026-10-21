@@ -21,7 +21,7 @@ with no preprocessor. The host Lean project doesn't need to change.
 
 ## What it looks like
 
-In Lean, from [examples/semantics](examples/semantics/):
+In Lean, from [examples/semantics](examples/semantics/README.md):
 
 ```lean
 theorem preservation {e e' : Tm} (hs : Step e e') :
@@ -113,7 +113,7 @@ imprimatur check                       # what is stale, untrusted or unfaithful
 latexmk -pdf paper.tex
 ```
 
-[examples/](examples/) has four working papers: one for each mode, and a
+[examples/](examples/README.md) has four working papers: one for each mode, and a
 longer one on a λ-calculus.
 
 ## Status
