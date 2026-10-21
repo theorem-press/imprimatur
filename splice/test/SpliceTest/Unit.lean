@@ -192,6 +192,13 @@ def testSlots : TestM Unit := group "slots" do
     "\\leanslot{a}{default} \\leanslot{new}{fresh}"
   checkEq "splice/slots/merge" merged "\\leanslot{a}{mine} \\leanslot{new}{fresh}"
   checkEq "splice/slots/orphans" (orphans.map (·.id)) #["gone"]
+  -- Undefined macros (DESIGN §10.3): what a file defines, and what it loads.
+  checkEq "splice/macros/defined"
+    (definedMacros "\\newcommand{\\a}{1} \\newcommand*\\b{2} \\def\\c#1{3} \\let\\d\\relax \\DeclareMathOperator{\\e}{e} \\use\\f")
+    #["\\a", "\\b", "\\c", "\\d", "\\e"]
+  checkEq "splice/macros/loaded"
+    (loadedFiles "\\usepackage[opt]{a,b} \\RequirePackage{c} \\input{d.tex} \\include{e}")
+    #["d.tex", "e", "a", "b", "c"]
   let (renamed, _) := mergeSlots { renames := #[("gone", "new")] } none
     "\\leanslot{gone}{text}" "\\leanslot{new}{fresh}"
   checkEq "splice/slots/rename" renamed "\\leanslot{new}{text}"

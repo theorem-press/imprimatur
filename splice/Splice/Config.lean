@@ -115,6 +115,9 @@ structure Config where
   /-- Whether the extractor reads rendered formulas back (DESIGN §18.4);
   `none` means its default, which is to. -/
   validate : Option Bool := none
+  /-- Macros that packages the paper loads define, so that generated content
+  may use them (`known_macros`; DESIGN §10.3), with their backslashes. -/
+  knownMacros : Array String := #[]
   deriving Repr
 
 /-- The alias for an environment name, if any. -/
@@ -208,7 +211,7 @@ def Config.parse (text : String) : Except String Config := do
   let root ← parseToml text
   let kvs ← expectTable "the file" root
   checkKeys "the top-level table" kvs (["schema", "main", "default_profile", "profile", "aliases",
-    "trust", "manifests", "verbatim_envs"] ++ extractorKeys)
+    "trust", "manifests", "verbatim_envs", "known_macros"] ++ extractorKeys)
   match root.find? "schema" with
   | some (.int 1) => pure ()
   | some v => throw s!"schema must be 1, not {repr v}"
@@ -241,6 +244,9 @@ def Config.parse (text : String) : Except String Config := do
       cfg := { cfg with comparator := ← expectStrs "[manifests].comparator" c }
     if let some b := m.find? "blueprint" then
       cfg := { cfg with blueprint := ← expectBool "[manifests].blueprint" b }
+  if let some v := root.find? "known_macros" then
+    let ms ← expectStrs "known_macros" v
+    cfg := { cfg with knownMacros := ms.map fun m => if m.startsWith "\\" then m else "\\" ++ m }
   if let some v := root.find? "verbatim_envs" then
     cfg := { cfg with verbatimEnvs := cfg.verbatimEnvs ++ (← expectStrs "verbatim_envs" v) }
   for k in extractorKeys do

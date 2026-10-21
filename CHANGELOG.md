@@ -8,6 +8,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 - `imprimatur show KEY [--view VIEW]…` prints one key's renderings, with the
   problems translation validation found in each, without touching the paper:
   for working on notation (#32).
+- `check` warns (`undefined-macro`) when generated content uses a macro that
+  nothing defines: not the document's files, the paper's own packages, the
+  standard set (TeX, LaTeX, amsmath, amssymb, mathpartir, imprimatur.sty), or
+  `known_macros` in `imprimatur.toml` (#27).
 
 - Repository layout, build settings, test harness and CI skeleton (M0).
 - `imprimatur-splice`, the splicer (M1): `scan`, `apply`, `check` (with
