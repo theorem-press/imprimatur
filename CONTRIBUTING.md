@@ -16,8 +16,8 @@ milestones.*
 2. **Tackle the risks first.** An assumption the design rests on, which
    could fail, gets a short spike before code is built on it, with a written
    result in `docs/spikes/`. External mode (S1) and stable hashing (S2) were
-   settled this way; S3, which classified project-a's 254 rendering special
-   cases and set M5's scope, keeps its report in project-a.
+   settled this way; S3, which classified project A's 254 rendering special
+   cases and set M5's scope, keeps its report in project A.
 3. **Test-first for the splicer and the trust checks.** These are the parts
    whose bugs do harm. A bug in the splicer corrupts authors' files. A bug in
    the trust checks lets an unchecked claim through. Their tests are written

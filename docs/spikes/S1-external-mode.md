@@ -43,8 +43,8 @@ The notation file imports the host modules and `SpikeLib`, then uses
 
 | Host | Toolchain | Notation file | Steps 1–5 | Step 6 | Wall time | Peak RSS |
 |---|---|---|---|---|---|---|
-| project-a `proj/` (`Semantics.BigStep`) | v4.28.0-rc1 | 11 s | ✓ | ✓ | 27 s | 4.1 GB |
-| project B (`MyPaper.Results`, Mathlib) | v4.31.0 | 92 s | ✓ | ✓ after fix below | 2 min 24 s | 11.4 GB |
+| project A (a big-step semantics module) | v4.28.0-rc1 | 11 s | ✓ | ✓ | 27 s | 4.1 GB |
+| project B (its results module, Mathlib) | v4.31.0 | 92 s | ✓ | ✓ after fix below | 2 min 24 s | 11.4 GB |
 | math catalogue (`…Uniformization.RiemannDiskSeed`, a `module` file, Mathlib) | v4.34.1 | 95 s | ✓ | ✓ after fix below | 3 min 11 s | 10.8 GB |
 
 In every run:

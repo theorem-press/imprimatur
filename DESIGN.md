@@ -39,8 +39,8 @@ author last checked the prose against them.
 
 **Non-goals**
 
-- Running code blocks or capturing program output (a separate concern; see
-  project-a's `old_tool`).
+- Running code blocks or capturing program output (a separate concern, which
+  one motivating project handles with a tool of its own).
 - Producing whole documents (as doc-gen4, Verso or Isabelle's document
   preparation do). imprimatur fills holes in documents that humans write in
   ordinary LaTeX.
@@ -52,20 +52,21 @@ author last checked the prose against them.
 
 The design was checked against three projects with different needs.
 
-| | project-a (PL paper) | math catalogue | project B (PL paper) |
+Two of them are programming-language papers under anonymous review, so
+they are called project A and project B here.
+
+| | project A (a PL paper) | math catalogue | project B (a PL paper) |
 |---|---|---|---|
 | Lean toolchain | v4.28.0-rc1 | v4.34.1 (uses the module system) | v4.31.0 |
 | Depends on Mathlib | yes | yes, plus about 15 other libraries | yes |
-| Lean project location | `proj/` | `lean/` | `lean/` |
 | TeX layout | one large `paper.tex` | one large `overview.tex` | about 20 files joined with `\input` |
-| What it needs | inference rules, grammars, theorems and definitions as typeset maths; a provenance index | the statements of the main theorems inside catalogue entries | rules generated from the `Der` inductive; hand-written theorem prose checked against `MyPaper/Results.lean`; an appendix index |
-| Existing metadata | hard-coded export lists | `formalization.yaml`, plus a comparator manifest per result in `ComparatorChallenges/*.json` | `MyPaper/Results.lean` restates every numbered result |
+| What it needs | inference rules, grammars, theorems and definitions as typeset maths; a provenance index | the statements of the main theorems inside catalogue entries | rules generated from an inductive derivation relation; hand-written theorem prose checked against a Lean file of restated results; an appendix index |
+| Existing metadata | hard-coded export lists | `formalization.yaml`, plus a comparator manifest per result in `ComparatorChallenges/*.json` | a Lean file restates every numbered result |
 | Constraints | already has a hard-wired version of this tool to replace | proof sources must not be edited | anonymous submission; the Lean project is shipped as the supplement and must not change |
 
-project-a's existing implementation (`OldRules.lean`, `OldGrammar.lean`,
-`OldConventions.lean`, `OldTranslation.lean`, and the splicing half of
-`OldTool.lean`, about 4,000 lines) is the starting point. Its rendering ideas
-carry over. Its hard-wired parts do not: rule symbols are chosen by
+Project A's existing implementation (Lean exporters for rules, grammars,
+conventions and translations, and the splicing half of a build tool, about
+4,000 lines) is the starting point. Its rendering ideas carry over. Its hard-wired parts do not: rule symbols are chosen by
 string-matching name prefixes, exported declarations are hard-coded lists,
 the imported modules are fixed in `Main.lean`, and the splicer knows the
 paper's environments by name.
@@ -109,7 +110,7 @@ the blueprint ecosystem.
 2. **The splicer doesn't need Lean at all.** It only edits text, so tying it
    to a toolchain is unnecessary.
 3. **Declaration names must be checked.** A notation rule that names a
-   renamed constant must fail loudly at build time. With project-a's string
+   renamed constant must fail loudly at build time. With project A's string
    prefixes, a rename silently falls back to the default rendering.
 4. **Hand-writing renderers per constant doesn't scale for Mathlib-heavy
    projects.** A useful default rendering must exist for every declaration.
@@ -174,12 +175,12 @@ There are two kinds of configuration, and they are kept separate on purpose.
 
 ```toml
 schema = 1
-main = "project-b-paper.tex"            # entry point; \input/\include are followed
+main = "paper.tex"                        # entry point; \input/\include are followed
 lean_project = "lean"
 mode = "external"                         # external | sidecar | in-project (§6.3)
-imports = ["MyPaper.Results"]                # modules to read declarations from
+imports = ["MyPaper.Results"]             # modules to read declarations from
 notation = ["tex/PaperTeX.lean"]          # notation modules
-strip_namespaces = ["ProjB", "MyPaper.Results"]
+strip_namespaces = ["MyPaper", "MyPaper.Results"]
 open_scoped = []                          # e.g. ["Topology", "BigOperators"], for the lean view
 notation_packs = ["core", "logic"]        # §7.5
 verbatim_envs = []                        # extra environments the scanner skips (§10.1)
@@ -216,22 +217,19 @@ This is an ordinary Lean file, and the only file that imports `imprimatur`
 (more examples in §7.5):
 
 ```lean
-import MyPaper.Results
+import Stlc
 import Imprimatur
 
-open ProjB ProjB.Structural
+open Stlc
 
-latex_notation Des.leaf _ _ _ spec          => "L"
-latex_notation Ctx.lookup spec i = true    => r"\cbX \in L(#i)"
-latex_notation Judg.time i                  => r"\judge{time}(#i)"
-latex_notation Tm.app A B                 => r"\app{#A}{#B}"   width := 5
+latex_notation HasType Γ e t      => r"#Γ \vdash #e : #t"   prec := 50
+latex_notation Step e e'          => r"#e \longrightarrow #e'" prec := 50
+latex_notation Tm.lam x t e       => r"\lambda #x{:}#t.\, #e" prec := 10
+latex_notation Ty.arrow a b       => r"#a \to #b"   prec := 25  assoc := right  width := 3
 
-latex_group "Analysis rules" :=
-  [Der.t_cb, Der.t_max, Der.ord, Der.m_ord, Der.w_nr, Der.m_cb, Der.i_cb,
-   Der.i_ord, Der.t_int, ProjB.Factors.DerF.m_mf, ProjB.Factors.DerF.i_mf,
-   Der.i_nest, Der.w_nest, Der.i_cross_l]
+latex_group "Typing rules" := [HasType.var, HasType.lam, HasType.app, HasType.unit]
 
-latex_entry "Soundness" => MyPaper.Results.theorem1_main  options := "forall"
+latex_entry "Preservation" => Stlc.preservation  options := "forall"
 latex_style names := raw
 ```
 
@@ -290,7 +288,7 @@ host by path, plus `imprimatur`:
 # tex-lean/lakefile.toml
 name = "paper-tex"
 [[require]]
-name = "projb-lean"
+name = "my-paper"
 path = "../lean"
 [[require]]
 name = "imprimatur"
@@ -315,7 +313,7 @@ name = "PaperTeX"
 - Because imprimatur has no dependencies, this cannot disturb Mathlib's pins
   (constraint 6).
 - It is the simplest mode when you own the project and its lakefile is not
-  an artifact in its own right. project-a was planned this way, but uses
+  an artifact in its own right. Project A was planned this way, but uses
   external mode (§16).
 
 ## 7. The extractor (`imprimatur`)
@@ -391,16 +389,17 @@ the renderer's monad, with the key, the declaration (if any) and the block's
 options. It also sees the document's inventory (§10.1): the blocks, with the
 labels the splicer gives them, and the paper's `\label`s, in document order.
 A grammar whose forms are hand-written TeX is a custom view rather than the
-generic `grammar` view, as are project-a's theorem prose and provenance index
-(§16).
+generic `grammar` view, as are project A's theorem prose and provenance
+index (§16).
 
 ### 7.4 Rule labels
 
 The label of a `rules` entry is chosen in this order:
 
-1. an explicit `latex_rule_label Der.t_cb "T-CB"`;
+1. an explicit `latex_rule_label HasType.app "T-App"`;
 2. otherwise, a docstring that starts `Label: …` or `Label.` supplies
-   `Label`, following the `/-- T-CB: … -/` convention project B already uses;
+   `Label`, following the `/-- T-App: … -/` convention of the motivating
+   projects;
 3. otherwise, the constructor name, prettified (`i_nest` becomes `I-Nest`).
 
 `latex_rules I` sets, per inductive, the template the label goes in, the
@@ -417,7 +416,7 @@ latex_notation SetRealization.Realize U φ ρ    => r"#U \models #φ"     hide �
 latex_notation ¬ SetRealization.Realize U φ ρ  => r"#U \not\models #φ" hide ρ := Fin.elim0
 latex_notation partitionPrinciple              => r"\mathsf{PP}"       width := 2
 latex_notation Fintype.card C                  => r"|#C|"              prec := max
-latex_notation (variant := "named") Tm.app A B => r"\kw{nest}\;#A\;#B"
+latex_notation (variant := "named") Tm.app e₁ e₂ => r"\mathsf{app}(#e₁, #e₂)"
 latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
 ```
 
@@ -457,8 +456,8 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
   after sTeX's `seq`. On a binder rule it folds a chain of binders into one
   list of variables (`\exists\, a,\, b,\; p`), separated by **`sep`**.
 - **`assoc`** is `left` (the default), `right`, or `none`, which
-  parenthesises both operands at the rule's own precedence, as project-a does
-  for `∧` next to `∨`.
+  parenthesises both operands at the rule's own precedence, as one motivating
+  paper does for `∧` next to `∨`.
 - **`latex_style`** fixes conventions of the renderer for the whole paper
   (the table is in [docs/notation.md](docs/notation.md)):
   - `names := raw` writes binder names as they are (they are TeX: `l_c`),
@@ -587,7 +586,7 @@ For every entry, the extractor imports the environment at `private` level
 {
   "schema": "imprimatur-bundle/1",
   "producer": { "tool": "imprimatur-export", "version": "0.3.0",
-                "lean": "v4.31.0", "project": "projb-lean" },
+                "lean": "v4.31.0", "project": "my-paper" },
   "entries": {
     "MyPaper.Results.theorem1_main": {
       "kind": "theorem",
@@ -659,8 +658,9 @@ The options of `leanblock`:
 - **`\leancheck`** generates nothing. It ties hand-written prose to Lean
   (§10.3). This is plectis's idea of a reviewed claim, kept inline in the
   paper.
-- **`\leanindex`** (M6, #25) will replace project-a's provenance table, which is a
-  custom view for now, and list every result in project B's Lean appendix. The
+- **`\leanindex`** (M6, #25) will replace project A's provenance table, which
+  is a custom view for now, and list every result in project B's Lean
+  appendix. The
   scanner already recognises it. The `provenance` view (docs/views.md) is its table, as a block; the
   `conventions` and `vocabulary` views index the document's metavariables and
   its library notation in the same way.
@@ -744,8 +744,8 @@ overwrites the text inside it.
   ```
 
   Here the second argument of each of these macros is a slot, identified by
-  the text of its first argument. This is exactly what project-a's splicer does
-  today (`mergeDescriptions`). Identifying a slot by formal text is
+  the text of its first argument. This is exactly what project A's old
+  splicer did. Identifying a slot by formal text is
   weaker than by `\leanslot` id, because a change to the notation orphans
   the slot. `imprimatur migrate-slots` rewrites such blocks into the
   `\leanslot` form once a project is ready.
@@ -762,7 +762,7 @@ to TeX environments.
   and their blocks maintained, but the scanner records which are typeset
   (M5): not those in a branch that is off (`\iffalse`, the `\else` of
   `\iftrue`, a switch declared with `\newif\ifNAME` and set with
-  `\NAMEfalse`, as project-a turns appendices off), nor those in a file reached
+  `\NAMEfalse`, as project A turns appendices off), nor those in a file reached
   only from one. Other conditionals count as on in both branches.
 - It also collects keys from the manifests (§10.5).
 - It writes every requested key and view to `requests.json`, with the
@@ -786,7 +786,7 @@ to TeX environments.
     edit.
   - If a block's content doesn't match its checksum, `apply` refuses to
     overwrite it unless given `--force <key>`.
-  - Together with slots, this replaces project-a's special-case rules for
+  - Together with slots, this replaces project A's special-case rules for
     preserving last-good output and merging paper-side edits.
 - **Keeps slot text.** When it regenerates a block, `apply` copies each
   slot's existing text into the new content, matched by slot id (§9.5).
@@ -904,7 +904,7 @@ Planned for M6:
 | `imprimatur init [--sidecar]` | create `imprimatur.toml`, and the sidecar package if asked (#31) |
 | `imprimatur build --blueprint-compat` | also write `\lean{…}` (§9.3, #30) |
 | `imprimatur check --anonymous` | the anonymity scan (§11, #26) |
-| `imprimatur lint` | report binder names that differ from the paper's naming convention (generalised from project-a's `binder_lint`; #29) |
+| `imprimatur lint` | report binder names that differ from the paper's naming convention (generalised from project A's binder linter; #29) |
 
 A typical `Makefile` addition:
 
@@ -947,7 +947,8 @@ imprimatur:
 golden tests of the extractor (fixture projects, run on every toolchain in
 the matrix) and of the splicer (TeX documents before and after `apply`),
 negative trust tests, end-to-end builds of `examples/` with pdflatex and
-lualatex, and integration with the real projects outside CI.
+lualatex. Every test runs from this repository alone, so contributing
+needs no access to the papers imprimatur is used for.
 [docs/TESTING.md](docs/TESTING.md) says how to run them, and keeps the
 traceability matrix from each section here to its tests.
 
@@ -980,7 +981,7 @@ imprimatur/
     test/
   testkit/                        test-only package: harness, golden files, seeded generator
   test/                           fixtures/ (Lean projects), tex/ (documents), bundles/
-  scripts/                        test-all.sh, lint.sh, e2e.sh, integration.sh, and the lint checks
+  scripts/                        test-all.sh, lint.sh, e2e.sh, and the lint checks
   schema/bundle.schema.json
   tex/imprimatur.sty
   docs/                           blocks.md notation.md views.md trust.md TESTING.md spikes/
@@ -991,33 +992,30 @@ imprimatur/
 
 ## 16. Adoption in the three projects
 
-**project-a** (external, §6.3 A; done in M5)
+**Project A** (external, §6.3 A; done in M5)
 
-- **The parity gate.** `paper-a/paper.tex` and `paper-a2` were built with
-  project-a's old `old_tool` and with imprimatur from the same commit of
-  `proj/`, and the results differed only in the `sum=` options imprimatur
-  adds. The gate passed byte for byte, after which project-a deleted its old
-  exporter (`OldRules.lean`, `OldGrammar.lean`,
-  `OldTranslation.lean` and `old_tool`'s Lean splicing) and the gate
-  with it. `old_tool` keeps only the `codeblock` blocks.
-- **What project-a keeps.** The port lives in project-a's own repository
-  (`imprimatur/`, shared by its three documents): notation for every arm of
-  the old renderer, the groups, labels and entries, and four custom views
-  (theorem prose, `≜` definitions, the hand-written grammar tables, and the
-  conventions, dispatch and provenance tables). The binder linter and its
-  conventions table stay in project-a's Lean sources, and a custom view splices
-  the table from there.
+- **The parity gate.** Two of project A's papers were built with its old
+  exporter and with imprimatur from the same commit of its Lean project, and
+  the results differed only in the `sum=` options imprimatur adds. The gate
+  passed byte for byte, after which project A deleted its old exporter and
+  the gate with it.
+- **What project A keeps.** The port lives in project A's own repository,
+  shared by its documents: notation for every arm of the old renderer, the
+  groups, labels and entries, and four custom views (theorem prose, `≜`
+  definitions, the hand-written grammar tables, and the conventions,
+  dispatch and provenance tables). Its binder linter and conventions table
+  stay in its Lean sources, and a custom view splices the table from there.
 - **Hand-written grammar descriptions are kept.** The `leangrammar` alias
   declares the description arguments of `\entry`, `\defentry` and
   `\Category` as slots identified by their first argument (§9.5), which
-  reproduces project-a's `mergeDescriptions`.
-- **Project A's Lean version is supported.** It uses `v4.28.0-rc1`, a release
+  reproduces what the old splicer did.
+- **Its Lean version is supported.** It uses `v4.28.0-rc1`, a release
   candidate, which is in the supported range (§13).
-- **What the gate found.** In `proj/doc`, two blocks the old tool had left
-  frozen, because their theorems were not registered: one is now generated,
-  the other (its theorem gone) became plain text. It also showed the old
-  renderer's mistakes kept for parity, such as a dropped premise, each now
-  one line to delete.
+- **What the gate found.** Two blocks the old tool had left frozen, because
+  their theorems were not registered: one is now generated, the other (its
+  theorem gone) became plain text. It also showed the old renderer's
+  mistakes kept for parity, such as a dropped premise, each now one line to
+  delete.
 - **What came out of it.** Generic features: binder patterns,
   `latex_style`, `latex_entry`, `when` guards, decorated metavariables,
   alias labels and templates, comment-delimited blocks, the scanner's
@@ -1053,27 +1051,25 @@ imprimatur/
   blocks, so the file containing them must be one that people edit, not one
   that another tool writes.
 
-**project B** (external, `submission` profile)
+**Project B** (external, `submission` profile)
 
 - **The paper's prose stays hand-written.** About sixty `\leancheck`s, in
-  the section and appendix files, tie its theorems and propositions to the
-  `MyPaper.Results.*` restatements.
-- **The rules figure.** `integration/projb-rules` generates the analysis
-  rules from `Der` and `DerF`, with labels from the constructor docstrings
-  and the `Fintype` data hidden by premise conventions, and compares them
-  with an agreed target text. The paper's `analysis.tex` still typesets its
-  hand-written figure; `standalone/` uses the generated one. The schematic **Lift** rule, a
-  single rule in the paper that stands for four constructors, stays
-  hand-written (§19, question 3).
-- **`standalone/`** is a document generated from the development: every
-  definition and result up to Theorem 1, with the paper's core syntax as
-  Lean inductive types, in the paper's display style. Only its headings,
-  descriptions and connecting sentences are written by hand. Rendering all
-  of the definitions found the case, list-literal and binder-name features
-  of §7.5.
-- **Still to do (M6):** `lean-appendix.tex` gains a `\leanindex` (#25), and
-  `check --anonymous` runs alongside `check-anonymity.sh` (#26). The supplement
-  and `make_lean_supplement.py` are unaffected.
+  the section and appendix files, tie its theorems and propositions to a
+  Lean file that restates them.
+- **The rules figure.** The analysis rules are generated from the
+  derivation relations, with labels from the constructor docstrings and the
+  `Fintype` data hidden by premise conventions. One schematic rule of the
+  paper, which stands for four constructors, stays hand-written (§19,
+  question 3).
+- **A standalone document** is generated from the development: every
+  definition and result up to the main theorem, with the paper's core
+  syntax as Lean inductive types, in the paper's display style. Only its
+  headings, descriptions and connecting sentences are written by hand.
+  Rendering all of the definitions found the case, list-literal and
+  binder-name features of §7.5.
+- **Still to do (M6):** its Lean appendix gains a `\leanindex` (#25), and
+  `check --anonymous` runs alongside the project's own anonymity check
+  (#26). The supplement is unaffected.
 
 ## 17. Roadmap
 
@@ -1082,7 +1078,7 @@ imprimatur/
 | 0.1 | Splicer: scan, apply, check, `--diff`, checksums with normalisation, author-owned slots (both forms), multi-file documents, aliases, strip. Bundle schema 1. Extractor (sidecar and in-project modes) with the `lean` view (semantic macros) and the `meta` view; axioms and `sorry`; profiles with `relative` as the default. **Useful for all three projects with no notation work.** | done, untagged |
 | 0.2 | Dependency cones, `stmtHash`/`sigHash`, `\leancheck`, `imprimatur accept`. Comparator and blueprint manifests. External mode with `toolchain install`. | done, untagged |
 | 0.3 | `Doc` IR, notation DSL (`width`, `variant`, `flatten`), delaborator fallback, `math` and `prose` views, notation packs. | done, untagged |
-| 0.4 | `rules` and `grammar` views ported from project-a, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate project-a, gated by the parity test (§16). | done, untagged |
+| 0.4 | `rules` and `grammar` views ported from project A, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate project A, gated by the parity test (§16). | done, untagged |
 | 0.5 | `\leanindex` (the `provenance` table over every key the document cites), `check --anonymous`, undefined-macro warnings, `init`, `show`, release binaries, the toolchain range documented and enforced. `lint` and `--blueprint-compat` are later (#29, #30). | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
 
 The milestones M0 to M6, named in `CHANGELOG.md` and in comments in the
@@ -1265,8 +1261,8 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   no reader could parse.
 - **The trusted part** is a small chart parser that counts at most two
   readings, with a work budget, and, where the expected reading has a `⁇`,
-  the mirroring of `Validate.ofRule` against `Render.fillTemplate`. On the
-  project-b standalone paper, 610 of the 662 formulas with one reading
+  the mirroring of `Validate.ofRule` against `Render.fillTemplate`. On
+  project B's standalone document, 610 of the 662 formulas with one reading
   have an expected reading without `⁇`, 21 have one in part, and 31 have
   none (#41 would close the gap). Making the emitter drop the parentheses its holes need is caught
   as 6 misreads there (`(\lambda r\, q.\, …) = M` read as
@@ -1280,12 +1276,11 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   turns the reading back off. A setting that makes these problems errors
   is #40.
 
-Reading back project-a's a conference paper adds about a second to a 50-second
+Reading back project A's main paper adds about a second to a 50-second
 extraction. It reads every formula, and finds 70 ambiguities (about 200
 before reading back was typed), all puns of its notation: two constants
-written alike (`stamp` and `labeled`; in `paper-a2`, also `ValS` and
-`ShapeVal`), and coercions both ways between `Expr` and `ExprF`, which
-side condition 2 excludes.
+written alike, and coercions both ways between two sorts of expression,
+which side condition 2 excludes.
 
 ### 18.5 The trusted base
 
@@ -1308,7 +1303,7 @@ at TeX source; and, for attested claims, the person who checked the prose.
    published to (#54).
 2. **Toolchain support window.** How far back should support go? Each
    additional toolchain adds to the CI matrix and to `Compat.lean` (#33).
-3. **Schematic rules.** Lift in project B, and the ⊕-merged rules elsewhere,
+3. **Schematic rules.** One rule in project B, and the ⊕-merged rules elsewhere,
    are single paper rules that stand for several constructors. Should
    merging them be a built-in feature of the `rules` view, or stay a custom
    view? (#37)
@@ -1324,7 +1319,7 @@ at TeX source; and, for attested claims, the person who checked the prose.
 
 - **Whether external mode works in practice.** Spike S1 showed it working
   on v4.28.0-rc1, v4.31.0 and v4.34.1 against the three motivating projects,
-  and since M5 all three of project-a's documents and project B are built in it.
+  and since M5 project A's three documents and project B are built in it.
   Custom views in the notation module work too: they are elaborated, not
   compiled, and run by `evalConst`.
 - **Overleaf.** Splicing in place leaves ordinary `.tex` files, which

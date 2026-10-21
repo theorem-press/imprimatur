@@ -46,7 +46,7 @@ All notable changes to imprimatur are recorded here. Versions follow
 
   Notation modules work in every mode. In external mode they are given as
   files and elaborated by the extractor. See [docs/notation.md](docs/notation.md).
-- Rules, grammars and the project-a migration (M5):
+- Rules, grammars and the migration of project A (M5):
   - the `rules` view (mathpartir), with `latex_rules`, `latex_rule_label`,
     `latex_group`, premise conventions (`latex_metavar_convention`,
     `latex_hide_premise`), `include`/`exclude`, and the `grammar` view;
@@ -69,10 +69,10 @@ All notable changes to imprimatur are recorded here. Versions follow
   - the scanner records which blocks are typeset, reading `\iffalse` and
     `\newif` switches; blocks that are not are still maintained; and a
     command being defined (`\NewDocumentCommand\leancheck…`) is not a use;
-  - the project-a parity gate of DESIGN §16 passed byte for byte; project-a now
-    builds its papers with imprimatur, keeps the port in its `imprimatur/`,
-    and has deleted its old exporter; and project B's analysis rules are
-    generated from `Der` (`scripts/integration.sh`).
+  - the parity gate of DESIGN §16 passed byte for byte; project A now
+    builds its papers with imprimatur, keeps the port in its own
+    repository, and has deleted its old exporter; and project B's analysis
+    rules are generated.
 
   See [docs/views.md](docs/views.md), [docs/notation.md](docs/notation.md)
   and [docs/blocks.md](docs/blocks.md).
@@ -86,7 +86,7 @@ All notable changes to imprimatur are recorded here. Versions follow
   at the files' own line numbers. See
   [docs/notation.md](docs/notation.md#reading-back).
 - Reading back is typed more precisely, and found three rendering bugs on
-  the project B paper. Sorts carry type arguments (`Option(Label)`); coercions
+  project B's paper. Sorts carry type arguments (`Option(Label)`); coercions
   are read with the sorts they make; `latex_notation … synonym` declares
   two notations for equal things; application is one reading however
   written. The bugs: an atomic template's edge hole (`#e(#c)`, `#n!`) got no
@@ -100,7 +100,7 @@ All notable changes to imprimatur are recorded here. Versions follow
   type's category letter (`latex_category`), as `s ::= gen(s)` did in the
   paper about imprimatur, where `s` was both a segment and a string.
 - Definitions by cases, as a paper writes them, and fixes found by rendering
-  every definition of the project B development:
+  every definition of project B's development:
   - `latex_style pattern_matching := cases` writes a `match` as
     `case d of p ⇒ e | …`, and `lists := literal` writes a list literal as
     `[a, b]`;

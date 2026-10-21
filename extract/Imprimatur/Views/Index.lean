@@ -43,7 +43,7 @@ def docSentence (n : Name) : MetaM String := do
 
 /-- A type as TeX: applied to the arguments its category names
 (`latex_category Judg Name => "J"`), or else to its parameters and indices.
-A binder Lean named itself (`NDes : Shape → Type`) is named after its type's
+A binder Lean named itself (`Vec : Nat → Type`) is named after its type's
 metavariable. -/
 def typeTeX (ty : Name) : RenderM String := do
   let env ← getEnv

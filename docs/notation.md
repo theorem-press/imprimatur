@@ -11,13 +11,13 @@ Notation goes in a **notation module**: an ordinary Lean file, and the only
 one that imports `Imprimatur`.
 
 ```lean
-import MyPaper.Results
+import Stlc
 import Imprimatur
 
-open ProjB
+open Stlc
 
-latex_notation Tm.app A B => r"\app{#A}{#B}"  width := 5
-latex_metavar spec => "L"
+latex_notation Tm.app e₁ e₂ => r"\app{#e₁}{#e₂}"  width := 5
+latex_metavar ctx => r"\Gamma"
 ```
 
 How the extractor finds it depends on the mode:
@@ -59,7 +59,7 @@ latex_notation (variant := "named")? PATTERN => "TEMPLATE" OPTIONS…
 ```lean
 latex_notation double n => r"2#n"  prec := 70
 latex_notation ¬ Realize U φ ρ => r"#U \not\models #φ"  hide ρ := Fin.elim0  prec := 50
-latex_notation Ctx.lookup spec i = true => r"\cbX \in L(#i)"
+latex_notation lookup Γ x = some t => r"#Γ(#x) = #t"
 latex_notation @LE.le (Set _) _ a b => r"#a \subseteq #b"  prec := 50
 latex_notation zeroish => r"\mathbf{0}"
 latex_notation ∃ x, p => r"\exists\, #x,\; #p"  flatten  sep := r",\, "  prec := 10
@@ -239,8 +239,8 @@ trusted.
   category's letter but of another type.
 - **`strict`**. As `unique`, and a variable whose type has a category is
   written with the category's letter, whatever its Lean name: only the name's
-  subscripts and primes are kept, so `q : Prog` is $P$, `D₁ : NDes c` is
-  $\overline{D}_1$ and `a' : Attr` is $a'$. Two variables of one formula
+  subscripts and primes are kept, so `q : Prog` is $P$, `t₁ : Ty` is
+  $\tau_1$ and `e' : Tm` is $e'$. Two variables of one formula
   that then print alike (`a b : Prog`, both $P$) are an error: rename them
   `a₁ a₂`.
 

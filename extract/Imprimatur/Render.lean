@@ -225,8 +225,8 @@ def nameDecorations (n : Name) : String :=
 
 /-- The TeX of a variable of type `ty`. With `latex_style categories :=
 strict`, a variable of a category's type is written with the category's
-metavariable and its own decorations (`d : Design c` as $\overline{D}$, `D₁`
-as $\overline{D}_{1}$), so the reader knows its type from its letter. -/
+metavariable and its own decorations (`t : Ty` as $\tau$, `t₁` as
+$\tau_{1}$), so the reader knows its type from its letter. -/
 def varNameT (n : Name) (ty : Expr) : RenderM String := do
   if (← categoriesStyle) == "strict" then
     if let some m ← categoryLetter? ty then

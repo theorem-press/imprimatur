@@ -11,8 +11,8 @@ import Imprimatur.Notation
 The commands of a notation module (DESIGN §6.2, §7.5):
 
 ```lean
-latex_notation Tm.app A B => r"\app{#A}{#B}"  width := 5
-latex_notation (variant := "named") Tm.app A B => r"\kw{nest}\;#A\;#B"
+latex_notation Tm.app e₁ e₂ => r"\app{#e₁}{#e₂}"  width := 5
+latex_notation (variant := "named") Tm.app e₁ e₂ => r"\mathsf{app}(#e₁, #e₂)"
 latex_notation ¬ SetRealization.Realize U φ ρ => r"#U \not\models #φ"  hide ρ := Fin.elim0  prec := 50
 latex_notation Label.lub a b => r"\lub{#a, #b}"  flatten
 latex_metavar spec => "L"

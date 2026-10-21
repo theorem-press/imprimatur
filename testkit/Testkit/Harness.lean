@@ -6,7 +6,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 /-!
 # The test harness
 
-A deliberately small harness, modelled on project-a's `OldTool/Test.lean`.
+A deliberately small harness, modelled on the test harness of an earlier tool.
 Every test has a name; `docs/TESTING.md` refers to tests by these names, so
 a name should be stable and unique within its test package.
 -/

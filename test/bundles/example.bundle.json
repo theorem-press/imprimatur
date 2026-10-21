@@ -14,6 +14,6 @@
       "views": { "lean": "…", "math": "…", "meta": "…", "prose": "…" }
     }
   },
-  "producer": { "lean": "v4.31.0", "project": "projb-lean", "tool": "imprimatur-export", "version": "0.3.0" },
+  "producer": { "lean": "v4.31.0", "project": "my-paper", "tool": "imprimatur-export", "version": "0.3.0" },
   "schema": "imprimatur-bundle/1"
 }

@@ -122,7 +122,7 @@ The spike code is not kept in the repository. The fixture is kept.
 ## Revised in M3
 
 The math catalogue's comparator manifests, run in external mode
-(`scripts/integration.sh`), changed two of the conclusions above:
+(in an integration run, since retired), changed two of the conclusions above:
 
 1. **Equation lemmas only for recursive definitions.** Generating equation
    lemmas for one non-recursive definition (`ProducedMarkedSeamEquations`,

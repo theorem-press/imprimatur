@@ -16,7 +16,6 @@ them, and keeps the traceability matrix.*
 | **Trust (negative)** | each trust failure ([CONTRIBUTING.md](../CONTRIBUTING.md), principle 5) on purpose-built fixtures | runs with the extractor golden tests | about a minute |
 | **End-to-end** | the `imprimatur build` command line on the example projects in all three modes, then `latexmk` with pdflatex and lualatex: no LaTeX errors, and `pdftotext` output matches golden text | `scripts/e2e.sh`, in CI | a few minutes |
 | **Cross-toolchain** | the same fixture gives byte-identical bundles, apart from the `producer` field, and identical `stmtHash` values, on every supported toolchain | CI matrix job comparing bundles | a few minutes |
-| **Real-world integration** | project-a, project B and the math catalogue, all Mathlib-based (project-a's parity gate of M5 is retired) | `scripts/integration.sh`, run locally and before releases, not in CI (below) | tens of minutes |
 
 ### Fixtures
 
@@ -42,7 +41,7 @@ one splicer behaviour:
 - CRLF line endings;
 - Unicode;
 - hand-edited blocks, and edited slots;
-- slots declared by position, as project-a uses them.
+- slots declared by position, as an earlier tool used them.
 
 ### Properties
 
@@ -68,7 +67,7 @@ bundles.
 - **Our own small test harness** in a test-only package: `check`,
   `checkEq`, golden comparison with `UPDATE_GOLDEN`, and a seeded generator
   that reproduces failures from a printed seed.
-  - The project-a `OldTool/Test.lean` harness is the model.
+  - The test harness of an earlier tool is the model.
   - Not **Plausible** (the Lean property-testing library): decided at M0, so
     that test packages need nothing that might not support every toolchain
     in the range.
@@ -87,18 +86,17 @@ bundles.
 | `e2e` | one toolchain, with TeX Live (`pdflatex` and `lualatex`) | `scripts/e2e.sh` on `examples/` in all three modes |
 | `lint` | — | markdown links, JSON schema validation of golden bundles, the traceability matrix has no orphan entries |
 
-**Not in CI:** Mathlib-based integration. A Mathlib cache costs about 5 GB
-per toolchain, too much for CI, and for a laptop if kept for every
-toolchain, so integration reuses each project's existing `.lake`.
-`scripts/integration.sh` runs it locally against the real projects. It is
-required before every release, and its report is attached to the release.
+**Everything is in this repository.** Every test runs from this repository
+alone, so anyone can contribute without access to the papers imprimatur is
+used for. The fixtures, examples and the paper about imprimatur stand in for
+them, with no Mathlib. Projects that use imprimatur check their own papers
+with it, in their own repositories.
 
 ## Running the tests
 
 | What | Command | Where |
 |---|---|---|
 | everything CI runs | `scripts/test-all.sh` | repository root |
-| integration with the real projects (not in CI) | `scripts/integration.sh` | repository root |
 | the test harness's own tests | `lake test` | `testkit/` |
 | extractor tests (build the fixtures first) | `lake test` | `extract/test/` |
 | one part of the extractor's fixture tests (`drift`, `index`, `categories`, `challenges`, or a fixture such as `Semantics`) | `lake test -- --part NAME` | `extract/test/` |
@@ -137,8 +135,7 @@ Every check has a name of the form `package/area/what`, for example
 `splice/prop/idempotence`. The matrix below refers to tests by these names,
 and `scripts/check-traceability.py` checks that every name in it appears as a
 string literal in a test source. Checks done by scripts are named
-`lint/…` (in `scripts/`), `integration/…` (in `scripts/integration.sh`) or
-`e2e/…` (in `scripts/e2e.sh`).
+`lint/…` (in `scripts/`) or `e2e/…` (in `scripts/e2e.sh`).
 
 **Golden bundles of the extractor.** `extract/test/golden/<fixture>.bundle.json`
 holds the bundle of each fixture under `test/fixtures/`, with the toolchain in
@@ -170,7 +167,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§4 | (1) the extractor builds and runs on every supported toolchain | `extract/version/lean`, `extract/golden/Basic` | M0 |
 | D§4 | (2) the splicer imports nothing from Lean but `Lean.Data.Json` | `lint/splice-imports` | M1 |
 | D§4 | (3) a notation rule naming a missing constant fails at build time (checked when the `Notation` fixture builds; the messages are tested by hand) | `extract/golden/Notation` | M4 |
-| D§4 | (4) every declaration has a default rendering (the `lean` view) | `extract/golden/Basic`, `integration/projb-lean-view`, `integration/math-lean-view` | M2 |
+| D§4 | (4) every declaration has a default rendering (the `lean` view) | `extract/golden/Basic` | M2 |
 | D§4 | (5) external mode changes nothing in the host project | `e2e/external`, `e2e/semantics` | M3 |
 | D§4 | (6) shipped packages have no Lake dependencies | `lint/no-deps` | M0 (lint) |
 | D§4 | (7) environments are imported at `private` level | `extract/modules/private-sorry-seen`, `extract/modules/sorry-through-import-all`, `extract/golden/ModuleSys` | M2 |
@@ -179,23 +176,23 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§6.1 | `imprimatur.toml` is parsed; unknown keys and bad values are reported | `splice/toml/parses`, `splice/toml/duplicate-key`, `splice/toml/error-line`, `splice/config/parses`, `splice/config/unknown-key`, `splice/config/alias-needs-view`, `splice/config/url-needs-template`, `splice/golden/config-errors` | M1 |
 | D§6.2 | the notation module is elaborated and its names resolved, in-project and as a file in external mode | `extract/golden/Notation`, `e2e/minimal`, `e2e/external` | M4 |
 | D§6.3 | sidecar and in-project modes | `e2e/minimal`, `e2e/sidecar` | M2 |
-| D§6.3 | external mode, with `imprimatur toolchain install` | `e2e/external`, `integration/math-manifests`, `integration/projb-drift` | M3 |
+| D§6.3 | external mode, with `imprimatur toolchain install` | `e2e/external` | M3 |
 | D§7.1 | `Doc` emitter: escaping, parenthesisation, line breaking | `extract/doc/escape-specials`, `extract/doc/width-symbols`, `extract/doc/width-wrappers`, `extract/doc/width-spacing`, `extract/doc/width-scripts`, `extract/doc/width-given`, `extract/doc/no-parens-left-assoc`, `extract/doc/parens-right`, `extract/doc/parens-tighter`, `extract/doc/no-parens-looser`, `extract/doc/width-counts-parens`, `extract/doc/fits-unbroken`, `extract/doc/breaks-outermost`, `extract/doc/breaks-deeper-when-needed`, `extract/doc/break-after-control-space` | M4 |
 | D§7.2 | notation matches `Expr`; unmatched subterms are rendered as functions, or delaborated | `extract/golden/Notation`, `extract/notation/no-render-errors` | M4 |
-| D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic`, `integration/projb-lean-view` | M2 |
+| D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic` | M2 |
 | D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
 | D§7.3 | `prose` labels only hypotheses the paper refers to (`\leanhypref`) | `extract/prose/hyp-referred-labelled`, `extract/prose/hyp-unreferred-unlabelled`, `splice/golden/hyprefs` | M5 |
-| D§7.3 | `math` and `prose` views | `extract/golden/Notation`, `e2e/minimal`, `e2e/fixture-views`, `integration/math-prose` | M4 |
+| D§7.3 | `math` and `prose` views | `extract/golden/Notation`, `e2e/minimal`, `e2e/fixture-views` | M4 |
 | D§7.3 | the views that index the document (`conventions`, `vocabulary`, `provenance`) see every other block, list the library's notation, or the project's with `scope`, and give results their kind and page | `extract/index/no-warnings`, `extract/index/conventions-shown`, `extract/index/conventions-order`, `extract/index/provenance-theorem`, `extract/index/vocabulary-library-only`, `extract/index/vocabulary-project`, `extract/index/golden` | M6 |
 | D§7.5 | `latex_style categories := strict`: a variable of a category's type is written with its letter and its own subscripts and primes; variables that then print alike, and a letter for two types, are errors | `extract/names/decorations`, `extract/categories/strict-renames`, `extract/categories/strict-clean`, `extract/categories/strict-print-alike`, `extract/categories/unique-letter` | M6 |
 | D§18.4 | the one reading of a formula is the one the renderer expected, with `⁇` for forms it does not say how to read; a reading that differs is a misread | `extract/validate/matches`, `extract/validate/reading-left`, `extract/validate/misread-caught` | M6 |
-| D§7.3 | `rules` and `grammar` views | `extract/golden/Semantics`, `e2e/fixture-views`, `e2e/semantics`, `integration/projb-rules`, project-a's parity gate | M5 |
-| D§7.3 | custom views through `@[latex_view]`, with the document inventory | `extract/golden/Semantics` (`fixture.rulelist`), project-a's parity gate (four custom views) | M5 |
-| D§7.4 | rule label precedence; `latex_rules` templates, anchors, `sep`, `doc_labels`; groups across inductives | `extract/golden/Semantics`, project-a's parity gate | M5 |
+| D§7.3 | `rules` and `grammar` views | `extract/golden/Semantics`, `e2e/fixture-views`, `e2e/semantics` | M5 |
+| D§7.3 | custom views through `@[latex_view]`, with the document inventory | `extract/golden/Semantics` (`fixture.rulelist`) | M5 |
+| D§7.4 | rule label precedence; `latex_rules` templates, anchors, `sep`, `doc_labels`; groups across inductives | `extract/golden/Semantics` | M5 |
 | D§7.5 | notation rules: patterns, templates, `prec`, `width`, `hide`, `variant`, `flatten`, typed patterns, lookup order, metavariables | `extract/golden/Notation`, `extract/doc/template-prime`, `extract/doc/template-longest`, `extract/doc/template-unknown`, `extract/doc/metavar-subscript`, `extract/doc/metavar-digits`, `extract/doc/metavar-prime`, `extract/doc/metavar-long`, `extract/doc/metavar-renamed`, `splice/golden/notation-config` | M4 |
 | D§7.5 | packs: every rule has a golden use, and the output typesets with both engines | `extract/notation/every-pack-rule-used`, `e2e/fixture-views` | M4 |
 | D§7.5 | the bundle records the macros each rendering uses | `extract/golden/Notation` | M4 |
-| D§7.5 | binder patterns, partial applications, `flatten` with `sep`, `assoc`, `latex_style`, `latex_entry`, Greek letters, several notation files | `extract/golden/Notation` (`math:binders`), `extract/golden/Semantics`, project-a's parity gate | M5 |
+| D§7.5 | binder patterns, partial applications, `flatten` with `sep`, `assoc`, `latex_style`, `latex_entry`, Greek letters, several notation files | `extract/golden/Notation` (`math:binders`), `extract/golden/Semantics` | M5 |
 | D§18.2 | the splicer's laws and Theorem 1, proved for a model of the splicer; the paper presenting them is built and checked with no warnings | `e2e/about` | M5 |
 | D§18.4 | translation validation: tokens, productions of rules, readings counted up to two, sorts and type variables, coercions, chains, the built-in forms | `extract/validate/tokens`, `extract/validate/tokens-code`, `extract/validate/production`, `extract/validate/production-atomic`, `extract/validate/production-coercion`, `extract/validate/ambiguous`, `extract/validate/no-reading-without-parens`, `extract/validate/one-reading-with-parens`, `extract/validate/assoc-left`, `extract/validate/assoc-none`, `extract/validate/sorts`, `extract/validate/coercion-one-reading`, `extract/validate/flatten`, `extract/validate/builtin-implies`, `extract/validate/builtin-forall`, `extract/validate/tyvar-ill-sorted`, `extract/validate/tyvar-unknown`, `extract/validate/tyvar-binds`, `extract/validate/sort-arrow`, `extract/validate/sort-arrow-differs`, `extract/validate/sort-args-differ`, `extract/validate/sort-args-open`, `extract/validate/coercion-sorts`, `extract/validate/coercion-sorts-needed`, `extract/validate/application-curried`, `extract/validate/synonym`, `extract/validate/unmodelled` | M5 |
 | D§18.4 | list literals, and types such as `[n]` not read as lists; `Sort*`; a constant applied is one reading | `extract/validate/list-literal`, `extract/validate/list-or-type`, `extract/validate/type-not-list`, `extract/validate/sort-star-type`, `extract/validate/sort-star-not-value`, `extract/validate/app-constant` | M5 |
@@ -214,9 +211,9 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§8 | a view that fails to render is recorded in `errors`, and is an error only if requested | `extract/golden/Basic`, `splice/golden/failures` | M2 |
 | D§9.1 | `leanblock`, `\leaninline`, `\leanref`, `\leancheck`, `\leanindex` are recognised | `splice/scan/forms`, `splice/scan/options`, `splice/scan/check-keys`, `splice/golden/basic` | M1 |
 | D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
-| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases`, project-a's parity gate | M5 |
+| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases` | M5 |
 | D§10.1 | definitions of imprimatur's macros are not uses | `splice/golden/definitions` | M5 |
-| D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases`, project-a's parity gate | M5 |
+| D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases` | M5 |
 | D§9.2 | aliases map existing environments onto `leanblock` | `splice/config/alias-slots`, `splice/golden/basic`, `splice/golden/positional-slots` | M1 |
 | D§9.3 | blueprint `\lean{…}` read as check-only references; `\leanok` cross-checked | `splice/golden/blueprint` | M3 |
 | D§9.3 | `--blueprint-compat` writes `\lean{…}` | — | M6 |
@@ -233,7 +230,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§10.3 | `check` reports stale blocks, with `--diff` | `splice/diff/lines`, `splice/golden/slots`, `splice/golden/positional-slots` | M1 |
 | D§10.3 | `check` reports broken references | `splice/golden/failures` | M1 |
 | D§10.3 | `check` reports untrusted results (splicer side; the extractor fills in the data in M2) | `splice/golden/failures` | M1 |
-| D§10.3 | `check` reports drift; `accept` records the new hash | `splice/golden/drift`, `integration/projb-drift` | M3 |
+| D§10.3 | `check` reports drift; `accept` records the new hash | `splice/golden/drift` | M3 |
 | D§10.3 | `check` warns of undefined macros and orphaned slots | `splice/macros/defined`, `splice/macros/loaded`, `splice/golden/macros`, `splice/golden/slots` | M6 |
 | D§10.3 | `check` exit codes: non-zero on anything but warnings | `splice/golden/failures`, `splice/golden/config-errors`, `splice/golden/slots` | M1 |
 | D§10.4 | `strip` removes markers and keeps generated content | `splice/slots/unwrap`, `splice/prop/strip`, `splice/golden/strip` | M1 |
@@ -248,11 +245,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§13 | the splicer accepts the current and previous bundle schema | `splice/version/schema`, `splice/bundle/schema-version` | M1 |
 | D§14 | testing (this file) | — | n/a |
 | D§15 | repository layout | — | n/a |
-| D§16 | project-a's `paper.tex` goes through `scan` and `strip` with every byte outside its blocks kept | `integration/project-a-scan-strip` | M1 |
-| D§16 | project-a parity gate | `imprimatur/parity.sh` in project-a, passed for each of its three documents, then retired with the old exporter (project-a commit `0114fd4`) | M5 |
-| D§16 | project B rules figure | `integration/projb-rules` | M5 |
-| D§16 | project B `check --anonymous` | — | M6 |
-| D§16 | math catalogue comparator manifests import cleanly | `integration/math-manifests` | M3 |
+| D§16 | adoption in the motivating projects; each is checked in its own repository, so that imprimatur's tests need nothing outside this one | — | n/a |
 | D§17 | roadmap | — | n/a |
 | D§18.1 | what a document claims | — | n/a |
 | D§18.3 | correctness: faithful rendering (Theorem 2) | — | n/a |

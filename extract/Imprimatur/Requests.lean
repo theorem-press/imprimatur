@@ -15,7 +15,7 @@ extractor reads only this file, so it needs no TOML parser.
 {
   "schema": "imprimatur-requests/1",
   "config": { "imports": ["MyPaper.Results"], "open_scoped": [],
-              "strip_namespaces": ["ProjB"],
+              "strip_namespaces": ["MyPaper"],
               "trusted_prefixes": ["Init", "Lean", "Std", "Batteries", "Mathlib"],
               "challenges": { "OAI.X.main": "ComparatorChallenges.X" } },
   "requests": { "MyPaper.Results.theorem1_main": { "views": ["lean"] } }
