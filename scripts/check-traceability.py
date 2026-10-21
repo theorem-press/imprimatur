@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # Copyright (c) 2026 The imprimatur authors.
 # Released under Apache 2.0 license as described in the file LICENSE.
-"""Check the traceability matrix in docs/TESTING.md (PLAN §1.1).
+"""Check the traceability matrix in docs/TESTING.md (CONTRIBUTING.md, principle 1).
 
 Fails if a numbered section of DESIGN.md has no row, if a row names a section
 that DESIGN.md doesn't have, or if a row names a test that no test source

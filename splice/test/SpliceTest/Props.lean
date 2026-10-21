@@ -6,7 +6,7 @@ import Splice
 import Testkit
 
 /-!
-# Property tests of the splicer (PLAN §2.3)
+# Property tests of the splicer (docs/TESTING.md, Properties)
 
 A seeded generator builds random documents (prose, braces, comments and
 verbatim text holding decoy markers, `\verb`, blocks, aliases with positional

@@ -1,5 +1,5 @@
 # Test-only package: the harness, golden files and generator shared by
-# imprimatur's test packages. Shipped packages never depend on it (PLAN §1.6).
+# imprimatur's test packages. Shipped packages never depend on it (CONTRIBUTING.md, principle 6).
 name = "imprimatur-testkit"
 version = "0.0.0"
 defaultTargets = ["Testkit"]
