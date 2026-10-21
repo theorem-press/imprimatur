@@ -1,0 +1,4 @@
+schema = 1
+main = "main.tex"
+# A package the paper loads defines \fromPackage.
+known_macros = ["fromPackage"]

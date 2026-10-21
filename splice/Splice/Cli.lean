@@ -161,7 +161,28 @@ def runIn (root : System.FilePath) (a : Args) : ExceptT String CliM UInt32 := do
     let opts := { opts with migrate := a.command == "migrate-slots" }
     let o := plan doc bundle opts
     if a.command == "check" then
-      let ds := sortDiags doc (o.diags ++ audit doc bundle ++ staleDiags o.changes a.diff)
+      -- The paper's own packages define macros too: those beside its main
+      -- file, and the local files they load.
+      let dir := ((root / cfg.main).parent).getD root
+      let mut queue : Array System.FilePath := #[]
+      for d in ← (dir.readDir : IO _) do
+        if d.fileName.endsWith ".sty" || d.fileName.endsWith ".cls" then queue := queue.push d.path
+      let mut seen : Array System.FilePath := #[]
+      let mut extra : Array String := #[]
+      while h : 0 < queue.size do
+        let p := queue[0]
+        queue := queue.extract 1 queue.size
+        if seen.contains p || seen.size > 200 then continue
+        seen := seen.push p
+        let text ← (IO.FS.readFile p : IO _)
+        extra := extra ++ definedMacros text
+        for f in loadedFiles text do
+          for c in [f, f ++ ".tex", f ++ ".sty"] do
+            let q := (p.parent.getD dir) / c
+            if ← (q.isDir : IO _) then continue
+            if ← (q.pathExists : IO _) then queue := queue.push q
+      let ds := sortDiags doc (o.diags ++ audit doc bundle ++ macroDiags doc bundle extra ++
+        staleDiags o.changes a.diff)
       report ds
       let failed := hasErrors ds
       if failed then
