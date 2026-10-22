@@ -268,4 +268,18 @@ def stmtText (ci : ConstantInfo) (c : Cone) : String :=
   "type " ++ ser ci.levelParams ci.type ++ "\n" ++
     String.join (c.members.toList.map fun (n, t) => s!"{n} {t}\n")
 
+/-- The union of two cones, sorted. -/
+def Cone.union (a b : Cone) : Cone :=
+  { members := (a.members ++ b.members.filter fun (n, _) => !a.members.any (·.1 == n)).qsort
+      fun x y => decide (x.1.toString < y.1.toString),
+    issues := (a.issues ++ b.issues.filter fun i => !a.issues.any (· == i)).qsort
+      fun x y => decide (x.1.toString < y.1.toString) }
+
+/-- The canonical text whose hash is a group's `stmtHash`: its members' types,
+then each member of their united cone with its name. A group states what
+its members state. -/
+def groupStmtText (cis : Array ConstantInfo) (c : Cone) : String :=
+  String.join (cis.toList.map fun ci => "type " ++ ser ci.levelParams ci.type ++ "\n") ++
+    String.join (c.members.toList.map fun (n, t) => s!"{n} {t}\n")
+
 end Imprimatur.Trust

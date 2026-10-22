@@ -14,7 +14,7 @@ slots, inline items and `\leanslot`s, over a main file and an input) and
 random bundles. The properties run on documents held in memory.
 -/
 
-open Testkit Splice
+open Testkit Splice Imprimatur
 
 namespace SpliceTest.Props
 
@@ -98,13 +98,14 @@ def document : Gen (Array (String × String)) := do
   return #[("main.tex", String.join main), ("sub.tex", String.join sub)]
 
 /-- A bundle with an entry for every key. -/
-def bundle : Gen Bundle := do
+def bundle : Gen (Bundle (Image TeX) Verdict) := do
   let mut entries := #[]
   for k in keys do
     entries := entries.push
-      { key := k, kind := "theorem", source := some { path := "Gen.lean", line := 1 },
-        views := #[("lean", ← content true), ("grammar", ← grammarContent)] }
-  return { entries }
+      (k, { decl := { kind := .theorem, name := k, source := some { path := "Gen.lean", line := 1 } },
+            statement := { views := #[("lean", ← content true), ("grammar", ← grammarContent)] },
+            verdict := {} })
+  return { producer := { tool := "gen", version := "0" }, entries }
 
 /-- The configuration of generated documents. -/
 def config : Config :=
@@ -114,7 +115,7 @@ def config : Config :=
         slots := some { macros := #["\\entry"], arg := 2, idArg := 1 } }] }
 
 /-- A document with a bundle. -/
-def docAndBundle : Gen (Array (String × String) × Bundle) := do
+def docAndBundle : Gen (Array (String × String) × Bundle (Image TeX) Verdict) := do
   return (← document, ← bundle)
 
 /-- Show a document for a failure report. -/
@@ -124,7 +125,7 @@ def showFiles (fs : Array (String × String)) : String :=
 /-! ## Running the splicer in memory -/
 
 /-- Apply a bundle to files held in memory. -/
-def applyFiles (fs : Array (String × String)) (b : Bundle) (o : ApplyOpts := {}) :
+def applyFiles (fs : Array (String × String)) (b : Bundle (Image TeX) Verdict) (o : ApplyOpts := {}) :
     Except String (Array (String × String)) := do
   let out := plan (Doc.ofFiles config fs) b o
   if hasErrors out.diags then
@@ -160,7 +161,7 @@ def skeleton (fs : Array (String × String)) : Except String (Array String) :=
     return applyEdits s edits
 
 /-- What `check` would report. -/
-def checkOutcome (fs : Array (String × String)) (b : Bundle) : Outcome :=
+def checkOutcome (fs : Array (String × String)) (b : Bundle (Image TeX) Verdict) : Outcome :=
   plan (Doc.ofFiles config fs) b {}
 
 /-- Run `f`, turning a thrown error into a property failure. -/
@@ -169,20 +170,20 @@ def prop {α : Type} (f : α → Except String Unit) : α → Except String Unit
 /-! ## The properties -/
 
 /-- Locality: `apply` changes nothing outside generated regions and `sum=`. -/
-def locality : Array (String × String) × Bundle → Except String Unit := fun (fs, b) => do
+def locality : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let after ← applyFiles fs b
   let s1 ← skeleton fs
   let s2 ← skeleton after
   expect (s1 == s2) s!"text outside the regions changed:{showFiles after}"
 
 /-- Idempotence: applying twice is applying once. -/
-def idempotence : Array (String × String) × Bundle → Except String Unit := fun (fs, b) => do
+def idempotence : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let once ← applyFiles fs b
   let twice ← applyFiles once b
   expect (once == twice) s!"the second apply changed the document:{showFiles twice}"
 
 /-- Fixed point: after `apply`, `check` finds nothing to do. -/
-def fixedPoint : Array (String × String) × Bundle → Except String Unit := fun (fs, b) => do
+def fixedPoint : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let once ← applyFiles fs b
   let o := checkOutcome once b
   expect (o.changes.isEmpty && !hasErrors o.diags)
@@ -190,7 +191,7 @@ def fixedPoint : Array (String × String) × Bundle → Except String Unit := fu
       {"\n".intercalate (o.diags.map (·.render)).toList}"
 
 /-- Slot preservation: a slot present before and after keeps its text. -/
-def slotPreservation : Array (String × String) × Bundle → Except String Unit := fun (fs, b) => do
+def slotPreservation : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let before ← itemsOf fs
   let after ← itemsOf (← applyFiles fs b)
   unless before.size == after.size do throw "apply changed the number of items"
@@ -206,7 +207,7 @@ def slotPreservation : Array (String × String) × Bundle → Except String Unit
 
 /-- Edit detection: a one-character edit in generated text, outside slots, is
 a hand edit; inside a slot it isn't. -/
-def editDetection : (Array (String × String) × Bundle) × Nat × Nat × Bool → Except String Unit :=
+def editDetection : (Array (String × String) × Bundle (Image TeX) Verdict) × Nat × Nat × Bool → Except String Unit :=
   fun ((fs, b), pick, offset, aimAtSlot) => do
     let once ← applyFiles fs b
     let items := (← itemsOf once).filter fun (_, _, it) =>
@@ -237,7 +238,7 @@ def editDetection : (Array (String × String) × Bundle) × Nat × Nat × Bool �
 
 /-- Normalisation: CRLF line endings and trailing whitespace don't change any
 verdict. -/
-def normalisation : (Array (String × String) × Bundle) × Nat → Except String Unit :=
+def normalisation : (Array (String × String) × Bundle (Image TeX) Verdict) × Nat → Except String Unit :=
   fun ((fs, b), seed) => do
     let once ← applyFiles fs b
     let messy := once.map fun (p, t) =>
@@ -251,7 +252,7 @@ def normalisation : (Array (String × String) × Bundle) × Nat → Except Strin
 
 /-- Strip: no markers remain, and every generated region survives with its
 slots unwrapped. -/
-def stripProp : Array (String × String) × Bundle → Except String Unit := fun (fs, b) => do
+def stripProp : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let once ← applyFiles fs b
   let stripped := stripDoc (Doc.ofFiles config once)
   for (p, t) in stripped do
@@ -289,7 +290,7 @@ def truncated : Gen String := do
 
 /-- All properties. -/
 def tests : TestM Unit := group "properties" do
-  let render := fun (x : Array (String × String) × Bundle) => showFiles x.1
+  let render := fun (x : Array (String × String) × Bundle (Image TeX) Verdict) => showFiles x.1
   forAll "splice/prop/locality" docAndBundle render locality
   forAll "splice/prop/idempotence" docAndBundle render idempotence
   forAll "splice/prop/fixed-point" docAndBundle render fixedPoint

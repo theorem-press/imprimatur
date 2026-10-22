@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Strip
+import Splice.Version
 
 /-!
 # The command line of `imprimatur-splice`
@@ -15,6 +16,8 @@ error.
 -/
 
 namespace Splice.Cli
+
+open Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
@@ -123,7 +126,8 @@ private def loadConfig (root : System.FilePath) (a : Args) : ExceptT String CliM
     | .ok c => return c
     | .error e => throw s!"{a.config.getD "imprimatur.toml"}: {e}"
 
-private def loadBundle (root : System.FilePath) (a : Args) : ExceptT String CliM Bundle := do
+private def loadBundle (root : System.FilePath) (a : Args) :
+    ExceptT String CliM (Bundle (Image TeX) Verdict) := do
   let some b := a.bundle | throw s!"{a.command} needs --bundle FILE"
   let file := root / b
   unless ← file.pathExists do throw s!"bundle {b} not found"

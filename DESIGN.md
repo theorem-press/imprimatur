@@ -582,6 +582,22 @@ For every entry, the extractor imports the environment at `private` level
 
 ## 8. The bundle (`imprimatur-bundle/1`)
 
+The bundle is a Lean type, `Bundle (Image TeX) Verdict` in
+`bundle/Bundle.lean`, and the file is its JSON: the extractor writes it
+with `Bundle.render` and the splicer reads it with `Bundle.parse`, and an
+extractor's bundle survives the round trip byte for byte. The module is
+copied into both packages (constraint 6 forbids a shared dependency) and
+into the paper's model, under the module name the extractor gives it;
+`lint/bundle-copies` keeps the copies equal. An entry is `Entry σ π`, what a
+key names, its statement as `σ` and the verdict on its proof as `π`; the
+file is at the statement's images (`Image`: the hashes and the views) and
+the verdict (`Verdict`: axioms, `sorry`, the cone), and the model of the
+splicer (§18.2) at bodies with their slots parsed and a bit. The module also
+says what makes a bundle true of an environment (`World`, `Image.Of`,
+`Bundle.True`), which is Theorem 1's hypothesis. A group's entry (a
+`latex_group` or `latex_display`) states what its members state: its hash
+and cone are theirs, united.
+
 ```json
 {
   "schema": "imprimatur-bundle/1",
@@ -968,7 +984,7 @@ imprimatur/
     Imprimatur/CustomViews.lean   @[latex_view]
     Imprimatur/Entry.lean         bundle entries, and the views run for each
     Imprimatur/Trust.lean         axioms, sorry, dependency cone, stmtHash, sigHash
-    Imprimatur/Export.lean        Requests.lean  Json.lean  TeX.lean  Sha256.lean  Version.lean
+    Imprimatur/Export.lean        Requests.lean  Bundle.lean  TeX.lean  Sha256.lean  Version.lean
     Imprimatur/Compat.lean        differences between toolchains
     Main.lean                     imprimatur-export (also the external-mode runner)
     test/                         unit tests and golden bundles of the fixtures

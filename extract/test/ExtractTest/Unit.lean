@@ -44,8 +44,8 @@ def testTokens : TestM Unit := group "tokens" do
 
 /-- The JSON writer and requests. -/
 def testJson : TestM Unit := group "json" do
-  let j : J := .obj #[("b", .num 1), ("a", .arr #[.str "x\"y", .bool true]), ("c", .obj #[])]
-  checkEq "extract/json/sorted" j.render "{\n  \"a\": [\"x\\\"y\", true],\n  \"b\": 1,\n  \"c\": {}\n}"
+  let j := Lean.Json.mkObj [("b", 1), ("a", .arr #[.str "x\"y", .bool true]), ("c", Lean.Json.mkObj [])]
+  checkEq "extract/json/sorted" (renderJson j) "{\n  \"a\": [\"x\\\"y\", true],\n  \"b\": 1,\n  \"c\": {}\n}"
   checkEq "extract/json/macros" (macrosOf "\\LeanConst{a} \\LeanBound{b} \\LeanConst{c} \\\\")
     #["\\LeanBound", "\\LeanConst"]
   match parseRequests "{\"schema\": \"imprimatur-requests/1\", \"config\": {\"imports\": [\"A.B\"],

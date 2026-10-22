@@ -139,7 +139,10 @@
 % ---------------------------------------------------------------------------
 % The grammar view (DESIGN 7.3): a production per inductive type, one row per
 % constructor, with the author-owned description in the last column.
-\newenvironment{LeanGrammar}{\[\begin{array}{@{}r@{\;}c@{\;}l@{\qquad}l@{}}}{\end{array}\]}
+% The descriptions, in text mode, wrap: the last column is a paragraph of
+% \leangrammarwidth.
+\newcommand\leangrammarwidth{.42\linewidth}
+\newenvironment{LeanGrammar}{\[\begin{array}{@{}r@{\;}c@{\;}l@{\qquad}>{\raggedright\arraybackslash}p{\leangrammarwidth}@{}}}{\end{array}\]}
 
 % Displays (the `clauses` and `grammar|display` views): rows of a formula and
 % its description, set in LeanDisplay as one paragraph per row. A long
@@ -189,12 +192,12 @@
   \setlength{\abovedisplayskip}{2pt}\setlength{\abovedisplayshortskip}{2pt}%
   \setlength{\belowdisplayskip}{2pt}\setlength{\belowdisplayshortskip}{2pt}}%
   {\par\nopagebreak\vspace{-.8ex}\noindent\imprimatur@ket\medskip\global\imprimatur@endpetrue\@endpetrue}
-\newcommand\LeanProduction[4]{#1 & ::= & #3 & \text{#4}\\}
-\newcommand\LeanAlternative[2]{ & \mid & #1 & \text{#2}\\}
+\newcommand\LeanProduction[4]{#1 & ::= & #3 & #4\\}
+\newcommand\LeanAlternative[2]{ & \mid & #1 & #2\\}
 % A structure: its name and description across the whole width, then its
 % fields.
 \newcommand\LeanStructure[2]{\multicolumn{4}{@{}p{\linewidth}@{}}{$#1$\quad #2}\\}
-\newcommand\LeanField[3]{ & & \mathit{#1} : #2 & \text{#3}\\}
+\newcommand\LeanField[3]{ & & \mathit{#1} : #2 & #3\\}
 
 % ---------------------------------------------------------------------------
 % Unicode that Lean prints, mapped to maths so that pdfLaTeX needs no special

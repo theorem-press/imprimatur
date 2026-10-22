@@ -64,15 +64,25 @@ def grammarView (c : ConstantInfo) : RenderM String := do
     | none => constTeX strip c.name
   let mut out : Array String := #["\\begin{LeanGrammar}"]
   if isStructure env c.name then
-    -- A structure without a category is headed by its type, in its notation.
-    let cat ← if (projectCategories env).any (·.1 == c.name) then pure cat else
-      forallTelescope c.type fun xs _ => do
-        return (← render (mkAppN (.const c.name (c.levelParams.map Level.param)) xs)).render 100000
-    out := out.push s!"\\LeanStructure\{{cat}}\{{TeX.markdown (doc.getD "")}}"
+    -- The header is the type in its notation, with its category's letter
+    -- when it has one (`i ∈ Image(τ)`).
+    let tyTeX ← forallTelescope c.type fun xs _ => do
+      return (← render (mkAppN (.const c.name (c.levelParams.map Level.param)) xs)).render 100000
+    let hasCat := (projectCategories env).any (·.1 == c.name)
+    let head := if hasCat then s!"{cat} \\in {tyTeX}" else tyTeX
+    out := out.push s!"\\LeanStructure\{{head}}\{{TeX.markdown (doc.getD "")}}"
+    let nparams := match c with | .inductInfo i => i.numParams | _ => 0
     for f in getStructureFields env c.name do
       let proj := c.name ++ f
       let some pci := env.find? proj | continue
-      let ty ← forallTelescope pci.type fun _ body => do return (← render body).render 100000
+      -- A field's type keeps its own binders (`kind : Key → Kind`): only the
+      -- structure's parameters and the `self` binder are opened, and `self`
+      -- is written as the category's letter.
+      let ty ← forallBoundedTelescope pci.type (some (nparams + 1)) fun xs body => do
+        let self := xs.back!
+        let lctx := (← getLCtx).setUserName self.fvarId! (if hasCat then Name.mkSimple cat else `self)
+        Meta.withLCtx lctx (← getLocalInstances) do
+          return (← render body).render 100000
       let fdoc ← findDocString? env proj
       out := out.push s!"\\LeanField\{{TeX.escape f.toString}}\{{ty}}\{{slot proj fdoc}}"
   else

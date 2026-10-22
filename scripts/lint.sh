@@ -11,4 +11,5 @@ python3 scripts/check-links.py || status=1
 python3 scripts/check-no-deps.py || status=1
 python3 scripts/check-traceability.py || status=1
 python3 scripts/check-bundles.py || status=1
+scripts/check-bundle-copies.sh || status=1
 exit $status

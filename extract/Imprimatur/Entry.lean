@@ -3,7 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean
-import Imprimatur.Json
+import Imprimatur.Bundle
 import Imprimatur.TeX
 import Imprimatur.Compat
 import Imprimatur.Requests
@@ -40,16 +40,16 @@ namespace Imprimatur
 open Lean Meta
 
 /-- The kind of a constant, as recorded in the bundle. -/
-def kindOf (env : Environment) (c : ConstantInfo) : String :=
+def kindOf (env : Environment) (c : ConstantInfo) : Kind :=
   match c with
-  | .thmInfo _ => "theorem"
-  | .axiomInfo _ => "axiom"
-  | .opaqueInfo _ => "opaque"
-  | .defnInfo _ => if isInstanceCore env c.name then "instance" else "definition"
-  | .inductInfo _ => if isStructure env c.name then "structure" else "inductive"
-  | .ctorInfo _ => "constructor"
-  | .recInfo _ => "recursor"
-  | .quotInfo _ => "quotient"
+  | .thmInfo _ => .theorem
+  | .axiomInfo _ => .axiom
+  | .opaqueInfo _ => .opaque
+  | .defnInfo _ => if isInstanceCore env c.name then .instance else .definition
+  | .inductInfo _ => if isStructure env c.name then .structure else .inductive
+  | .ctorInfo _ => .constructor
+  | .recInfo _ => .recursor
+  | .quotInfo _ => .quotient
 
 /-- The source file of a constant, relative to `root`, and its line. A file
 outside `root` is named by its module (`A/B.lean`), so the bundle never holds
@@ -176,18 +176,14 @@ def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array S
   let r ← guarded (act ctx)
   return (r, ← problems.get)
 
-/-- The `validation` field of an entry: each view's problems, if any. -/
-def validationField (vs : Array (String × Array String)) : Array (String × J) :=
-  let vs := vs.filter (!·.2.isEmpty)
-  if vs.isEmpty then #[] else #[("validation", .obj (vs.map fun (v, ps) => (v, .arr (ps.map .str))))]
-
-/-- The entry for a `latex_group`: a key that names a group of rules, not a
-declaration. Only the `rules` view applies. -/
+/-- The entry for a title: a `latex_group` of rules or a `latex_display`,
+which names several declarations. It states what they state: its hash and
+cone are theirs, united. -/
 def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Ref (Array String))
     (extra : Array (String × String) := #[]) (root : System.FilePath := ".")
-    (disp : Option (Array Name) := none) : MetaM J := do
-  let mut views : Array (String × J) := #[]
-  let mut errors : Array (String × J) := #[]
+    (disp : Option (Array Name) := none) : MetaM (Entry (Image TeX) Verdict) := do
+  let mut views : Array (String × String) := #[]
+  let mut errors : Array (String × String) := #[]
   let mut validation : Array (String × Array String) := #[]
   for v in r.views do
     let spec := parseViewSpec v
@@ -198,47 +194,70 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       let (res, ps) ← run (Views.runIndexView spec.base (sourceOf root) axiomsOf spec.opts).run
       validation := validation.push (v, ps)
       match res with
-      | .ok t => views := views.push (v, .str t)
-      | .error msg => errors := errors.push (v, .str msg)
+      | .ok t => views := views.push (v, t)
+      | .error msg => errors := errors.push (v, msg)
     else if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == spec.base) then
       let (res, ps) ← run (runCustomView fn r.key none spec.opts).run
       validation := validation.push (v, ps)
       match res with
-      | .ok t => views := views.push (v, .str t)
-      | .error msg => errors := errors.push (v, .str msg)
+      | .ok t => views := views.push (v, t)
+      | .error msg => errors := errors.push (v, msg)
     else if let (some ds, "clauses") := (disp, spec.base) then
       -- A display of definitions (`latex_display`).
       let (res, ps) ← run (Views.clausesView ds).run
       validation := validation.push (v, ps)
       match res with
-      | .ok t => views := views.push (v, .str t)
-      | .error msg => errors := errors.push (v, .str msg)
+      | .ok t => views := views.push (v, t)
+      | .error msg => errors := errors.push (v, msg)
     else if let (some ds, "grammar") := (disp, spec.base) then
       -- A display of grammars (`latex_display`, `grammar|display`).
       let (res, ps) ← run (Views.displayGrammarView ds).run
       validation := validation.push (v, ps)
       match res with
-      | .ok t => views := views.push (v, .str t)
-      | .error msg => errors := errors.push (v, .str msg)
+      | .ok t => views := views.push (v, t)
+      | .error msg => errors := errors.push (v, msg)
     else if let (some g, "rules") := (g, spec.base) then
       let ctors := Views.selectCtors g.ctors (spec.opt "include") (spec.opt "exclude")
       let (res, ps) ← run (Views.rulesView ctors).run
       validation := validation.push (v, ps)
       match res with
-      | .ok t => views := views.push (v, .str t)
-      | .error msg => errors := errors.push (v, .str msg)
-    else errors := errors.push (v, .str s!"{r.key} names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not {v}")
-  let allTeX := String.join (views.toList.map fun (_, j) => match j with | .str t => t | _ => "")
-  let mut fields : Array (String × J) := #[
-    ("kind", .str "group"), ("decl", .str r.key), ("axioms", .arr #[]), ("sorry", .bool false),
-    ("macros", .arr ((macrosOf allTeX).map .str)), ("views", .obj views)]
-  unless errors.isEmpty do fields := fields.push ("errors", .obj errors)
-  fields := fields ++ validationField validation
-  return .obj fields
+      | .ok t => views := views.push (v, t)
+      | .error msg => errors := errors.push (v, msg)
+    else errors := errors.push (v, s!"{r.key} names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not {v}")
+  let allTeX := String.join (views.toList.map (·.2))
+  -- The group's statement is its members': their types, with their cones
+  -- united, hashed together; its verdict, theirs together.
+  let env ← getEnv
+  let members : Array Name := ((g.map (·.ctors)).getD (disp.getD #[]))
+  let cis := members.filterMap env.find?
+  let mut cone : Trust.Cone := { members := #[], issues := #[] }
+  let mut coneOk := true
+  let mut axioms : Array Name := #[]
+  for ci in cis do
+    match ← guarded (Trust.cone s.trustedPrefixes ci) with
+    | .ok k => cone := cone.union k
+    | .error msg =>
+      coneOk := false
+      if errors.all (·.1 != "cone") then errors := errors.push ("cone", msg)
+    if let .ok ax ← guarded (axiomsOf ci.name) then
+      axioms := axioms ++ ax.filter (!axioms.contains ·)
+  let untrusted := cone.issues.map (·.1.toString) |>.foldl (fun a n => if a.contains n then a else a.push n) #[]
+  return {
+    decl := { kind := .group, name := r.key },
+    statement := {
+      stmtHash := if coneOk && !cis.isEmpty then some (Trust.sha (Trust.groupStmtText cis cone)) else none,
+      views, errors, validation, macros := macrosOf allTeX },
+    verdict := {
+      axioms := axioms.map (·.toString), usesSorry := axioms.contains ``sorryAx,
+      cone := if cis.isEmpty then none else some {
+        size := cone.members.size, untrusted,
+        reasons := untrusted.map fun n =>
+          (n, (cone.issues.filter (·.1.toString == n)).map (·.2.name)) } } }
 
-/-- The entry for a constant, as JSON. -/
+/-- The entry for a constant. -/
 def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : ConstantInfo)
-    (used : IO.Ref (Array String)) (extra : Array (String × String) := #[]) : MetaM J := do
+    (used : IO.Ref (Array String)) (extra : Array (String × String) := #[]) :
+    MetaM (Entry (Image TeX) Verdict) := do
   let env ← getEnv
   -- IMPRIMATUR_TRACE=1 reports each stage, for finding what is slow.
   let trace ← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)
@@ -252,17 +271,17 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
   stage "axioms"
   let usesSorry := axioms.contains ``sorryAx
   let src ← sourceOf root c.name
-  let mut views : Array (String × J) := #[]
-  let mut errors : Array (String × J) := #[]
+  let mut views : Array (String × String) := #[]
+  let mut errors : Array (String × String) := #[]
   let mut validation : Array (String × Array String) := #[]
   let wanted := (knownViews.toArray ++ r.views).foldl (fun a v => if a.contains v then a else a.push v) #[]
   for v in wanted do
     match v with
     | "lean" =>
       match ← guarded (Views.leanView c s.stripNamespaces s.width) with
-      | .ok v => views := views.push ("lean", .str v); stage "lean view"
-      | .error msg => errors := errors.push ("lean", .str msg)
-    | "meta" => views := views.push ("meta", .str (metaView axioms usesSorry doc))
+      | .ok v => views := views.push ("lean", v); stage "lean view"
+      | .error msg => errors := errors.push ("lean", msg)
+    | "meta" => views := views.push ("meta", (metaView axioms usesSorry doc))
     | other =>
       -- `math`, `prose` and `rules`, with a notation variant (`math:named`,
       -- DESIGN §7.5) and options (`rules|include=App,Lam`, DESIGN §9.1).
@@ -275,36 +294,36 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
         let (res, ps) ← run (runCustomView fn r.key (some c) spec.opts).run
         validation := validation.push (other, ps)
         match res with
-        | .ok v => views := views.push (other, .str v)
-        | .error msg => errors := errors.push (other, .str msg)
+        | .ok v => views := views.push (other, v)
+        | .error msg => errors := errors.push (other, msg)
       else if base == "rules" then
         let ctors := match c with
           | .inductInfo i => i.ctors.toArray
           | .ctorInfo _ => #[c.name]
           | _ => #[]
         if ctors.isEmpty then
-          errors := errors.push (other, .str s!"the rules view needs an inductive predicate or a constructor")
+          errors := errors.push (other, s!"the rules view needs an inductive predicate or a constructor")
         else
           let ctors := Views.selectCtors ctors (spec.opt "include") (spec.opt "exclude")
           let (res, ps) ← run (Views.rulesView ctors).run
           validation := validation.push (other, ps)
           match res with
-          | .ok v => views := views.push (other, .str v)
-          | .error msg => errors := errors.push (other, .str msg)
+          | .ok v => views := views.push (other, v)
+          | .error msg => errors := errors.push (other, msg)
       else if base == "clauses" || (base == "grammar" && spec.opts.any (·.1 == "display")) then
         -- One definition, or one type, in display form.
         let act := if base == "clauses" then Views.clausesView #[c.name] else Views.displayGrammarView #[c.name]
         let (res, ps) ← run act.run
         validation := validation.push (other, ps)
         match res with
-        | .ok v => views := views.push (other, .str v)
-        | .error msg => errors := errors.push (other, .str msg)
+        | .ok v => views := views.push (other, v)
+        | .error msg => errors := errors.push (other, msg)
       else if base == "grammar" then
         let (res, ps) ← run (Views.grammarView c).run
         validation := validation.push (other, ps)
         match res with
-        | .ok v => views := views.push (other, .str v)
-        | .error msg => errors := errors.push (other, .str msg)
+        | .ok v => views := views.push (other, v)
+        | .error msg => errors := errors.push (other, msg)
       else if base == "math" || base == "prose" then
         let act : Render.Ctx → MetaM String :=
           if base == "math" then (Views.mathViewWith c s.width spec.opts).run
@@ -312,46 +331,35 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
         let (res, ps) ← run act
         validation := validation.push (other, ps)
         match res with
-        | .ok v => views := views.push (other, .str v)
-        | .error msg => errors := errors.push (other, .str msg)
+        | .ok v => views := views.push (other, v)
+        | .error msg => errors := errors.push (other, msg)
       else
-        errors := errors.push (other, .str s!"the {other} view is not implemented yet")
-  let allTeX := String.join (views.toList.map fun (_, j) => match j with | .str t => t | _ => "")
+        errors := errors.push (other, s!"the {other} view is not implemented yet")
+  let allTeX := String.join (views.toList.map (·.2))
   stage "views"
   -- The dependency cone and the hashes (DESIGN §7.7).
   let coneR ← guarded (Trust.cone s.trustedPrefixes c)
   stage "cone"
-  if let .error msg := coneR then errors := errors.push ("cone", .str msg)
+  if let .error msg := coneR then errors := errors.push ("cone", msg)
   let cone : Trust.Cone := match coneR with
     | .ok k => k
     | .error _ => { members := #[], issues := #[] }
-  let stmtHash := Trust.sha (Trust.stmtText c cone)
-  let leanText := match views.find? (·.1 == "lean") with
-    | some (_, .str t) => t
-    | _ => ""
-  let sigHash := Trust.sha leanText
+  let leanText := ((views.find? (·.1 == "lean")).map (·.2)).getD ""
   let untrusted := cone.issues.map (·.1.toString) |>.foldl (fun a n => if a.contains n then a else a.push n) #[]
-  let mut fields : Array (String × J) := #[
-    ("kind", .str (kindOf env c)),
-    ("decl", .str c.name.toString),
-    ("axioms", .arr (axioms.map (.str ·.toString))),
-    ("sorry", .bool usesSorry),
-    ("macros", .arr ((macrosOf allTeX).map .str)),
-    ("views", .obj views),
-    ("sigHash", .str sigHash),
-    ("cone", .obj #[
-      ("size", .num cone.members.size),
-      ("untrusted", .arr (untrusted.map .str)),
-      ("reasons", .obj (untrusted.map fun n =>
-        (n, .arr ((cone.issues.filter (·.1.toString == n)).map (.str ·.2.name)))))])]
-  -- Without a complete cone there is no statement hash: `\leancheck` then
-  -- reports `no-hash` rather than comparing against a partial one.
-  if coneR matches .ok _ then fields := fields.push ("stmtHash", .str stmtHash)
-  if let some d := doc then fields := fields.push ("doc", .str d)
-  if let some (path, line) := src then
-    fields := fields.push ("source", .obj #[("path", .str path), ("line", .num line)])
-  unless errors.isEmpty do fields := fields.push ("errors", .obj errors)
-  fields := fields ++ validationField validation
-  return .obj fields
+  return {
+    decl := { kind := kindOf env c, name := c.name.toString, doc,
+              source := src.map fun (path, line) => { path, line } },
+    statement := {
+      -- Without a complete cone there is no statement hash: `\leancheck` then
+      -- reports `no-hash` rather than comparing against a partial one.
+      stmtHash := if coneR matches .ok _ then some (Trust.sha (Trust.stmtText c cone)) else none,
+      sigHash := some (Trust.sha leanText),
+      views, errors, validation, macros := macrosOf allTeX },
+    verdict := {
+      axioms := axioms.map (·.toString), usesSorry,
+      cone := some {
+        size := cone.members.size, untrusted,
+        reasons := untrusted.map fun n =>
+          (n, (cone.issues.filter (·.1.toString == n)).map (·.2.name)) } } }
 
 end Imprimatur

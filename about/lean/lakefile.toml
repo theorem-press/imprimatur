@@ -1,17 +1,16 @@
 # A model of imprimatur's splicer, with its laws and the soundness of
-# `imprimatur check` proved (DESIGN §18.2). It knows nothing of imprimatur:
-# the paper in ../ reads it in external mode.
+# `imprimatur check` proved (DESIGN §18.2). The paper in ../ reads it in
+# external mode.
 name = "splice-model"
-defaultTargets = ["SpliceModel", "BundleTypes"]
+defaultTargets = ["SpliceModel"]
 
 [[lean_lib]]
 name = "SpliceModel"
 
-# The splicer's own types for a bundle, which the paper shows (Section 3).
-# The splicer uses only Lean's standard library, so requiring it is cheap.
+# The bundle's type, which the model is built on: a copy of
+# bundle/Bundle.lean under the module name the extractor gives it,
+# `Imprimatur.Bundle`, so that the extractor and the model share it when
+# the paper is built (lint/bundle-copies keeps the copies equal).
 [[lean_lib]]
-name = "BundleTypes"
-
-[[require]]
-name = "imprimatur-splice"
-path = "../../splice"
+name = "Imprimatur"
+roots = ["Imprimatur.Bundle"]

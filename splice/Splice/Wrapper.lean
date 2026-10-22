@@ -27,7 +27,7 @@ Requests and the bundle go in `.imprimatur/` next to `imprimatur.toml`.
 
 namespace Splice.Wrapper
 
-open Cli
+open Cli Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
@@ -194,18 +194,18 @@ def «show» (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × 
     let some e := bundle.find? key | return (1, s!"{key}: no declaration or group with this name\n")
     let mut out := warnings
     let mut problems := 0
-    for (view, tex) in e.views.filter (wanted.contains ·.1) do
+    for (view, tex) in e.statement.views.filter (wanted.contains ·.1) do
       out := out ++ s!"== {key} ({view})\n{tex}\n"
-      for p in ((e.validation.find? (·.1 == view)).map (·.2)).getD #[] do
+      for p in e.statement.problems view do
         problems := problems + 1
         out := out ++ s!"  {if p.startsWith "category: " then "error" else "warning"}: {p}\n"
-    for (view, err) in e.errors do
+    for (view, err) in e.statement.errors do
       problems := problems + 1
       out := out ++ s!"== {key} ({view})\n  error: {err}\n"
-    unless e.axioms.isEmpty do out := out ++ s!"axioms: {", ".intercalate e.axioms.toList}\n"
-    if e.usesSorry then out := out ++ "uses sorry\n"
-    let n := (e.views.filter (wanted.contains ·.1)).size
-    return (if e.errors.isEmpty then 0 else 1,
+    unless e.verdict.axioms.isEmpty do out := out ++ s!"axioms: {", ".intercalate e.verdict.axioms.toList}\n"
+    if e.verdict.usesSorry then out := out ++ "uses sorry\n"
+    let n := (e.statement.views.filter (wanted.contains ·.1)).size
+    return (if e.statement.errors.isEmpty then 0 else 1,
       out ++ s!"show: {n} view{if n == 1 then "" else "s"}, {problems} problem{if problems == 1 then "" else "s"}\n")
 
 /-- Run `imprimatur` with arguments `args` in directory `root`. -/

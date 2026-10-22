@@ -152,10 +152,7 @@ done
 # makes, `check` must report nothing at all (warnings included: every formula
 # reads back), and it must typeset.
 echo "== e2e/about"
-# The copy sits beside a link to splice/, which its Lean project requires
-# (../../splice), as about/ sits beside splice/ in the repository.
-rm -rf e2e-out/about; mkdir -p e2e-out/about; ln -s "$ROOT/splice" e2e-out/about/splice
-work="e2e-out/about/about"; mkdir -p "$work"
+work="e2e-out/about"; rm -rf "$work"; mkdir -p "$work"
 (cd about && tar --exclude=.lake --exclude=.imprimatur --exclude='*.pdf' --exclude='*.aux' \
   --exclude='*.log' --exclude='*.fls' --exclude='*.fdb_latexmk' -cf - .) | (cd "$work" && tar -xf -)
 if ! (cd "$work/lean" && lake build -q > ../lake.log 2>&1); then

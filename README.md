@@ -68,6 +68,48 @@ A key can also be a title the paper uses, mapped to the Lean name in the
 notation module (`latex_entry "Preservation" => Stlc.preservation`), as
 [examples/semantics](examples/semantics/paper.tex) does.
 
+### What the block rests on
+
+Between the Lean development and the paper there is one file, the *bundle*,
+which `imprimatur build` writes and the splicer reads. Its entry for the
+theorem above is, abridged:
+
+```json
+"Stlc.preservation": {
+  "kind": "theorem",
+  "stmtHash": "a89b1dbd…",
+  "sigHash":  "dd711a64…",
+  "views": { "prose": "\\LeanProse{Let $e, e' \\in \\mathit{Term}$ …}", "math": "…" },
+  "sorry": false, "axioms": [], "cone": { "size": 16, "untrusted": [] }
+}
+```
+
+It says nothing about the *proof* of preservation, and cannot: the splicer
+never sees Lean. It carries two images of the *statement*, a hash that
+names its meaning and TeX that shows it, and a verdict on the proof. That
+is the whole interface, and it is a Lean type, `Bundle (Image TeX) Verdict`
+in [bundle/Bundle.lean](bundle/Bundle.lean), of which the file is the JSON.
+
+The type comes with its meaning. A bundle is *true* of a development when
+every claim it makes holds of the statement it is about: the hash is that
+statement's, each view is that statement rendered, and a view with no
+recorded problems reads back as it. A bundle may say less than Lean knows,
+a view it could not render, a hash it could not compute, never something
+false; where it is silent, `check` reports the silence.
+
+That is enough for one theorem, proved in Lean for a model of the splicer
+([about/](about/)):
+
+> **If `imprimatur check` reports nothing, and the bundle is true, then the
+> paper is true:** every displayed formula is a statement Lean proved,
+> rendered by the paper's notation, and reads back as that statement; and
+> every `\leancheck` names, by its hash, a statement Lean proved.
+
+The theorem's hypothesis is the trust boundary, stated once: the extractor
+is honest about the development, and SHA-256 does not collide. Everything
+after that, generation, hand edits, staleness, slot text, drift, is covered
+by the proof.
+
 ## What it does
 
 - **Views:** a declaration as Lean prints it (`lean`), as a formula

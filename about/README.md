@@ -6,9 +6,10 @@ idempotence, the fixed point, slot preservation) and Theorem 1, what a
 successful `imprimatur check` guarantees. They are proved in `lean/`, a
 model of the splicer in which a document is already parsed into pieces.
 
-Section 3 shows the bundle, the JSON that passes from the extractor to the
-splicer, by the splicer's own types for it (`splice/Splice/Bundle.lean`),
-which `lean/` requires as a package.
+The model is built on the bundle's type, `bundle/Bundle.lean`, of which the
+JSON that passes from the extractor to the splicer is the file; `lean/` holds
+a copy of it, under the extractor's module name, which the lint keeps equal
+to the source.
 
 Every definition and theorem displayed in the paper is generated from
 `lean/`; every hand-written claim about it carries a `\leancheck`. The

@@ -24,6 +24,8 @@ writes its outputs, and `check` reports them without writing (§10.3).
 
 namespace Splice
 
+open Imprimatur
+
 /-- Options of `apply`, `check` and `migrate-slots`. -/
 structure ApplyOpts where
   /-- Keys whose hand-edited blocks may be overwritten. -/
@@ -71,10 +73,11 @@ def texEscape (s : String) : String :=
     | c => c.toString) ""
 
 /-- The text of a `\leanref` (DESIGN §11). -/
-def renderRef (links : SourceLinks) (commit : Option String) (e : Entry) : Except String String :=
-  match links, e.source with
+def renderRef (links : SourceLinks) (commit : Option String) (key : String)
+    (e : Entry (Image TeX) Verdict) : Except String String :=
+  match links, e.decl.source with
   | .none, _ => .ok ""
-  | _, none => .error s!"the bundle has no source location for {e.key}"
+  | _, none => .error s!"the bundle has no source location for {key}"
   | .relative, some src => .ok s!"{texEscape src.path}:{src.line}"
   | .url tmpl, some src => do
     let needsCommit := (tmpl.splitOn "{commit}").length > 1
@@ -188,7 +191,7 @@ def blockLabels (doc : Doc) : Array (Nat × Nat × String) := Id.run do
   return out
 
 /-- Work out what applying `bundle` to `doc` would do. -/
-def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
+def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome := Id.run do
   let cfg := doc.cfg
   let labels := blockLabels doc
   let mut out : Outcome := { diags := doc.diags }
@@ -211,10 +214,10 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
       let spec := itemSlots cfg it
       let view := itemView cfg it
       let generated : Except String String :=
-        if it.kind == .ref then renderRef o.links o.commit e
-        else match e.view? view with
+        if it.kind == .ref then renderRef o.links o.commit it.key e
+        else match e.statement.view? view with
           | some t => .ok t
-          | none => .error <| match e.error? view with
+          | none => .error <| match e.statement.error? view with
             | some why => s!"the {view} view of {it.key} failed to render: {why}"
             | none => s!"the bundle has no {view} view for {it.key}"
       if let .error msg := generated then
@@ -234,7 +237,7 @@ def plan (doc : Doc) (bundle : Bundle) (o : ApplyOpts) : Outcome := Id.run do
         | none => new
       -- The `meta` view leaves its source location to the profile (DESIGN §11).
       let new ← if (new.splitOn metaSourceMarker).length > 1 then
-          match renderRef o.links o.commit e with
+          match renderRef o.links o.commit it.key e with
           | .ok ref => pure (new.replace metaSourceMarker ("\\leanmetasource{" ++ ref ++ "}"))
           | .error msg =>
             out := { out with diags := out.diags.push (Diag.err "bad-ref" loc msg) }

@@ -10,7 +10,7 @@ import SpliceTest.Golden
 # Unit tests of the splicer
 -/
 
-open Testkit Splice
+open Testkit Splice Imprimatur
 
 namespace SpliceTest.Unit
 
@@ -96,13 +96,21 @@ def testBundle : TestM Unit := group "bundle" do
   | .error e => fail "splice/bundle/parses" e
   | .ok bundle =>
     pass
-    checkEq "splice/bundle/sorted" (bundle.entries.map (·.key)) #["A", "B"]
+    checkEq "splice/bundle/sorted" (bundle.entries.map (·.1)) #["A", "B"]
     let a := bundle.find? "A"
-    checkEq "splice/bundle/view" (a.bind (·.view? "lean")) (some "a")
-    checkEq "splice/bundle/error" (a.bind (·.error? "math")) (some "why")
-    checkEq "splice/bundle/source" (a.bind (·.source)) (some { path := "A.lean", line := 3 })
-    checkEq "splice/bundle/cone" (a.map (·.untrusted)) (some #["X"])
-    checkEq "splice/bundle/sorry" ((bundle.find? "B").map (·.usesSorry)) (some true)
+    checkEq "splice/bundle/view" (a.bind (·.statement.view? "lean")) (some "a")
+    checkEq "splice/bundle/error" (a.bind (·.statement.error? "math")) (some "why")
+    checkEq "splice/bundle/source" (a.bind (·.decl.source)) (some { path := "A.lean", line := 3 })
+    checkEq "splice/bundle/cone" ((a.bind (·.verdict.cone)).map (·.untrusted)) (some #["X"])
+    checkEq "splice/bundle/sorry" ((bundle.find? "B").map (·.verdict.usesSorry)) (some true)
+  -- The file is the JSON of the type: a bundle the extractor wrote, read and
+  -- written back, is the same byte for byte.
+  let golden := "../../extract/test/golden/Semantics.bundle.json"
+  let text ← IO.FS.readFile golden
+  match Bundle.parse text with
+  | .error e => fail "splice/bundle/round-trip" e
+  | .ok b =>
+    check "splice/bundle/round-trip" (b.render == text) s!"{golden} does not survive parse and render"
   checkError "splice/bundle/schema-version"
     (Bundle.parse "{\"schema\": \"imprimatur-bundle/9\", \"producer\": {}, \"entries\": {}}") "not one"
   checkError "splice/bundle/absolute-path"

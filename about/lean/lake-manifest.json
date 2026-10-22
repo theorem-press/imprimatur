@@ -1,14 +1,6 @@
 {"version": "1.3.0",
  "packagesDir": ".lake/packages",
- "packages":
- [{"type": "path",
-   "scope": "",
-   "name": "«imprimatur-splice»",
-   "manifestFile": "lake-manifest.json",
-   "inherited": false,
-   "dir": "../../splice",
-   "copy": false,
-   "configFile": "lakefile.toml"}],
+ "packages": [],
  "name": "«splice-model»",
  "lakeDir": ".lake",
  "fixedToolchain": false}
