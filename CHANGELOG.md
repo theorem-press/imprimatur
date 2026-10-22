@@ -14,7 +14,9 @@ All notable changes to imprimatur are recorded here. Versions follow
   splicer is built on it, and proves that a document which checks clean
   against a true bundle is true: every block shows a statement Lean proved,
   rendered, and reads back as it; every `\leancheck` names one by its hash.
-  The about paper presents this. A group's or display's entry now has a
+  The about paper presents this, in the PACMPL format, with a running
+  example: a small simply typed λ-calculus, shown as the paper's reader
+  sees it, as its bundle entry, as its world, and under three edits. A group's or display's entry now has a
   statement hash and a cone, from its members, so `\leancheck{Title}`
   works.
 - Fixed: an alias's template no longer rewrites `{key}`, `{label}` or

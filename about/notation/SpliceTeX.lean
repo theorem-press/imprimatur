@@ -1,4 +1,5 @@
 import SpliceModel
+import Stlc
 import Imprimatur
 
 /-! # How the paper writes the model of the splicer

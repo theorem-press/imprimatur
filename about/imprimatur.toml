@@ -2,9 +2,9 @@ schema = 1
 main = "imprimatur-paper.tex"
 lean_project = "lean"
 mode = "external"
-imports = ["SpliceModel"]
-notation = ["notation/SpliceTeX.lean"]
-strip_namespaces = ["SpliceModel"]
+imports = ["SpliceModel", "Stlc"]
+notation = ["notation/SpliceTeX.lean", "notation/StlcTeX.lean"]
+strip_namespaces = ["SpliceModel", "Stlc"]
 
 [aliases]
 # The paper's own environments, each with the view it shows.
@@ -12,6 +12,7 @@ leangrammar = { view = "grammar|display", wrap = "LeanDisplayBox", label = "gram
 leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
 leanrules   = { view = "rules" }
 leandef     = { view = "clauses", wrap = "LeanDisplayBox" }
+leansource  = { view = "lean" }
 # Appendix A: the metavariables, and the notation the paper uses.
 leanconventions = { view = "conventions" }
 leannotation    = { view = "vocabulary|scope=all" }

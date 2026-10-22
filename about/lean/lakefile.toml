@@ -2,7 +2,7 @@
 # `imprimatur check` proved (DESIGN §18.2). The paper in ../ reads it in
 # external mode.
 name = "splice-model"
-defaultTargets = ["SpliceModel"]
+defaultTargets = ["SpliceModel", "Stlc"]
 
 [[lean_lib]]
 name = "SpliceModel"
@@ -14,3 +14,7 @@ name = "SpliceModel"
 [[lean_lib]]
 name = "Imprimatur"
 roots = ["Imprimatur.Bundle"]
+
+# The paper's example, a small simply typed λ-calculus (Section 1).
+[[lean_lib]]
+name = "Stlc"

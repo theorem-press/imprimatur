@@ -7,6 +7,7 @@
 \leanblockalias{leantheorem}{theorem}
 \leanblockalias{leanrules}{}
 \leanblockalias{leandef}{LeanDisplayBox}
+\leanblockalias{leansource}{}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 
@@ -34,7 +35,7 @@ against it.
 
 \maketitle
 
-\section{Introduction}
+\section{Introduction}\label{sec:intro}
 
 A paper and its Lean development drift apart. A theorem is weakened in Lean
 and not in the paper; a definition gains a case; a lemma the paper cites is
@@ -70,6 +71,64 @@ the renderings in the bundle. The attested prose needs the hashes, and we
 say why. A second theorem, about the notation, says that a rendering can be
 read back as the statement it came from; imprimatur checks it for each
 formula it renders (Section~\ref{sec:faithful}).
+
+\paragraph{A running example.} The development is a simply typed
+$\lambda$-calculus with de Bruijn variables, its values, and small-step
+reduction, whose substitution is a stand-in that we will replace. Its terms,
+its reduction relation and one theorem about it, as a reader of this paper
+sees them:
+
+\begin{leangrammar}[sum=GYQkvbUOd0]{Stlc.Tm}{Terms}
+\label{gram:Stlc.Tm}\begin{LeanDisplay}
+\LeanCategory{M \in \mathit{Term}}{\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\
+\LeanEntry{x_{i}}{\leanslot{Stlc.Tm.var}{a variable}}\\
+\LeanEntry{\lambda{:}A.\, M}{\leanslot{Stlc.Tm.lam}{an abstraction}}\\
+\LeanEntry{M_{1}\; M_{2}}{\leanslot{Stlc.Tm.app}{an application}}\\
+\LeanEntry{()}{\leanslot{Stlc.Tm.unit}{the unit value}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+\begin{leanrules}[sum=5cW2xFjnlQ]{Stlc.Step}{Reduction}
+\begin{mathpar}
+
+\inferrule[(Beta)]
+  { }
+  { (\lambda{:}A.\, M)\; V \longrightarrow M[V] }
+
+\and
+
+\inferrule[(App-Left)]
+  {
+    M_{1} \longrightarrow M_{1}'
+  }
+  { M_{1}\; M_{2} \longrightarrow M_{1}'\; M_{2} }
+
+\and
+
+\inferrule[(App-Right)]
+  {
+    M_{2} \longrightarrow M_{2}'
+  }
+  { V\; M_{2} \longrightarrow V\; M_{2}' }
+
+\end{mathpar}
+\end{leanrules}
+
+\begin{leantheorem}[sum=8gdE1ntMBs]{Values are final}{Values are final}
+\label{thm:Values-are-final}
+\LeanProse{Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
+\end{leantheorem}
+
+The theorem came from this Lean, shown by the \texttt{lean} view:
+
+\begin{leansource}[sum=zIy9s_XPen]{Stlc.values_final}{The source}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{values\_final} \{\LeanBound{v} \LeanBound{e} : \LeanConst{Tm}\} (\LeanBound{hv} : \LeanConst{IsValue} \LeanBound{v}) : ¬\LeanConst{Step} \LeanBound{v} \LeanBound{e}}
+\end{leansource}
+
+All four blocks are generated, and are the example's thread through the
+paper: what the bundle says of the theorem, what that means, what the
+paper claims, and what happens when the development changes.
 
 \section{The bundle}\label{sec:bundle}
 
@@ -121,8 +180,27 @@ on what.
 The file is the JSON of $\texttt{Bundle}(\texttt{Image}(\mathit{TeX}),
 \texttt{Verdict})$, a map from keys to entries; it is written and read by
 the one module that defines these types, and an extractor's bundle survives
-the round trip byte for byte. The model's bundle is the same type at the
-model's parameters:
+the round trip byte for byte. The entry for \emph{Values are final} is,
+abridged, the one display of this paper that is not generated:\footnote{It
+is data, not a Lean statement; the bundle it is taken from is the one this
+paper was built with.}
+
+\begin{footnotesize}
+\begin{verbatim}
+"Values are final": {
+  "kind": "theorem", "decl": "Stlc.values_final",
+  "source": { "path": "Stlc.lean", "line": 54 },
+  "stmtHash": "4ad202811bf6...", "sigHash": "2d5428d0311d...",
+  "views": { "prose": "\LeanProse{Let $V, M \in \mathit{Term}$.
+                        Then $\neg (V \longrightarrow M)$.}",
+             "lean": "...", "meta": "..." },
+  "axioms": [], "sorry": false, "cone": { "size": 16, "untrusted": [] }
+}
+\end{verbatim}
+\end{footnotesize}
+
+The proof is absent, and the statement appears twice: as a hash, and as
+\TeX{}. The model's bundle is the same type at the model's parameters:
 
 \begin{leandef}[sum=w7ghbqB2ku]{SpliceModel.Bundle}{The model's bundle}
 \begin{LeanDisplay}
@@ -144,10 +222,19 @@ independently, and the four cases have four readings:
 \end{tabular}
 \end{center}
 
-The lower-left case is the one a reader cannot see. Replace a stand-in
-substitution with the real one, and no theorem about reduction changes a
-character, in Lean or in the paper; their meaning does, and their statement
-hashes with it. For a theorem the meaning is its proposition under the
+The lower-left case is the one a reader cannot see. The example's
+substitution is a stand-in:
+
+\begin{leandef}[sum=dLUGSgMoci]{Stlc.subst}{Substitution}
+\begin{LeanDisplay}
+\LeanClause{M[M'] \;\deq\; M}{\leanslot{Stlc.subst}{Substitution, as a stand-in: the body is returned unchanged}}
+\end{LeanDisplay}
+\end{leandef}
+
+Replace it with the real one, and no theorem about reduction changes a
+character, in Lean or in the paper; their meaning does, since (Beta) uses
+substitution, and their statement hashes with it (Section~\ref{sec:check}
+does this). For a theorem the meaning is its proposition under the
 definitions it mentions; for a definition, its own equations, so a
 definition is in its own cone. A title, a group of rules or a display of
 definitions, states what its members state, and is hashed as they are.
@@ -173,6 +260,18 @@ notation makes invisible (Section~\ref{sec:faithful}).
 \LeanEntry{\mathit{Reads} : \tau \to \mathit{Stmt}_{W} \to \mathrm{Prop}}{\leanslot{Imprimatur.World.Reads}{when a rendering reads back as a statement}}
 \end{LeanDisplay}
 \end{leangrammar}
+
+For the example, $\mathit{stmt}_{W}$ at the key of \emph{Values are
+final} is the proposition $\neg (V \longrightarrow M)$ under its binders;
+$\mathit{kind}_{W}$ says theorem; $\mathit{trusted}_{W}$ is true;
+$\mathit{hash}_{W}$ of the proposition covers $\mathit{Step}$,
+$\mathit{Val}$ and $\mathit{Term}$, and substitution through (Beta);
+$\mathit{sig}_{W}$ is the hash of the source shown in
+Section~\ref{sec:intro}; $\mathit{render}_{W}$ in the \texttt{prose} view is the
+sentence shown there, and in the \texttt{grammar} view is none, a theorem
+having no grammar; and $\mathit{reads}_{W}$ holds of the sentence's
+formula, which parses back uniquely in the notation of
+Appendix~\ref{app:notation}.
 
 A world has statements and verdicts but no proofs. An image is a function
 of the statement alone, so nothing in a bundle can depend on how a theorem
@@ -275,6 +374,12 @@ slot they have not written:
 \LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) \;\deq\; \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}
 \end{LeanDisplay}
 \end{leandef}
+
+In the example, the theorem is a block $\mathsf{block}^{\mathtt{prose}}_{k}(r)$
+whose $r$ is the sentence of Section~\ref{sec:intro}, and this sentence is attested
+prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
+$\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
+source of this paper when the sentence was checked against the Lean.
 
 \verb|imprimatur apply| regenerates every block whose key and view the
 bundle renders, and leaves every other piece as it
@@ -406,6 +511,30 @@ against, is reading about one thing.
 \LeanProse{Let $W \in \mathit{World}$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $S_{0} \in \mathit{Stmt}_{W}$. Assume $\forall S : \mathit{Stmt}_{W},\ \forall S' : \mathit{Stmt}_{W},\ \mathit{hash}_{W}(S) = \mathit{hash}_{W}(S') \implies S = S'$, $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{checked}_{k}(\mathit{hash}_{W}(S_{0})) \in d$. Then $\mathit{stmt}_{W}(k) = S_{0}$.}
 \end{leantheorem}
 
+\paragraph{The example, edited.} Three edits to the development, and what
+\verb|check| then says of the block and the attested sentence of Section~4.
+\begin{enumerate}
+\item \emph{Replace the stand-in by substitution of the argument for the
+  variable $x_{0}$.} Nothing in the paper changes, and the block is not
+  stale. The sentence is: \texttt{error[drift]: the statement of
+  Stlc.values\_final, or something it depends on, has changed since the
+  prose was last checked against it (stmt=4ad202811bf6, now 56881f286d16)}.
+  This is the lower-left cell of the table in Section~\ref{sec:bundle}:
+  the theorem's meaning changed through (Beta), and only the hash saw it.
+\item \emph{Rename the hypothesis \texttt{hv} to \texttt{h}.} Only the
+  \texttt{lean} view changes. Nothing is stale, nothing drifts, and there
+  is one warning: \texttt{warning[sig-changed]: the signature of
+  Stlc.values\_final reads differently (binder names or notation), but its
+  meaning is unchanged}. The upper-right cell. (Renaming the bound term
+  $M$ would also change the sentence, and the block with it.)
+\item \emph{Weaken the theorem to $V = V$}, which Lean proves as readily.
+  \texttt{error[stale]: the generated content of Values are final is out
+  of date}, and the drift error again. The lower-right cell.
+\end{enumerate}
+In none of the three is anything reported untrusted: Lean proved every
+version. The checks are about \emph{what} was proved, which is what
+Theorem~\ref{thm:The-typeset-mathematics-is-true} is about.
+
 \paragraph{The honest extractor.} The theorem's hypothesis is that the
 bundle is true. The bundle an honest extractor makes of a world, hashing
 and rendering each statement and recording what its validator finds, is
@@ -459,6 +588,13 @@ compared. There the check rests on the grammar mirroring the renderer, as
 both are built from the same rules. In that twenty-page paper, 610 of the
 662 formulas with one reading are compared in full, 21 in part, and 31 not
 at all.
+
+The example has a rendering that fails: its reduction relation in the
+display grammar view, where both arguments are terms and the head prints as
+$M \longrightarrow M$. The extractor records
+\emph{variables M and M both print as M}, the block is refused, and the
+theorem's $\mathit{reads}$ clause is what is withheld; the rules figure of
+Section~\ref{sec:intro} is the view that reads back.
 
 \paragraph{What the reader knows.} Reading back uses the types of the
 formula's variables, which a reader has only if the text gives them. The
@@ -522,10 +658,12 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=37He5t00Vh]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=hEICyivlwu]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
+$M$ & $\mathit{Term}$ & \leanslot{Stlc.Tm}{Terms, with de Bruijn variables} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
+$A$ & $\mathit{Type}$ & \leanslot{Stlc.Ty}{Types} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
 $b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it} & \textit{Bundle}\\
 $W$ & $\mathit{World}$ & \leanslot{SpliceModel.World}{A world whose renderings are bodies} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
 $W$ & $\texttt{World}(\tau)$ & \leanslot{Imprimatur.World}{An environment, as the extractor presents it} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
@@ -539,11 +677,11 @@ $r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated bloc
 $x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 \end{longtable}
-A variable with a prime or a subscript ($b'$, $b_{1}$) ranges over the same type.
+A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type.
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=l6LBGje5AI]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=0-vQwchjSY]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -617,6 +755,13 @@ $\mathsf{ids}(r)$ & \texttt{ids} & \leanslot{SpliceModel.ids/0}{The identifiers 
 $l[i]$ & \texttt{lookup} & \leanslot{SpliceModel.lookup/0}{The text of slot \LeanCodeInline{i}, the first with that identifier}\\
 $\lfloor d \rfloor$ & \texttt{outline} & \leanslot{SpliceModel.outline/0}{The outline of a piece: a block without its body}\\
 $\mathsf{slots}(r)$ & \texttt{slots} & \leanslot{SpliceModel.slots/0}{The slots of a body, with their text}\\
+\multicolumn{3}{@{}l}{\textit{Stlc}}\\
+$e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction}\\
+$e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
+$\lambda{:}t.\, e$ & \texttt{Tm.lam} & \leanslot{Stlc.Tm.lam/0}{an abstraction}\\
+$()$ & \texttt{Tm.unit} & \leanslot{Stlc.Tm.unit/0}{the unit value}\\
+$x_{i}$ & \texttt{Tm.var} & \leanslot{Stlc.Tm.var/0}{a variable}\\
+$e[v]$ & \texttt{subst} & \leanslot{Stlc.subst/0}{Substitution, as a stand-in: the body is returned unchanged}\\
 \end{longtable}
 \end{leannotation}
 \endgroup
