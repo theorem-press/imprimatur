@@ -51,7 +51,7 @@ def fixtures : Array Fixture := #[
     keys := #["Cat.main", "Cat.classical", "Cat.IsEven"] },
   { dir := "Notation", module := `Notation, strip := #[`Notation],
     keys := #["Notation.arith", "Notation.logic", "Notation.sets", "Notation.order",
-      "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.typed",
+      "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.joins", "Notation.typed",
       "Notation.binderRules"],
     views := #["math", "prose", "math:named", "math:binders"] },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
@@ -63,7 +63,7 @@ def fixtures : Array Fixture := #[
       "clauses", "grammar|display"] },
   { dir := "Patterns", module := `Patterns, strip := #[`Patterns],
     keys := #["Patterns.three", "Patterns.nested", "Patterns.side", "Patterns.safeHead",
-      "Patterns.konst"],
+      "Patterns.konst", "Patterns.ident"],
     views := #["math|def="] },
   { dir := "Trust", module := `Trust, strip := #[`Trust],
     keys := #["Trust.double_even", "Trust.double_even_renamed", "Trust.pairMap_fst",
@@ -287,6 +287,11 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
       (e.getObjVal? "views" >>= (·.getObjValAs? String "prose")).toOption).getD ""
     check "extract/prose/hyp-referred-labelled" ((prose.splitOn "\\LeanHyp{hd}").length > 1) prose
     check "extract/prose/hyp-unreferred-unlabelled" ((prose.splitOn "\\LeanHyp{hr}").length == 1) prose
+    -- `break`: the joins break the line before an operator.
+    let joins := ((entry? r.bundle "Notation.joins").bind fun e =>
+      (e.getObjVal? "views" >>= (·.getObjValAs? String "math")).toOption).getD ""
+    check "extract/notation/break-before-operator"
+      ((joins.splitOn "\\LeanBreak \\sqcup").length > 1) joins
     checkEq "extract/notation/no-render-errors"
       (f.keys.filter fun k => ((entry? r.bundle k).bind (·.getObjVal? "errors" |>.toOption)).isSome) #[]
   | "Semantics" =>
@@ -313,6 +318,10 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     checkEq "extract/display/validated"
       (#["Lookup and size", "Types and terms"].filter fun k =>
         ((entry? r.bundle k).bind (·.getObjVal? "validation" |>.toOption)).isSome) #[]
+  | "Patterns" =>
+    -- A constant applied only to implicit arguments is no misread (`id`).
+    checkEq "extract/validate/implicit-only-application"
+      ((entry? r.bundle "Patterns.ident").bind (·.getObjVal? "validation" |>.toOption) |>.map (·.compress)) none
   | "Trust" =>
     checkEq "extract/trust/same-hash-renamed-binder"
       (field r.bundle "Trust.double_even" "stmtHash") (field r.bundle "Trust.double_even_renamed" "stmtHash")

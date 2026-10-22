@@ -11,6 +11,10 @@ All notable changes to imprimatur are recorded here. Versions follow
   […]`. `imprimatur.sty` gains `LeanDisplay`, `LeanDisplayBox`,
   `LeanRulesBox`, `\deq` and `\defeqq`. Text after a box with no blank line
   before it continues the paragraph, unindented.
+- `latex_notation … break` lets a long rendering break the line before each
+  of a rule's operators. A constant applied only to implicit arguments is no
+  longer reported as a misread. The provenance table wraps long source paths,
+  and `imprimatur.sty` maps `↪` and `↠` and loads `array`.
 
 - `imprimatur show KEY [--view VIEW]…` prints one key's renderings, with the
   problems translation validation found in each, without touching the paper:

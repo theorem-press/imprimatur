@@ -388,7 +388,10 @@ def expectForm (name : String) (vars : Array String) (n : Nat) : RenderM Unit :=
 /-- The form being rendered is an application of `pre` and the subterms. -/
 def expectApp (pre : Array String) : RenderM Unit :=
   expectFrame (some fun kids =>
-    Validate.reading { name := "application", sort := "*", prec := 0, syms := #[] } (pre ++ kids))
+    -- A constant applied only to implicit arguments and proofs shows no
+    -- argument, so it reads as an atom: `Fin.castSucc`, not an application.
+    if kids.isEmpty && pre.size == 1 then pre[0]!
+    else Validate.reading { name := "application", sort := "*", prec := 0, syms := #[] } (pre ++ kids))
 
 mutual
 

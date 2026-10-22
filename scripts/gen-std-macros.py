@@ -8,7 +8,7 @@ They are TeX's primitives (as LuaTeX lists them, a superset of pdfTeX's for
 the names a paper uses), and the macros defined by the LaTeX kernel and its
 maths fonts, the standard article class (size and sectioning commands),
 amsmath, amssymb, mathpartir, and the packages imprimatur.sty loads
-(longtable, newunicodechar), as found in a TeX Live installation, and by
+(longtable, array, newunicodechar), as found in a TeX Live installation, and by
 imprimatur.sty itself. Run it from the repository root after
 changing imprimatur.sty, or to pick up a newer TeX Live:
 
@@ -23,7 +23,7 @@ import tempfile
 # The files whose definitions count as standard, by kpsewhich name.
 FILES = ["latex.ltx", "fontmath.ltx", "fonttext.ltx", "amsmath.sty", "amsopn.sty",
          "amstext.sty", "amsbsy.sty", "amsgen.sty", "amssymb.sty", "amsfonts.sty",
-         "mathpartir.sty", "longtable.sty", "newunicodechar.sty",
+         "mathpartir.sty", "longtable.sty", "array.sty", "newunicodechar.sty",
          # The size and sectioning commands the standard classes define.
          "article.cls", "size10.clo"]
 LOCAL = ["tex/imprimatur.sty"]

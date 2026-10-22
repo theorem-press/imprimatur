@@ -78,6 +78,7 @@ taken, so `#k'` is variable `k` followed by a prime.
 |---|---|
 | `prec := n` | the precedence of the result. Lean's are a guide: 50 for relations, 65 for `+`, 70 for `*`. Without it the result is atomic (1024) |
 | `width := n` | the rendered width in characters, used for line breaking instead of an estimate from the TeX |
+| `break` | a rendering too long for the line may break before each operator between the operands (`p \wedge q`), at the top level of the template |
 | `hide x := v` | apply the rule only when `x` matches `v`, and leave `x` out |
 | `when x := v` | apply the rule only when `x` matches `v`, and show `x`: `¬ p => r"\neg(#p)" when p := (Exists _)` |
 | `flatten` | for a two-argument rule, render nested uses as one chain: `\lub{a, b, c}`, or `a + b + c`; for a binder rule, fold a chain of binders into one list of variables: `\exists\, a,\, b,\; p` |

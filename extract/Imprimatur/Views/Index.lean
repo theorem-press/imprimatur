@@ -224,7 +224,8 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
   let all := opts.any (· == ("kinds", "all"))
   let blocks := (← read).document.blocks.filter (·.live) |>.qsort (·.order < ·.order)
   let mut done : Array String := #[]
-  let mut out := "\\begin{longtable}{@{}l@{\\quad}l@{\\quad}l@{\\quad}l@{}}\n"
+  -- The source column wraps, breaking a long path after each `/`.
+  let mut out := "\\begin{longtable}{@{}l@{\\quad}l@{\\quad}>{\\raggedright\\arraybackslash}p{.3\\linewidth}@{\\quad}l@{}}\n"
   out := out ++ "\\textit{Result} & \\textit{Lean} & \\textit{Source} & \\textit{Axioms}\\\\\n\\hline\\endhead\n"
   for b in blocks do
     if done.contains b.key || (← isIndexKey b.key) then continue
@@ -240,7 +241,7 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
       | some l => s!"{kind l}\\ref\{{l}}, p.~\\pageref\{{l}}"
       | none => ""
     let src := match ← srcOf c.name with
-      | some (p, l) => s!"\\texttt\{{TeX.escape p}:{l}}"
+      | some (p, l) => s!"\\texttt\{{"/\\allowbreak ".intercalate ((p.splitOn "/").map TeX.escape)}:{l}}"
       | none => ""
     let ax ← axOf c.name
     let extra := ax.filter (!standardAxioms.contains ·)
