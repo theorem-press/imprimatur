@@ -2,7 +2,16 @@
 # `imprimatur check` proved (DESIGN §18.2). It knows nothing of imprimatur:
 # the paper in ../ reads it in external mode.
 name = "splice-model"
-defaultTargets = ["SpliceModel"]
+defaultTargets = ["SpliceModel", "BundleTypes"]
 
 [[lean_lib]]
 name = "SpliceModel"
+
+# The splicer's own types for a bundle, which the paper shows (Section 3).
+# The splicer uses only Lean's standard library, so requiring it is cheap.
+[[lean_lib]]
+name = "BundleTypes"
+
+[[require]]
+name = "imprimatur-splice"
+path = "../../splice"

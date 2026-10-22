@@ -1,4 +1,5 @@
 import SpliceModel
+import BundleTypes
 import Imprimatur
 
 /-! # How the paper writes the model of the splicer
@@ -66,6 +67,16 @@ latex_notation Doc => r"\mathit{Doc}"
 latex_notation Body => r"\mathit{Body}"
 latex_notation Key => r"\mathit{Key}"
 latex_notation SlotId => r"\mathit{SlotId}"
+
+-- The splicer's own types for a bundle (Section 3), in typewriter, apart
+-- from the model's.
+latex_notation Splice.Bundle => r"\texttt{Bundle}"
+latex_notation Splice.Entry => r"\texttt{Entry}"
+latex_notation Splice.SourceLoc => r"\texttt{SourceLoc}"
+latex_notation Array α => r"\mathsf{Array}(#α)"
+latex_notation Option α => r"\mathsf{Option}(#α)"
+latex_notation Bool => r"\mathbb{B}"
+latex_notation Nat => r"\mathbb{N}"
 
 -- The metavariables of the grammars.
 latex_category Seg => r"\sigma"

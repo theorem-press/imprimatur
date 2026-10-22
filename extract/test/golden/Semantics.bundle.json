@@ -80,6 +80,42 @@
         "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}"
       }
     },
+    "Stlc.Claim": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 10,
+        "untrusted": []
+      },
+      "decl": "Stlc.Claim",
+      "doc": "A typing claim.",
+      "errors": {
+        "clauses": "Stlc.Claim has no equations: the clauses view shows definitions"
+      },
+      "kind": "structure",
+      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanField", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\LeanStructure", "\\begin", "\\end", "\\in", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathit", "\\mathrm", "\\textsf"],
+      "sigHash": "211bb3ca0fd6c651af228f898051bcf20640eabae6d44079f4371334d7300f97",
+      "sorry": false,
+      "source": {
+        "line": 83,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "69713b9806cea917f9d537d4f29cd56ad1bfe803367a25a404b590c06957b355",
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.Claim}: mk",
+        "grammar": "\\begin{LeanGrammar}\n\\LeanStructure{\\mathit{Claim}}{A typing claim.}\n\\LeanField{tm}{\\LeanMathConst{Tm}}{\\leanslot{Stlc.Claim.tm}{the term}}\n\\LeanField{ty}{\\LeanMathConst{Ty}}{\\leanslot{Stlc.Claim.ty}{its type}}\n\\end{LeanGrammar}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Claim} \\in \\mathit{Claim}}{\\leanslot{Stlc.Claim}{A typing claim}}\\\\\n\\LeanEntry{\\{\\mathit{tm} : \\LeanMathConst{Tm},\\ \\mathit{ty} : \\LeanMathConst{Ty}\\}}{}\n\\end{LeanDisplay}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{structure} \\LeanConst{Claim} : \\LeanSort{Type}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Claim} : \\mathrm{Type}}",
+        "math|forall=": "\\LeanMath{\\mathrm{Type}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.Claim} : \\mathrm{Type}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{Claim} : \\mathrm{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A typing claim.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[Mk]\n  { }\n  { \\mathit{Claim} }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\inferrule[Mk]\n  { }\n  { \\mathit{Claim} }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\\end{mathpar}"
+      }
+    },
     "Stlc.HasType": {
       "axioms": ["propext"],
       "cone": {

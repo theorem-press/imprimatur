@@ -79,4 +79,11 @@ theorem size_pos (e : Tm) (τ : Nat) (h : τ = size e) : 0 < τ := by
   subst h
   cases e <;> simp [size]
 
+/-- A typing claim. -/
+structure Claim where
+  /-- the term -/
+  tm : Tm
+  /-- its type -/
+  ty : Ty
+
 end Stlc

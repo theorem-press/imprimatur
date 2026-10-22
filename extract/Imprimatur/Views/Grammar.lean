@@ -64,6 +64,10 @@ def grammarView (c : ConstantInfo) : RenderM String := do
     | none => constTeX strip c.name
   let mut out : Array String := #["\\begin{LeanGrammar}"]
   if isStructure env c.name then
+    -- A structure without a category is headed by its type, in its notation.
+    let cat ← if (projectCategories env).any (·.1 == c.name) then pure cat else
+      forallTelescope c.type fun xs _ => do
+        return (← render (mkAppN (.const c.name (c.levelParams.map Level.param)) xs)).render 100000
     out := out.push s!"\\LeanStructure\{{cat}}\{{TeX.markdown (doc.getD "")}}"
     for f in getStructureFields env c.name do
       let proj := c.name ++ f

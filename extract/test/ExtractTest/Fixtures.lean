@@ -56,7 +56,7 @@ def fixtures : Array Fixture := #[
     views := #["math", "prose", "math:named", "math:binders"] },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
     keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
-      "Lookup and size", "Types and terms", "Prod",
+      "Lookup and size", "Types and terms", "Prod", "Stlc.Claim",
       "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
       "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist",
@@ -315,6 +315,9 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     check "extract/display/title-names-declaration"
       (((view "Prod" "grammar|display").splitOn "\\LeanCategory{\\tau \\in").length == 2)
       (view "Prod" "grammar|display")
+    check "extract/grammar/structure-header-notation"
+      (((view "Stlc.Claim" "grammar").splitOn "\\LeanStructure{\\mathit{Claim}}").length == 2)
+      (view "Stlc.Claim" "grammar")
     checkEq "extract/display/validated"
       (#["Lookup and size", "Types and terms"].filter fun k =>
         ((entry? r.bundle k).bind (·.getObjVal? "validation" |>.toOption)).isSome) #[]

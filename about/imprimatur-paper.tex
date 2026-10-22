@@ -103,6 +103,65 @@ trusted is reported; a block that is not the rendering, with its slots
 filled, is stale; and a check whose recorded hash is not the statement's is
 drift\leancheck[stmt=40c927a974cb, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
 
+\section{The bundle}\label{sec:bundle}
+
+imprimatur is two programs. The extractor runs inside Lean, at the
+development's own toolchain, and reads its elaborated environment. The
+splicer edits \TeX{} and uses nothing of Lean but its standard library, so
+one splicer serves every toolchain. All that passes between them is the
+bundle, a JSON file. Within a major version of its schema
+(\texttt{imprimatur-bundle/1}) fields are only added, so a splicer reads the
+bundles of older extractors. The splicer checks a bundle against the
+schema's rules as it reads it into these types, from its own
+source\leancheck{Splice.Bundle.parse}:
+
+\begin{leangrammar}[sum=3jR17v0gsj]{Splice.Bundle}{Bundles}
+\label{gram:Splice.Bundle}\begin{LeanGrammar}
+\LeanStructure{\texttt{Bundle}}{A bundle.}
+\LeanField{entries}{\mathsf{Array}(\texttt{Entry})}{\leanslot{Splice.Bundle.entries}{its entries, sorted by key}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+\begin{leangrammar}[sum=BrdwZTEl9P]{Splice.Entry}{Entries}
+\label{gram:Splice.Entry}\begin{LeanGrammar}
+\LeanStructure{\texttt{Entry}}{One entry of a bundle: what the splicer knows of a key.}
+\LeanField{key}{\mathit{String}}{\leanslot{Splice.Entry.key}{a constant's name, or a title}}
+\LeanField{kind}{\mathit{String}}{\leanslot{Splice.Entry.kind}{the declaration's kind}}
+\LeanField{source}{\mathsf{Option}(\texttt{SourceLoc})}{\leanslot{Splice.Entry.source}{where the declaration is}}
+\LeanField{axioms}{\mathsf{Array}(\mathit{String})}{\leanslot{Splice.Entry.axioms}{axioms the declaration uses}}
+\LeanField{usesSorry}{\mathbb{B}}{\leanslot{Splice.Entry.usesSorry}{whether it depends on \LeanCodeInline{sorry}}}
+\LeanField{untrusted}{\mathsf{Array}(\mathit{String})}{\leanslot{Splice.Entry.untrusted}{untrusted constants in its cone}}
+\LeanField{reasons}{\mathsf{Array}(\mathit{String} \times \mathsf{Array}(\mathit{String}))}{\leanslot{Splice.Entry.reasons}{why each is untrusted}}
+\LeanField{stmtHash}{\mathsf{Option}(\mathit{String})}{\leanslot{Splice.Entry.stmtHash}{the hash of the statement}}
+\LeanField{sigHash}{\mathsf{Option}(\mathit{String})}{\leanslot{Splice.Entry.sigHash}{the hash of the signature}}
+\LeanField{views}{\mathsf{Array}(\mathit{String} \times \mathit{String})}{\leanslot{Splice.Entry.views}{rendered views}}
+\LeanField{errors}{\mathsf{Array}(\mathit{String} \times \mathit{String})}{\leanslot{Splice.Entry.errors}{views that failed, and why}}
+\LeanField{validation}{\mathsf{Array}(\mathit{String} \times \mathsf{Array}(\mathit{String}))}{\leanslot{Splice.Entry.validation}{what does not read back}}
+\LeanField{macros}{\mathsf{Array}(\mathit{String})}{\leanslot{Splice.Entry.macros}{the macros its views use}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+\begin{leangrammar}[sum=uPF9leR63G]{Splice.SourceLoc}{Source locations}
+\label{gram:Splice.SourceLoc}\begin{LeanGrammar}
+\LeanStructure{\texttt{SourceLoc}}{A source location of an entry.}
+\LeanField{path}{\mathit{String}}{\leanslot{Splice.SourceLoc.path}{path relative to the Lean project root}}
+\LeanField{line}{\mathbb{N}}{\leanslot{Splice.SourceLoc.line}{1-based line}}
+\end{LeanGrammar}
+\end{leangrammar}
+
+The types keep what the splicer uses. The JSON says more: which extractor
+made the bundle, each entry's declaration and docstring, and the size of
+its dependency cone. The splicer checks these or skips them, and does not
+keep them.
+
+An entry of the model is an abstraction of one of these. Its rendering is
+a view, with the slots parsed out of it; its hash is the statement hash;
+and it is trusted when the entry does not use \texttt{sorry}, uses only the
+permitted axioms, and has no untrusted constant in its cone. That
+abstraction is not proved: the extractor's writing of the JSON and the
+splicer's reading of it are tested against the schema, and are part of the
+trusted base (Section~\ref{sec:trusted}).
+
 \section{The splicer's laws}
 
 Four laws make \verb|apply| safe to run on a paper the authors are editing.
@@ -232,11 +291,13 @@ notation, as that statement up to what the notation declares invisible.
 The first half is proved for a model of the splicer; the second is checked,
 for each formula of the paper, each time it is built.
 
-\section{The trusted base}
+\section{The trusted base}\label{sec:trusted}
 
 What the two halves do not cover is trusted:
 \begin{itemize}
 \item Lean's kernel, and the extractor's reading of the environment.
+\item The bundle's two ends: the extractor's writing of it, and the
+  splicer's reading of it into the types of Section~\ref{sec:bundle}.
 \item The hash's resistance to collisions.
 \item The parser that reads formulas back, and, where an expected reading
   is incomplete, the grammar's mirroring of the renderer.
@@ -289,17 +350,25 @@ $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality
 A variable with a prime or a subscript ($\sigma'$, $\sigma_{1}$) ranges over the same type.
 \end{leanconventions}
 
-\begin{leannotation}[sum=wlP0ROlKQw]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=KJp84iKzVG]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
+$\mathsf{Array}(\alpha)$ & \texttt{Array} & \leanslot{Array/0}{dynamic arrays with elements from \LeanCodeInline{α}}\\
+$\mathbb{B}$ & \texttt{Bool} & \leanslot{Bool/0}{The Boolean values, \LeanCodeInline{true} and \LeanCodeInline{false}}\\
 $\mathsf{List}(\alpha)$ & \texttt{List} & \leanslot{List/0}{Linked lists: ordered lists, in which each element has a reference to the next element}\\
 $a \mathbin{::} l$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
 $[]$ & \texttt{List.nil} & \leanslot{List.nil/0}{The empty list, usually written \LeanCodeInline{[]}}\\
+$\mathbb{N}$ & \texttt{Nat} & \leanslot{Nat/0}{The natural numbers, starting at zero}\\
 $a \notin l$ & \texttt{Not} & \leanslot{Not/0}{\LeanCodeInline{Not p}, or \LeanCodeInline{¬p}, is the negation of \LeanCodeInline{p}}\\
+$\mathsf{Option}(\alpha)$ & \texttt{Option} & \leanslot{Option/0}{Optional values, which are either \LeanCodeInline{some} around a value from the underlying type or \LeanCodeInline{none}}\\
 $o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{Gets an optional value, returning a given default on \LeanCodeInline{none}}\\
 $x$ & \texttt{Option.some} & \leanslot{Option.some/0}{Some value of type \LeanCodeInline{α}}\\
 $\alpha \times \beta$ & \texttt{Prod} & \leanslot{Prod/0}{The product type, usually written \LeanCodeInline{α × β}}\\
 $\mathit{String}$ & \texttt{String} & \leanslot{String/0}{A string is a sequence of Unicode scalar values}\\
+\multicolumn{3}{@{}l}{\textit{Splice}}\\
+$\texttt{Bundle}$ & \texttt{Splice.Bundle} & \leanslot{Splice.Bundle/0}{A bundle}\\
+$\texttt{Entry}$ & \texttt{Splice.Entry} & \leanslot{Splice.Entry/0}{One entry of a bundle: what the splicer knows of a key}\\
+$\texttt{SourceLoc}$ & \texttt{Splice.SourceLoc} & \leanslot{Splice.SourceLoc/0}{A source location of an entry}\\
 \multicolumn{3}{@{}l}{\textit{SpliceModel}}\\
 $\mathit{Body}$ & \texttt{Body} & \leanslot{SpliceModel.Body/0}{The body of a generated block}\\
 $\mathsf{broken}(k)$ & \texttt{Diag.brokenRef} & \leanslot{SpliceModel.Diag.brokenRef/0}{the key has no entry}\\

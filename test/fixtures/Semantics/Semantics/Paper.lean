@@ -15,6 +15,8 @@ latex_notation Tm.var i => r"x_{#i}"
 latex_notation Tm.lam t e => r"\lambda{:}#t.\, #e" prec := 0
 latex_notation Tm.app e₁ e₂ => r"#e₁\; #e₂" prec := 100
 latex_notation Tm.unit => r"()"
+-- A structure without a category, headed in the grammar view by its notation.
+latex_notation Claim => r"\mathit{Claim}"
 latex_notation Ty.base => r"\mathsf{b}"
 latex_notation Ty.arrow a b => r"#a \to #b" prec := 25
 latex_notation List.cons t Γ => r"#Γ, #t" prec := 20

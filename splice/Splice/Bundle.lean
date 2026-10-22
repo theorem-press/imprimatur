@@ -26,7 +26,7 @@ structure SourceLoc where
   line : Nat
   deriving Repr, BEq
 
-/-- One entry of a bundle: what the splicer needs from DESIGN §8. -/
+/-- One entry of a bundle: what the splicer knows of a key. -/
 structure Entry where
   /-- The key. -/
   key : String

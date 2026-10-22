@@ -132,6 +132,13 @@ def testHash : TestM Unit := group "checksums" do
   check "splice/checksum/sees-slot-id"
     (checksum none "a \\leanslot{s}{one} b" != checksum none "a \\leanslot{t}{one} b")
 
+/-- Filling an alias's template. -/
+def testFill : TestM Unit := group "fill" do
+  let a : Alias := { name := "g", view := "grammar" }
+  let a := { a with label := some "gram:{key}", template := some "\\label{{label}}{content}" }
+  checkEq "splice/config/fill-placeholders-in-content"
+    (a.fill "\\LeanField{key}{T}" "K" "" (some "gram:K")) "\\label{gram:K}\\LeanField{key}{T}"
+
 private def cfgWith (aliases : Array Alias) : Config :=
   { main := "m.tex", aliases := #[{ name := "leanblock", view := "lean" }] ++ aliases }
 
@@ -226,6 +233,7 @@ def tests : TestM Unit := do
   testConfig
   testBundle
   testHash
+  testFill
   testScan
   testSlots
   testHelpers
