@@ -71,68 +71,6 @@ say why. A second theorem, about the notation, says that a rendering can be
 read back as the statement it came from; imprimatur checks it for each
 formula it renders (Section~\ref{sec:faithful}).
 
-\section{Documents}
-
-A document is a list of pieces: hand-written text, generated blocks, and
-checks on hand-written prose. A block shows a key, the name of a Lean
-constant or the title of a group, in a view, such as a formula, a sentence
-or a figure of inference rules. Its body is a list of segments: text
-generated from Lean, and slots, whose text the authors own.
-
-\begin{leangrammar}[sum=LI8COyXMC-]{SpliceModel.Seg}{Segments}
-\label{gram:SpliceModel.Seg}\begin{LeanDisplay}
-\LeanCategory{\varsigma \in \mathit{Seg}}{\leanslot{SpliceModel.Seg}{A segment of a generated block}}\\
-\LeanEntry{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}\\
-\LeanEntry{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
-\end{LeanDisplay}
-\end{leangrammar}
-
-\begin{leangrammar}[sum=cJG1zCy1KM]{SpliceModel.Piece}{Pieces}
-\label{gram:SpliceModel.Piece}\begin{LeanDisplay}
-\LeanCategory{p \in \mathit{Piece}}{\leanslot{SpliceModel.Piece}{A piece of a document}}\\
-\LeanEntry{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}\\
-\LeanEntry{\mathsf{block}_{k}^{v}(r)}{\leanslot{SpliceModel.Piece.block}{a generated block: a key, shown in a view}}\\
-\LeanEntry{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{a check that hand-written prose matches the statement with this hash}}
-\end{LeanDisplay}
-\end{leangrammar}
-
-Regenerating a block fills the rendering's slots with the text the authors
-wrote in the old block, slot by slot, and with the rendering's own text for a
-slot they have not written:
-
-\begin{leandef}[sum=31yBSoeXn6]{SpliceModel.fill}{Filling slots}
-\begin{LeanDisplay}
-\LeanClause{\mathsf{fill}(\mathit{old}, []) \;\deq\; []}{\leanslot{SpliceModel.fill}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}}\\
-\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) \;\deq\; \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}\\
-\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) \;\deq\; \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}
-\end{LeanDisplay}
-\end{leandef}
-
-\verb|imprimatur apply| regenerates every block whose key and view the
-bundle renders, and leaves every other piece as it
-is\leancheck[stmt=5a7f40472101, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
-reports what is not as the bundle says:
-
-\begin{leangrammar}[sum=sSBoJwZVEg]{SpliceModel.Diag}{Diagnostics}
-\label{gram:SpliceModel.Diag}\begin{LeanDisplay}
-\LeanCategory{x \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
-\LeanEntry{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}\\
-\LeanEntry{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}\\
-\LeanEntry{\mathsf{missing}_{k}(v)}{\leanslot{SpliceModel.Diag.missingView}{the entry has no rendering in the view}}\\
-\LeanEntry{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}\\
-\LeanEntry{\mathsf{unfaithful}_{k}(v)}{\leanslot{SpliceModel.Diag.unfaithful}{the rendering does not read back as the statement}}\\
-\LeanEntry{\mathsf{nohash}(k)}{\leanslot{SpliceModel.Diag.noHash}{the entry has no statement hash}}\\
-\LeanEntry{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
-\end{LeanDisplay}
-\end{leangrammar}
-
-A key without an entry is a broken reference; an entry whose proof is not
-trusted is reported; a block whose view the entry does not render is
-missing it; a block that is not the rendering, with its slots filled, is
-stale; a rendering the bundle says does not read back is unfaithful; a check
-on a key without a hash has none; and a check whose recorded hash is not the
-statement's is drift\leancheck[stmt=ce27f8a301d4, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
-
 \section{The bundle}\label{sec:bundle}
 
 An entry is what the bundle says of a key: what the key names, its
@@ -153,7 +91,8 @@ Of the statement, the file holds two images. The hash \emph{names} it: two
 statements with one hash are one statement, as far as a document can tell.
 The views \emph{show} it: each is the statement rendered by the paper's
 notation. The \TeX{} is a parameter too, $\tau$: in the file it is \TeX{};
-in the model it is \TeX{} with the slots already parsed, a body.
+in the model it is \TeX{} with the slots already parsed, a body
+(Section~\ref{sec:documents}).
 
 \begin{leangrammar}[sum=1FePWA7SoM]{Imprimatur.Image}{Images of a statement}
 \label{gram:Imprimatur.Image}\begin{LeanDisplay}
@@ -299,6 +238,68 @@ one hash means one statement:
 \label{thm:The-hash-names-the-statement}
 \LeanProse{Let $\tau$ be a type, $W \in \texttt{World}(\tau)$, $S, S' \in \mathit{Stmt}_{W}$, $i, i' \in \texttt{Image}(\tau)$ and $h \in \mathit{Hash}$. Assume $\forall S : \mathit{Stmt}_{W},\ \forall S' : \mathit{Stmt}_{W},\ \mathit{hash}_{W}(S) = \mathit{hash}_{W}(S') \implies S = S'$, $\mathit{image}_{W}(S, i)$, $\mathit{image}_{W}(S', i')$, $i.\mathit{stmtHash} = h$ and $i'.\mathit{stmtHash} = h$. Then $S = S'$.}
 \end{leantheorem}
+
+\section{Documents}\label{sec:documents}
+
+A document is a list of pieces: hand-written text, generated blocks, and
+checks on hand-written prose. A block shows a key, the name of a Lean
+constant or the title of a group, in a view, such as a formula, a sentence
+or a figure of inference rules. Its body is a list of segments: text
+generated from Lean, and slots, whose text the authors own.
+
+\begin{leangrammar}[sum=LI8COyXMC-]{SpliceModel.Seg}{Segments}
+\label{gram:SpliceModel.Seg}\begin{LeanDisplay}
+\LeanCategory{\varsigma \in \mathit{Seg}}{\leanslot{SpliceModel.Seg}{A segment of a generated block}}\\
+\LeanEntry{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}\\
+\LeanEntry{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+\begin{leangrammar}[sum=cJG1zCy1KM]{SpliceModel.Piece}{Pieces}
+\label{gram:SpliceModel.Piece}\begin{LeanDisplay}
+\LeanCategory{p \in \mathit{Piece}}{\leanslot{SpliceModel.Piece}{A piece of a document}}\\
+\LeanEntry{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}\\
+\LeanEntry{\mathsf{block}_{k}^{v}(r)}{\leanslot{SpliceModel.Piece.block}{a generated block: a key, shown in a view}}\\
+\LeanEntry{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{a check that hand-written prose matches the statement with this hash}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+Regenerating a block fills the rendering's slots with the text the authors
+wrote in the old block, slot by slot, and with the rendering's own text for a
+slot they have not written:
+
+\begin{leandef}[sum=31yBSoeXn6]{SpliceModel.fill}{Filling slots}
+\begin{LeanDisplay}
+\LeanClause{\mathsf{fill}(\mathit{old}, []) \;\deq\; []}{\leanslot{SpliceModel.fill}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}}\\
+\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) \;\deq\; \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}\\
+\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) \;\deq\; \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}
+\end{LeanDisplay}
+\end{leandef}
+
+\verb|imprimatur apply| regenerates every block whose key and view the
+bundle renders, and leaves every other piece as it
+is\leancheck[stmt=5a7f40472101, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
+reports what is not as the bundle says:
+
+\begin{leangrammar}[sum=sSBoJwZVEg]{SpliceModel.Diag}{Diagnostics}
+\label{gram:SpliceModel.Diag}\begin{LeanDisplay}
+\LeanCategory{x \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
+\LeanEntry{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}\\
+\LeanEntry{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}\\
+\LeanEntry{\mathsf{missing}_{k}(v)}{\leanslot{SpliceModel.Diag.missingView}{the entry has no rendering in the view}}\\
+\LeanEntry{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}\\
+\LeanEntry{\mathsf{unfaithful}_{k}(v)}{\leanslot{SpliceModel.Diag.unfaithful}{the rendering does not read back as the statement}}\\
+\LeanEntry{\mathsf{nohash}(k)}{\leanslot{SpliceModel.Diag.noHash}{the entry has no statement hash}}\\
+\LeanEntry{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+A key without an entry is a broken reference; an entry whose proof is not
+trusted is reported; a block whose view the entry does not render is
+missing it; a block that is not the rendering, with its slots filled, is
+stale; a rendering the bundle says does not read back is unfaithful; a check
+on a key without a hash has none; and a check whose recorded hash is not the
+statement's is drift\leancheck[stmt=ce27f8a301d4, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
 
 \section{The splicer's laws}
 
@@ -521,24 +522,24 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=5LmaG7IrcS]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=37He5t00Vh]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
-$\varsigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
-$p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$k$ & $\mathit{Key}$ & \leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$v$ & $\mathit{View}$ & \leanslot{Imprimatur.View}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$h$ & $\mathit{Hash}$ & \leanslot{Imprimatur.Hash}{A SHA-256, as 64 hexadecimal digits} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated block} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it} & \textit{Bundle}\\
 $W$ & $\mathit{World}$ & \leanslot{SpliceModel.World}{A world whose renderings are bodies} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
 $W$ & $\texttt{World}(\tau)$ & \leanslot{Imprimatur.World}{An environment, as the extractor presents it} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
+$v$ & $\mathit{View}$ & \leanslot{Imprimatur.View}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …} & \textit{Of}\\
+$h$ & $\mathit{Hash}$ & \leanslot{Imprimatur.Hash}{A SHA-256, as 64 hexadecimal digits} & \textit{Of}\\
 $e$ & $\mathit{Entry}$ & \leanslot{SpliceModel.Entry}{An entry as the splicer holds it: the file's, with each view's TeX parsed into a body, and the verdict read as a bit} & \textit{True}\\
+$k$ & $\mathit{Key}$ & \leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group} & \textit{True}\\
+$\varsigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
+$p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
+$r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated block} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
+$x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 \end{longtable}
-A variable with a prime or a subscript ($\varsigma'$, $\varsigma_{1}$) ranges over the same type.
+A variable with a prime or a subscript ($b'$, $b_{1}$) ranges over the same type.
 \end{leanconventions}
 
 \begingroup\small
