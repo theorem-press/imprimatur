@@ -11,7 +11,7 @@ strip_namespaces = ["SpliceModel"]
 leangrammar = { view = "grammar", label = "gram:{key}", template = "\\label{{label}}{content}" }
 leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
 leanrules   = { view = "rules" }
-leandef     = { view = "math|def=" }
+leandef     = { view = "clauses", wrap = "LeanDisplayBox" }
 # Appendix A: the metavariables, and the notation the paper uses.
 leanconventions = { view = "conventions" }
 leannotation    = { view = "vocabulary|scope=all" }

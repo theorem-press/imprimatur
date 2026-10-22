@@ -9,7 +9,7 @@
 \leanblockalias{leangrammar}{}
 \leanblockalias{leantheorem}{theorem}
 \leanblockalias{leanrules}{}
-\leanblockalias{leandef}{}
+\leanblockalias{leandef}{LeanDisplayBox}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 
@@ -101,11 +101,13 @@ Regenerating a block fills the rendering's slots with the text the authors
 wrote in the old block, slot by slot, and with the rendering's own text for a
 slot they have not written:
 
-\begin{center}
-\begin{leandef}[sum=BhwOfgB0yt]{SpliceModel.fill}{Filling slots}
-\LeanMath{\begin{aligned}\mathsf{fill}(\mathit{old}, []) &= [] \\ \mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) &= \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r) \\ \mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) &= \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)\end{aligned}}
+\begin{leandef}[sum=31yBSoeXn6]{SpliceModel.fill}{Filling slots}
+\begin{LeanDisplay}
+\LeanClause{\mathsf{fill}(\mathit{old}, []) \;\deq\; []}{\leanslot{SpliceModel.fill}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}}\\
+\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) \;\deq\; \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}\\
+\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) \;\deq\; \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}
+\end{LeanDisplay}
 \end{leandef}
-\end{center}
 
 \verb|imprimatur apply| regenerates every block whose key and view the
 bundle renders, and leaves every other piece as it
@@ -189,11 +191,11 @@ the one module that defines these types, and an extractor's bundle survives
 the round trip byte for byte. The model's bundle is the same type at the
 model's parameters:
 
-\begin{center}
-\begin{leandef}[sum=bJO-adfHNf]{SpliceModel.Bundle}{The model's bundle}
-\LeanMath{\begin{aligned}\mathit{Bundle} &= \texttt{Bundle}(\texttt{Image}(\mathit{Body}), \mathbb{B})\end{aligned}}
+\begin{leandef}[sum=w7ghbqB2ku]{SpliceModel.Bundle}{The model's bundle}
+\begin{LeanDisplay}
+\LeanClause{b \in \mathit{Bundle} \;\deq\; \texttt{Bundle}(\texttt{Image}(\mathit{Body}), \mathbb{B})}{\leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it}}
+\end{LeanDisplay}
 \end{leandef}
-\end{center}
 
 \paragraph{Two hashes.} The statement hash is of the statement's
 \emph{meaning}: its type, together with every definition it depends on,
@@ -281,11 +283,11 @@ is.
 \end{mathpar}
 \end{leanrules}
 
-\begin{center}
-\begin{leandef}[sum=UyIoHXOZef]{Imprimatur.Bundle.True}{True bundles}
-\LeanMath{\begin{aligned}W \models b &= \forall k : \mathit{Key},\ \forall e : \texttt{Entry}(\texttt{Image}(\tau), \pi),\ b[k] = e \implies W \models_{k} e\end{aligned}}
+\begin{leandef}[sum=BO-FFbUkKC]{Imprimatur.Bundle.True}{True bundles}
+\begin{LeanDisplay}
+\LeanClause{W \models b \;\deq\; \forall k : \mathit{Key},\ \forall e : \texttt{Entry}(\texttt{Image}(\tau), \pi),\ b[k] = e \implies W \models_{k} e}{\leanslot{Imprimatur.Bundle.True}{A bundle is true of a world when the entry it gives for each key is}}
+\end{LeanDisplay}
 \end{leandef}
-\end{center}
 
 Two things follow at once, one for each image. The rendering an entry has
 for a view is the key's statement rendered, and reads back as it when the
@@ -381,11 +383,13 @@ the paper can carry, and the statement hash is that name. So a check
 $\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean proved whose
 hash is $h$; and a document is true when each of its pieces is:
 
-\begin{center}
-\begin{leandef}[sum=KBWXIIf1bs]{SpliceModel.Piece.True}{What a piece claims}
-\LeanMath{\begin{aligned}W \models \mathsf{text}(\_) &= \top \\ W \models \mathsf{block}_{k}^{v}(r) &= \exists S,\ \exists r',\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \\ &\qquad \wedge \mathit{render}_{W}(v, S) = r' \wedge r = \mathsf{fill}(\mathsf{slots}(r), r') \wedge \mathit{reads}_{W}(r', S) \\ W \models \mathsf{checked}_{k}(h) &= \exists S,\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \wedge \mathit{hash}_{W}(S) = h\end{aligned}}
+\begin{leandef}[sum=dzWzl4ICeZ]{SpliceModel.Piece.True}{What a piece claims}
+\begin{LeanDisplay}
+\LeanClause{W \models \mathsf{text}(\_) \;\deq\; \top}{\leanslot{SpliceModel.Piece.True}{What a piece claims of a world}}\\
+\LeanClause{W \models \mathsf{block}_{k}^{v}(r) \;\deq\; \exists S,\ \exists r',\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \wedge \mathit{render}_{W}(v, S) = r' \wedge r = \mathsf{fill}(\mathsf{slots}(r), r') \wedge \mathit{reads}_{W}(r', S)}{}\\
+\LeanClause{W \models \mathsf{checked}_{k}(h) \;\deq\; \exists S,\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \wedge \mathit{hash}_{W}(S) = h}{}
+\end{LeanDisplay}
 \end{leandef}
-\end{center}
 
 \begin{leantheorem}[sum=YuyPcDgbsu]{Attested prose}{Attested prose}
 \label{thm:Attested-prose}
