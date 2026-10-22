@@ -74,10 +74,10 @@ formula it renders (Section~\ref{sec:faithful}).
 
 \paragraph{A running example.} The development is a simply typed
 $\lambda$-calculus with de Bruijn variables, its values, and small-step
-reduction, whose substitution is a stand-in that we will replace. Its terms,
-its reduction relation and one theorem about it, as a reader of this paper
-sees them:
-
+reduction, whose substitution is a stand-in that we will replace. Figure~\ref{fig:example} shows its terms, its reduction relation and one
+theorem about it, as a reader of this paper sees them, and the Lean the
+theorem came from, shown by the \texttt{lean} view.
+\begin{figure}[t]
 \begin{leangrammar}[sum=GYQkvbUOd0]{Stlc.Tm}{Terms}
 \label{gram:Stlc.Tm}\begin{LeanDisplay}
 \LeanCategory{M \in \mathit{Term}}{\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\
@@ -119,15 +119,17 @@ sees them:
 \LeanProse{Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
 \end{leantheorem}
 
-The theorem came from this Lean, shown by the \texttt{lean} view:
-
 \begin{leansource}[sum=zIy9s_XPen]{Stlc.values_final}{The source}
 \LeanCode{%
 \LeanKeyword{theorem} \LeanConst{values\_final} \{\LeanBound{v} \LeanBound{e} : \LeanConst{Tm}\} (\LeanBound{hv} : \LeanConst{IsValue} \LeanBound{v}) : ¬\LeanConst{Step} \LeanBound{v} \LeanBound{e}}
 \end{leansource}
+\caption{The running example: a simply typed $\lambda$-calculus, as the
+paper's reader sees it, and the source of its theorem. All four blocks are
+generated.}
+\label{fig:example}
+\end{figure}
 
-All four blocks are generated, and are the example's thread through the
-paper: what the bundle says of the theorem, what that means, what the
+The figure is the example's thread through the paper: what the bundle says of the theorem, what that means, what the
 paper claims, and what happens when the development changes.
 
 \section{The bundle}\label{sec:bundle}
@@ -208,36 +210,6 @@ The proof is absent, and the statement appears twice: as a hash, and as
 \end{LeanDisplay}
 \end{leandef}
 
-\paragraph{Two hashes.} The statement hash is of the statement's
-\emph{meaning}: its type, together with every definition it depends on,
-with binder names dropped and proofs left out. The signature hash is of the
-statement \emph{as written}, the \texttt{lean} view. The two change
-independently, and the four cases have four readings:
-
-\begin{center}\small
-\begin{tabular}{l@{\quad}p{3.6cm}@{\quad}p{3.6cm}}
- & \textit{signature same} & \textit{signature changed} \\[2pt]
-\textit{meaning same} & nothing changed & renamed or renotated: a warning \\[2pt]
-\textit{meaning changed} & a definition it depends on changed & the statement was edited \\
-\end{tabular}
-\end{center}
-
-The lower-left case is the one a reader cannot see. The example's
-substitution is a stand-in:
-
-\begin{leandef}[sum=dLUGSgMoci]{Stlc.subst}{Substitution}
-\begin{LeanDisplay}
-\LeanClause{M[M'] \;\deq\; M}{\leanslot{Stlc.subst}{Substitution, as a stand-in: the body is returned unchanged}}
-\end{LeanDisplay}
-\end{leandef}
-
-Replace it with the real one, and no theorem about reduction changes a
-character, in Lean or in the paper; their meaning does, since (Beta) uses
-substitution, and their statement hashes with it (Section~\ref{sec:check}
-does this). For a theorem the meaning is its proposition under the
-definitions it mentions; for a definition, its own equations, so a
-definition is in its own cone. A title, a group of rules or a display of
-definitions, states what its members state, and is hashed as they are.
 
 \section{What a bundle means}\label{sec:meaning}
 
@@ -267,7 +239,7 @@ $\mathit{kind}_{W}$ says theorem; $\mathit{trusted}_{W}$ is true;
 $\mathit{hash}_{W}$ of the proposition covers $\mathit{Step}$,
 $\mathit{Val}$ and $\mathit{Term}$, and substitution through (Beta);
 $\mathit{sig}_{W}$ is the hash of the source shown in
-Section~\ref{sec:intro}; $\mathit{render}_{W}$ in the \texttt{prose} view is the
+Figure~\ref{fig:example}; $\mathit{render}_{W}$ in the \texttt{prose} view is the
 sentence shown there, and in the \texttt{grammar} view is none, a theorem
 having no grammar; and $\mathit{reads}_{W}$ holds of the sentence's
 formula, which parses back uniquely in the notation of
@@ -321,22 +293,15 @@ is.
 \end{LeanDisplay}
 \end{leandef}
 
-Two things follow at once, one for each image. The rendering an entry has
-for a view is the key's statement rendered, and reads back as it when the
-view has no problems:
+One thing follows at once, for the rendering: the one an entry has for a
+view is the key's statement rendered, and reads back as it when the view
+has no problems.
 
 \begin{leantheorem}[sum=Xa6Hcbi0zI]{A view shows the statement}{A view shows the statement}
 \label{thm:A-view-shows-the-statement}
 \LeanProse{Let $\tau, \pi$ be types, $W \in \texttt{World}(\tau)$, $\mathit{trusted} \in \pi \to \mathbb{B}$, $b \in \texttt{Bundle}(\texttt{Image}(\tau), \pi)$, $k \in \mathit{Key}$, $e \in \texttt{Entry}(\texttt{Image}(\tau), \pi)$, $v \in \mathit{View}$ and $t \in \tau$. Assume $W \models b$, $b[k] = e$ and $\mathit{view}_{v}(e.\mathit{statement}) = t$. Then there is $S$ such that (1)~$\mathit{stmt}_{W}(k) = S$, (2)~$\mathit{render}_{W}(v, S) = t$ and (3)~$\mathit{problems}_{e.\mathit{statement}}(v) = [] \implies \mathit{reads}_{W}(t, S)$.}
 \end{leantheorem}
 
-And when hashes do not collide, which is the one thing we assume of SHA-256,
-one hash means one statement:
-
-\begin{leantheorem}[sum=62mT9X28I5]{The hash names the statement}{The hash names the statement}
-\label{thm:The-hash-names-the-statement}
-\LeanProse{Let $\tau$ be a type, $W \in \texttt{World}(\tau)$, $S, S' \in \mathit{Stmt}_{W}$, $i, i' \in \texttt{Image}(\tau)$ and $h \in \mathit{Hash}$. Assume $\forall S : \mathit{Stmt}_{W},\ \forall S' : \mathit{Stmt}_{W},\ \mathit{hash}_{W}(S) = \mathit{hash}_{W}(S') \implies S = S'$, $\mathit{image}_{W}(S, i)$, $\mathit{image}_{W}(S', i')$, $i.\mathit{stmtHash} = h$ and $i'.\mathit{stmtHash} = h$. Then $S = S'$.}
-\end{leantheorem}
 
 \section{Documents}\label{sec:documents}
 
@@ -376,10 +341,7 @@ slot they have not written:
 \end{leandef}
 
 In the example, the theorem is a block $\mathsf{block}^{\mathtt{prose}}_{k}(r)$
-whose $r$ is the sentence of Section~\ref{sec:intro}, and this sentence is attested
-prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
-$\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
-source of this paper when the sentence was checked against the Lean.
+whose $r$ is the sentence of Figure~\ref{fig:example}.
 
 \verb|imprimatur apply| regenerates every block whose key and view the
 bundle renders, and leaves every other piece as it
@@ -441,16 +403,13 @@ as the rendering still has that slot.
 \LeanProse{Let $i \in \mathit{SlotId}$, $t \in \mathit{String}$, $\mathit{old} \in \mathsf{List}(\mathit{SlotId} \times \mathit{String})$ and $r \in \mathit{Body}$. Assume $i \in \mathsf{ids}(r)$ and $\mathit{old}[i] = t$. Then $\mathsf{slots}(\mathsf{fill}(\mathit{old}, r))[i] = t$.}
 \end{leantheorem}
 
-Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
-drift for \verb|check| to report\leancheck[stmt=1e49679eaefa, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
 
 \section{What \texttt{check} guarantees}
 \label{sec:check}
 
 What does a paper claim? We say it of the world alone, with no bundle in
-sight, and in two stages.
-
-\subsection{Generated mathematics}
+sight, and in two stages: first for the mathematics the paper generates,
+then, in Section~\ref{sec:attested}, for the prose its authors write.
 
 A block $\mathsf{block}_{k}^{v}(r)$ claims that the key $k$ states something
 Lean proved, that $r$ is that statement rendered in view $v$, with the
@@ -467,7 +426,7 @@ holds.
 \end{leantheorem}
 
 \paragraph{The example.} Apply the theorem to the block of \emph{Values
-are final} in Section~\ref{sec:intro}, with $W$ the example's world and
+are final} in Figure~\ref{fig:example}, with $W$ the example's world and
 $b$ the bundle this paper was built with, which \verb|check| accepts. It
 gives a statement $S$ with $\mathit{stmt}_{W}(k) = S$: the key names a
 declaration, the proposition of Section~\ref{sec:meaning}. It gives
@@ -494,7 +453,7 @@ That is the hash's job.
 Were this all a paper could say, hashes would be unnecessary. They are
 there for what the authors write themselves.
 
-\subsection{Attested prose}
+\section{Attested prose}\label{sec:attested}
 
 A sentence like \emph{preservation holds for well-typed terms} has no
 formal content. The only way to tie it to Lean is to record which statement
@@ -504,9 +463,54 @@ still the one under that key. The key alone will not do: it names a
 name, and a theorem weakened to $\top$ keeps its name. The rendering will
 not do: it changes under a renaming and not under a change of meaning
 (Section~\ref{sec:bundle}). What is needed is a name for the meaning that
-the paper can carry, and the statement hash is that name. So a check
-$\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean proved whose
-hash is $h$; and a document is true when each of its pieces is:
+the paper can carry, and the statement hash is that name.
+
+\paragraph{Two hashes.} The statement hash is of the statement's
+\emph{meaning}: its type, together with every definition it depends on,
+with binder names dropped and proofs left out. The signature hash is of the
+statement \emph{as written}, the \texttt{lean} view. The two change
+independently, and the four cases have four readings:
+
+\begin{center}\small
+\begin{tabular}{l@{\quad}p{3.6cm}@{\quad}p{3.6cm}}
+ & \textit{signature same} & \textit{signature changed} \\[2pt]
+\textit{meaning same} & nothing changed & renamed or renotated: a warning \\[2pt]
+\textit{meaning changed} & a definition it depends on changed & the statement was edited \\
+\end{tabular}
+\end{center}
+
+The lower-left case is the one a reader cannot see. The example's
+substitution is a stand-in:
+
+\begin{leandef}[sum=dLUGSgMoci]{Stlc.subst}{Substitution}
+\begin{LeanDisplay}
+\LeanClause{M[M'] \;\deq\; M}{\leanslot{Stlc.subst}{Substitution, as a stand-in: the body is returned unchanged}}
+\end{LeanDisplay}
+\end{leandef}
+
+Replace it with the real one, and no theorem about reduction changes a
+character, in Lean or in the paper; their meaning does, since (Beta) uses
+substitution, and their statement hashes with it (the end of this section does it). For a theorem the meaning is its proposition under the
+definitions it mentions; for a definition, its own equations, so a
+definition is in its own cone. A title, a group of rules or a display of
+definitions, states what its members state, and is hashed as they are.
+
+And when hashes do not collide, which is the one thing we assume of SHA-256,
+one hash means one statement:
+
+\begin{leantheorem}[sum=62mT9X28I5]{The hash names the statement}{The hash names the statement}
+\label{thm:The-hash-names-the-statement}
+\LeanProse{Let $\tau$ be a type, $W \in \texttt{World}(\tau)$, $S, S' \in \mathit{Stmt}_{W}$, $i, i' \in \texttt{Image}(\tau)$ and $h \in \mathit{Hash}$. Assume $\forall S : \mathit{Stmt}_{W},\ \forall S' : \mathit{Stmt}_{W},\ \mathit{hash}_{W}(S) = \mathit{hash}_{W}(S') \implies S = S'$, $\mathit{image}_{W}(S, i)$, $\mathit{image}_{W}(S', i')$, $i.\mathit{stmtHash} = h$ and $i'.\mathit{stmtHash} = h$. Then $S = S'$.}
+\end{leantheorem}
+
+In the example, the sentence of Figure~\ref{fig:example} is attested prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
+$\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
+source of this paper when the sentence was checked against the Lean. Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
+drift for \verb|check| to report\leancheck[stmt=1e49679eaefa, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
+
+So a check $\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean
+proved whose hash is $h$; and a document is true when each of its pieces
+is:
 
 \begin{leandef}[sum=dzWzl4ICeZ]{SpliceModel.Piece.True}{What a piece claims}
 \begin{LeanDisplay}
@@ -537,14 +541,15 @@ against, is reading about one thing.
 \end{leantheorem}
 
 \paragraph{The example, edited.} Three edits to the development, and what
-\verb|check| then says of the block and the attested sentence of Section~4.
+\verb|check| then says of the block of Figure~\ref{fig:example} and of the
+attested sentence above.
 \begin{enumerate}
 \item \emph{Replace the stand-in by substitution of the argument for the
   variable $x_{0}$.} Nothing in the paper changes, and the block is not
   stale. The sentence is: \texttt{error[drift]: the statement of
   Stlc.values\_final, or something it depends on, has changed since the
   prose was last checked against it (stmt=4ad202811bf6, now 56881f286d16)}.
-  This is the lower-left cell of the table in Section~\ref{sec:bundle}:
+  This is the lower-left cell of the table above:
   the theorem's meaning changed through (Beta), and only the hash saw it.
 \item \emph{Rename the hypothesis \texttt{hv} to \texttt{h}.} Only the
   \texttt{lean} view changes. Nothing is stale, nothing drifts, and there
@@ -618,8 +623,8 @@ The example has a rendering that fails: its reduction relation in the
 display grammar view, where both arguments are terms and the head prints as
 $M \longrightarrow M$. The extractor records
 \emph{variables M and M both print as M}, the block is refused, and the
-theorem's $\mathit{reads}$ clause is what is withheld; the rules figure of
-Section~\ref{sec:intro} is the view that reads back.
+theorem's $\mathit{reads}$ clause is what is withheld; the rules of
+Figure~\ref{fig:example} are the view that reads back.
 
 \paragraph{What the reader knows.} Reading back uses the types of the
 formula's variables, which a reader has only if the text gives them. The

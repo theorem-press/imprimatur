@@ -18,6 +18,7 @@
 % The views that index the document (conventions, vocabulary, provenance)
 % are long tables.
 \RequirePackage{longtable}
+\RequirePackage{needspace}
 \RequirePackage{array}
 
 % ---------------------------------------------------------------------------
@@ -165,8 +166,10 @@
   \imprimatur@breakcommas
   \let\\\imprimatur@row}%
   {\par\endgroup}
-\newcommand\imprimatur@row{\@ifnextchar[{\imprimatur@rowskip}{\par}}
-\def\imprimatur@rowskip[#1]{\par\vskip#1\relax}
+% A page break between rows is discouraged, not forbidden: a long display
+% may still break.
+\newcommand\imprimatur@row{\@ifnextchar[{\imprimatur@rowskip}{\par\penalty2000\relax}}
+\def\imprimatur@rowskip[#1]{\par\penalty2000\vskip#1\relax}
 % \imprimatur@line{indent}{formula}{description}
 \newcommand\imprimatur@line[3]{%
   \hangindent2.5em\hangafter1\leavevmode\kern.1em\hspace*{#1}$#2$%
@@ -183,11 +186,13 @@
 % title as its optional argument. Text that follows without a blank line
 % continues the paragraph, unindented, as after center.
 \newenvironment{LeanDisplayBox}[1][]{%
-  \par\vskip\smallskipamount\noindent{\raggedright\textbf{#1}\par}\nopagebreak\vskip-.6ex
+  \par\vskip\smallskipamount\needspace{4\baselineskip}%
+  \noindent{\raggedright\textbf{#1}\par}\nopagebreak\vskip-.6ex
   \noindent\imprimatur@bra\par\nopagebreak\vskip-.4ex}%
   {\par\nopagebreak\vskip-.6ex\noindent\imprimatur@ket\par\vskip\smallskipamount\global\imprimatur@endpetrue\@endpetrue}
 \newenvironment{LeanRulesBox}[1][]{%
-  \par\medskip\noindent{\raggedright\textbf{#1}\par}\nopagebreak\vspace{-.8ex}%
+  \par\medskip\needspace{4\baselineskip}%
+  \noindent{\raggedright\textbf{#1}\par}\nopagebreak\vspace{-.8ex}%
   \noindent\imprimatur@bra\nopagebreak
   \setlength{\abovedisplayskip}{2pt}\setlength{\abovedisplayshortskip}{2pt}%
   \setlength{\belowdisplayskip}{2pt}\setlength{\belowdisplayshortskip}{2pt}}%
