@@ -1,7 +1,7 @@
 {
   "entries": {
     "Lookup and size": {
-      "axioms": ["propext"],
+      "axioms": [],
       "cone": {
         "reasons": {},
         "size": 11,

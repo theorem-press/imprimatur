@@ -226,7 +226,10 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
     else errors := errors.push (v, s!"{r.key} names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not {v}")
   let allTeX := String.join (views.toList.map (·.2))
   -- The group's statement is its members': their types, with their cones
-  -- united, hashed together; its verdict, theirs together.
+  -- united, hashed together. Its verdict is their cone and whether any
+  -- depends on `sorry`; it has no axioms of its own, since its members are
+  -- constructors or definitions, whose axioms are the compiler's and differ
+  -- between toolchains.
   let env ← getEnv
   let members : Array Name := ((g.map (·.ctors)).getD (disp.getD #[]))
   let cis := members.filterMap env.find?
@@ -248,7 +251,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       stmtHash := if coneOk && !cis.isEmpty then some (Trust.sha (Trust.groupStmtText cis cone)) else none,
       views, errors, validation, macros := macrosOf allTeX },
     verdict := {
-      axioms := axioms.map (·.toString), usesSorry := axioms.contains ``sorryAx,
+      axioms := #[], usesSorry := axioms.contains ``sorryAx,
       cone := if cis.isEmpty then none else some {
         size := cone.members.size, untrusted,
         reasons := untrusted.map fun n =>
