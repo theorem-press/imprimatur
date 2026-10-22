@@ -100,7 +100,8 @@ jobs:
           sudo apt-get update -q
           sudo apt-get install -q -y --no-install-recommends latexmk texlive-latex-base \
             texlive-latex-recommended texlive-latex-extra texlive-luatex \
-            texlive-fonts-recommended texlive-science lmodern poppler-utils
+            texlive-fonts-recommended texlive-science lmodern poppler-utils \
+            texlive-publishers texlive-fonts-extra
       - uses: actions/cache@v4
         with:
           path: |

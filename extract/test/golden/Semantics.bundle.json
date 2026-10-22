@@ -105,7 +105,7 @@
         "clauses": "Stlc.Claim has no equations: the clauses view shows definitions"
       },
       "kind": "structure",
-      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanField", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\LeanStructure", "\\begin", "\\end", "\\in", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathit", "\\mathrm", "\\textsf"],
+      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanField", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\LeanStructure", "\\begin", "\\end", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathit", "\\mathrm", "\\textsf"],
       "sigHash": "211bb3ca0fd6c651af228f898051bcf20640eabae6d44079f4371334d7300f97",
       "sorry": false,
       "source": {
@@ -116,7 +116,7 @@
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Claim}: mk",
         "grammar": "\\begin{LeanGrammar}\n\\LeanStructure{\\mathit{Claim}}{A typing claim.}\n\\LeanField{tm}{\\LeanMathConst{Tm}}{\\leanslot{Stlc.Claim.tm}{the term}}\n\\LeanField{ty}{\\LeanMathConst{Ty}}{\\leanslot{Stlc.Claim.ty}{its type}}\n\\end{LeanGrammar}",
-        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Claim} \\in \\mathit{Claim}}{\\leanslot{Stlc.Claim}{A typing claim}}\\\\\n\\LeanEntry{\\{\\mathit{tm} : \\LeanMathConst{Tm},\\ \\mathit{ty} : \\LeanMathConst{Ty}\\}}{}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\mathit{Claim}}{\\leanslot{Stlc.Claim}{A typing claim}}\\\\\n\\LeanEntry{\\mathit{tm} : \\LeanMathConst{Tm}}{\\leanslot{Stlc.Claim.tm}{the term}}\\\\\n\\LeanEntry{\\mathit{ty} : \\LeanMathConst{Ty}}{\\leanslot{Stlc.Claim.ty}{its type}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{structure} \\LeanConst{Claim} : \\LeanSort{Type}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Claim} : \\mathrm{Type}}",
         "math|forall=": "\\LeanMath{\\mathrm{Type}}",
@@ -142,7 +142,7 @@
         "grammar": "Stlc.HasType is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
       },
       "kind": "inductive",
-      "macros": ["\\Gamma", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to", "\\vdash"],
+      "macros": ["\\Gamma", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to", "\\vdash"],
       "sigHash": "33f14f31f89139554247f6cd80a6ca6ee0c4a79654839694f6683d0704154e7d",
       "sorry": false,
       "source": {
@@ -156,7 +156,7 @@
       },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
-        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{HasType} \\in a \\vdash e : \\tau}{\\leanslot{Stlc.HasType}{Typing}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.var}}{\\leanslot{Stlc.HasType.var}{T-Var: a variable has its type in the context}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.lam}}{\\leanslot{Stlc.HasType.lam}{T-Abs: abstraction}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.app}}{\\leanslot{Stlc.HasType.app}{T-App: application}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.unit}}{\\leanslot{Stlc.HasType.unit}{T-Unit}}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{a \\vdash e : \\tau}{\\leanslot{Stlc.HasType}{Typing}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.var}}{\\leanslot{Stlc.HasType.var}{T-Var: a variable has its type in the context}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.lam}}{\\leanslot{Stlc.HasType.lam}{T-Abs: abstraction}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.app}}{\\leanslot{Stlc.HasType.app}{T-App: application}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.unit}}{\\leanslot{Stlc.HasType.unit}{T-Unit}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{HasType} : \\LeanConst{Ctx} → \\LeanConst{Tm} → \\LeanConst{Ty} → \\LeanSort{Prop}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{HasType} : \\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
         "math|forall=": "\\LeanMath{\\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
@@ -182,7 +182,7 @@
         "grammar": "Stlc.Step is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
       },
       "kind": "inductive",
-      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\longrightarrow", "\\mathrm", "\\rulelabel", "\\textsf", "\\to", "\\val"],
+      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\longrightarrow", "\\mathrm", "\\rulelabel", "\\textsf", "\\to", "\\val"],
       "sigHash": "050a4fcd8fcd2b2a42d83dca4dda99586670bd274a99d9835174608c672866e6",
       "sorry": false,
       "source": {
@@ -195,7 +195,7 @@
       },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Step}: beta, app_left, app_right",
-        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Step} \\in e \\longrightarrow e}{\\leanslot{Stlc.Step}{Small-step reduction}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.beta}}{\\leanslot{Stlc.Step.beta}{Reduce: a β-step}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.app\\_left}}{\\leanslot{Stlc.Step.app_left}{}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.app\\_right}}{\\leanslot{Stlc.Step.app_right}{}}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{e \\longrightarrow e}{\\leanslot{Stlc.Step}{Small-step reduction}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.beta}}{\\leanslot{Stlc.Step.beta}{Reduce: a β-step}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.app\\_left}}{\\leanslot{Stlc.Step.app_left}{}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.app\\_right}}{\\leanslot{Stlc.Step.app_right}{}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Step} : \\LeanConst{Tm} → \\LeanConst{Tm} → \\LeanSort{Prop}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Step} : \\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",
         "math|forall=": "\\LeanMath{\\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",

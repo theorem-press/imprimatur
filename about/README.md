@@ -1,7 +1,7 @@
 # About imprimatur
 
 `imprimatur-paper.tex` is a short paper about imprimatur, built with
-imprimatur. Its theorems are DESIGN §18.2's: the splicer's laws (locality,
+imprimatur, in the PACMPL format (`acmart`, `acmsmall`). Its theorems are DESIGN §18.2's: the splicer's laws (locality,
 idempotence, the fixed point, slot preservation) and Theorem 1, what a
 successful `imprimatur check` guarantees. They are proved in `lean/`, a
 model of the splicer in which a document is already parsed into pieces.
@@ -27,7 +27,7 @@ To rebuild and check it:
 imprimatur toolchain install v4.35.0   # once
 imprimatur build
 imprimatur check                       # 0 stale, 0 errors, 0 warnings
-latexmk -pdf imprimatur-paper.tex
+TEXINPUTS="../tex//:" latexmk -pdf imprimatur-paper.tex   # needs acmart (texlive-publishers) and its fonts (texlive-fonts-extra)
 ```
 
 CI does the same (`e2e/about` in `scripts/e2e.sh`), and fails if the

@@ -1,12 +1,9 @@
-\documentclass{article}
-\usepackage{amsthm}
-\usepackage{amssymb}
+% The PACMPL format: acmsmall, single column, 10pt (the POPL instructions).
+\documentclass[acmsmall,screen,review,anonymous,nonacm]{acmart}
 \usepackage{mathpartir}
-\usepackage{url}
 \usepackage{imprimatur}
-\newtheorem{theorem}{Theorem}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
-\leanblockalias{leangrammar}{}
+\leanblockalias{leangrammar}{LeanDisplayBox}
 \leanblockalias{leantheorem}{theorem}
 \leanblockalias{leanrules}{}
 \leanblockalias{leandef}{LeanDisplayBox}
@@ -15,10 +12,8 @@
 
 \title{imprimatur: papers that say what Lean proved}
 \author{The imprimatur authors}
-\date{}
 
 \begin{document}
-\maketitle
 
 \begin{abstract}
 A paper about a Lean development restates its definitions and theorems in
@@ -36,6 +31,8 @@ imprimatur: every displayed definition and theorem below is generated from
 that Lean development, and every hand-written claim about it is checked
 against it.
 \end{abstract}
+
+\maketitle
 
 \section{Introduction}
 
@@ -82,19 +79,21 @@ constant or the title of a group, in a view, such as a formula, a sentence
 or a figure of inference rules. Its body is a list of segments: text
 generated from Lean, and slots, whose text the authors own.
 
-\begin{leangrammar}[sum=1zCWSr9i5v]{SpliceModel.Seg}{Segments}
-\label{gram:SpliceModel.Seg}\begin{LeanGrammar}
-\LeanProduction{\varsigma}{A segment of a generated block.}{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}
-\LeanAlternative{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=LI8COyXMC-]{SpliceModel.Seg}{Segments}
+\label{gram:SpliceModel.Seg}\begin{LeanDisplay}
+\LeanCategory{\varsigma \in \mathit{Seg}}{\leanslot{SpliceModel.Seg}{A segment of a generated block}}\\
+\LeanEntry{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}\\
+\LeanEntry{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
+\end{LeanDisplay}
 \end{leangrammar}
 
-\begin{leangrammar}[sum=dwPBXZ-Y8u]{SpliceModel.Piece}{Pieces}
-\label{gram:SpliceModel.Piece}\begin{LeanGrammar}
-\LeanProduction{p}{A piece of a document.}{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}
-\LeanAlternative{\mathsf{block}_{k}^{v}(r)}{\leanslot{SpliceModel.Piece.block}{a generated block: a key, shown in a view}}
-\LeanAlternative{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{a check that hand-written prose matches the statement with this hash}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=cJG1zCy1KM]{SpliceModel.Piece}{Pieces}
+\label{gram:SpliceModel.Piece}\begin{LeanDisplay}
+\LeanCategory{p \in \mathit{Piece}}{\leanslot{SpliceModel.Piece}{A piece of a document}}\\
+\LeanEntry{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}\\
+\LeanEntry{\mathsf{block}_{k}^{v}(r)}{\leanslot{SpliceModel.Piece.block}{a generated block: a key, shown in a view}}\\
+\LeanEntry{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{a check that hand-written prose matches the statement with this hash}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 Regenerating a block fills the rendering's slots with the text the authors
@@ -114,16 +113,17 @@ bundle renders, and leaves every other piece as it
 is\leancheck[stmt=5a7f40472101, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
 reports what is not as the bundle says:
 
-\begin{leangrammar}[sum=5g0BdW58g1]{SpliceModel.Diag}{Diagnostics}
-\label{gram:SpliceModel.Diag}\begin{LeanGrammar}
-\LeanProduction{x}{What \LeanCodeInline{check} reports.}{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}
-\LeanAlternative{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}
-\LeanAlternative{\mathsf{missing}_{k}(v)}{\leanslot{SpliceModel.Diag.missingView}{the entry has no rendering in the view}}
-\LeanAlternative{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}
-\LeanAlternative{\mathsf{unfaithful}_{k}(v)}{\leanslot{SpliceModel.Diag.unfaithful}{the rendering does not read back as the statement}}
-\LeanAlternative{\mathsf{nohash}(k)}{\leanslot{SpliceModel.Diag.noHash}{the entry has no statement hash}}
-\LeanAlternative{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=sSBoJwZVEg]{SpliceModel.Diag}{Diagnostics}
+\label{gram:SpliceModel.Diag}\begin{LeanDisplay}
+\LeanCategory{x \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
+\LeanEntry{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}\\
+\LeanEntry{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}\\
+\LeanEntry{\mathsf{missing}_{k}(v)}{\leanslot{SpliceModel.Diag.missingView}{the entry has no rendering in the view}}\\
+\LeanEntry{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}\\
+\LeanEntry{\mathsf{unfaithful}_{k}(v)}{\leanslot{SpliceModel.Diag.unfaithful}{the rendering does not read back as the statement}}\\
+\LeanEntry{\mathsf{nohash}(k)}{\leanslot{SpliceModel.Diag.noHash}{the entry has no statement hash}}\\
+\LeanEntry{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 A key without an entry is a broken reference; an entry whose proof is not
@@ -140,14 +140,13 @@ statement, and its proof. The statement and the proof are not in the file,
 and could not be, since the splicer cannot read Lean. The file holds their
 images. So an entry is parametrised by how the two are represented:
 
-\begin{leangrammar}[sum=-hBJ5Kt82d]{Imprimatur.Entry}{Entries}
-\label{gram:Imprimatur.Entry}\begin{LeanGrammar}
-\LeanStructure{\texttt{Entry}(\sigma, \pi)}{An entry: what a bundle says of a key. What the key names, its statement,
-as \LeanCodeInline{σ}, and the verdict on its proof, as \LeanCodeInline{π}.}
-\LeanField{decl}{\texttt{Decl}}{\leanslot{Imprimatur.Entry.decl}{what the key names}}
-\LeanField{statement}{\sigma}{\leanslot{Imprimatur.Entry.statement}{its statement}}
-\LeanField{verdict}{\pi}{\leanslot{Imprimatur.Entry.verdict}{the verdict on its proof}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=y7VOO7qd76]{Imprimatur.Entry}{Entries}
+\label{gram:Imprimatur.Entry}\begin{LeanDisplay}
+\LeanCategory{\texttt{Entry}(\sigma, \pi)}{\leanslot{Imprimatur.Entry}{An entry: what a bundle says of a key}}\\
+\LeanEntry{\mathit{decl} : \texttt{Decl}}{\leanslot{Imprimatur.Entry.decl}{what the key names}}\\
+\LeanEntry{\mathit{statement} : \sigma}{\leanslot{Imprimatur.Entry.statement}{its statement}}\\
+\LeanEntry{\mathit{verdict} : \pi}{\leanslot{Imprimatur.Entry.verdict}{the verdict on its proof}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 Of the statement, the file holds two images. The hash \emph{names} it: two
@@ -156,33 +155,28 @@ The views \emph{show} it: each is the statement rendered by the paper's
 notation. The \TeX{} is a parameter too, $\tau$: in the file it is \TeX{};
 in the model it is \TeX{} with the slots already parsed, a body.
 
-\begin{leangrammar}[sum=B5lL5NWue7]{Imprimatur.Image}{Images of a statement}
-\label{gram:Imprimatur.Image}\begin{LeanGrammar}
-\LeanStructure{\texttt{Image}(\tau)}{A statement as a document may carry it: the hash that names it, and the
-renderings that show it, as \LeanCodeInline{τ}.}
-\LeanField{stmtHash}{\mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.stmtHash}{the hash of the statement's meaning: the statement, with every
-definition it depends on; none when the dependencies could not be
-followed}}
-\LeanField{sigHash}{\mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.sigHash}{the hash of the statement as written, the \LeanCodeInline{lean} view; none for a
-title}}
-\LeanField{views}{\mathsf{Array}(\mathit{View} \times \tau)}{\leanslot{Imprimatur.Image.views}{the renderings, by view}}
-\LeanField{errors}{\mathsf{Array}(\mathit{View} \times \mathit{String})}{\leanslot{Imprimatur.Image.errors}{the views that could not be rendered, and why}}
-\LeanField{validation}{\mathsf{Array}(\mathit{View} \times \mathsf{Array}(\mathit{String}))}{\leanslot{Imprimatur.Image.validation}{for each view, the formulas in it that do not read back as the
-statement}}
-\LeanField{macros}{\mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Image.macros}{the TeX macros the renderings use}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=1FePWA7SoM]{Imprimatur.Image}{Images of a statement}
+\label{gram:Imprimatur.Image}\begin{LeanDisplay}
+\LeanCategory{\texttt{Image}(\tau)}{\leanslot{Imprimatur.Image}{A statement as a document may carry it}}\\
+\LeanEntry{\mathit{stmtHash} : \mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.stmtHash}{the hash of the statement's meaning: the statement, with every definition it depends on; none when the dependencies could not be followed}}\\
+\LeanEntry{\mathit{sigHash} : \mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.sigHash}{the hash of the statement as written, the \LeanCodeInline{lean} view; none for a title}}\\
+\LeanEntry{\mathit{views} : \mathsf{Array}(\mathit{View} \times \tau)}{\leanslot{Imprimatur.Image.views}{the renderings, by view}}\\
+\LeanEntry{\mathit{errors} : \mathsf{Array}(\mathit{View} \times \mathit{String})}{\leanslot{Imprimatur.Image.errors}{the views that could not be rendered, and why}}\\
+\LeanEntry{\mathit{validation} : \mathsf{Array}(\mathit{View} \times \mathsf{Array}(\mathit{String}))}{\leanslot{Imprimatur.Image.validation}{for each view, the formulas in it that do not read back as the statement}}\\
+\LeanEntry{\mathit{macros} : \mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Image.macros}{the TeX macros the renderings use}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 Of the proof, the file holds only a verdict: whether Lean accepted it, and
 on what.
 
-\begin{leangrammar}[sum=ccSRTMdW4q]{Imprimatur.Verdict}{Verdicts}
-\label{gram:Imprimatur.Verdict}\begin{LeanGrammar}
-\LeanStructure{\texttt{Verdict}}{The verdict on a proof: whether Lean accepted it, and on what.}
-\LeanField{axioms}{\mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Verdict.axioms}{the axioms the proof uses}}
-\LeanField{usesSorry}{\mathbb{B}}{\leanslot{Imprimatur.Verdict.usesSorry}{whether it depends on \LeanCodeInline{sorry}}}
-\LeanField{cone}{\mathsf{Option}(\texttt{Cone})}{\leanslot{Imprimatur.Verdict.cone}{what the statement depends on}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=A26C7HIvD7]{Imprimatur.Verdict}{Verdicts}
+\label{gram:Imprimatur.Verdict}\begin{LeanDisplay}
+\LeanCategory{\texttt{Verdict}}{\leanslot{Imprimatur.Verdict}{The verdict on a proof: whether Lean accepted it, and on what}}\\
+\LeanEntry{\mathit{axioms} : \mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Verdict.axioms}{the axioms the proof uses}}\\
+\LeanEntry{\mathit{usesSorry} : \mathbb{B}}{\leanslot{Imprimatur.Verdict.usesSorry}{whether it depends on \LeanCodeInline{sorry}}}\\
+\LeanEntry{\mathit{cone} : \mathsf{Option}(\texttt{Cone})}{\leanslot{Imprimatur.Verdict.cone}{what the statement depends on}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 The file is the JSON of $\texttt{Bundle}(\texttt{Image}(\mathit{TeX}),
@@ -227,18 +221,18 @@ states and whether its proof is trusted; how a statement is hashed and
 rendered; and when a rendering reads back as a statement, up to what the
 notation makes invisible (Section~\ref{sec:faithful}).
 
-\begin{leangrammar}[sum=zV8oWA-y7h]{Imprimatur.World}{Worlds}
-\label{gram:Imprimatur.World}\begin{LeanGrammar}
-\LeanStructure{W \in \texttt{World}(\tau)}{A world: an environment, as the extractor presents it, rendered as \LeanCodeInline{τ}.}
-\LeanField{Stmt}{\mathrm{Type}}{\leanslot{Imprimatur.World.Stmt}{statements}}
-\LeanField{kind}{\mathit{Key} \to \texttt{Kind}}{\leanslot{Imprimatur.World.kind}{what a key names}}
-\LeanField{stmt}{\mathit{Key} \to \mathsf{Option}(\mathit{Stmt}_{W})}{\leanslot{Imprimatur.World.stmt}{what a key states, if it is declared}}
-\LeanField{trusted}{\mathit{Key} \to \mathbb{B}}{\leanslot{Imprimatur.World.trusted}{whether a key's proof is trusted}}
-\LeanField{hash}{\mathit{Stmt}_{W} \to \mathit{Hash}}{\leanslot{Imprimatur.World.hash}{the hash of a statement's meaning}}
-\LeanField{sig}{\mathit{Stmt}_{W} \to \mathit{Hash}}{\leanslot{Imprimatur.World.sig}{the hash of a statement as written}}
-\LeanField{render}{\mathit{View} \to \mathit{Stmt}_{W} \to \mathsf{Option}(\tau)}{\leanslot{Imprimatur.World.render}{a statement rendered in a view, when the view applies}}
-\LeanField{Reads}{\tau \to \mathit{Stmt}_{W} \to \mathrm{Prop}}{\leanslot{Imprimatur.World.Reads}{when a rendering reads back as a statement}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=fsA8oFAYhv]{Imprimatur.World}{Worlds}
+\label{gram:Imprimatur.World}\begin{LeanDisplay}
+\LeanCategory{W \in \texttt{World}(\tau)}{\leanslot{Imprimatur.World}{An environment, as the extractor presents it}}\\
+\LeanEntry{\mathit{Stmt} : \mathrm{Type}}{\leanslot{Imprimatur.World.Stmt}{statements}}\\
+\LeanEntry{\mathit{kind} : \mathit{Key} \to \texttt{Kind}}{\leanslot{Imprimatur.World.kind}{what a key names}}\\
+\LeanEntry{\mathit{stmt} : \mathit{Key} \to \mathsf{Option}(\mathit{Stmt}_{W})}{\leanslot{Imprimatur.World.stmt}{what a key states, if it is declared}}\\
+\LeanEntry{\mathit{trusted} : \mathit{Key} \to \mathbb{B}}{\leanslot{Imprimatur.World.trusted}{whether a key's proof is trusted}}\\
+\LeanEntry{\mathit{hash} : \mathit{Stmt}_{W} \to \mathit{Hash}}{\leanslot{Imprimatur.World.hash}{the hash of a statement's meaning}}\\
+\LeanEntry{\mathit{sig} : \mathit{Stmt}_{W} \to \mathit{Hash}}{\leanslot{Imprimatur.World.sig}{the hash of a statement as written}}\\
+\LeanEntry{\mathit{render} : \mathit{View} \to \mathit{Stmt}_{W} \to \mathsf{Option}(\tau)}{\leanslot{Imprimatur.World.render}{a statement rendered in a view, when the view applies}}\\
+\LeanEntry{\mathit{Reads} : \tau \to \mathit{Stmt}_{W} \to \mathrm{Prop}}{\leanslot{Imprimatur.World.Reads}{when a rendering reads back as a statement}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 A world has statements and verdicts but no proofs. An image is a function
@@ -540,7 +534,7 @@ $r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated bloc
 $x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it} & \textit{Bundle}\\
 $W$ & $\mathit{World}$ & \leanslot{SpliceModel.World}{A world whose renderings are bodies} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
-$W$ & $\texttt{World}(\tau)$ & \leanslot{Imprimatur.World}{A world: an environment, as the extractor presents it, rendered as \LeanCodeInline{τ}} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
+$W$ & $\texttt{World}(\tau)$ & \leanslot{Imprimatur.World}{An environment, as the extractor presents it} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
 $e$ & $\mathit{Entry}$ & \leanslot{SpliceModel.Entry}{An entry as the splicer holds it: the file's, with each view's TeX parsed into a body, and the verdict read as a bit} & \textit{True}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 \end{longtable}

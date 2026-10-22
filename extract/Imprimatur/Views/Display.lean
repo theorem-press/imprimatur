@@ -17,7 +17,8 @@ of rows, each a formula with its description flush right.
   category's metavariable (`m ∈ T ≜ …`).
 - **`grammar|display`**: each inductive type as a `\LeanCategory{m ∈ T}{…}`
   row, followed by its constructors as `\LeanEntry{…}{…}` rows; a structure's
-  fields are one entry, a record, three fields to a row.
+  fields are one entry, a record, three fields to a row, or, when they are
+  documented, one row each with its description.
 
 A block shows one declaration (its key), or the declarations of a display
 (`latex_display "Title" := […]`, whose title is the key). Descriptions are
@@ -62,9 +63,27 @@ def displayGrammarView (tys : Array Name) : RenderM String := do
   for ty in tys do
     let some (.inductInfo i) := env.find? ty | throwError "{ty} is not an inductive type"
     noteShown ty
+    -- The head is the type, with its category's letter when it has one.
+    let hasCat := cats.any (·.1 == ty)
     let letter := ((cats.find? (·.1 == ty)).map (·.2)).getD (constTeX (← read).strip ty)
-    let head := s!"\\LeanCategory\{{letter} \\in {← typeTeX ty}}\{\\leanslot\{{ty}}\{{← docSentence ty}}}"
-    let entries ← if isStructure env ty then
+    let tyTeX ← typeTeX ty
+    let head := s!"\\LeanCategory\{{if hasCat then s!"{letter} \\in {tyTeX}" else tyTeX}}\{\\leanslot\{{ty}}\{{← docSentence ty}}}"
+    let fieldNames := if isStructure env ty then getStructureFields env ty else #[]
+    let documented ← fieldNames.anyM fun f => return (← findDocString? env (ty ++ f)).isSome
+    let entries ← if documented then
+        -- A structure whose fields are documented is set one field to a row,
+        -- each with its description; the field's type keeps its own binders,
+        -- and `self` is written as the category's letter.
+        fieldNames.mapM fun f => do
+          let proj := ty ++ f
+          let pci ← getConstInfo proj
+          let fty ← forallBoundedTelescope pci.type (some (i.numParams + 1)) fun xs body => do
+            let self := xs.back!
+            let lctx := (← getLCtx).setUserName self.fvarId! (if hasCat then Name.mkSimple letter else `self)
+            Meta.withLCtx lctx (← getLocalInstances) do
+              return (← render body).render 100000
+          return s!"\\LeanEntry\{\\mathit\{{TeX.escape f.toString}} : {fty}}\{\\leanslot\{{proj}}\{{← docSentence proj}}}"
+      else if isStructure env ty then
         i.ctors.toArray.mapM fun c => do
           let ci ← getConstInfo c
           forallTelescope ci.type fun xs _ => do

@@ -8,7 +8,7 @@ strip_namespaces = ["SpliceModel"]
 
 [aliases]
 # The paper's own environments, each with the view it shows.
-leangrammar = { view = "grammar", label = "gram:{key}", template = "\\label{{label}}{content}" }
+leangrammar = { view = "grammar|display", wrap = "LeanDisplayBox", label = "gram:{key}", template = "\\label{{label}}{content}" }
 leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
 leanrules   = { view = "rules" }
 leandef     = { view = "clauses", wrap = "LeanDisplayBox" }
