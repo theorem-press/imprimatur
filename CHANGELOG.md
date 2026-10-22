@@ -9,7 +9,8 @@ All notable changes to imprimatur are recorded here. Versions follow
   and `grammar|display` sets inductive types as grammar rows, each with its
   description as a slot, for one declaration or a `latex_display "Title" :=
   […]`. `imprimatur.sty` gains `LeanDisplay`, `LeanDisplayBox`,
-  `LeanRulesBox`, `\deq` and `\defeqq`.
+  `LeanRulesBox`, `\deq` and `\defeqq`. Text after a box with no blank line
+  before it continues the paragraph, unindented.
 
 - `imprimatur show KEY [--view VIEW]…` prints one key's renderings, with the
   problems translation validation found in each, without touching the paper:

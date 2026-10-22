@@ -22,6 +22,10 @@
 % ---------------------------------------------------------------------------
 % Markup (DESIGN 9.1). Options are read with l3keys; unknown ones are ignored,
 % so blocks can carry options that later versions use.
+% A wrap that ends like center (\@endpetrue) raises \ifimprimatur@endpe too:
+% each enclosing environment's \end consumes LaTeX's flag, so leanblock and
+% an alias raise it again, and text after the block is not indented.
+\newif\ifimprimatur@endpe
 \ExplSyntaxOn
 \tl_new:N \l__imprimatur_wrap_tl
 \tl_new:N \l__imprimatur_label_tl
@@ -39,6 +43,7 @@
     \tl_clear:N \l__imprimatur_wrap_tl
     \tl_clear:N \l__imprimatur_label_tl
     \keys_set:nn { imprimatur } { #1 }
+    \global\imprimatur@endpefalse
     \par
     \tl_if_empty:NF \l__imprimatur_wrap_tl
       {
@@ -53,6 +58,7 @@
     \tl_if_empty:NF \l__imprimatur_wrap_tl
       { \exp_args:NV \end \l__imprimatur_wrap_tl }
     \par
+    \ifimprimatur@endpe \@endpetrue \fi
   }
 
 % \leanblockalias{NAME}{WRAP}: define environment NAME as a leanblock that
@@ -61,7 +67,7 @@
   {
     \NewDocumentEnvironment { #1 } { O{} m m }
       { \begin { leanblock } [ wrap = { #2 } , ##1 ] { ##2 } { ##3 } }
-      { \end { leanblock } }
+      { \end { leanblock } \ifimprimatur@endpe \global\imprimatur@endpefalse \@endpetrue \fi }
   }
 \ExplSyntaxOff
 
@@ -170,17 +176,18 @@
 \newcommand\LeanEntry[2]{\imprimatur@line{1.5em}{#1}{#2}}
 % A titled box around a display or a block of rules: the wrapping
 % environment of an alias (wrap = "LeanDisplayBox"), which passes the block's
-% title as its optional argument.
+% title as its optional argument. Text that follows without a blank line
+% continues the paragraph, unindented, as after center.
 \newenvironment{LeanDisplayBox}[1][]{%
   \par\vskip\smallskipamount\noindent{\raggedright\textbf{#1}\par}\nopagebreak\vskip-.6ex
   \noindent\imprimatur@bra\par\nopagebreak\vskip-.4ex}%
-  {\par\nopagebreak\vskip-.6ex\noindent\imprimatur@ket\par\vskip\smallskipamount}
+  {\par\nopagebreak\vskip-.6ex\noindent\imprimatur@ket\par\vskip\smallskipamount\global\imprimatur@endpetrue\@endpetrue}
 \newenvironment{LeanRulesBox}[1][]{%
   \par\medskip\noindent{\raggedright\textbf{#1}\par}\nopagebreak\vspace{-.8ex}%
   \noindent\imprimatur@bra\nopagebreak
   \setlength{\abovedisplayskip}{2pt}\setlength{\abovedisplayshortskip}{2pt}%
   \setlength{\belowdisplayskip}{2pt}\setlength{\belowdisplayshortskip}{2pt}}%
-  {\par\nopagebreak\vspace{-.8ex}\noindent\imprimatur@ket\medskip}
+  {\par\nopagebreak\vspace{-.8ex}\noindent\imprimatur@ket\medskip\global\imprimatur@endpetrue\@endpetrue}
 \newcommand\LeanProduction[4]{#1 & ::= & #3 & \text{#4}\\}
 \newcommand\LeanAlternative[2]{ & \mid & #1 & \text{#2}\\}
 % A structure: its name and description across the whole width, then its
