@@ -58,6 +58,28 @@
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with hypotheses (for the \\LeanCodeInline{rule} and \\LeanCodeInline{forall} modifiers).}"
       }
     },
+    "Prod": {
+      "axioms": [],
+      "decl": "Prod",
+      "errors": {
+        "clauses": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "math|def=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule=",
+        "rules": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules",
+        "rules|exclude=beta": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|exclude=beta",
+        "rules|include=beta,app_right": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
+      },
+      "kind": "group",
+      "macros": ["\\LeanCategory", "\\LeanEntry", "\\LeanMathConst", "\\begin", "\\end", "\\in", "\\leanslot", "\\mathsf", "\\tau", "\\textsf", "\\to"],
+      "sorry": false,
+      "views": {
+        "fixture.rulelist": "\\textsf{Prod}",
+        "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}"
+      }
+    },
     "Stlc.HasType": {
       "axioms": ["propext"],
       "cone": {

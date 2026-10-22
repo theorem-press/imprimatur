@@ -66,9 +66,13 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
     -- title, or a key of custom views only.
     let entry := (projectEntries env).find? (·.1 == declKey)
     let extra := (entry.map (·.2.2)).getD #[]
-    let decl? := match entry with
-      | some (_, d, _) => env.find? d
-      | none => env.find? (toName declKey)
+    -- A display's title is its key even when it also names a declaration
+    -- (Mathlib's `Representation`, say): the author declared the display.
+    let disp := ((projectDisplays env).find? (·.1 == r.key)).map (·.2)
+    let decl? := match entry, disp with
+      | some (_, d, _), _ => env.find? d
+      | none, some _ => none
+      | none, none => env.find? (toName declKey)
     if let some (_, d, _) := entry then
       if decl?.isNone then
         warnings := warnings.push s!"{r.key}: its latex_entry names {d}, which is not a declaration"
@@ -76,7 +80,6 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
     let some c := decl?
       | -- A key that names no declaration may name a group of rules.
         let group := (projectGroups env).find? (·.title == r.key)
-        let disp := ((projectDisplays env).find? (·.1 == r.key)).map (·.2)
         let custom := !r.views.isEmpty && r.views.all fun v =>
           (projectViews env).any (·.1 == (parseViewSpec v).base) ||
             Views.indexViews.contains (parseViewSpec v).base

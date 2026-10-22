@@ -179,7 +179,8 @@ latex_display "Types and terms" := [Ty, Tm]
 
 Names a set of definitions shown together by the `clauses` view, as
 `lhs ≜ rhs` rows, or of inductive types shown by the `grammar|display` view,
-as grammar rows ([views.md](views.md)). Its title is the block's key.
+as grammar rows ([views.md](views.md)). Its title is the block's key, even
+when it also names a declaration (Mathlib's `Representation`, say).
 
 ## Packs
 
