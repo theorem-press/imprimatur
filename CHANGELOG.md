@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Displays (#73): the `clauses` view sets definitions as `lhs ≜ rhs` rows,
+  and `grammar|display` sets inductive types as grammar rows, each with its
+  description as a slot, for one declaration or a `latex_display "Title" :=
+  […]`. `imprimatur.sty` gains `LeanDisplay`, `LeanDisplayBox`,
+  `LeanRulesBox`, `\deq` and `\defeqq`. Text after a box with no blank line
+  before it continues the paragraph, unindented.
 - `latex_notation … break` lets a long rendering break the line before each
   of a rule's operators. A constant applied only to implicit arguments is no
   longer reported as a misread. The provenance table wraps long source paths,

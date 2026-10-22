@@ -39,6 +39,12 @@ latex_style applied_variables := call
 latex_entry "Preservation" => Stlc.step_app options := "forall"
 
 latex_group "Typing and evaluation" := [HasType.app, Step.beta, Step.app_left]
+-- Displays: definitions as `lhs ≜ rhs` rows (clauses), and types as grammar
+-- rows (grammar|display), each block keyed by its title.
+latex_display "Lookup and size" := [lookup, size]
+latex_display "Types and terms" := [Ty, Tm]
+-- A title that also names a declaration (core's `Prod`) is the display's.
+latex_display "Prod" := [Ty]
 
 latex_category Tm => "e"
 latex_category Ty => r"\tau"

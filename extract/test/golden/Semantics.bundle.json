@@ -1,5 +1,27 @@
 {
   "entries": {
+    "Lookup and size": {
+      "axioms": [],
+      "decl": "Lookup and size",
+      "errors": {
+        "grammar": "Stlc.lookup is not an inductive type",
+        "grammar|display": "Stlc.lookup is not an inductive type",
+        "math|def=": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule=",
+        "rules": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules",
+        "rules|exclude=beta": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|exclude=beta",
+        "rules|include=beta,app_right": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
+      },
+      "kind": "group",
+      "macros": ["\\Gamma", "\\LeanClause", "\\LeanCodeInline", "\\LeanMathConst", "\\begin", "\\deq", "\\end", "\\lambda", "\\leanslot", "\\textsf"],
+      "sorry": false,
+      "views": {
+        "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{lookup}\\,\\Gamma\\,i \\;\\deq\\; \\LeanMathConst{GetElem?.getElem?}\\,\\Gamma\\,i}{\\leanslot{Stlc.lookup}{Lookup in a context}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
+        "fixture.rulelist": "\\textsf{Lookup and size}"
+      }
+    },
     "Preservation": {
       "axioms": [],
       "cone": {
@@ -10,7 +32,9 @@
       "decl": "Stlc.step_app",
       "doc": "A theorem with hypotheses (for the `rule` and `forall` modifiers).",
       "errors": {
+        "clauses": "Stlc.step_app has no equations: the clauses view shows definitions",
         "grammar": "the grammar view needs an inductive type",
+        "grammar|display": "Stlc.step_app is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
         "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
         "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
@@ -34,6 +58,28 @@
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with hypotheses (for the \\LeanCodeInline{rule} and \\LeanCodeInline{forall} modifiers).}"
       }
     },
+    "Prod": {
+      "axioms": [],
+      "decl": "Prod",
+      "errors": {
+        "clauses": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "math|def=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule=",
+        "rules": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules",
+        "rules|exclude=beta": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|exclude=beta",
+        "rules|include=beta,app_right": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
+      },
+      "kind": "group",
+      "macros": ["\\LeanCategory", "\\LeanEntry", "\\LeanMathConst", "\\begin", "\\end", "\\in", "\\leanslot", "\\mathsf", "\\tau", "\\textsf", "\\to"],
+      "sorry": false,
+      "views": {
+        "fixture.rulelist": "\\textsf{Prod}",
+        "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}"
+      }
+    },
     "Stlc.HasType": {
       "axioms": ["propext"],
       "cone": {
@@ -44,10 +90,11 @@
       "decl": "Stlc.HasType",
       "doc": "Typing. Labels come from docstrings.",
       "errors": {
+        "clauses": "Stlc.HasType has no equations: the clauses view shows definitions",
         "grammar": "Stlc.HasType is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
       },
       "kind": "inductive",
-      "macros": ["\\Gamma", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\mathrm", "\\mathsf", "\\textsf", "\\to", "\\vdash"],
+      "macros": ["\\Gamma", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to", "\\vdash"],
       "sigHash": "33f14f31f89139554247f6cd80a6ca6ee0c4a79654839694f6683d0704154e7d",
       "sorry": false,
       "source": {
@@ -61,6 +108,7 @@
       },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{HasType} \\in a \\vdash e : \\tau}{\\leanslot{Stlc.HasType}{Typing}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.var}}{\\leanslot{Stlc.HasType.var}{T-Var: a variable has its type in the context}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.lam}}{\\leanslot{Stlc.HasType.lam}{T-Abs: abstraction}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.app}}{\\leanslot{Stlc.HasType.app}{T-App: application}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.unit}}{\\leanslot{Stlc.HasType.unit}{T-Unit}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{HasType} : \\LeanConst{Ctx} → \\LeanConst{Tm} → \\LeanConst{Ty} → \\LeanSort{Prop}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{HasType} : \\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
         "math|forall=": "\\LeanMath{\\LeanMathConst{Ctx} \\to \\LeanMathConst{Tm} \\to \\LeanMathConst{Ty} \\to \\mathrm{Prop}}",
@@ -82,10 +130,11 @@
       "decl": "Stlc.Step",
       "doc": "Small-step reduction. Labels come from the constructor names.",
       "errors": {
+        "clauses": "Stlc.Step has no equations: the clauses view shows definitions",
         "grammar": "Stlc.Step is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
       },
       "kind": "inductive",
-      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\longrightarrow", "\\mathrm", "\\rulelabel", "\\textsf", "\\to", "\\val"],
+      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\longrightarrow", "\\mathrm", "\\rulelabel", "\\textsf", "\\to", "\\val"],
       "sigHash": "050a4fcd8fcd2b2a42d83dca4dda99586670bd274a99d9835174608c672866e6",
       "sorry": false,
       "source": {
@@ -93,8 +142,12 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "e76370a2950fdd08ee59ebd5aa660ed4a3f08a206b7de94adeceed2c40323e36",
+      "validation": {
+        "grammar|display": ["variables e and e both print as $e$, in $e \\longrightarrow e$"]
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Step}: beta, app_left, app_right",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Step} \\in e \\longrightarrow e}{\\leanslot{Stlc.Step}{Small-step reduction}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.beta}}{\\leanslot{Stlc.Step.beta}{Reduce: a β-step}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.app\\_left}}{\\leanslot{Stlc.Step.app_left}{}}\\\\\n\\LeanEntry{\\LeanMathConst{Step.app\\_right}}{\\leanslot{Stlc.Step.app_right}{}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Step} : \\LeanConst{Tm} → \\LeanConst{Tm} → \\LeanSort{Prop}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Step} : \\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",
         "math|forall=": "\\LeanMath{\\LeanMathConst{Tm} \\to \\LeanMathConst{Tm} \\to \\mathrm{Prop}}",
@@ -115,8 +168,11 @@
       },
       "decl": "Stlc.Tm",
       "doc": "Terms, with de Bruijn variables.",
+      "errors": {
+        "clauses": "Stlc.Tm has no equations: the clauses view shows definitions"
+      },
       "kind": "inductive",
-      "macros": ["\\LeanAlternative", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\textsf"],
+      "macros": ["\\LeanAlternative", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\textsf"],
       "sigHash": "b60631772fb50b61f4c48115854a1a9c8c33b5caaee027e921640f1eb57aedc5",
       "sorry": false,
       "source": {
@@ -127,6 +183,7 @@
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Tm}: var, lam, app, unit",
         "grammar": "\\begin{LeanGrammar}\n\\LeanProduction{e}{Terms, with de Bruijn variables.}{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable.}}\n\\LeanAlternative{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction.}}\n\\LeanAlternative{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application.}}\n\\LeanAlternative{()}{\\leanslot{Stlc.Tm.unit}{The unit value.}}\n\\end{LeanGrammar}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{e \\in \\LeanMathConst{Tm}}{\\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\\\\n\\LeanEntry{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable}}\\\\\n\\LeanEntry{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction}}\\\\\n\\LeanEntry{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application}}\\\\\n\\LeanEntry{()}{\\leanslot{Stlc.Tm.unit}{The unit value}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Tm} : \\LeanSort{Type}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Tm} : \\mathrm{Type}}",
         "math|forall=": "\\LeanMath{\\mathrm{Type}}",
@@ -147,8 +204,11 @@
       },
       "decl": "Stlc.Ty",
       "doc": "Types.",
+      "errors": {
+        "clauses": "Stlc.Ty has no equations: the clauses view shows definitions"
+      },
       "kind": "inductive",
-      "macros": ["\\LeanAlternative", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to"],
+      "macros": ["\\LeanAlternative", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to"],
       "sigHash": "b134d77a3ceebfc192a39accc49f4a801d7fd4e641d376fa886a0f6586f3d26a",
       "sorry": false,
       "source": {
@@ -159,6 +219,7 @@
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Ty}: base, arrow",
         "grammar": "\\begin{LeanGrammar}\n\\LeanProduction{\\tau}{Types.}{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type.}}\n\\LeanAlternative{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions.}}\n\\end{LeanGrammar}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Ty} : \\LeanSort{Type}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Ty} : \\mathrm{Type}}",
         "math|forall=": "\\LeanMath{\\mathrm{Type}}",
@@ -181,12 +242,13 @@
       "doc": "The size of a term, by recursion (for the `def` modifier).",
       "errors": {
         "grammar": "the grammar view needs an inductive type",
+        "grammar|display": "Stlc.size is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
         "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
         "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
       },
       "kind": "definition",
-      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\end", "\\lambda", "\\leanmetasource", "\\mathbb", "\\textsf", "\\to"],
+      "macros": ["\\LeanClause", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\deq", "\\end", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathbb", "\\textsf", "\\to"],
       "sigHash": "e2b7c5d63bcf8722ed871cc6b816ecdb1de5cfdc12b6f564253261a992c5cdd8",
       "sorry": false,
       "source": {
@@ -195,6 +257,7 @@
       },
       "stmtHash": "1023a99e325d3da1e08812cdb3962a3e3e4f6cf68660997333e3a8967a0d3b63",
       "views": {
+        "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
         "fixture.rulelist": "\\textsf{Stlc.size}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{size} : \\LeanConst{Tm} → \\LeanConst{Nat}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{size}\\,x_{\\_} &= 1 \\\\ \\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) &= \\LeanMathConst{size}\\,e + 1 \\\\ \\LeanMathConst{size}\\,(e_{1}\\; e_{2}) &= \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1 \\\\ \\LeanMathConst{size}\\,() &= 1\\end{aligned}}",
@@ -214,7 +277,9 @@
       "decl": "Stlc.size_pos",
       "doc": "A clash with the paper's metavariables, for translation validation: `τ`\nstands for types (`latex_category Ty`), but here it names a number.",
       "errors": {
+        "clauses": "Stlc.size_pos has no equations: the clauses view shows definitions",
         "grammar": "the grammar view needs an inductive type",
+        "grammar|display": "Stlc.size_pos is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
         "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
         "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
@@ -254,7 +319,9 @@
       "decl": "Stlc.step_app",
       "doc": "A theorem with hypotheses (for the `rule` and `forall` modifiers).",
       "errors": {
+        "clauses": "Stlc.step_app has no equations: the clauses view shows definitions",
         "grammar": "the grammar view needs an inductive type",
+        "grammar|display": "Stlc.step_app is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
         "rules|exclude=beta": "the rules view needs an inductive predicate or a constructor",
         "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
@@ -278,15 +345,39 @@
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with hypotheses (for the \\LeanCodeInline{rule} and \\LeanCodeInline{forall} modifiers).}"
       }
     },
+    "Types and terms": {
+      "axioms": [],
+      "decl": "Types and terms",
+      "errors": {
+        "clauses": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "math|def=": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule=",
+        "rules": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules",
+        "rules|exclude=beta": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|exclude=beta",
+        "rules|include=beta,app_right": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
+      },
+      "kind": "group",
+      "macros": ["\\LeanCategory", "\\LeanEntry", "\\LeanMathConst", "\\begin", "\\end", "\\in", "\\lambda", "\\leanslot", "\\mathsf", "\\tau", "\\textsf", "\\to"],
+      "sorry": false,
+      "views": {
+        "fixture.rulelist": "\\textsf{Types and terms}",
+        "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\\\\[.5ex]\n\\LeanCategory{e \\in \\LeanMathConst{Tm}}{\\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\\\\n\\LeanEntry{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable}}\\\\\n\\LeanEntry{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction}}\\\\\n\\LeanEntry{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application}}\\\\\n\\LeanEntry{()}{\\leanslot{Stlc.Tm.unit}{The unit value}}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\\\\[.5ex]\n\\LeanCategory{e \\in \\LeanMathConst{Tm}}{\\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\\\\n\\LeanEntry{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable}}\\\\\n\\LeanEntry{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction}}\\\\\n\\LeanEntry{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application}}\\\\\n\\LeanEntry{()}{\\leanslot{Stlc.Tm.unit}{The unit value}}\n\\end{LeanDisplay}"
+      }
+    },
     "Typing and evaluation": {
       "axioms": [],
       "decl": "Typing and evaluation",
       "errors": {
-        "grammar": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not grammar",
-        "math|def=": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|def=",
-        "math|forall=": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|forall=",
-        "math|names=full": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|names=full",
-        "math|rule=": "Typing and evaluation names no declaration, so only a group's rules view or a custom view applies, not math|rule="
+        "clauses": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not clauses",
+        "grammar": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not grammar",
+        "grammar|display": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not grammar|display",
+        "math|def=": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule="
       },
       "kind": "group",
       "macros": ["\\Gamma", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\longrightarrow", "\\rulelabel", "\\textsf", "\\to", "\\val", "\\vdash"],

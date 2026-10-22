@@ -56,9 +56,11 @@ def fixtures : Array Fixture := #[
     views := #["math", "prose", "math:named", "math:binders"] },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
     keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
+      "Lookup and size", "Types and terms", "Prod",
       "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
-      "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist"] },
+      "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist",
+      "clauses", "grammar|display"] },
   { dir := "Patterns", module := `Patterns, strip := #[`Patterns],
     keys := #["Patterns.three", "Patterns.nested", "Patterns.side", "Patterns.safeHead",
       "Patterns.konst", "Patterns.ident"],
@@ -292,6 +294,30 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
       ((joins.splitOn "\\LeanBreak \\sqcup").length > 1) joins
     checkEq "extract/notation/no-render-errors"
       (f.keys.filter fun k => ((entry? r.bundle k).bind (·.getObjVal? "errors" |>.toOption)).isSome) #[]
+  | "Semantics" =>
+    -- Displays (`latex_display`): definitions as `lhs ≜ rhs` rows, types as
+    -- grammar rows, with their descriptions as slots.
+    let view (k v : String) : String :=
+      ((entry? r.bundle k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String v)).toOption).getD ""
+    let clauses := view "Lookup and size" "clauses"
+    check "extract/display/clauses"
+      -- `lookup` by one equation, `size` by four.
+      ((clauses.splitOn "\\LeanClause").length == 6 && (clauses.splitOn "\\deq").length == 6 &&
+        (clauses.splitOn "\\leanslot{Stlc.lookup}").length == 2 &&
+        (clauses.splitOn "\\leanslot{Stlc.size}").length == 2) clauses
+    check "extract/display/clauses-one-definition"
+      (((view "Stlc.size" "clauses").splitOn "\\deq").length == 5) (view "Stlc.size" "clauses")
+    let grammar := view "Types and terms" "grammar|display"
+    check "extract/display/grammar"
+      ((grammar.splitOn "\\LeanCategory{\\tau \\in").length == 2 &&
+        (grammar.splitOn "\\LeanCategory{e \\in").length == 2 &&
+        (grammar.splitOn "\\leanslot{Stlc.Tm.app}").length == 2) grammar
+    check "extract/display/title-names-declaration"
+      (((view "Prod" "grammar|display").splitOn "\\LeanCategory{\\tau \\in").length == 2)
+      (view "Prod" "grammar|display")
+    checkEq "extract/display/validated"
+      (#["Lookup and size", "Types and terms"].filter fun k =>
+        ((entry? r.bundle k).bind (·.getObjVal? "validation" |>.toOption)).isSome) #[]
   | "Patterns" =>
     -- A constant applied only to implicit arguments is no misread (`id`).
     checkEq "extract/validate/implicit-only-application"

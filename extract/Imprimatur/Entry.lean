@@ -15,6 +15,7 @@ import Imprimatur.Views.Rules
 import Imprimatur.Views.Grammar
 import Imprimatur.CustomViews
 import Imprimatur.Views.Index
+import Imprimatur.Views.Display
 
 /-!
 # Bundle entries
@@ -139,6 +140,8 @@ def parseViewSpec (s : String) : ViewSpec :=
       | _ => (head, none)
     { base, variant, opts := opts.toArray.filterMap fun o => match o.splitOn "=" with
         | [k, v] => some (k, v)
+        -- A flag: `grammar|display`.
+        | [k] => if k.isEmpty then none else some (k, "")
         | _ => none }
 
 /-- The rendering context for the notation in scope: the project's rules and
@@ -181,7 +184,8 @@ def validationField (vs : Array (String × Array String)) : Array (String × J) 
 /-- The entry for a `latex_group`: a key that names a group of rules, not a
 declaration. Only the `rules` view applies. -/
 def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Ref (Array String))
-    (extra : Array (String × String) := #[]) (root : System.FilePath := ".") : MetaM J := do
+    (extra : Array (String × String) := #[]) (root : System.FilePath := ".")
+    (disp : Option (Array Name) := none) : MetaM J := do
   let mut views : Array (String × J) := #[]
   let mut errors : Array (String × J) := #[]
   let mut validation : Array (String × Array String) := #[]
@@ -202,6 +206,20 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       match res with
       | .ok t => views := views.push (v, .str t)
       | .error msg => errors := errors.push (v, .str msg)
+    else if let (some ds, "clauses") := (disp, spec.base) then
+      -- A display of definitions (`latex_display`).
+      let (res, ps) ← run (Views.clausesView ds).run
+      validation := validation.push (v, ps)
+      match res with
+      | .ok t => views := views.push (v, .str t)
+      | .error msg => errors := errors.push (v, .str msg)
+    else if let (some ds, "grammar") := (disp, spec.base) then
+      -- A display of grammars (`latex_display`, `grammar|display`).
+      let (res, ps) ← run (Views.displayGrammarView ds).run
+      validation := validation.push (v, ps)
+      match res with
+      | .ok t => views := views.push (v, .str t)
+      | .error msg => errors := errors.push (v, .str msg)
     else if let (some g, "rules") := (g, spec.base) then
       let ctors := Views.selectCtors g.ctors (spec.opt "include") (spec.opt "exclude")
       let (res, ps) ← run (Views.rulesView ctors).run
@@ -209,7 +227,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       match res with
       | .ok t => views := views.push (v, .str t)
       | .error msg => errors := errors.push (v, .str msg)
-    else errors := errors.push (v, .str s!"{r.key} names no declaration, so only a group's rules view or a custom view applies, not {v}")
+    else errors := errors.push (v, .str s!"{r.key} names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not {v}")
   let allTeX := String.join (views.toList.map fun (_, j) => match j with | .str t => t | _ => "")
   let mut fields : Array (String × J) := #[
     ("kind", .str "group"), ("decl", .str r.key), ("axioms", .arr #[]), ("sorry", .bool false),
@@ -273,6 +291,14 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
           match res with
           | .ok v => views := views.push (other, .str v)
           | .error msg => errors := errors.push (other, .str msg)
+      else if base == "clauses" || (base == "grammar" && spec.opts.any (·.1 == "display")) then
+        -- One definition, or one type, in display form.
+        let act := if base == "clauses" then Views.clausesView #[c.name] else Views.displayGrammarView #[c.name]
+        let (res, ps) ← run act.run
+        validation := validation.push (other, ps)
+        match res with
+        | .ok v => views := views.push (other, .str v)
+        | .error msg => errors := errors.push (other, .str msg)
       else if base == "grammar" then
         let (res, ps) ← run (Views.grammarView c).run
         validation := validation.push (other, ps)
