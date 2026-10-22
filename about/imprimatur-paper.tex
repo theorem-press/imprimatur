@@ -466,6 +466,31 @@ holds.
 \LeanProse{Let $W \in \mathit{World}$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$, $v \in \mathit{View}$ and $r \in \mathit{Body}$. Assume $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{block}_{k}^{v}(r) \in d$. Then $W \models \mathsf{block}_{k}^{v}(r)$.}
 \end{leantheorem}
 
+\paragraph{The example.} Apply the theorem to the block of \emph{Values
+are final} in Section~\ref{sec:intro}, with $W$ the example's world and
+$b$ the bundle this paper was built with, which \verb|check| accepts. It
+gives a statement $S$ with $\mathit{stmt}_{W}(k) = S$: the key names a
+declaration, the proposition of Section~\ref{sec:meaning}. It gives
+$\mathit{trusted}_{W}(k)$: Lean accepted a proof of $S$ that uses no
+\texttt{sorry} and no axiom, and none of the sixteen constants in its cone
+is untrusted. It gives $\mathit{render}_{W}(\mathtt{prose}, S) = r'$ and
+$r = \mathsf{fill}(\mathsf{slots}(r), r')$: the sentence is that
+proposition rendered, and, the \texttt{prose} view having no slots, is
+$r'$ itself; for the terms grammar above it, the formulas are the
+rendering and the descriptions are the authors'. And it gives
+$\mathit{reads}_{W}(r', S)$: the formula $\neg (V \longrightarrow M)$
+parses back, in the grammar of Appendix~\ref{app:notation}, to $S$, with
+$V$ a value by the convention the appendix records. So a reader who trusts
+the extractor and the notation may conclude: \emph{what I read is a
+theorem of this development, and Lean proved it.}
+
+What the reader may not conclude is that the theorem says what they would
+like: $V = V$ would pass as readily. Nor that substitution is real: the
+sentence does not mention it, so the block is the rendering of a proved
+statement in the world with the stand-in and in the world without, and
+nothing in Theorem~\ref{thm:Generated-mathematics} tells the two apart.
+That is the hash's job.
+
 Were this all a paper could say, hashes would be unnecessary. They are
 there for what the authors write themselves.
 
@@ -650,6 +675,7 @@ F.~Wiedijk.
   2012.
 \end{thebibliography}
 
+\clearpage
 \appendix
 \section{Notation}\label{app:notation}
 
