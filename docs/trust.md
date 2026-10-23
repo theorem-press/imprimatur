@@ -54,6 +54,9 @@ This writes the current hashes into the paper:
 \leancheck[stmt=b41c0a9e77d2, sig=07ae13c4f0a1]{MyPaper.Results.theorem1_main}
 ```
 
+A key can also be the title of a `latex_group` or `latex_display`: its
+statement is its members', and its hashes are theirs together.
+
 From then on, `imprimatur check` compares them with the current Lean:
 
 - **`stmt=` differs:** an error (`drift`). Something the statement means

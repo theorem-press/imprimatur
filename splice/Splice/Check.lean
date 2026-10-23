@@ -23,6 +23,8 @@ import Splice.StdMacros
 
 namespace Splice
 
+open Imprimatur
+
 /-- Every key an item refers to. -/
 def Item.allKeys (it : Item) : Array String :=
   match it.kind with
@@ -33,36 +35,39 @@ def Item.allKeys (it : Item) : Array String :=
 /-- The `stmt=` and `sig=` values for a `\leancheck` of `keys`: the first 12
 hexadecimal digits of the key's hashes, or, for several keys, of the hash of
 their hashes joined by commas. `none` if a key is missing or has no hash. -/
-def checkHashes (bundle : Bundle) (keys : Array String) : Option (String × String) := do
+def checkHashes (bundle : Bundle (Image TeX) Verdict) (keys : Array String) :
+    Option (String × String) := do
   let es ← keys.mapM bundle.find?
-  let stmts ← es.mapM (·.stmtHash)
-  let sigs ← es.mapM (·.sigHash)
+  let stmts ← es.mapM (·.statement.stmtHash)
+  let sigs ← es.mapM (·.statement.sigHash)
   let short (hs : Array String) : String :=
     let h := if hs.size == 1 then hs[0]! else Sha256.hexOf (",".intercalate hs.toList)
     String.ofList (h.toList.take 12)
   return (short stmts, short sigs)
 
-/-- Problems with an entry's trust, checked against `allowed` axioms. -/
-def trustProblems (allowed : Array String) (e : Entry) : Array String := Id.run do
+/-- Problems with an entry's trust, checked against `allowed` axioms: none
+exactly when `Verdict.trusted allowed` holds of its verdict. -/
+def trustProblems (allowed : Array String) (key : String) (e : Entry (Image TeX) Verdict) :
+    Array String := Id.run do
+  let v := e.verdict
   let mut out := #[]
-  if e.usesSorry then out := out.push s!"{e.key} depends on sorry"
+  if v.usesSorry then out := out.push s!"{key} depends on sorry"
   -- `sorryAx` is reported above, as `sorry`.
-  let bad := e.axioms.filter (fun a => a != "sorryAx" && !allowed.contains a)
+  let bad := v.axioms.filter (fun a => a != "sorryAx" && !allowed.contains a)
   unless bad.isEmpty do
-    out := out.push s!"{e.key} uses axioms outside the allowed ones: {", ".intercalate bad.toList}"
-  let mut cone : Array String := #[]
-  for n in e.untrusted do
-    let why := ((e.reasons.find? (·.1 == n)).map (·.2)).getD #[]
-    -- An axiom in the cone is fine if it is allowed.
-    let why := why.filter (fun w => !(w == "axiom" && allowed.contains n))
-    if !why.isEmpty || e.reasons.isEmpty then
-      cone := cone.push (if why.isEmpty then n else s!"{n} ({", ".intercalate why.toList})")
-  unless cone.isEmpty do
-    out := out.push s!"{e.key} has untrusted constants in its dependency cone: {", ".intercalate cone.toList}"
+    out := out.push s!"{key} uses axioms outside the allowed ones: {", ".intercalate bad.toList}"
+  if let some c := v.cone then
+    let cone := (c.problems allowed).map fun n =>
+      let why := ((c.reasons.find? (·.1 == n)).map (·.2)).getD #[]
+      -- An axiom in the cone is fine if it is allowed.
+      let why := why.filter (fun w => !(w == "axiom" && allowed.contains n))
+      if why.isEmpty then n else s!"{n} ({", ".intercalate why.toList})"
+    unless cone.isEmpty do
+      out := out.push s!"{key} has untrusted constants in its dependency cone: {", ".intercalate cone.toList}"
   return out
 
 /-- Broken references, trust problems, drift and blueprint `\leanok`s. -/
-def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
+def audit (doc : Doc) (bundle : Bundle (Image TeX) Verdict) : Array Diag := Id.run do
   let mut ds := #[]
   for f in doc.files do
     for it in f.scan.items do
@@ -77,13 +82,13 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
           -- A blueprint `\lean{…}` without `\leanok` is work in progress, so
           -- only `\leanok` nodes are checked for trust (below).
           unless it.name == "lean" do
-            for p in trustProblems doc.cfg.allowedAxioms e do
+            for p in trustProblems doc.cfg.allowedAxioms key e do
               ds := ds.push (Diag.err "untrusted" loc p)
           -- Faithfulness (DESIGN §18.4): a typeset rendering that does not
           -- read back as its statement.
           if (it.kind == .block || it.kind == .inline) && it.live then
             let view := itemView doc.cfg it
-            for p in ((e.validation.find? (·.1 == view)).map (·.2)).getD #[] do
+            for p in e.statement.problems view do
               -- A metavariable that does not tell the reader a variable's type
               -- (`latex_style categories := unique` or `strict`) is an error.
               if p.startsWith "category: " then
@@ -116,10 +121,10 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
       for it in f.scan.items.filter (fun i => i.name == "lean" && i.env == ok.env) do
         for key in it.keys do
           if let some e := bundle.find? key then
-            unless (trustProblems doc.cfg.allowedAxioms e).isEmpty do
+            unless (trustProblems doc.cfg.allowedAxioms key e).isEmpty do
               ds := ds.push (Diag.err "leanok-untrusted" (f.src.locString ok.start)
                 s!"this node is marked \\leanok, but {key} is not trusted: \
-                  {"; ".intercalate (trustProblems doc.cfg.allowedAxioms e).toList}")
+                  {"; ".intercalate (trustProblems doc.cfg.allowedAxioms key e).toList}")
   -- Comparator manifests (DESIGN §10.5).
   for m in doc.manifests do
     let allowed := m.permittedAxioms.getD doc.cfg.allowedAxioms
@@ -127,7 +132,7 @@ def audit (doc : Doc) (bundle : Bundle) : Array Diag := Id.run do
       match bundle.find? key with
       | none => ds := ds.push (Diag.err "broken-ref" m.path s!"{key} has no entry in the bundle")
       | some e =>
-        for p in trustProblems allowed e do
+        for p in trustProblems allowed key e do
           ds := ds.push (Diag.err "untrusted" m.path p)
   return ds
 
@@ -190,7 +195,8 @@ TeX, LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty (`stdMacros`), not
 a file of the document, not one of `extra` (the paper's own packages), and
 not listed in `known_macros`. A warning, once per macro, where it is first
 used in a typeset block. -/
-def macroDiags (doc : Doc) (bundle : Bundle) (extra : Array String) : Array Diag := Id.run do
+def macroDiags (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (extra : Array String) :
+    Array Diag := Id.run do
   -- Sorted, for binary search (the splicer imports nothing beyond core).
   let mut known : Array String := (stdMacros.map ("\\" ++ ·)) ++ doc.cfg.knownMacros ++ extra
   for f in doc.files do
@@ -203,7 +209,7 @@ def macroDiags (doc : Doc) (bundle : Bundle) (extra : Array String) : Array Diag
     for it in f.scan.items do
       unless (it.kind == .block || it.kind == .inline) && it.live do continue
       let some e := bundle.find? it.key | continue
-      for m in e.macros do
+      for m in e.statement.macros do
         if isKnown m || seen.contains m then continue
         seen := seen.push m
         ds := ds.push (Diag.warn "undefined-macro" (f.src.locString it.start)

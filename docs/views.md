@@ -175,7 +175,8 @@ as rows `e ::=` followed by the alternatives. Two views write that form:
   definition of a type shows its category's metavariable (`m ∈ T ≜ …`).
 - **`grammar|display`** sets each inductive type as `\LeanCategory{e \in
   \mathit{Term}}{…}`, followed by its constructors as `\LeanEntry{…}{…}`
-  rows; a structure's fields are one record entry.
+  rows; a structure's fields are one record entry, or, when they are
+  documented, one row each with its description.
 
 A block shows its key's declaration, or the declarations of a display
 declared in the notation module, `latex_display "Title" := [d₁, d₂, …]`,

@@ -18,7 +18,7 @@ open Testkit
 
 /-- The splicer accepts the current bundle schema. -/
 def testVersion : TestM Unit := group "version" do
-  check "splice/version/schema" (Splice.acceptedSchemas.contains "imprimatur-bundle/1")
+  check "splice/version/schema" (Imprimatur.bundleSchema == "imprimatur-bundle/1")
 
 /-- Entry point for `lake test`. -/
 def main : IO UInt32 :=

@@ -5,6 +5,24 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The bundle is a Lean type, `bundle/Bundle.lean`, of which the file is the
+  JSON: `Bundle (Image TeX) Verdict`, an entry being what a key names, the
+  images of its statement (hashes and views) and the verdict on its proof.
+  Both executables and the paper's model use it (a copy each;
+  `lint/bundle-copies`), and the
+  module says when a bundle is true of a development. The model of the
+  splicer is built on it, and proves that a document which checks clean
+  against a true bundle is true: every block shows a statement Lean proved,
+  rendered, and reads back as it; every `\leancheck` names one by its hash.
+  The about paper presents this, in the PACMPL format, with a running
+  example: a small simply typed λ-calculus, shown as the paper's reader
+  sees it, as its bundle entry, as its world, and under three edits. A group's or display's entry now has a
+  statement hash and a cone, from its members, so `\leancheck{Title}`
+  works.
+- Fixed: an alias's template no longer rewrites `{key}`, `{label}` or
+  `{title}` inside the generated content (a structure field named `key`
+  became the block's key). The `grammar` view heads a structure without a
+  category by its type's notation, not its constant's name.
 - Displays (#73): the `clauses` view sets definitions as `lhs ≜ rhs` rows,
   and `grammar|display` sets inductive types as grammar rows, each with its
   description as a slot, for one declaration or a `latex_display "Title" :=

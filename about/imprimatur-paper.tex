@@ -1,34 +1,41 @@
-\documentclass{article}
-\usepackage{amsthm}
-\usepackage{amssymb}
-\usepackage{url}
+% The PACMPL format: acmsmall, single column, 10pt (the POPL instructions).
+\documentclass[acmsmall,screen,review,anonymous,nonacm]{acmart}
+\usepackage{mathpartir}
 \usepackage{imprimatur}
-\newtheorem{theorem}{Theorem}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
-\leanblockalias{leangrammar}{}
+\leanblockalias{leangrammar}{LeanDisplayBox}
 \leanblockalias{leantheorem}{theorem}
+\leanblockalias{leanrules}{}
+\leanblockalias{leandef}{LeanDisplayBox}
+\leanblockalias{leansource}{}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 
 \title{imprimatur: papers that say what Lean proved}
 \author{The imprimatur authors}
-\date{}
 
 \begin{document}
-\maketitle
 
 \begin{abstract}
 A paper about a Lean development restates its definitions and theorems in
 mathematical notation. imprimatur generates those restatements from the
 development, keeps the text the authors wrote around them, and checks that
-the paper still says what Lean proved. We state what that check guarantees,
-and prove it for a model of imprimatur's splicer in Lean. This paper is
-itself built with imprimatur: every displayed definition and theorem below
-is generated from that Lean development, and every hand-written claim about
-it is checked against it.
+the paper still says what Lean proved. Between the development and the
+paper there is one file, the bundle, and we give it a type and a meaning:
+what it says of each theorem and definition, and when that is true of the
+development. We then state what a successful \texttt{imprimatur check}
+guarantees, in two stages: first for the mathematics the paper generates,
+then for the prose its authors write and attest; and we prove it, for a
+model of imprimatur's splicer in Lean, as one theorem: a paper that checks
+clean against a true bundle is true. This paper is itself built with
+imprimatur: every displayed definition and theorem below is generated from
+that Lean development, and every hand-written claim about it is checked
+against it.
 \end{abstract}
 
-\section{Introduction}
+\maketitle
+
+\section{Introduction}\label{sec:intro}
 
 A paper and its Lean development drift apart. A theorem is weakened in Lean
 and not in the paper; a definition gains a case; a lemma the paper cites is
@@ -36,72 +43,330 @@ proved with \texttt{sorry}. imprimatur closes the gap in two ways. Blocks of
 the paper are \emph{generated}: the extractor renders a Lean constant's
 statement in the paper's notation, and the splicer writes it into the paper,
 keeping any text the authors wrote in its \emph{slots}. Hand-written prose
-about a constant is \emph{attested}: a \verb|\leancheck| beside it records the
-hash of the statement the prose was checked against, and the check fails if
-the statement changes.
+about a constant is \emph{attested}: a \verb|\leancheck| beside it records
+the hash of the statement the prose was checked against, and the check
+fails if the statement changes.
 
-What does it mean for this to be correct? A paper is correct with respect to
-its development when what it shows is what Lean proved. We state that as two
-theorems. The first, about the splicer, says what a successful
-\texttt{imprimatur check} guarantees; we prove it for a model of the
-splicer (Section~\ref{sec:check}). The second, about the notation, says that
-a rendering can be read back as the statement it came from; imprimatur
-checks it for each formula it renders (Section~\ref{sec:faithful}).
+imprimatur is two programs. The extractor runs inside Lean, at the
+development's own toolchain, and reads its elaborated environment. The
+splicer edits \TeX{} and uses nothing of Lean but its standard library, so
+one splicer serves every toolchain. All that passes between them is the
+bundle, a JSON file. So there are three things, and two relations between
+them:
+\begin{center}
+  the development $W$
+  $\xrightarrow{\;\text{the bundle is true of it}\;}$
+  the bundle $b$
+  $\xrightarrow{\;\text{the paper checks clean}\;}$
+  the paper $d$.
+\end{center}
+What does it mean for the paper to be correct? That what it shows is what
+Lean proved. We say this without mentioning the bundle (what a paper claims
+of a development, Section~\ref{sec:check}), say what makes a bundle true of
+a development (Section~\ref{sec:meaning}), and prove that the two relations
+compose: \emph{a paper that checks clean against a true bundle is true}. The
+proof is for a model of the splicer, in which a document is already parsed
+into pieces. It comes in two stages. The generated mathematics needs only
+the renderings in the bundle. The attested prose needs the hashes, and we
+say why. A second theorem, about the notation, says that a rendering can be
+read back as the statement it came from; imprimatur checks it for each
+formula it renders (Section~\ref{sec:faithful}).
 
-\section{Documents and bundles}
+\paragraph{A running example.} The development is a simply typed
+$\lambda$-calculus with de Bruijn variables, its values, and small-step
+reduction, whose substitution is a stand-in that we will replace. Figure~\ref{fig:example} shows its terms, its reduction relation and one
+theorem about it, as a reader of this paper sees them, and the Lean the
+theorem came from, shown by the \texttt{lean} view.
+\begin{figure}[t]
+\begin{leangrammar}[sum=GYQkvbUOd0]{Stlc.Tm}{Terms}
+\label{gram:Stlc.Tm}\begin{LeanDisplay}
+\LeanCategory{M \in \mathit{Term}}{\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\
+\LeanEntry{x_{i}}{\leanslot{Stlc.Tm.var}{a variable}}\\
+\LeanEntry{\lambda{:}A.\, M}{\leanslot{Stlc.Tm.lam}{an abstraction}}\\
+\LeanEntry{M_{1}\; M_{2}}{\leanslot{Stlc.Tm.app}{an application}}\\
+\LeanEntry{()}{\leanslot{Stlc.Tm.unit}{the unit value}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+\begin{leanrules}[sum=5cW2xFjnlQ]{Stlc.Step}{Reduction}
+\begin{mathpar}
+
+\inferrule[(Beta)]
+  { }
+  { (\lambda{:}A.\, M)\; V \longrightarrow M[V] }
+
+\and
+
+\inferrule[(App-Left)]
+  {
+    M_{1} \longrightarrow M_{1}'
+  }
+  { M_{1}\; M_{2} \longrightarrow M_{1}'\; M_{2} }
+
+\and
+
+\inferrule[(App-Right)]
+  {
+    M_{2} \longrightarrow M_{2}'
+  }
+  { V\; M_{2} \longrightarrow V\; M_{2}' }
+
+\end{mathpar}
+\end{leanrules}
+
+\begin{leantheorem}[sum=8gdE1ntMBs]{Values are final}{Values are final}
+\label{thm:Values-are-final}
+\LeanProse{Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
+\end{leantheorem}
+
+\begin{leansource}[sum=zIy9s_XPen]{Stlc.values_final}{The source}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{values\_final} \{\LeanBound{v} \LeanBound{e} : \LeanConst{Tm}\} (\LeanBound{hv} : \LeanConst{IsValue} \LeanBound{v}) : ¬\LeanConst{Step} \LeanBound{v} \LeanBound{e}}
+\end{leansource}
+\caption{The running example: a simply typed $\lambda$-calculus, as the
+paper's reader sees it, and the source of its theorem. All four blocks are
+generated.}
+\label{fig:example}
+\end{figure}
+
+The figure is the example's thread through the paper: what the bundle says of the theorem, what that means, what the
+paper claims, and what happens when the development changes.
+
+\section{The bundle}\label{sec:bundle}
+
+An entry is what the bundle says of a key: what the key names, its
+statement, and its proof. The statement and the proof are not in the file,
+and could not be, since the splicer cannot read Lean. The file holds their
+images. So an entry is parametrised by how the two are represented:
+
+\begin{leangrammar}[sum=y7VOO7qd76]{Imprimatur.Entry}{Entries}
+\label{gram:Imprimatur.Entry}\begin{LeanDisplay}
+\LeanCategory{\texttt{Entry}(\sigma, \pi)}{\leanslot{Imprimatur.Entry}{An entry: what a bundle says of a key}}\\
+\LeanEntry{\mathit{decl} : \texttt{Decl}}{\leanslot{Imprimatur.Entry.decl}{what the key names}}\\
+\LeanEntry{\mathit{statement} : \sigma}{\leanslot{Imprimatur.Entry.statement}{its statement}}\\
+\LeanEntry{\mathit{verdict} : \pi}{\leanslot{Imprimatur.Entry.verdict}{the verdict on its proof}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+Of the statement, the file holds two images. The hash \emph{names} it: two
+statements with one hash are one statement, as far as a document can tell.
+The views \emph{show} it: each is the statement rendered by the paper's
+notation. The \TeX{} is a parameter too, $\tau$: in the file it is \TeX{};
+in the model it is \TeX{} with the slots already parsed, a body
+(Section~\ref{sec:documents}).
+
+\begin{leangrammar}[sum=1FePWA7SoM]{Imprimatur.Image}{Images of a statement}
+\label{gram:Imprimatur.Image}\begin{LeanDisplay}
+\LeanCategory{\texttt{Image}(\tau)}{\leanslot{Imprimatur.Image}{A statement as a document may carry it}}\\
+\LeanEntry{\mathit{stmtHash} : \mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.stmtHash}{the hash of the statement's meaning: the statement, with every definition it depends on; none when the dependencies could not be followed}}\\
+\LeanEntry{\mathit{sigHash} : \mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.sigHash}{the hash of the statement as written, the \LeanCodeInline{lean} view; none for a title}}\\
+\LeanEntry{\mathit{views} : \mathsf{Array}(\mathit{View} \times \tau)}{\leanslot{Imprimatur.Image.views}{the renderings, by view}}\\
+\LeanEntry{\mathit{errors} : \mathsf{Array}(\mathit{View} \times \mathit{String})}{\leanslot{Imprimatur.Image.errors}{the views that could not be rendered, and why}}\\
+\LeanEntry{\mathit{validation} : \mathsf{Array}(\mathit{View} \times \mathsf{Array}(\mathit{String}))}{\leanslot{Imprimatur.Image.validation}{for each view, the formulas in it that do not read back as the statement}}\\
+\LeanEntry{\mathit{macros} : \mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Image.macros}{the TeX macros the renderings use}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+Of the proof, the file holds only a verdict: whether Lean accepted it, and
+on what.
+
+\begin{leangrammar}[sum=A26C7HIvD7]{Imprimatur.Verdict}{Verdicts}
+\label{gram:Imprimatur.Verdict}\begin{LeanDisplay}
+\LeanCategory{\texttt{Verdict}}{\leanslot{Imprimatur.Verdict}{The verdict on a proof: whether Lean accepted it, and on what}}\\
+\LeanEntry{\mathit{axioms} : \mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Verdict.axioms}{the axioms the proof uses}}\\
+\LeanEntry{\mathit{usesSorry} : \mathbb{B}}{\leanslot{Imprimatur.Verdict.usesSorry}{whether it depends on \LeanCodeInline{sorry}}}\\
+\LeanEntry{\mathit{cone} : \mathsf{Option}(\texttt{Cone})}{\leanslot{Imprimatur.Verdict.cone}{what the statement depends on}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+The file is the JSON of $\texttt{Bundle}(\texttt{Image}(\mathit{TeX}),
+\texttt{Verdict})$, a map from keys to entries; it is written and read by
+the one module that defines these types, and an extractor's bundle survives
+the round trip byte for byte. The entry for \emph{Values are final} is,
+abridged, the one display of this paper that is not generated:\footnote{It
+is data, not a Lean statement; the bundle it is taken from is the one this
+paper was built with.}
+
+\begin{footnotesize}
+\begin{verbatim}
+"Values are final": {
+  "kind": "theorem", "decl": "Stlc.values_final",
+  "source": { "path": "Stlc.lean", "line": 54 },
+  "stmtHash": "4ad202811bf6...", "sigHash": "2d5428d0311d...",
+  "views": { "prose": "\LeanProse{Let $V, M \in \mathit{Term}$.
+                        Then $\neg (V \longrightarrow M)$.}",
+             "lean": "...", "meta": "..." },
+  "axioms": [], "sorry": false, "cone": { "size": 16, "untrusted": [] }
+}
+\end{verbatim}
+\end{footnotesize}
+
+The proof is absent, and the statement appears twice: as a hash, and as
+\TeX{}. The model's bundle is the same type at the model's parameters:
+
+\begin{leandef}[sum=w7ghbqB2ku]{SpliceModel.Bundle}{The model's bundle}
+\begin{LeanDisplay}
+\LeanClause{b \in \mathit{Bundle} \;\deq\; \texttt{Bundle}(\texttt{Image}(\mathit{Body}), \mathbb{B})}{\leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it}}
+\end{LeanDisplay}
+\end{leandef}
+
+
+\section{What a bundle means}\label{sec:meaning}
+
+A bundle is about an environment, which the splicer never sees. A
+\emph{world} is the environment as the extractor presents it: what each key
+states and whether its proof is trusted; how a statement is hashed and
+rendered; and when a rendering reads back as a statement, up to what the
+notation makes invisible (Section~\ref{sec:faithful}).
+
+\begin{leangrammar}[sum=fsA8oFAYhv]{Imprimatur.World}{Worlds}
+\label{gram:Imprimatur.World}\begin{LeanDisplay}
+\LeanCategory{W \in \texttt{World}(\tau)}{\leanslot{Imprimatur.World}{An environment, as the extractor presents it}}\\
+\LeanEntry{\mathit{Stmt} : \mathrm{Type}}{\leanslot{Imprimatur.World.Stmt}{statements}}\\
+\LeanEntry{\mathit{kind} : \mathit{Key} \to \texttt{Kind}}{\leanslot{Imprimatur.World.kind}{what a key names}}\\
+\LeanEntry{\mathit{stmt} : \mathit{Key} \to \mathsf{Option}(\mathit{Stmt}_{W})}{\leanslot{Imprimatur.World.stmt}{what a key states, if it is declared}}\\
+\LeanEntry{\mathit{trusted} : \mathit{Key} \to \mathbb{B}}{\leanslot{Imprimatur.World.trusted}{whether a key's proof is trusted}}\\
+\LeanEntry{\mathit{hash} : \mathit{Stmt}_{W} \to \mathit{Hash}}{\leanslot{Imprimatur.World.hash}{the hash of a statement's meaning}}\\
+\LeanEntry{\mathit{sig} : \mathit{Stmt}_{W} \to \mathit{Hash}}{\leanslot{Imprimatur.World.sig}{the hash of a statement as written}}\\
+\LeanEntry{\mathit{render} : \mathit{View} \to \mathit{Stmt}_{W} \to \mathsf{Option}(\tau)}{\leanslot{Imprimatur.World.render}{a statement rendered in a view, when the view applies}}\\
+\LeanEntry{\mathit{Reads} : \tau \to \mathit{Stmt}_{W} \to \mathrm{Prop}}{\leanslot{Imprimatur.World.Reads}{when a rendering reads back as a statement}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+For the example, $\mathit{stmt}_{W}$ at the key of \emph{Values are
+final} is the proposition $\neg (V \longrightarrow M)$ under its binders;
+$\mathit{kind}_{W}$ says theorem; $\mathit{trusted}_{W}$ is true;
+$\mathit{hash}_{W}$ of the proposition covers $\mathit{Step}$,
+$\mathit{Val}$ and $\mathit{Term}$, and substitution through (Beta);
+$\mathit{sig}_{W}$ is the hash of the source shown in
+Figure~\ref{fig:example}; $\mathit{render}_{W}$ in the \texttt{prose} view is the
+sentence shown there, and in the \texttt{grammar} view is none, a theorem
+having no grammar; and $\mathit{reads}_{W}$ holds of the sentence's
+formula, which parses back uniquely in the notation of
+Appendix~\ref{app:notation}.
+
+A world has statements and verdicts but no proofs. An image is a function
+of the statement alone, so nothing in a bundle can depend on how a theorem
+was proved, only on whether it was. An image is \emph{of} a statement when
+every claim it makes is true of that statement:
+
+\begin{leanrules}[sum=He57VsxTNN]{Imprimatur.Image.Of}{Images of a statement}
+\begin{mathpar}
+
+\inferrule[Image]
+  {
+    \forall h : \mathit{Hash},\ i.\mathit{stmtHash} = h \implies h = \mathit{hash}_{W}(S) \\
+    \forall h : \mathit{Hash},\ i.\mathit{sigHash} = h \implies h = \mathit{sig}_{W}(S) \\
+    \forall v : \mathit{View},\ \forall t : \tau,\ (v, t) \in i.\mathit{views} \implies \mathit{render}_{W}(v, S) = t \\
+    \forall v : \mathit{View},\ \forall t : \tau,\ (v, t) \in i.\mathit{views} \implies \mathit{problems}_{i}(v) = [] \implies \mathit{reads}_{W}(t, S)
+  }
+  { \mathit{image}_{W}(S, i) }
+
+\end{mathpar}
+\end{leanrules}
+
+An image may say less than the environment knows: a hash it could not
+compute, a view it could not render. It may never say something false. Where
+it is silent, \verb|check| reports the silence (a missing view, a missing
+hash) rather than trusting it. An entry is true of a key when the key names
+what it says, its image is of the key's statement, and its verdict, read as
+a bit, is the world's; a bundle is true when the entry it gives for each key
+is.
+
+\begin{leanrules}[sum=SBbLnxo-_9]{Imprimatur.Entry.True}{True entries}
+\begin{mathpar}
+
+\inferrule[Entry]
+  {
+    e.\mathit{decl}.\mathit{kind} = \mathit{kind}_{W}(k) \\
+    \exists S,\ \mathit{stmt}_{W}(k) = S \wedge \mathit{image}_{W}(S, e.\mathit{statement}) \\
+    \mathit{trusted}(e.\mathit{verdict}) = \mathit{trusted}_{W}(k)
+  }
+  { W \models_{k} e }
+
+\end{mathpar}
+\end{leanrules}
+
+\begin{leandef}[sum=BO-FFbUkKC]{Imprimatur.Bundle.True}{True bundles}
+\begin{LeanDisplay}
+\LeanClause{W \models b \;\deq\; \forall k : \mathit{Key},\ \forall e : \texttt{Entry}(\texttt{Image}(\tau), \pi),\ b[k] = e \implies W \models_{k} e}{\leanslot{Imprimatur.Bundle.True}{A bundle is true of a world when the entry it gives for each key is}}
+\end{LeanDisplay}
+\end{leandef}
+
+One thing follows at once, for the rendering: the one an entry has for a
+view is the key's statement rendered, and reads back as it when the view
+has no problems.
+
+\begin{leantheorem}[sum=Xa6Hcbi0zI]{A view shows the statement}{A view shows the statement}
+\label{thm:A-view-shows-the-statement}
+\LeanProse{Let $\tau, \pi$ be types, $W \in \texttt{World}(\tau)$, $\mathit{trusted} \in \pi \to \mathbb{B}$, $b \in \texttt{Bundle}(\texttt{Image}(\tau), \pi)$, $k \in \mathit{Key}$, $e \in \texttt{Entry}(\texttt{Image}(\tau), \pi)$, $v \in \mathit{View}$ and $t \in \tau$. Assume $W \models b$, $b[k] = e$ and $\mathit{view}_{v}(e.\mathit{statement}) = t$. Then there is $S$ such that (1)~$\mathit{stmt}_{W}(k) = S$, (2)~$\mathit{render}_{W}(v, S) = t$ and (3)~$\mathit{problems}_{e.\mathit{statement}}(v) = [] \implies \mathit{reads}_{W}(t, S)$.}
+\end{leantheorem}
+
+
+\section{Documents}\label{sec:documents}
 
 A document is a list of pieces: hand-written text, generated blocks, and
-checks on hand-written prose. A block's body is a list of segments: text
+checks on hand-written prose. A block shows a key, the name of a Lean
+constant or the title of a group, in a view, such as a formula, a sentence
+or a figure of inference rules. Its body is a list of segments: text
 generated from Lean, and slots, whose text the authors own.
 
-\begin{leangrammar}[sum=g4GdhZSliS]{SpliceModel.Seg}{Segments}
-\label{gram:SpliceModel.Seg}\begin{LeanGrammar}
-\LeanProduction{\sigma}{A segment of a generated block.}{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}
-\LeanAlternative{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=LI8COyXMC-]{SpliceModel.Seg}{Segments}
+\label{gram:SpliceModel.Seg}\begin{LeanDisplay}
+\LeanCategory{\varsigma \in \mathit{Seg}}{\leanslot{SpliceModel.Seg}{A segment of a generated block}}\\
+\LeanEntry{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}\\
+\LeanEntry{\mathsf{slot}_{i}(t)}{\leanslot{SpliceModel.Seg.slot}{a slot, whose text the authors own}}
+\end{LeanDisplay}
 \end{leangrammar}
 
-\begin{leangrammar}[sum=iQOwawJZY6]{SpliceModel.Piece}{Pieces}
-\label{gram:SpliceModel.Piece}\begin{LeanGrammar}
-\LeanProduction{p}{A piece of a document.}{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}
-\LeanAlternative{\mathsf{block}_{k}(\mathit{body})}{\leanslot{SpliceModel.Piece.block}{a generated block for a key}}
-\LeanAlternative{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{hand-written prose, checked against hash $h$}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=cJG1zCy1KM]{SpliceModel.Piece}{Pieces}
+\label{gram:SpliceModel.Piece}\begin{LeanDisplay}
+\LeanCategory{p \in \mathit{Piece}}{\leanslot{SpliceModel.Piece}{A piece of a document}}\\
+\LeanEntry{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}\\
+\LeanEntry{\mathsf{block}_{k}^{v}(r)}{\leanslot{SpliceModel.Piece.block}{a generated block: a key, shown in a view}}\\
+\LeanEntry{\mathsf{checked}_{k}(h)}{\leanslot{SpliceModel.Piece.check}{a check that hand-written prose matches the statement with this hash}}
+\end{LeanDisplay}
 \end{leangrammar}
-
-A \emph{bundle}, exported from a Lean environment, gives each key the
-rendering of its statement, the statement's hash, and whether its proof is
-trusted, that is, uses no \texttt{sorry} and only the permitted
-axioms\leancheck[stmt=81ba55cf6570, sig=401766da2f98]{SpliceModel.Entry, SpliceModel.extract}.
 
 Regenerating a block fills the rendering's slots with the text the authors
 wrote in the old block, slot by slot, and with the rendering's own text for a
 slot they have not written:
 
-\begin{center}
-\begin{leanblock}[view=math, def, sum=BhwOfgB0yt]{SpliceModel.fill}{Filling slots}
-\LeanMath{\begin{aligned}\mathsf{fill}(\mathit{old}, []) &= [] \\ \mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) &= \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r) \\ \mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) &= \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)\end{aligned}}
-\end{leanblock}
-\end{center}
+\begin{leandef}[sum=31yBSoeXn6]{SpliceModel.fill}{Filling slots}
+\begin{LeanDisplay}
+\LeanClause{\mathsf{fill}(\mathit{old}, []) \;\deq\; []}{\leanslot{SpliceModel.fill}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}}\\
+\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) \;\deq\; \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}\\
+\LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{slot}_{i}(t) \mathbin{::} r) \;\deq\; \mathsf{slot}_{i}(\mathit{old}[i] \mathbin{\mathsf{else}} t) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}
+\end{LeanDisplay}
+\end{leandef}
 
-\verb|imprimatur apply| regenerates every block whose key has an entry,
-and leaves every other piece as it
-is\leancheck[stmt=6deca83854c0, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
+In the example, the theorem is a block $\mathsf{block}^{\mathtt{prose}}_{k}(r)$
+whose $r$ is the sentence of Figure~\ref{fig:example}.
+
+\verb|imprimatur apply| regenerates every block whose key and view the
+bundle renders, and leaves every other piece as it
+is\leancheck[stmt=5a7f40472101, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
 reports what is not as the bundle says:
 
-\begin{leangrammar}[sum=5CDH8zS1mO]{SpliceModel.Diag}{Diagnostics}
-\label{gram:SpliceModel.Diag}\begin{LeanGrammar}
-\LeanProduction{x}{What \LeanCodeInline{check} reports.}{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}
-\LeanAlternative{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}
-\LeanAlternative{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}
-\LeanAlternative{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
-\end{LeanGrammar}
+\begin{leangrammar}[sum=sSBoJwZVEg]{SpliceModel.Diag}{Diagnostics}
+\label{gram:SpliceModel.Diag}\begin{LeanDisplay}
+\LeanCategory{x \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
+\LeanEntry{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}\\
+\LeanEntry{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}\\
+\LeanEntry{\mathsf{missing}_{k}(v)}{\leanslot{SpliceModel.Diag.missingView}{the entry has no rendering in the view}}\\
+\LeanEntry{\mathsf{stale}(k)}{\leanslot{SpliceModel.Diag.stale}{the block is not the key's rendering}}\\
+\LeanEntry{\mathsf{unfaithful}_{k}(v)}{\leanslot{SpliceModel.Diag.unfaithful}{the rendering does not read back as the statement}}\\
+\LeanEntry{\mathsf{nohash}(k)}{\leanslot{SpliceModel.Diag.noHash}{the entry has no statement hash}}\\
+\LeanEntry{\mathsf{drift}(k)}{\leanslot{SpliceModel.Diag.drift}{the statement has changed since the prose was checked}}
+\end{LeanDisplay}
 \end{leangrammar}
 
 A key without an entry is a broken reference; an entry whose proof is not
-trusted is reported; a block that is not the rendering, with its slots
-filled, is stale; and a check whose recorded hash is not the statement's is
-drift\leancheck[stmt=40c927a974cb, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
+trusted is reported; a block whose view the entry does not render is
+missing it; a block that is not the rendering, with its slots filled, is
+stale; a rendering the bundle says does not read back is unfaithful; a check
+on a key without a hash has none; and a check whose recorded hash is not the
+statement's is drift\leancheck[stmt=ce27f8a301d4, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
 
 \section{The splicer's laws}
 
@@ -116,7 +381,7 @@ and its blocks without their bodies.
 \end{leantheorem}
 
 Second, running it again changes nothing more. This needs each rendering's
-slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=9891fff10987, sig=9d550ab02488]{SpliceModel.WF}.
+slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=e4ff67e116fd, sig=9d550ab02488]{SpliceModel.WF}.
 
 \begin{leantheorem}[sum=rUqQQUgoM3]{Idempotence}{Idempotence}
 \label{thm:Idempotence}
@@ -138,48 +403,190 @@ as the rendering still has that slot.
 \LeanProse{Let $i \in \mathit{SlotId}$, $t \in \mathit{String}$, $\mathit{old} \in \mathsf{List}(\mathit{SlotId} \times \mathit{String})$ and $r \in \mathit{Body}$. Assume $i \in \mathsf{ids}(r)$ and $\mathit{old}[i] = t$. Then $\mathsf{slots}(\mathsf{fill}(\mathit{old}, r))[i] = t$.}
 \end{leantheorem}
 
-Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
-drift for \verb|check| to report\leancheck[stmt=ac37d7be7013, sig=2d6e269c5e16]{SpliceModel.not_drift_after_accept}.
 
 \section{What \texttt{check} guarantees}
 \label{sec:check}
 
-An environment, for a paper, is the statement of each constant and whether
-its proof is trusted. The bundle the extractor exports from it renders and
-hashes each statement. If \verb|check| reports nothing against that bundle,
-the paper shows what Lean proved: every block is the rendering of a trusted
-constant's statement, with the authors' slot text in it,
+What does a paper claim? We say it of the world alone, with no bundle in
+sight, and in two stages: first for the mathematics the paper generates,
+then, in Section~\ref{sec:attested}, for the prose its authors write.
 
-\begin{leantheorem}[sum=xC0mGigpH_]{Soundness for blocks}{Soundness for blocks}
-\label{thm:Soundness-for-blocks}
-\LeanProse{Let $\mathit{Stmt}$ be a type, $\mathit{render} \in \mathit{Stmt} \to \mathit{Body}$, $\mathit{hash} \in \mathit{Stmt} \to \mathbb{N}$, $E \in \mathit{Env}(\mathit{Stmt})$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $\mathit{body} \in \mathit{Body}$. Assume $\mathsf{check}_{\mathsf{export}(E)}(d) = []$ and $\mathsf{block}_{k}(\mathit{body}) \in d$. Then there is $T$ such that (1)~$\mathit{stmt}_{E}(k) = T$, (2)~$\mathit{trusted}_{E}(k)$ and (3)~$\mathit{body} = \mathsf{fill}(\mathsf{slots}(\mathit{body}), \mathit{render}(T))$.}
+A block $\mathsf{block}_{k}^{v}(r)$ claims that the key $k$ states something
+Lean proved, that $r$ is that statement rendered in view $v$, with the
+authors' text in its slots, and that the rendering reads back as the
+statement\leancheck[stmt=f3a293b191c0, sig=a6e738ff2142]{SpliceModel.Piece.True}. Nothing here involves a hash:
+the splicer compares the block's text with the rendering in the bundle,
+and the bundle's verdict says the proof is trusted. If \verb|check| reports
+nothing against a true bundle, warnings included, every block's claim
+holds.
+
+\begin{leantheorem}[sum=g6Fxb8r-Rw]{Generated mathematics}{Generated mathematics}
+\label{thm:Generated-mathematics}
+\LeanProse{Let $W \in \mathit{World}$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$, $v \in \mathit{View}$ and $r \in \mathit{Body}$. Assume $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{block}_{k}^{v}(r) \in d$. Then $W \models \mathsf{block}_{k}^{v}(r)$.}
 \end{leantheorem}
 
-and every hand-written claim faces a trusted constant whose statement has
-the hash recorded when the claim was checked.
+\paragraph{The example.} Apply the theorem to the block of \emph{Values
+are final} in Figure~\ref{fig:example}, with $W$ the example's world and
+$b$ the bundle this paper was built with, which \verb|check| accepts. It
+gives a statement $S$ with $\mathit{stmt}_{W}(k) = S$: the key names a
+declaration, the proposition of Section~\ref{sec:meaning}. It gives
+$\mathit{trusted}_{W}(k)$: Lean accepted a proof of $S$ that uses no
+\texttt{sorry} and no axiom, and none of the sixteen constants in its cone
+is untrusted. It gives $\mathit{render}_{W}(\mathtt{prose}, S) = r'$ and
+$r = \mathsf{fill}(\mathsf{slots}(r), r')$: the sentence is that
+proposition rendered, and, the \texttt{prose} view having no slots, is
+$r'$ itself; for the terms grammar above it, the formulas are the
+rendering and the descriptions are the authors'. And it gives
+$\mathit{reads}_{W}(r', S)$: the formula $\neg (V \longrightarrow M)$
+parses back, in the grammar of Appendix~\ref{app:notation}, to $S$, with
+$V$ a value by the convention the appendix records. So a reader who trusts
+the extractor and the notation may conclude: \emph{what I read is a
+theorem of this development, and Lean proved it.}
 
-\begin{leantheorem}[sum=V_NF2sG0U7]{Soundness for checked prose}{Soundness for checked prose}
-\label{thm:Soundness-for-checked-prose}
-\LeanProse{Let $\mathit{Stmt}$ be a type, $\mathit{render} \in \mathit{Stmt} \to \mathit{Body}$, $\mathit{hash} \in \mathit{Stmt} \to \mathbb{N}$, $E \in \mathit{Env}(\mathit{Stmt})$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $h \in \mathbb{N}$. Assume $\mathsf{check}_{\mathsf{export}(E)}(d) = []$ and $\mathsf{checked}_{k}(h) \in d$. Then there is $T$ such that (1)~$\mathit{stmt}_{E}(k) = T$, (2)~$\mathit{trusted}_{E}(k)$ and (3)~$\mathit{hash}(T) = h$.}
+What the reader may not conclude is that the theorem says what they would
+like: $V = V$ would pass as readily. Nor that substitution is real: the
+sentence does not mention it, so the block is the rendering of a proved
+statement in the world with the stand-in and in the world without, and
+nothing in Theorem~\ref{thm:Generated-mathematics} tells the two apart.
+That is the hash's job.
+
+Were this all a paper could say, hashes would be unnecessary. They are
+there for what the authors write themselves.
+
+\section{Attested prose}\label{sec:attested}
+
+A sentence like \emph{preservation holds for well-typed terms} has no
+formal content. The only way to tie it to Lean is to record which statement
+a person checked it against, and have \verb|check| confirm that statement is
+still the one under that key. The key alone will not do: it names a
+\emph{declaration}, whatever the development currently says under that
+name, and a theorem weakened to $\top$ keeps its name. The rendering will
+not do: it changes under a renaming and not under a change of meaning
+(Section~\ref{sec:bundle}). What is needed is a name for the meaning that
+the paper can carry, and the statement hash is that name.
+
+\paragraph{Two hashes.} The statement hash is of the statement's
+\emph{meaning}: its type, together with every definition it depends on,
+with binder names dropped and proofs left out. The signature hash is of the
+statement \emph{as written}, the \texttt{lean} view. The two change
+independently, and the four cases have four readings:
+
+\begin{center}\small
+\begin{tabular}{l@{\quad}p{3.6cm}@{\quad}p{3.6cm}}
+ & \textit{signature same} & \textit{signature changed} \\[2pt]
+\textit{meaning same} & nothing changed & renamed or renotated: a warning \\[2pt]
+\textit{meaning changed} & a definition it depends on changed & the statement was edited \\
+\end{tabular}
+\end{center}
+
+The lower-left case is the one a reader cannot see. The example's
+substitution is a stand-in:
+
+\begin{leandef}[sum=dLUGSgMoci]{Stlc.subst}{Substitution}
+\begin{LeanDisplay}
+\LeanClause{M[M'] \;\deq\; M}{\leanslot{Stlc.subst}{Substitution, as a stand-in: the body is returned unchanged}}
+\end{LeanDisplay}
+\end{leandef}
+
+Replace it with the real one, and no theorem about reduction changes a
+character, in Lean or in the paper; their meaning does, since (Beta) uses
+substitution, and their statement hashes with it (the end of this section does it). For a theorem the meaning is its proposition under the
+definitions it mentions; for a definition, its own equations, so a
+definition is in its own cone. A title, a group of rules or a display of
+definitions, states what its members state, and is hashed as they are.
+
+And when hashes do not collide, which is the one thing we assume of SHA-256,
+one hash means one statement:
+
+\begin{leantheorem}[sum=62mT9X28I5]{The hash names the statement}{The hash names the statement}
+\label{thm:The-hash-names-the-statement}
+\LeanProse{Let $\tau$ be a type, $W \in \texttt{World}(\tau)$, $S, S' \in \mathit{Stmt}_{W}$, $i, i' \in \texttt{Image}(\tau)$ and $h \in \mathit{Hash}$. Assume $\forall S : \mathit{Stmt}_{W},\ \forall S' : \mathit{Stmt}_{W},\ \mathit{hash}_{W}(S) = \mathit{hash}_{W}(S') \implies S = S'$, $\mathit{image}_{W}(S, i)$, $\mathit{image}_{W}(S', i')$, $i.\mathit{stmtHash} = h$ and $i'.\mathit{stmtHash} = h$. Then $S = S'$.}
+\end{leantheorem}
+
+In the example, the sentence of Figure~\ref{fig:example} is attested prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
+$\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
+source of this paper when the sentence was checked against the Lean. Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
+drift for \verb|check| to report\leancheck[stmt=1e49679eaefa, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
+
+So a check $\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean
+proved whose hash is $h$; and a document is true when each of its pieces
+is:
+
+\begin{leandef}[sum=dzWzl4ICeZ]{SpliceModel.Piece.True}{What a piece claims}
+\begin{LeanDisplay}
+\LeanClause{W \models \mathsf{text}(\_) \;\deq\; \top}{\leanslot{SpliceModel.Piece.True}{What a piece claims of a world}}\\
+\LeanClause{W \models \mathsf{block}_{k}^{v}(r) \;\deq\; \exists S,\ \exists r',\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \wedge \mathit{render}_{W}(v, S) = r' \wedge r = \mathsf{fill}(\mathsf{slots}(r), r') \wedge \mathit{reads}_{W}(r', S)}{}\\
+\LeanClause{W \models \mathsf{checked}_{k}(h) \;\deq\; \exists S,\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \wedge \mathit{hash}_{W}(S) = h}{}
+\end{LeanDisplay}
+\end{leandef}
+
+\begin{leantheorem}[sum=YuyPcDgbsu]{Attested prose}{Attested prose}
+\label{thm:Attested-prose}
+\LeanProse{Let $W \in \mathit{World}$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $h \in \mathit{Hash}$. Assume $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{checked}_{k}(h) \in d$. Then $W \models \mathsf{checked}_{k}(h)$.}
+\end{leantheorem}
+
+\begin{leantheorem}[sum=_jhiARqWZl]{The typeset mathematics is true}{The typeset mathematics is true}
+\label{thm:The-typeset-mathematics-is-true}
+\LeanProse{Let $W \in \mathit{World}$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $W \models b$ and $\mathsf{check}_{b}(d) = []$. Then $W \models d$.}
 \end{leantheorem}
 
 The hash stands for the statement only when hashes do not collide. Assuming
-that, prose checked against a statement still faces that statement.
+that, prose checked against a statement still faces that statement: a
+reader of the sentence, and of the Lean theorem the person checked it
+against, is reading about one thing.
 
-\begin{leantheorem}[sum=nUracosHsM]{Attested prose}{Attested prose}
-\label{thm:Attested-prose}
-\LeanProse{Let $\mathit{Stmt}$ be a type, $\mathit{render} \in \mathit{Stmt} \to \mathit{Body}$, $\mathit{hash} \in \mathit{Stmt} \to \mathbb{N}$, $E \in \mathit{Env}(\mathit{Stmt})$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $T_{0} \in \mathit{Stmt}$. Assume $\forall T : \mathit{Stmt},\ \forall T' : \mathit{Stmt},\ \mathit{hash}(T) = \mathit{hash}(T') \implies T = T'$, $\mathsf{check}_{\mathsf{export}(E)}(d) = []$ and $\mathsf{checked}_{k}(\mathit{hash}(T_{0})) \in d$. Then $\mathit{stmt}_{E}(k) = T_{0}$.}
+\begin{leantheorem}[sum=5RPDXXmi4l]{Attested prose faces its statement}{Attested prose faces its statement}
+\label{thm:Attested-prose-faces-its-statement}
+\LeanProse{Let $W \in \mathit{World}$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $S_{0} \in \mathit{Stmt}_{W}$. Assume $\forall S : \mathit{Stmt}_{W},\ \forall S' : \mathit{Stmt}_{W},\ \mathit{hash}_{W}(S) = \mathit{hash}_{W}(S') \implies S = S'$, $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{checked}_{k}(\mathit{hash}_{W}(S_{0})) \in d$. Then $\mathit{stmt}_{W}(k) = S_{0}$.}
+\end{leantheorem}
+
+\paragraph{The example, edited.} Three edits to the development, and what
+\verb|check| then says of the block of Figure~\ref{fig:example} and of the
+attested sentence above.
+\begin{enumerate}
+\item \emph{Replace the stand-in by substitution of the argument for the
+  variable $x_{0}$.} Nothing in the paper changes, and the block is not
+  stale. The sentence is: \texttt{error[drift]: the statement of
+  Stlc.values\_final, or something it depends on, has changed since the
+  prose was last checked against it (stmt=4ad202811bf6, now 56881f286d16)}.
+  This is the lower-left cell of the table above:
+  the theorem's meaning changed through (Beta), and only the hash saw it.
+\item \emph{Rename the hypothesis \texttt{hv} to \texttt{h}.} Only the
+  \texttt{lean} view changes. Nothing is stale, nothing drifts, and there
+  is one warning: \texttt{warning[sig-changed]: the signature of
+  Stlc.values\_final reads differently (binder names or notation), but its
+  meaning is unchanged}. The upper-right cell. (Renaming the bound term
+  $M$ would also change the sentence, and the block with it.)
+\item \emph{Weaken the theorem to $V = V$}, which Lean proves as readily.
+  \texttt{error[stale]: the generated content of Values are final is out
+  of date}, and the drift error again. The lower-right cell.
+\end{enumerate}
+In none of the three is anything reported untrusted: Lean proved every
+version. The checks are about \emph{what} was proved, which is what
+Theorem~\ref{thm:The-typeset-mathematics-is-true} is about.
+
+\paragraph{The honest extractor.} The theorem's hypothesis is that the
+bundle is true. The bundle an honest extractor makes of a world, hashing
+and rendering each statement and recording what its validator finds, is
+true of it, provided a rendering the validator finds no problem in reads
+back as its statement, which is what Section~\ref{sec:faithful} checks.
+
+\begin{leantheorem}[sum=gvG0W1TTVo]{The bundle of a world is true}{The bundle of a world is true}
+\label{thm:The-bundle-of-a-world-is-true}
+\LeanProse{Let $W \in \mathit{World}$, $\mathit{views} \in \mathsf{List}(\mathit{View})$, $\mathit{problems} \in \mathit{View} \to \mathit{Stmt}_{W} \to \mathsf{Array}(\mathit{String})$ and $\mathit{keys} \in \mathsf{List}(\mathit{Key})$. Assume $\forall v : \mathit{View},\ \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{problems}(v)(S) = [] \implies \mathit{render}_{W}(v, S) = r \implies \mathit{reads}_{W}(r, S)$. Then $W \models \mathsf{bundle}_{W}(\mathit{keys})$.}
 \end{leantheorem}
 
 The splicer that runs on real papers works on \TeX{} source, not on
-documents already parsed into pieces. Its scanner and its edits are what the
-model leaves out, and they are property-tested against the same four laws.
+documents already parsed into pieces. Its scanner, its parsing of slots and
+its edits are what the model leaves out, and they are property-tested
+against the four laws.
 
 \section{Rendering is faithful}
 \label{sec:faithful}
 
-Soundness says the text is the \emph{rendering} of the statement. A reader
-must also recover the statement from it: this is Pollack's question of
+The theorems say the text is the \emph{rendering} of the statement, and
+that it reads back, $\mathit{reads}_{W}(r, S)$. A reader must indeed
+recover the statement from the text: this is Pollack's question of
 believing a machine-checked proof~\cite{Pollack98}, and Wiedijk's
 \emph{Pollack-consistency}, that printing a term and parsing it back gives
 the same term~\cite{Wiedijk12}.
@@ -190,16 +597,17 @@ grouped by precedence. A rendering is \emph{faithful} when it has exactly
 one reading in that grammar, and that reading is the statement it was
 rendered from, up to what the notation declares invisible: implicit
 arguments, coercions, proofs, the names of hypotheses and bound variables,
-and the premises and synonyms it names.
+and the premises and synonyms it names. That is what the world's
+$\mathit{reads}$ stands for.
 
 imprimatur checks this for each formula, by translation validation. As the
 extractor renders a formula, it also builds the reading the formula should
 have: an atom reads as itself, and a rule's rendering as the rule's pattern
-with its holes' readings. It then parses the typeset formula, and
-\verb|imprimatur check| reports, where the formula is, a formula with two
-readings (showing both), with none, or with one that is not the expected
-reading, a \emph{misread}. The last is what the check is for. A renderer
-that left out the parentheses its holes need would print
+with its holes' readings. It then parses the typeset formula, and records
+in the bundle, for each view, the formulas with two readings, with none, or
+with one that is not the expected reading, a \emph{misread}; \verb|check|
+reports them where the formula is. The last is what the check is for. A
+renderer that left out the parentheses its holes need would print
 $(\lambda r\, q.\, e) = M$ as $\lambda r\, q.\, e = M$, a formula that
 reads back uniquely, and wrongly. Made to do so, imprimatur reports six
 misreads in a twenty-page paper about another Lean development.
@@ -210,6 +618,13 @@ compared. There the check rests on the grammar mirroring the renderer, as
 both are built from the same rules. In that twenty-page paper, 610 of the
 662 formulas with one reading are compared in full, 21 in part, and 31 not
 at all.
+
+The example has a rendering that fails: its reduction relation in the
+display grammar view, where both arguments are terms and the head prints as
+$M \longrightarrow M$. The extractor records
+\emph{variables M and M both print as M}, the block is refused, and the
+theorem's $\mathit{reads}$ clause is what is withheld; the rules of
+Figure~\ref{fig:example} are the view that reads back.
 
 \paragraph{What the reader knows.} Reading back uses the types of the
 formula's variables, which a reader has only if the text gives them. The
@@ -224,20 +639,17 @@ print alike. Each exception is an error. Appendix~\ref{app:notation} lists
 the metavariables and the notation, both generated. A reader who knows
 them has the grammar the formulas were checked in.
 
-\paragraph{Together.} Theorem~\ref{thm:Soundness-for-blocks} and
-translation validation make one claim. If the check reports nothing,
-warnings included, then every block is the rendering of a trusted
-constant's statement, and each formula in it reads back, in the paper's
-notation, as that statement up to what the notation declares invisible.
-The first half is proved for a model of the splicer; the second is checked,
-for each formula of the paper, each time it is built.
+\section{The trusted base}\label{sec:trusted}
 
-\section{The trusted base}
-
-What the two halves do not cover is trusted:
+What the theorems and the check do not cover is trusted:
 \begin{itemize}
-\item Lean's kernel, and the extractor's reading of the environment.
+\item Lean's kernel, and the extractor's reading of the environment: that
+  the bundle it writes is true of the development. The model says what
+  that means, and that an honest extractor's bundle is true; the
+  extractor itself is metaprogramming, and is not verified.
 \item The hash's resistance to collisions.
+\item The splicer's parsing of \TeX{}, of blocks and of slots, which the
+  model takes as done; it is property-tested.
 \item The parser that reads formulas back, and, where an expected reading
   is incomplete, the grammar's mirroring of the renderer.
 \item The notation module, as the paper's dictionary. Lean checks its names,
@@ -268,48 +680,98 @@ F.~Wiedijk.
   2012.
 \end{thebibliography}
 
+\clearpage
 \appendix
 \section{Notation}\label{app:notation}
 
-The metavariables of this paper, and the notation it uses, generated from
-its notation module. A variable with a subscript or a prime ranges over the
-same type as its letter.
+Each metavariable of the paper stands for one type, and a variable of that
+type is written with it. The tables are generated from the notation module:
+first the metavariables, then each piece of notation the definitions and
+results use.
 
-\begin{leanconventions}[sum=y0BasabyJh]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=hEICyivlwu]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
-$\sigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
+$M$ & $\mathit{Term}$ & \leanslot{Stlc.Tm}{Terms, with de Bruijn variables} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
+$A$ & $\mathit{Type}$ & \leanslot{Stlc.Ty}{Types} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
+$b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it} & \textit{Bundle}\\
+$W$ & $\mathit{World}$ & \leanslot{SpliceModel.World}{A world whose renderings are bodies} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
+$W$ & $\texttt{World}(\tau)$ & \leanslot{Imprimatur.World}{An environment, as the extractor presents it} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
+$v$ & $\mathit{View}$ & \leanslot{Imprimatur.View}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …} & \textit{Of}\\
+$h$ & $\mathit{Hash}$ & \leanslot{Imprimatur.Hash}{A SHA-256, as 64 hexadecimal digits} & \textit{Of}\\
+$e$ & $\mathit{Entry}$ & \leanslot{SpliceModel.Entry}{An entry as the splicer holds it: the file's, with each view's TeX parsed into a body, and the verdict read as a bit} & \textit{True}\\
+$k$ & $\mathit{Key}$ & \leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group} & \textit{True}\\
+$\varsigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
 $p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$k$ & $\mathit{Key}$ & \leanslot{SpliceModel.Key}{Keys: the names of Lean constants} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
+$r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated block} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
 $x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
-$b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle: the entries of the keys a document uses} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 \end{longtable}
-A variable with a prime or a subscript ($\sigma'$, $\sigma_{1}$) ranges over the same type.
+A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type.
 \end{leanconventions}
 
-\begin{leannotation}[sum=wlP0ROlKQw]{Notation}{The notation of the paper}
+\begingroup\small
+\begin{leannotation}[sum=0-vQwchjSY]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
+\multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
+$\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
+$W \models b$ & \texttt{Imprimatur.Bundle.True} & \leanslot{Imprimatur.Bundle.True/0}{A bundle is true of a world when the entry it gives for each key is}\\
+$b[k]$ & \texttt{Imprimatur.Bundle.find?} & \leanslot{Imprimatur.Bundle.find?/0}{The entry of a key}\\
+$\texttt{Cone}$ & \texttt{Imprimatur.Cone} & \leanslot{Imprimatur.Cone/0}{What a statement depends on, beyond the trusted modules}\\
+$\texttt{Decl}$ & \texttt{Imprimatur.Decl} & \leanslot{Imprimatur.Decl/0}{A declaration, as a key names it}\\
+$d.\mathit{kind}$ & \texttt{Imprimatur.Decl.kind} & \leanslot{Imprimatur.Decl.kind/0}{what it is}\\
+$\texttt{Entry}(\sigma, \pi)$ & \texttt{Imprimatur.Entry} & \leanslot{Imprimatur.Entry/0}{An entry: what a bundle says of a key}\\
+$W \models_{k} e$ & \texttt{Imprimatur.Entry.True} & \leanslot{Imprimatur.Entry.True/0}{An entry is true of a key when the key names what it says, its image is of the key's statement, and its verdict, read by \LeanCodeInline{trusted}, is the world's}\\
+$e.\mathit{decl}$ & \texttt{Imprimatur.Entry.decl} & \leanslot{Imprimatur.Entry.decl/0}{what the key names}\\
+$e.\mathit{statement}$ & \texttt{Imprimatur.Entry.statement} & \leanslot{Imprimatur.Entry.statement/0}{its statement}\\
+$e.\mathit{verdict}$ & \texttt{Imprimatur.Entry.verdict} & \leanslot{Imprimatur.Entry.verdict/0}{the verdict on its proof}\\
+$\mathit{Hash}$ & \texttt{Imprimatur.Hash} & \leanslot{Imprimatur.Hash/0}{A SHA-256, as 64 hexadecimal digits}\\
+$\texttt{Image}(\tau)$ & \texttt{Imprimatur.Image} & \leanslot{Imprimatur.Image/0}{A statement as a document may carry it: the hash that names it, and the renderings that show it, as \LeanCodeInline{τ}}\\
+$\mathit{image}_{W}(S, i)$ & \texttt{Imprimatur.Image.Of} & \leanslot{Imprimatur.Image.Of/0}{\LeanCodeInline{i} is an image of \LeanCodeInline{S}: each hash it has is \LeanCodeInline{S}'s, each view it has is a rendering of \LeanCodeInline{S}, and a view it validates reads back as \LeanCodeInline{S}}\\
+$\mathit{problems}_{i}(v)$ & \texttt{Imprimatur.Image.problems} & \leanslot{Imprimatur.Image.problems/0}{The formulas of a view that do not read back; none when every one does}\\
+$i.\mathit{sigHash}$ & \texttt{Imprimatur.Image.sigHash} & \leanslot{Imprimatur.Image.sigHash/0}{the hash of the statement as written, the \LeanCodeInline{lean} view; none for a title}\\
+$i.\mathit{stmtHash}$ & \texttt{Imprimatur.Image.stmtHash} & \leanslot{Imprimatur.Image.stmtHash/0}{the hash of the statement's meaning: the statement, with every definition it depends on; none when the dependencies could not be followed}\\
+$\mathit{view}_{v}(i)$ & \texttt{Imprimatur.Image.view?} & \leanslot{Imprimatur.Image.view?/0}{The rendering in a view}\\
+$i.\mathit{views}$ & \texttt{Imprimatur.Image.views} & \leanslot{Imprimatur.Image.views/0}{the renderings, by view}\\
+$\mathit{Key}$ & \texttt{Imprimatur.Key} & \leanslot{Imprimatur.Key/0}{A key: what a document cites, the name of a constant or the title of a group}\\
+$\texttt{Kind}$ & \texttt{Imprimatur.Kind} & \leanslot{Imprimatur.Kind/0}{What a key names}\\
+$\texttt{Verdict}$ & \texttt{Imprimatur.Verdict} & \leanslot{Imprimatur.Verdict/0}{The verdict on a proof: whether Lean accepted it, and on what}\\
+$\mathit{View}$ & \texttt{Imprimatur.View} & \leanslot{Imprimatur.View/0}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …}\\
+$\texttt{World}(\tau)$ & \texttt{Imprimatur.World} & \leanslot{Imprimatur.World/0}{A world: an environment, as the extractor presents it, rendered as \LeanCodeInline{τ}}\\
+$\mathit{reads}_{W}(r, S)$ & \texttt{Imprimatur.World.Reads} & \leanslot{Imprimatur.World.Reads/0}{when a rendering reads back as a statement}\\
+$\mathit{Stmt}_{W}$ & \texttt{Imprimatur.World.Stmt} & \leanslot{Imprimatur.World.Stmt/0}{statements}\\
+$\mathit{hash}_{W}(S)$ & \texttt{Imprimatur.World.hash} & \leanslot{Imprimatur.World.hash/0}{the hash of a statement's meaning}\\
+$\mathit{kind}_{W}(k)$ & \texttt{Imprimatur.World.kind} & \leanslot{Imprimatur.World.kind/0}{what a key names}\\
+$\mathit{render}_{W}(v, S)$ & \texttt{Imprimatur.World.render} & \leanslot{Imprimatur.World.render/0}{a statement rendered in a view, when the view applies}\\
+$\mathit{sig}_{W}(S)$ & \texttt{Imprimatur.World.sig} & \leanslot{Imprimatur.World.sig/0}{the hash of a statement as written}\\
+$\mathit{stmt}_{W}(k)$ & \texttt{Imprimatur.World.stmt} & \leanslot{Imprimatur.World.stmt/0}{what a key states, if it is declared}\\
+$\mathit{trusted}_{W}(k)$ & \texttt{Imprimatur.World.trusted} & \leanslot{Imprimatur.World.trusted/0}{whether a key's proof is trusted}\\
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
+$\mathsf{Array}(\alpha)$ & \texttt{Array} & \leanslot{Array/0}{dynamic arrays with elements from \LeanCodeInline{α}}\\
+$\mathbb{B}$ & \texttt{Bool} & \leanslot{Bool/0}{The Boolean values, \LeanCodeInline{true} and \LeanCodeInline{false}}\\
+$\mathsf{true}$ & \texttt{Bool.true} & \leanslot{Bool.true/0}{The Boolean value \LeanCodeInline{true}, not to be confused with the proposition \LeanCodeInline{True}}\\
 $\mathsf{List}(\alpha)$ & \texttt{List} & \leanslot{List/0}{Linked lists: ordered lists, in which each element has a reference to the next element}\\
 $a \mathbin{::} l$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
 $[]$ & \texttt{List.nil} & \leanslot{List.nil/0}{The empty list, usually written \LeanCodeInline{[]}}\\
+$l$ & \texttt{List.toArray} & \leanslot{List.toArray/0}{Converts a \LeanCodeInline{List α} into an \LeanCodeInline{Array α}}\\
 $a \notin l$ & \texttt{Not} & \leanslot{Not/0}{\LeanCodeInline{Not p}, or \LeanCodeInline{¬p}, is the negation of \LeanCodeInline{p}}\\
+$\mathsf{Option}(\alpha)$ & \texttt{Option} & \leanslot{Option/0}{Optional values, which are either \LeanCodeInline{some} around a value from the underlying type or \LeanCodeInline{none}}\\
 $o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{Gets an optional value, returning a given default on \LeanCodeInline{none}}\\
 $x$ & \texttt{Option.some} & \leanslot{Option.some/0}{Some value of type \LeanCodeInline{α}}\\
 $\alpha \times \beta$ & \texttt{Prod} & \leanslot{Prod/0}{The product type, usually written \LeanCodeInline{α × β}}\\
 $\mathit{String}$ & \texttt{String} & \leanslot{String/0}{A string is a sequence of Unicode scalar values}\\
 \multicolumn{3}{@{}l}{\textit{SpliceModel}}\\
-$\mathit{Body}$ & \texttt{Body} & \leanslot{SpliceModel.Body/0}{The body of a generated block}\\
 $\mathsf{broken}(k)$ & \texttt{Diag.brokenRef} & \leanslot{SpliceModel.Diag.brokenRef/0}{the key has no entry}\\
 $\mathsf{drift}(k)$ & \texttt{Diag.drift} & \leanslot{SpliceModel.Diag.drift/0}{the statement has changed since the prose was checked}\\
+$\mathsf{missing}_{k}(v)$ & \texttt{Diag.missingView} & \leanslot{SpliceModel.Diag.missingView/0}{the entry has no rendering in the view}\\
+$\mathsf{nohash}(k)$ & \texttt{Diag.noHash} & \leanslot{SpliceModel.Diag.noHash/0}{the entry has no statement hash}\\
 $\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{the block is not the key's rendering}\\
+$\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.Diag.unfaithful/0}{the rendering does not read back as the statement}\\
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
-$\mathit{Env}(S)$ & \texttt{Env} & \leanslot{SpliceModel.Env/0}{A Lean environment: each key's statement, if it is a constant, and whether its proof is trusted}\\
-$\mathit{stmt}_{E}(k)$ & \texttt{Env.stmt} & \leanslot{SpliceModel.Env.stmt/0}{the statement of each constant}\\
-$\mathit{trusted}_{E}(k)$ & \texttt{Env.trusted} & \leanslot{SpliceModel.Env.trusted/0}{whether the proof of each constant is trusted}\\
-$\mathsf{block}_{k}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block for a key}\\
+$W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
+$W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
+$\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\
 $\mathsf{checked}_{k}(h)$ & \texttt{Piece.check} & \leanslot{SpliceModel.Piece.check/0}{a check that hand-written prose matches the statement with this hash}\\
 $\mathsf{text}(s)$ & \texttt{Piece.text} & \leanslot{SpliceModel.Piece.text/0}{hand-written text}\\
 $\mathsf{gen}(s)$ & \texttt{Seg.gen} & \leanslot{SpliceModel.Seg.gen/0}{text generated from Lean}\\
@@ -317,14 +779,22 @@ $\mathsf{slot}_{i}(t)$ & \texttt{Seg.slot} & \leanslot{SpliceModel.Seg.slot/0}{a
 $\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots}\\
 $\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
 $\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
+$\mathsf{bundle}_{W}(\mathit{keys})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for some keys and views}\\
 $\mathsf{check}_{b}(d)$ & \texttt{check} & \leanslot{SpliceModel.check/0}{\LeanCodeInline{imprimatur check}: what it reports about a document}\\
-$\mathsf{export}(E)$ & \texttt{extract} & \leanslot{SpliceModel.extract/0}{\LeanCodeInline{imprimatur-export}: the bundle of an environment, given how statements are rendered and hashed}\\
 $\mathsf{fill}(\mathit{old}, r)$ & \texttt{fill} & \leanslot{SpliceModel.fill/0}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}\\
 $\mathsf{ids}(r)$ & \texttt{ids} & \leanslot{SpliceModel.ids/0}{The identifiers of a body's slots}\\
 $l[i]$ & \texttt{lookup} & \leanslot{SpliceModel.lookup/0}{The text of slot \LeanCodeInline{i}, the first with that identifier}\\
 $\lfloor d \rfloor$ & \texttt{outline} & \leanslot{SpliceModel.outline/0}{The outline of a piece: a block without its body}\\
 $\mathsf{slots}(r)$ & \texttt{slots} & \leanslot{SpliceModel.slots/0}{The slots of a body, with their text}\\
+\multicolumn{3}{@{}l}{\textit{Stlc}}\\
+$e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction}\\
+$e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
+$\lambda{:}t.\, e$ & \texttt{Tm.lam} & \leanslot{Stlc.Tm.lam/0}{an abstraction}\\
+$()$ & \texttt{Tm.unit} & \leanslot{Stlc.Tm.unit/0}{the unit value}\\
+$x_{i}$ & \texttt{Tm.var} & \leanslot{Stlc.Tm.var/0}{a variable}\\
+$e[v]$ & \texttt{subst} & \leanslot{Stlc.subst/0}{Substitution, as a stand-in: the body is returned unchanged}\\
 \end{longtable}
 \end{leannotation}
+\endgroup
 
 \end{document}

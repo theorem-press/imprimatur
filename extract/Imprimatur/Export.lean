@@ -27,10 +27,8 @@ structure ExportResult where
   warnings : Array String
 
 /-- The `producer` field. It never holds paths, user names or dates. -/
-def producer (project? : Option String) : J :=
-  .obj (#[("tool", .str "imprimatur-export"), ("version", .str version),
-          ("lean", .str leanVersion)] ++
-        (match project? with | some p => #[("project", .str p)] | none => #[]))
+def producer (project? : Option String) : Producer :=
+  { tool := "imprimatur-export", version, lean := some leanVersion, project := project? }
 
 /-- The suffix of keys that name a comparator challenge's statement. -/
 def challengeSuffix : String := "@challenge"
@@ -39,11 +37,11 @@ def challengeSuffix : String := "@challenge"
 less any `@challenge` suffix. -/
 def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
     (reqs : Array Request) (verbose : Bool := false) (used : Option (IO.Ref (Array String)) := none) :
-    IO (Array (String × J) × Array String) := do
+    IO (Array (String × Entry (Image TeX) Verdict) × Array String) := do
   let used ← match used with
     | some u => pure u
     | none => IO.mkRef #[]
-  let mut entries : Array (String × J) := #[]
+  let mut entries : Array (String × Entry (Image TeX) Verdict) := #[]
   let mut warnings : Array String := #[]
   -- Lean's default limit of 200000 heartbeats per entry. Heartbeats count
   -- allocations, so a view that would exhaust memory (the delaborator can
@@ -84,13 +82,13 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
           (projectViews env).any (·.1 == (parseViewSpec v).base) ||
             Views.indexViews.contains (parseViewSpec v).base
         if group.isSome || disp.isSome || custom then
-          let act : CoreM J := (groupEntry s r group used extra root disp).run' {} {}
+          let act : CoreM (Entry (Image TeX) Verdict) := (groupEntry s r group used extra root disp).run' {} {}
           match ← (act.toIO coreCtx { env }).toBaseIO with
           | .ok (j, _) => entries := entries.push (r.key, j)
           | .error e => warnings := warnings.push s!"{r.key}: {e}"
         else warnings := warnings.push s!"{r.key}: no declaration or group with this name"
         continue
-    let act : CoreM J := do
+    let act : CoreM (Entry (Image TeX) Verdict) := do
       for ns in s.openScoped do activateScoped ns
       (entryFor root s r c used extra).run' {} {}
     let t0 ← IO.monoMsNow
@@ -98,19 +96,16 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
       let (j, _) ← act.toIO coreCtx { env }
       entries := entries.push (r.key, j)
       if verbose then
-        let size := (j.field? "cone").bind (·.field? "size") |>.map (·.render) |>.getD "?"
+        let size := (j.verdict.cone.map fun c => toString c.size).getD "?"
         IO.eprintln s!"imprimatur-export: {r.key}: cone {size}, {(← IO.monoMsNow) - t0} ms"
     catch e =>
       warnings := warnings.push s!"{r.key}: {e}"
   return (entries, warnings)
 
-/-- The text of a bundle. -/
-def renderBundle (entries : Array (String × J)) (project? : Option String) : String :=
-  let bundle : J := .obj #[
-    ("schema", .str bundleSchema),
-    ("producer", producer project?),
-    ("entries", .obj entries)]
-  bundle.render ++ "\n"
+/-- The text of a bundle: the file is the JSON of the type (`Imprimatur.Bundle`). -/
+def renderBundle (entries : Array (String × Entry (Image TeX) Verdict)) (project? : Option String) :
+    String :=
+  Bundle.render { producer := producer project?, entries := entries.qsort (·.1 < ·.1) }
 
 /-- Render every requested entry from `env`, except `@challenge` keys. -/
 def exportBundle (env : Environment) (root : System.FilePath) (s : Settings)
@@ -121,8 +116,8 @@ def exportBundle (env : Environment) (root : System.FilePath) (s : Settings)
 /-- Render the `@challenge` keys: each challenge module is imported on its
 own, because it declares the same names as the solution (DESIGN §10.5). -/
 unsafe def exportChallenges (root : System.FilePath) (s : Settings) (reqs : Array Request) :
-    IO (Array (String × J) × Array String) := do
-  let mut entries : Array (String × J) := #[]
+    IO (Array (String × Entry (Image TeX) Verdict) × Array String) := do
+  let mut entries : Array (String × Entry (Image TeX) Verdict) := #[]
   let mut warnings : Array String := #[]
   let wanted := reqs.filter (·.key.endsWith challengeSuffix)
   let mut byModule : Array (Name × Array Request) := #[]

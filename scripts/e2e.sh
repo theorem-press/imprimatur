@@ -165,6 +165,8 @@ else
   compare "$work/imprimatur-paper.tex" about/imprimatur-paper.tex "the built paper"
   if ! (cd "$work" && TEXINPUTS="$ROOT/tex//:" latexmk -pdf -interaction=nonstopmode -halt-on-error imprimatur-paper.tex > latexmk.log 2>&1); then
     echo "  FAIL: the paper does not typeset"; status=1
+    grep -a -A3 '^!' "$work/imprimatur-paper.log" 2>/dev/null | sed 's/^/    /' | head -40
+    tail -5 "$work/latexmk.log" | sed 's/^/    /'
   fi
 fi
 

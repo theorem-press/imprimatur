@@ -212,6 +212,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§8 | bundles contain no absolute paths, user names, URLs or commit hashes | `extract/golden/Basic`, `splice/bundle/absolute-path` | M2 |
 | D§8 | bundles are read and checked against the rules of `schema/bundle.schema.json`; golden bundles validate against the schema | `splice/bundle/parses`, `splice/bundle/schema-version`, `splice/bundle/absolute-path`, `splice/bundle/missing-views`, `splice/golden/bundle-errors`, `lint/bundle-schema` | M1 |
 | D§8 | a view that fails to render is recorded in `errors`, and is an error only if requested | `extract/golden/Basic`, `splice/golden/failures` | M2 |
+| D§8 | the bundle is a Lean type, of which the file is the JSON: an extractor's bundle survives parse and render byte for byte; both packages hold the same copy of the module | `splice/bundle/round-trip`, `lint/bundle-copies` | M6 |
 | D§9.1 | `leanblock`, `\leaninline`, `\leanref`, `\leancheck`, `\leanindex` are recognised | `splice/scan/forms`, `splice/scan/options`, `splice/scan/check-keys`, `splice/golden/basic` | M1 |
 | D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
 | D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases` | M5 |

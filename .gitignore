@@ -22,4 +22,3 @@ _site/
 /about/*.pdf
 /about/*.synctex.gz
 /about/*.out
-/about/lean/lake-manifest.json

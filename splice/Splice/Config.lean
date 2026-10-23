@@ -62,7 +62,10 @@ def Alias.labelFor (a : Alias) (key : String) (occurrence : Nat) : Option String
 /-- The content of a block from the view's text. -/
 def Alias.fill (a : Alias) (content key title : String) (label : Option String) : String :=
   let t := a.template.getD (if a.label.isSome then "\\label{{label}}\n{content}" else "{content}")
-  (((t.replace "{content}" content).replace "{label}" (label.getD "")).replace "{key}" key).replace "{title}" title
+  -- The placeholders are the template's: generated text that contains one
+  -- (a field named `key`, say) is not rewritten.
+  let part (s : String) := ((s.replace "{label}" (label.getD "")).replace "{key}" key).replace "{title}" title
+  content.intercalate ((t.splitOn "{content}").map part)
 
 /-- How `\leanref` and the `meta` view refer to source code (DESIGN §11). -/
 inductive SourceLinks where

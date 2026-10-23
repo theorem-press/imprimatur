@@ -1,8 +1,20 @@
 # A model of imprimatur's splicer, with its laws and the soundness of
-# `imprimatur check` proved (DESIGN §18.2). It knows nothing of imprimatur:
-# the paper in ../ reads it in external mode.
+# `imprimatur check` proved (DESIGN §18.2). The paper in ../ reads it in
+# external mode.
 name = "splice-model"
-defaultTargets = ["SpliceModel"]
+defaultTargets = ["SpliceModel", "Stlc"]
 
 [[lean_lib]]
 name = "SpliceModel"
+
+# The bundle's type, which the model is built on: a copy of
+# bundle/Bundle.lean under the module name the extractor gives it,
+# `Imprimatur.Bundle`, so that the extractor and the model share it when
+# the paper is built (lint/bundle-copies keeps the copies equal).
+[[lean_lib]]
+name = "Imprimatur"
+roots = ["Imprimatur.Bundle"]
+
+# The paper's example, a small simply typed λ-calculus (Section 1).
+[[lean_lib]]
+name = "Stlc"

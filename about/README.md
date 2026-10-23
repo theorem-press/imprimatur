@@ -1,10 +1,20 @@
 # About imprimatur
 
 `imprimatur-paper.tex` is a short paper about imprimatur, built with
-imprimatur. Its theorems are DESIGN §18.2's: the splicer's laws (locality,
+imprimatur, in the PACMPL format (`acmart`, `acmsmall`). Its theorems are DESIGN §18.2's: the splicer's laws (locality,
 idempotence, the fixed point, slot preservation) and Theorem 1, what a
 successful `imprimatur check` guarantees. They are proved in `lean/`, a
 model of the splicer in which a document is already parsed into pieces.
+
+Its running example is a small simply typed λ-calculus (`lean/Stlc.lean`,
+with its notation in `notation/StlcTeX.lean`), whose substitution is a
+stand-in: Section 6 replaces it, renames a hypothesis, and weakens the
+theorem, and quotes what `imprimatur check` says each time.
+
+The model is built on the bundle's type, `bundle/Bundle.lean`, of which the
+JSON that passes from the extractor to the splicer is the file; `lean/` holds
+a copy of it, under the extractor's module name, which the lint keeps equal
+to the source.
 
 Every definition and theorem displayed in the paper is generated from
 `lean/`; every hand-written claim about it carries a `\leancheck`. The
@@ -22,7 +32,7 @@ To rebuild and check it:
 imprimatur toolchain install v4.35.0   # once
 imprimatur build
 imprimatur check                       # 0 stale, 0 errors, 0 warnings
-latexmk -pdf imprimatur-paper.tex
+TEXINPUTS="../tex//:" latexmk -pdf imprimatur-paper.tex   # needs acmart (texlive-publishers) and its fonts (texlive-fonts-extra)
 ```
 
 CI does the same (`e2e/about` in `scripts/e2e.sh`), and fails if the
