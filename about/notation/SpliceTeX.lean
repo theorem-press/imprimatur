@@ -136,6 +136,38 @@ latex_category Imprimatur.Hash => "h"
 latex_category Body => "r"
 latex_category Imprimatur.World.Stmt => "S"
 
+-- Two views read: how statements and renderings come apart.
+latex_notation Telescope α => r"\texttt{Telescope}(#α)"
+latex_notation Rule α => r"\texttt{Rule}(#α)"
+latex_notation Anatomy W => r"\texttt{Anatomy}(#W)"
+latex_notation Telescope.vars t => r"#t.\mathit{vars}"
+latex_notation Telescope.hyps t => r"#t.\mathit{hyps}"
+latex_notation Telescope.concl t => r"#t.\mathit{concl}"
+latex_notation Rule.name f => r"#f.\mathit{name}"
+latex_notation Rule.premises f => r"#f.\mathit{premises}"
+latex_notation Rule.concl f => r"#f.\mathit{concl}"
+latex_notation Anatomy.Part A => r"\mathit{Part}_{#A}"
+latex_notation Anatomy.telescope A S => r"\mathit{telescope}_{#A}(#S)"
+latex_notation Anatomy.ctors A S => r"\mathit{ctors}_{#A}(#S)"
+latex_notation Anatomy.sentence A r => r"\mathit{sentence}_{#A}(#r)"
+latex_notation Anatomy.figure A r => r"\mathit{figure}_{#A}(#r)"
+latex_notation Anatomy.ReadsPart A f q => r"#f \rightsquigarrow_{#A} #q" prec := 50
+latex_notation Anatomy.ReadsAll A fs qs => r"#fs \rightsquigarrow^{*}_{#A} #qs" prec := 50
+latex_notation Anatomy.ReadsTelescope A t u => r"#t \rightsquigarrow^{\mathsf{let}}_{#A} #u" prec := 50
+latex_notation Anatomy.ReadsRule A f q => r"#f \rightsquigarrow^{\mathsf{rule}}_{#A} #q" prec := 50
+latex_notation Anatomy.ReadsRules A fs qs => r"#fs \rightsquigarrow^{\mathsf{rules}}_{#A} #qs" prec := 50
+latex_notation Anatomy.Prose A r S => r"\mathit{prose}_{#A}(#r, #S)"
+latex_notation Anatomy.Rules A r S => r"\mathit{rules}_{#A}(#r, #S)"
+latex_notation Anatomy.Sound A => r"\mathsf{sound}(#A)"
+latex_category Anatomy => r"\mathcal{A}"
+latex_rule_label Anatomy.Sound.mk "Sound"
+latex_display "Anatomies" := [Telescope, Rule, Anatomy]
+latex_display "Reading two views" := [Anatomy.ReadsAll, Anatomy.ReadsTelescope,
+  Anatomy.ReadsRule, Anatomy.ReadsRules, Anatomy.Prose, Anatomy.Rules]
+
+-- The names a bundle uses, all strings.
+latex_display "Names" := [Imprimatur.Key, Imprimatur.View, Imprimatur.TeX, Imprimatur.Hash]
+
 -- The results, by title.
 latex_entry "Locality" => SpliceModel.apply_outline
 latex_entry "Idempotence" => SpliceModel.apply_apply
@@ -148,3 +180,5 @@ latex_entry "Attested prose faces its statement" => SpliceModel.attested
 latex_entry "The bundle of a world is true" => SpliceModel.bundleOf_true
 latex_entry "The hash names the statement" => Imprimatur.Image.Of.stmt_eq
 latex_entry "A view shows the statement" => Imprimatur.Bundle.True.view
+latex_entry "Prose shows the statement" => SpliceModel.prose_true
+latex_entry "Rules show the predicate" => SpliceModel.rules_true
