@@ -44,6 +44,9 @@ if want splice; then
   # The splicer's model and its proofs (DESIGN §18.2): not a default target.
   step "splice model and proofs"
   (cd splice && lake build --wfail SpliceModel)
+  # lint/axioms: the theorems rest on Lean's standard axioms only.
+  step "splice theorems' axioms"
+  (cd splice && lake env lean --run ../scripts/check-axioms.lean)
 fi
 if want extract; then
   # The fixture Lean projects must build on every toolchain in the matrix. The

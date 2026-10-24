@@ -5,8 +5,9 @@ imprimatur, in the PACMPL format (`acmart`, `acmsmall`). Its theorems are DESIGN
 idempotence, the fixed point, slot preservation) and Theorem 1, what a
 successful `imprimatur check` guarantees. They are proved in the splicer's
 package, `splice/SpliceModel`, for a model of the splicer in which a
-document is already parsed into pieces; `lean/` requires that package. The
-plan to prove them of the splicer's own code is `docs/verified-splicer.md`.
+document is already parsed into pieces, and Section 8 proves them of the
+splicer's own code (`docs/verified-splicer.md`); `lean/` requires that
+package.
 
 Its running example is a small simply typed λ-calculus (`lean/Stlc.lean`,
 with its notation in `notation/StlcTeX.lean`), whose substitution is a

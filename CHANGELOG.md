@@ -5,6 +5,17 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The splicer's laws and Theorem 1 are proved of the splicer's own code, not
+  only of a model (docs/verified-splicer.md). The scanner, the slot finder
+  and the text kernel are rewritten as total, tail-recursive functions on
+  characters, proved lossless; an ordinary slot merge is the model's `fill`;
+  `apply` rewrites items in place and checks its own output before writing
+  (`unstable-output`, `not-fixed-point`), which fixed a bug where a
+  rendering holding an alias's `\begin` was written and the file could no
+  longer be scanned; and `imprimatur check` is one function, `checkDoc`, of
+  which Theorem 1 is proved. The model moves into the splice package. New
+  checks: `lint/verified` and `lint/axioms`. The audit's trust check now
+  skips only the blueprint `\lean`, not any item named `lean`.
 - Slots that the authors never edited now follow their defaults. A block
   with slots records a digest of its slots' default texts in `dflt=`; while
   its slots still match it, `apply` gives them the new defaults when a
