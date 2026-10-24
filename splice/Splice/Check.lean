@@ -32,18 +32,33 @@ def Item.allKeys (it : Item) : Array String :=
   | .index | .leanok => #[]
   | _ => #[it.key]
 
+/-- One of the hashes of each key's statement, picked by `pick`, in order;
+`none` if a key is missing or has no such hash. -/
+def hashesOf (bundle : Bundle (Image TeX) Verdict) (pick : Image TeX → Option Hash) :
+    List String → Option (List String)
+  | [] => some []
+  | k :: ks => do
+    let e ← bundle.find? k
+    let h ← pick e.statement
+    let hs ← hashesOf bundle pick ks
+    return h :: hs
+
+/-- What a `\leancheck` records of hashes: the first 12 hexadecimal digits
+of the one hash, or, for several, of the hash of them joined by commas. -/
+def shortOf (hs : List String) : String :=
+  let h := match hs with
+    | [h] => h
+    | _ => Sha256.hexOf (",".intercalate hs)
+  String.ofList (h.toList.take 12)
+
 /-- The `stmt=` and `sig=` values for a `\leancheck` of `keys`: the first 12
 hexadecimal digits of the key's hashes, or, for several keys, of the hash of
 their hashes joined by commas. `none` if a key is missing or has no hash. -/
 def checkHashes (bundle : Bundle (Image TeX) Verdict) (keys : Array String) :
     Option (String × String) := do
-  let es ← keys.mapM bundle.find?
-  let stmts ← es.mapM (·.statement.stmtHash)
-  let sigs ← es.mapM (·.statement.sigHash)
-  let short (hs : Array String) : String :=
-    let h := if hs.size == 1 then hs[0]! else Sha256.hexOf (",".intercalate hs.toList)
-    String.ofList (h.toList.take 12)
-  return (short stmts, short sigs)
+  let stmts ← hashesOf bundle (·.stmtHash) keys.toList
+  let sigs ← hashesOf bundle (·.sigHash) keys.toList
+  return (shortOf stmts, shortOf sigs)
 
 /-- Problems with an entry's trust, checked against `allowed` axioms: none
 exactly when `Verdict.trusted allowed` holds of its verdict. -/
@@ -124,20 +139,29 @@ def auditItem (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (f : SourceFi
   let loc := f.src.locString it.start
   it.allKeys.foldl (fun ds key => ds ++ auditKey cfg bundle it loc key) #[] ++ driftDiags bundle it loc
 
+/-- What auditing one key of a blueprint `\lean` under a `\leanok` finds:
+that its proof is untrusted. -/
+def leanokKeyDiags (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (loc key : String) : Array Diag :=
+  match bundle.find? key with
+  | some e =>
+    if (trustProblems cfg.allowedAxioms key e).isEmpty then #[]
+    else #[Diag.err "leanok-untrusted" loc
+      s!"this node is marked \\leanok, but {key} is not trusted: \
+        {"; ".intercalate (trustProblems cfg.allowedAxioms key e).toList}"]
+  | none => #[]
+
+/-- What auditing one `\leanok` finds: the blueprint `\lean`s in its
+environment whose keys are untrusted. -/
+def leanokDiags (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (f : SourceFile) (ok : Item) :
+    Array Diag :=
+  if ok.env == 0 then #[]
+  else (f.scan.items.filter (fun i => i.name == "lean" && i.env == ok.env)).foldl (init := #[]) fun ds it =>
+    ds ++ it.keys.foldl (init := #[]) fun ds key => ds ++ leanokKeyDiags cfg bundle (f.src.locString ok.start) key
+
 /-- Blueprint (DESIGN §9.3): a node marked `\leanok` must not depend on an
 untrusted declaration. -/
 def auditLeanok (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (f : SourceFile) : Array Diag :=
-  (f.scan.items.filter (·.kind == .leanok)).foldl (init := #[]) fun ds ok =>
-    if ok.env == 0 then ds
-    else (f.scan.items.filter (fun i => i.name == "lean" && i.env == ok.env)).foldl (init := ds) fun ds it =>
-      it.keys.foldl (init := ds) fun ds key =>
-        match bundle.find? key with
-        | some e =>
-          if (trustProblems cfg.allowedAxioms key e).isEmpty then ds
-          else ds.push (Diag.err "leanok-untrusted" (f.src.locString ok.start)
-            s!"this node is marked \\leanok, but {key} is not trusted: \
-              {"; ".intercalate (trustProblems cfg.allowedAxioms key e).toList}")
-        | none => ds
+  (f.scan.items.filter (·.kind == .leanok)).foldl (init := #[]) fun ds ok => ds ++ leanokDiags cfg bundle f ok
 
 /-- Comparator manifests (DESIGN §10.5): each theorem they name is in the
 bundle and trusted. -/

@@ -1163,11 +1163,13 @@ and for the splicer's own code, the functions the binary runs
 (docs/verified-splicer.md): its scanner is lossless
 (`Splice.Core.Scan.print_scan`); an ordinary slot merge is the model's
 `fill` (`Splice.Core.Slots.mergeBody_keeps`); `apply` changes nothing
-outside items (`SpliceModel.Splicer.planOnce_text`) and reaches a fixed
+outside items, and within an item only its options and its region
+(`SpliceModel.Splicer.planOnce_text`, `planOnce_local`) and reaches a fixed
 point, which it checks of its own output before writing
 (`SpliceModel.Splicer.plan_fixed_point`); and Theorem 1 holds of
 `Splice.checkDoc`, which is what `check` reports
-(`SpliceModel.Theorem1.checkDoc_block`, `checkDoc_ref`, `checkDoc_check`).
+(`SpliceModel.Theorem1.checkDoc_block`, `checkDoc_ref`, `checkDoc_check`,
+`checkDoc_stmt`, `checkDoc_leanok`).
 They depend on Lean's standard axioms only (`lint/axioms`), and the verified
 code may not use what a proof can't see into (`lint/verified`). The property
 tests (docs/TESTING.md, Properties) and the differential tests remain.
