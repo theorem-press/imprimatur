@@ -3,6 +3,7 @@ import SpliceModel.Laws
 import SpliceModel.Prose
 import SpliceModel.Rules
 import SpliceModel.Formulas
+import SpliceModel.ReadBack
 import SpliceModel.Views
 import SpliceModel.Splicer
 import SpliceModel.Theorem1

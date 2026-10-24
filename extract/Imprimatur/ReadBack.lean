@@ -244,7 +244,7 @@ inductive ASym where
   | var
   /-- The rest of list `l`, with `r` more elements required. -/
   | tail (l : Nat) (r : Nat)
-  deriving Inhabited, Repr, BEq, Hashable
+  deriving Inhabited, Repr, DecidableEq, Hashable
 
 /-- The lists of a grammar: each element and separator, compiled. -/
 abbrev Lists := Array (Array ASym × Array ASym)
@@ -316,7 +316,7 @@ structure CState where
   /-- Readings of a suffix of a body: its children's readings, and the
   type variables bound, by body, position, bindings and span; and the
   questions they were cut on. -/
-  memoSeq : Std.HashMap (String × Nat × Env × Nat × Nat)
+  memoSeq : Std.HashMap (Array ASym × Nat × Env × Nat × Nat)
     (Array (Array Reading × Env) × Array (String × Nat × Option Nat × Nat × Nat)) := {}
   /-- Nonterminals being read, to cut coercion cycles. -/
   active : Std.HashMap (String × Nat × Option Nat × Nat × Nat) Unit := {}
@@ -429,8 +429,8 @@ def tried (g : Grammar) (ts : Array String) (p : Nat) (excl : Option Nat) (i j k
   | none => false
   | some (pr, body) =>
     excl != some k && !pr.coercion && p ≤ pr.prec &&
-      (match body[0]? with | some (ASym.tok t) => ts.getD i "" == t | _ => true) &&
-      (match body.back? with | some (ASym.tok t) => ts.getD (j - 1) "" == t | _ => true)
+      (match body[0]? with | some (ASym.tok t) => ts[i]? == some t | _ => true) &&
+      (match body.back? with | some (ASym.tok t) => ts[j - 1]? == some t | _ => true)
 
 /-- The readings of production `pr`, from the readings of its body, onto
 `out`: each at the production's sort under its bindings, when that is
@@ -468,7 +468,7 @@ atom production of a variable whose tokens they are. -/
 def varOf (g : Grammar) (ts : Array String) (i j : Nat) : List (Prod × Array ASym) → Option Reading
   | [] => none
   | (pr, body) :: rest =>
-    if pr.isVar && body.size == j - i &&
+    if pr.isVar && 0 < body.size && body.size == j - i &&
         (List.range body.size).all (fun d => body[d]? == some (ASym.tok (ts.getD (i + d) ""))) then
       some (.node pr.name [])
     else varOf g ts i j rest
@@ -484,30 +484,44 @@ mutual
       let key := (s, p, excl, i, j)
       if let some (n, on) := (← get).memo[key]? then
         if on.all (← get).active.contains then return n
+      exprFresh A g ts fuel s p excl i j
+
+  /-- `expr`, when the question is not remembered: cut if it is being
+  asked, else asked, and remembered. -/
+  def exprFresh (A : SortAlgebra) (g : Grammar) (ts : Array String) :
+      Nat → String → Nat → Option Nat → Nat → Nat → CountM (Array (Reading × String))
+    | 0, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, s, p, excl, i, j => do
+      let key := (s, p, excl, i, j)
       if (← get).active.contains key then
         modify fun st => { st with cuts := st.cuts.push key }
         return #[]
       let cutsBefore := (← get).cuts.size
       modify fun st => { st with active := st.active.insert key (), steps := st.steps + 1 }
-      let (byTok, others) ← match (← get).reach[s]? with
+      let r ← match (← get).reach[s]? with
         | some r => pure r
         | none =>
           let r := reachSplit A g s
           modify fun st => { st with reach := st.reach.insert s r }
           pure r
+      exprRead A g ts fuel s p excl i j cutsBefore r
+
+  /-- `expr`, asked: by each candidate production (`r`: those that start
+  with a token, by the token, and the others), through each coercion, and
+  in parentheses; then remembered. -/
+  def exprRead (A : SortAlgebra) (g : Grammar) (ts : Array String) :
+      Nat → String → Nat → Option Nat → Nat → Nat → Nat →
+      Std.HashMap String (Array Nat) × Array Nat → CountM (Array (Reading × String))
+    | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, s, p, excl, i, j, cutsBefore, (byTok, others) => do
+      let key := (s, p, excl, i, j)
       -- Every production is tried, even after two readings: a reading found
       -- again can be of another sort, which a hole's binding may need.
       let cands := (byTok.getD (ts.getD i "") #[] ++ others).toList
       let out ← prods A g ts fuel s p excl i j cands #[]
       let out ← coes A g ts fuel s p excl i j cands out
-      -- The emitter's parentheses, and its TeX groups (`{k_{1}}_{x}`), which
-      -- do not print.
-      let out ← if distinct (·.1.text) out < 2 && j - i ≥ 3 && ts.getD i "" == "(" && ts.getD (j - 1) "" == ")" then
-          keep2M (·.1.text) (·.2) (out ++ (← expr A g ts fuel s 0 none (i + 1) (j - 1)))
-        else pure out
-      let out ← if distinct (·.1.text) out < 2 && j - i ≥ 3 && ts.getD i "" == "{" && ts.getD (j - 1) "" == "}" then
-          keep2M (·.1.text) (·.2) (out ++ (← expr A g ts fuel s p none (i + 1) (j - 1)))
-        else pure out
+      let out ← parens A g ts fuel s p excl i j out
+      let out ← groups A g ts fuel s p excl i j out
       -- Remembered with the questions, other than this one, cut meanwhile.
       let cuts := (← get).cuts
       let on := (cuts.extract cutsBefore cuts.size).filter (· != key)
@@ -516,6 +530,26 @@ mutual
         let line := s!"{s} @{p} [{i},{j}) {ts.extract i j}: {out.map fun (r, so) => (r.text, so)}"
         modify fun st => { st with log := st.log.push line }
       return out
+
+  /-- The readings in the emitter's parentheses, which do not print, onto
+  `out` when it holds fewer than two readings. -/
+  def parens (A : SortAlgebra) (g : Grammar) (ts : Array String) :
+      Nat → String → Nat → Option Nat → Nat → Nat → Array (Reading × String) → CountM (Array (Reading × String))
+    | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, s, _, _, i, j, out => do
+      if distinct (·.1.text) out < 2 && j - i ≥ 3 && ts[i]? == some "(" && ts[j - 1]? == some ")" then
+        keep2M (·.1.text) (·.2) (out ++ (← expr A g ts fuel s 0 none (i + 1) (j - 1)))
+      else pure out
+
+  /-- The readings in a TeX group (`{k_{1}}_{x}`), which does not print,
+  onto `out` when it holds fewer than two readings. -/
+  def groups (A : SortAlgebra) (g : Grammar) (ts : Array String) :
+      Nat → String → Nat → Option Nat → Nat → Nat → Array (Reading × String) → CountM (Array (Reading × String))
+    | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, s, p, _, i, j, out => do
+      if distinct (·.1.text) out < 2 && j - i ≥ 3 && ts[i]? == some "{" && ts[j - 1]? == some "}" then
+        keep2M (·.1.text) (·.2) (out ++ (← expr A g ts fuel s p none (i + 1) (j - 1)))
+      else pure out
 
   /-- The readings by each production tried, onto `out`. -/
   def prods (A : SortAlgebra) (g : Grammar) (ts : Array String) :
@@ -527,7 +561,7 @@ mutual
       if !tried g ts p excl i j k then prods A g ts fuel s p excl i j ks out
       else
         let some (pr, body) := g.prods[k]? | prods A g ts fuel s p excl i j ks out
-        let rs ← seq A g ts fuel s!"p{k}" body 0 #[] i j
+        let rs ← seq A g ts fuel body 0 #[] i j
         let out ← addProds A s pr rs.toList out
         prods A g ts fuel s p excl i j ks out
 
@@ -551,33 +585,40 @@ mutual
         let out ← addCoes A s pr s' args.toList out
         coes A g ts fuel s p excl i j ks out
 
-  /-- Readings of `ts[i:j]` as `body[pos:]` (of production or list `id`)
-  under bindings `env`: the readings of its holes, variables and lists, and
+  /-- Readings of `ts[i:j]` as `body[pos:]` under bindings `env`: the readings of its holes, variables and lists, and
   the bindings after them. -/
   def seq (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Array ASym → Nat → Env → Nat → Nat → CountM (Array (Array Reading × Env))
-    | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, id, body, pos, env, i, j => do
+      Nat → Array ASym → Nat → Env → Nat → Nat → CountM (Array (Array Reading × Env))
+    | 0, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, body, pos, env, i, j => do
       if (← get).steps > budget then
         modify fun st => { st with over := true }
         return #[]
       if pos == body.size then return if i == j then #[(#[], env)] else #[]
-      let key := (id, pos, env, i, j)
+      let key := (body, pos, env, i, j)
       if let some (n, on) := (← get).memoSeq[key]? then
         if on.all (← get).active.contains then return n
+      seqFresh A g ts fuel body pos env i j
+
+  /-- `seq`, when the question is not remembered: asked, and remembered. -/
+  def seqFresh (A : SortAlgebra) (g : Grammar) (ts : Array String) :
+      Nat → Array ASym → Nat → Env → Nat → Nat → CountM (Array (Array Reading × Env))
+    | 0, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, body, pos, env, i, j => do
+      let key := (body, pos, env, i, j)
       let cutsBefore := (← get).cuts.size
       modify fun st => { st with steps := st.steps + 1 }
       let n ← match body[pos]? with
         | some (.tok t) =>
-          if i < j && ts.getD i "" == t then seq A g ts fuel id body (pos + 1) env (i + 1) j else pure #[]
+          if i < j && ts[i]? == some t then seq A g ts fuel body (pos + 1) env (i + 1) j else pure #[]
         | some (.hole s p x) =>
           split A g ts fuel (fun env a b => do
               return (← expr A g ts fuel (A.expected env s) p x a b).map fun (r, so) => (#[r], A.bind env s so))
-            id body pos env i j
+            body pos env i j
         | some .var =>
           split A g ts fuel (fun env a b => pure ((varOf g ts a b g.prods.toList).toArray.map (#[·], env)))
-            id body pos env i j
-        | some (.tail l r) => split A g ts fuel (fun env a b => tail A g ts fuel l r env a b) id body pos env i j
+            body pos env i j
+        | some (.tail l r) => split A g ts fuel (fun env a b => tail A g ts fuel l r env a b) body pos env i j
         | none => pure #[]
       -- Remembered with the questions cut meanwhile.
       let cuts := (← get).cuts
@@ -588,10 +629,10 @@ mutual
   nonterminal ends where what follows can still fit, and, if that is a
   token, where it stands. -/
   def split (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → (Env → Nat → Nat → CountM (Array (Array Reading × Env))) → String →
+      Nat → (Env → Nat → Nat → CountM (Array (Array Reading × Env))) →
       Array ASym → Nat → Env → Nat → Nat → CountM (Array (Array Reading × Env))
-    | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, nt, id, body, pos, env, i, j => do
+    | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, nt, body, pos, env, i, j => do
       if pos + 1 == body.size then return ← nt env i j
       let next : Option String := match body[pos + 1]? with
         | some (.tok t) => some t
@@ -601,34 +642,34 @@ mutual
         | some (.tail ..) => i
         | _ => i + 1
       let last := j - minLenFrom body (pos + 1)
-      splitAt A g ts fuel nt id body pos env i j next (List.range' start (last + 1 - start)) #[]
+      splitAt A g ts fuel nt body pos env i j next (List.range' start (last + 1 - start)) #[]
 
   /-- The readings with the nonterminal ending at each of `ms`, onto `out`. -/
   def splitAt (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → (Env → Nat → Nat → CountM (Array (Array Reading × Env))) → String →
+      Nat → (Env → Nat → Nat → CountM (Array (Array Reading × Env))) →
       Array ASym → Nat → Env → Nat → Nat → Option String → List Nat → Array (Array Reading × Env) →
       CountM (Array (Array Reading × Env))
-    | 0, _, _, _, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | _, _, _, _, _, _, _, _, _, [], out => pure out
-    | fuel + 1, nt, id, body, pos, env, i, j, next, m :: ms, out => do
+    | 0, _, _, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | _, _, _, _, _, _, _, _, [], out => pure out
+    | fuel + 1, nt, body, pos, env, i, j, next, m :: ms, out => do
       if (match next with | some t => ts[m]? != some t | none => false) then
-        splitAt A g ts fuel nt id body pos env i j next ms out
+        splitAt A g ts fuel nt body pos env i j next ms out
       else
         let as ← nt env i m
-        let out ← splitRests A g ts fuel id body pos m j as.toList out
-        splitAt A g ts fuel nt id body pos env i j next ms out
+        let out ← splitRests A g ts fuel body pos m j as.toList out
+        splitAt A g ts fuel nt body pos env i j next ms out
 
   /-- The readings with each reading of the nonterminal, then the rest of
   the body from `m`, onto `out`. -/
   def splitRests (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Array ASym → Nat → Nat → Nat → List (Array Reading × Env) → Array (Array Reading × Env) →
+      Nat → Array ASym → Nat → Nat → Nat → List (Array Reading × Env) → Array (Array Reading × Env) →
       CountM (Array (Array Reading × Env))
-    | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | _, _, _, _, _, _, [], out => pure out
-    | fuel + 1, id, body, pos, m, j, a :: more, out => do
-      let rests ← seq A g ts fuel id body (pos + 1) a.2 m j
+    | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | _, _, _, _, _, [], out => pure out
+    | fuel + 1, body, pos, m, j, a :: more, out => do
+      let rests ← seq A g ts fuel body (pos + 1) a.2 m j
       let out ← joinRests a rests.toList out
-      splitRests A g ts fuel id body pos m j more out
+      splitRests A g ts fuel body pos m j more out
 
   /-- Readings of `ts[i:j]` as the rest of list `l`, `r` more required. -/
   def tail (A : SortAlgebra) (g : Grammar) (ts : Array String) :
@@ -640,7 +681,7 @@ mutual
       if i < j then
         let more := sep ++ elem ++ #[ASym.tail l (r - 1)]
         keep2M (fun (cs, _) => readingsKey cs) (fun (_, e) => envKey e)
-          (out ++ (← seq A g ts fuel s!"t{l}.{r}" more 0 env i j)) (top := "#[]")
+          (out ++ (← seq A g ts fuel more 0 env i j)) (top := "#[]")
       else pure out
 end
 
@@ -673,13 +714,13 @@ def Flags.any (f : Flags) : Bool := f.over || f.pruned
 `s`, and where the reader gave up. -/
 def readBackWith (A : SortAlgebra) (g : Grammar) (ts : Array String) (s : String) :
     Array Reading × Flags :=
-  let (rs, st) := (readings A g ts s).run {}
-  (rs, st.flags)
+  let p := (readings A g ts s).run {}
+  (p.1, p.2.flags)
 
 /-- `readBackWith`, with a log of what was read where. -/
 def readBackLogWith (A : SortAlgebra) (g : Grammar) (ts : Array String) (s : String) :
     Array Reading × Array String :=
-  let (rs, st) := (readings A g ts s).run { trace := true }
-  (rs, st.log)
+  let p := (readings A g ts s).run { trace := true }
+  (p.1, p.2.log)
 
 end Imprimatur.Validate
