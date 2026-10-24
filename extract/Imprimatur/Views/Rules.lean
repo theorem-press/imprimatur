@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Imprimatur.Render
+import Imprimatur.Layout
 
 /-!
 # The `rules` view
@@ -33,7 +34,7 @@ The inductive's `latex_rules` template then places the label (`#`). With
 `label_macro`, each rule is preceded by `\macro{Key}{label}%`, so prose can
 refer to it.
 
-**Layout.**
+**Layout** (`Imprimatur.Layout.figureLayout`, the shared module).
 
 ```latex
 \begin{mathpar}
@@ -102,20 +103,17 @@ def conventionTeX (tex : String) (name : Name) : String :=
   | _ :: sub :: rest => tex ++ "_" ++ "_".intercalate (sub :: rest)
   | _ => tex
 
-/-- One rule. -/
-partial def renderRule (c : ConstantInfo) (style : Option RulesStyle) : RenderM String := do
+/-- One rule, gathered: its label and mark, its premises and its conclusion
+rendered. -/
+partial def gatherRule (c : ConstantInfo) (style : Option RulesStyle) :
+    RenderM (Layout.Rule (List Char)) := do
   let (label, key) ← ruleLabel c.name style
   go c.type #[] #[] fun premises concl overrides => do
     withReader (fun ctx => { ctx with overrides := ctx.overrides ++ overrides }) do
-      let ps ← premises.mapM fun p => do return (← render p).render 100000
-      let cs := (← render concl).render 100000
-      let mark := match style.bind (·.labelMacro) with
-        | some m => s!"\\{m}\{{key}}\{{label}}%\n"
-        | none => ""
-      if ps.isEmpty then
-        return s!"{mark}\\inferrule[{label}]\n  \{ }\n  \{ {cs} }"
-      let body := " \\\\\n".intercalate (ps.toList.map ("    " ++ ·))
-      return s!"{mark}\\inferrule[{label}]\n  \{\n{body}\n  }\n  \{ {cs} }"
+      let ps ← premises.mapM fun p => do return ((← render p).render 100000).toList
+      let cs := ((← render concl).render 100000).toList
+      let mark := (style.bind (·.labelMacro)).map fun m => { name := m.toList, key := key.toList }
+      return { mark, label := label.toList, premises := ps.toList, concl := cs }
 where
   /-- Walk the binders: premises, and variables a convention renders. -/
   go {α : Type} (e : Expr) (premises : Array Expr) (overrides : Array (FVarId × String))
@@ -146,18 +144,22 @@ def selectCtors (ctors : Array Name) (incl excl : Array String) : Array Name :=
   ctors.filter fun c =>
     (incl.isEmpty || incl.contains (short c)) && !excl.contains (short c)
 
-/-- The `rules` view of constructors. -/
-def rulesView (ctors : Array Name) : RenderM String := do
+/-- What a `rules` figure shows: a rule per constructor, in order, and a
+comment for a name that is no constructor. -/
+def gatherRules (ctors : Array Name) : RenderM (List (Layout.Item (List Char))) := do
   let env ← getEnv
   let styles := projectRulesStyles env
-  let mut out : Array String := #["\\begin{mathpar}"]
+  let mut out : Array (Layout.Item (List Char)) := #[]
   for c in ctors do
     match env.find? c with
     | some ci@(.ctorInfo i) =>
-      let style := styles.find? (·.induct == i.induct)
-      out := out ++ #["", ← renderRule ci style, "", "\\and"]
-    | _ => out := out.push s!"% {c} is not a constructor"
-  if out.back? == some "\\and" then out := out.pop
-  return "\n".intercalate (out.push "\\end{mathpar}").toList
+      out := out.push (.rule (← gatherRule ci (styles.find? (·.induct == i.induct))))
+    | _ => out := out.push (.missing c.toString.toList)
+  return out.toList
+
+/-- The `rules` view of constructors: what the figure shows, laid out by
+`Imprimatur.Layout.figureLayout`. -/
+def rulesView (ctors : Array Name) : RenderM String :=
+  return Layout.figureLayout (← gatherRules ctors)
 
 end Imprimatur.Views

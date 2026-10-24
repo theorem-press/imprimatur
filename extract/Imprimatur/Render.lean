@@ -634,21 +634,10 @@ mutual
         if hidden.contains v then
           holeIdx := holeIdx + 1
           continue
-        let need :=
-          -- Inside braces nothing is needed, nor in an atomic template
-          -- between its own tokens (`(#a, #b)`, `\\max(#a, #b)`); at its
-          -- edge (`#e(#c)`, `#n!`) the template does not delimit the
-          -- argument, which must be atomic.
-          if depth > 0 then 0
-          else if r.prec ≥ Doc.maxPrec then
-            if partIdx == 1 || partIdx == parts.size then Doc.maxPrec else 0
-          else
-            let first := topIdx == 0
-            let last := topIdx + 1 == topCount
-            match r.assoc with
-            | "left" => if first then r.prec else r.prec + 1
-            | "right" => if last then r.prec else r.prec + 1
-            | _ => r.prec + 1
+        -- The precedence the hole needs: the policy the validator's grammar
+        -- shares (`Doc.holeNeeds`).
+        let need := Doc.holeNeeds r.prec r.assoc depth (partIdx == 1 || partIdx == parts.size)
+          (topIdx == 0) (topIdx + 1 == topCount)
         if r.flatten && !operands.isEmpty && holeIdx == 1 then
           -- The rest of the chain, separated by the text between the holes.
           -- The separator is the text between the two holes.

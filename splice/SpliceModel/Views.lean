@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import SpliceModel.Laws
 import SpliceModel.Prose
+import SpliceModel.Rules
 
 /-!
 # What the prose and rules views show
@@ -30,8 +31,11 @@ and what is assumed (`Anatomy.Sound`) is that the world prints prose so,
 that what the notation prints is plain, and, for each formula, that it
 reads back as its part, which is what the validator checks. That a prose
 rendering reads back part by part is then a theorem. The rules view is
-still assumed to read back part by part. Under these assumptions, Theorem 1
-says, of a prose or a rules block, what the block shows, part by part.
+treated the same way: the anatomy says which rules a predicate's
+constructors are (`Imprimatur.Layout.Rule`), the extractor's own figure
+layout sets them out, and its parser takes the figure apart again
+(`SpliceModel.Rules`). Under these assumptions, Theorem 1 says, of a prose
+or a rules block, what the block shows, part by part.
 -/
 
 namespace Imprimatur.Layout
@@ -57,20 +61,14 @@ def Prose.parts {α : Type} : Prose α → List α
   | .define f => [f]
   | .statement s => (s.vars.map groupParts).flatten ++ s.hyps.map (·.formula) ++ s.concl.parts
 
+/-- The formulas a rule shows: its conclusion, then its premises. -/
+def Rule.parts {α : Type} (r : Rule α) : List α := r.concl :: r.premises
+
 end Imprimatur.Layout
 
 namespace SpliceModel
 
 open Imprimatur Imprimatur.Layout
-
-/-- A rule, as the rules view shows it. -/
-structure Rule (α : Type) where
-  /-- its name -/
-  name : String
-  /-- its premises -/
-  premises : List α
-  /-- its conclusion -/
-  concl : α
 
 /-- How a world's statements, and the prose and rules views' renderings, come
 apart. -/
@@ -83,10 +81,9 @@ structure Anatomy (W : World) where
   print : Part → List Char
   /-- what the prose view says of a statement: its parts, in their places -/
   gather : W.Stmt → Option (Layout.Prose Part)
-  /-- an inductive predicate's constructors, as rules -/
-  ctors : W.Stmt → Option (List (Rule Part))
-  /-- a rules figure, taken apart -/
-  figure : Body → Option (List (Rule (List Char)))
+  /-- what the rules view says of an inductive predicate: its constructors,
+  as rules -/
+  ctors : W.Stmt → Option (List (Layout.Rule Part))
 
 section
 variable {W : World} (A : Anatomy W)
@@ -160,19 +157,21 @@ inductive Anatomy.ReadsProse : Layout.Prose (List Char) → Layout.Prose A.Part 
     A.ReadsGroups s.vars u.vars → A.ReadsHyps s.hyps u.hyps → A.ReadsConcl s.concl u.concl →
     ReadsProse (.statement s) (.statement u)
 
-/-- A rule reads back as a constructor: the same name, premises as its
-hypotheses, conclusion as its conclusion. -/
-inductive Anatomy.ReadsRule : Rule (List Char) → Rule A.Part → Prop
-  /-- name, premises and conclusion -/
-  | mk {f : Rule (List Char)} {q : Rule A.Part} :
-    f.name = q.name → A.ReadsAll f.premises q.premises → A.ReadsPart f.concl q.concl → ReadsRule f q
+/-- A rule reads back as a constructor: the same mark and label, premises
+as its hypotheses, conclusion as its conclusion. -/
+inductive Anatomy.ReadsRule : Layout.Rule (List Char) → Layout.Rule A.Part → Prop
+  /-- mark, label, premises and conclusion -/
+  | mk {f : Layout.Rule (List Char)} {q : Layout.Rule A.Part} :
+    f.mark = q.mark → f.label = q.label → A.ReadsAll f.premises q.premises →
+    A.ReadsPart f.concl q.concl → ReadsRule f q
 
 /-- Rules read back as constructors, one by one. -/
-inductive Anatomy.ReadsRules : List (Rule (List Char)) → List (Rule A.Part) → Prop
+inductive Anatomy.ReadsRules : List (Layout.Rule (List Char)) → List (Layout.Rule A.Part) → Prop
   /-- none -/
   | nil : ReadsRules [] []
   /-- the first, then the rest -/
-  | cons {f : Rule (List Char)} {q : Rule A.Part} {fs : List (Rule (List Char))} {qs : List (Rule A.Part)} :
+  | cons {f : Layout.Rule (List Char)} {q : Layout.Rule A.Part} {fs : List (Layout.Rule (List Char))}
+    {qs : List (Layout.Rule A.Part)} :
     A.ReadsRule f q → ReadsRules fs qs → ReadsRules (f :: fs) (q :: qs)
 
 /-- A body is a statement printed in the prose view: what the view says of
@@ -192,16 +191,27 @@ as the other. -/
 def Anatomy.Prose (r : Body) (S : W.Stmt) : Prop :=
   ∃ t u, proseSentence (Body.text r).toList = some t ∧ A.gather S = some u ∧ A.ReadsProse t u
 
-/-- A rules rendering shows a statement: the figure and the predicate come
-apart, and each rule reads back as a constructor, in order. -/
-def Anatomy.Rules (r : Body) (S : W.Stmt) : Prop :=
-  ∃ fs qs, A.figure r = some fs ∧ A.ctors S = some qs ∧ A.ReadsRules fs qs
+/-- A body is a statement printed in the rules view: the rules the view
+says its constructors are, each formula printed by the notation, and the
+rules set out as the figure by the extractor's layout. -/
+def Anatomy.PrintsRules (S : W.Stmt) (r : Body) : Prop :=
+  ∃ qs, A.ctors S = some qs ∧ r = [.gen (figureLayout (ruleItems (qs.map (Layout.Rule.map A.print))))]
 
-/-- The anatomy is the world's. No printed formula has a dollar in it; the
-world prints prose as the anatomy does, with the prose layout; and a prose
-rendering that reads back reads back formula by formula, which is what the
-validator checks. Rules renderings have no slots, and one that reads back
-reads back part by part. -/
+/-- The notation is faithful on a predicate: each part its rules show,
+printed, reads back as itself. -/
+def Anatomy.FaithfulRules (S : W.Stmt) : Prop :=
+  ∀ qs, A.ctors S = some qs → ∀ q ∈ (qs.map Layout.Rule.parts).flatten, A.ReadsPart (A.print q) q
+
+/-- A rules rendering shows a statement: the parser takes the figure apart,
+the view says what the predicate's rules are, and each rule reads back as a
+constructor, in order. -/
+def Anatomy.Rules (r : Body) (S : W.Stmt) : Prop :=
+  ∃ fs qs, figure (Body.text r).toList = some fs ∧ A.ctors S = some qs ∧ A.ReadsRules fs qs
+
+/-- The anatomy is the world's. What the notation prints is plain; the
+world prints prose and rules as the anatomy does, with the extractor's
+layouts; and a rendering that reads back reads back formula by formula,
+which is what the validator checks. -/
 structure Anatomy.Sound : Prop where
   /-- what the notation prints of a statement is plain: no dollar in a
   formula, and a group's names come apart from each other and their type -/
@@ -210,10 +220,13 @@ structure Anatomy.Sound : Prop where
   prose : ∀ S r, W.render "prose" S = some r → A.PrintsProse S r
   /-- a prose rendering that reads back reads back formula by formula -/
   formulas : ∀ S r, W.render "prose" S = some r → W.Reads r S → A.Faithful S
-  /-- a rules rendering has no slots -/
-  rulesIds : ∀ S r, W.render "rules" S = some r → ids r = []
-  /-- a rules rendering that reads back shows its statement -/
-  rules : ∀ S r, W.render "rules" S = some r → W.Reads r S → A.Rules r S
+  /-- what the notation prints of a predicate's rules is plain: no newline
+  in a formula or a label, and a mark the lexer takes apart -/
+  rulesPlain : ∀ S qs, A.ctors S = some qs → ∀ q ∈ qs, (q.map A.print).Plain
+  /-- the world prints rules as the anatomy does -/
+  rules : ∀ S r, W.render "rules" S = some r → A.PrintsRules S r
+  /-- a rules rendering that reads back reads back formula by formula -/
+  ruleFormulas : ∀ S r, W.render "rules" S = some r → W.Reads r S → A.FaithfulRules S
 
 end
 
@@ -273,6 +286,21 @@ theorem Anatomy.readsProse_map {W : World} (A : Anatomy W) :
       (A.readsHyps_map fun q hq => h q (Or.inl (Or.inr hq)))
       (A.readsConcl_map fun q hq => h q (Or.inr hq))
 
+/-- A rule's formulas, each printed from a part, and reading back as it, read
+back as the constructor. -/
+theorem Anatomy.readsRule_map {W : World} (A : Anatomy W) {q : Layout.Rule A.Part}
+    (h : ∀ p ∈ q.parts, A.ReadsPart (A.print p) p) : A.ReadsRule (q.map A.print) q := by
+  simp only [Layout.Rule.parts, List.mem_cons] at h
+  exact .mk rfl rfl (A.readsAll_map fun p hp => h p (Or.inr hp)) (h q.concl (Or.inl rfl))
+
+theorem Anatomy.readsRules_map {W : World} (A : Anatomy W) :
+    ∀ {qs : List (Layout.Rule A.Part)}, (∀ p ∈ (qs.map Layout.Rule.parts).flatten, A.ReadsPart (A.print p) p) →
+      A.ReadsRules (qs.map (Layout.Rule.map A.print)) qs
+  | [], _ => .nil
+  | q :: qs, h => by
+    simp only [List.map_cons, List.flatten_cons, List.mem_append] at h
+    exact .cons (A.readsRule_map fun p hp => h p (Or.inl hp)) (A.readsRules_map fun p hp => h p (Or.inr hp))
+
 /-- A prose rendering has no slots. -/
 theorem Anatomy.Sound.proseIds {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
     (hr : W.render "prose" S = some r) : ids r = [] := by
@@ -292,6 +320,25 @@ theorem Anatomy.Sound.proseShows {W : World} {A : Anatomy W} (hA : A.Sound) {S :
   refine ⟨u.map A.print, u, ?_, hu, A.readsProse_map (hF u hu)⟩
   rw [Body.text_gen, proseLayout, String.toList_ofList]
   exact proseSentence_proseChars (hA.plain S u hu)
+
+/-- A rules rendering has no slots. -/
+theorem Anatomy.Sound.rulesIds {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
+    (hr : W.render "rules" S = some r) : ids r = [] := by
+  obtain ⟨qs, _, rfl⟩ := hA.rules S r hr
+  rfl
+
+/-- **A rules rendering shows its predicate.** When it reads back, the
+figure comes apart into the rules printed from the constructors, and each
+reads back as its constructor. -/
+theorem Anatomy.Sound.rulesShow {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
+    (hr : W.render "rules" S = some r) (hR : W.Reads r S) : A.Rules r S := by
+  have hF := hA.ruleFormulas S r hr hR
+  obtain ⟨qs, hqs, rfl⟩ := hA.rules S r hr
+  refine ⟨qs.map (Layout.Rule.map A.print), qs, ?_, hqs, A.readsRules_map (hF qs hqs)⟩
+  rw [Body.text_gen]
+  exact figure_figureLayout fun q hq => by
+    obtain ⟨q', hq', rfl⟩ := List.mem_map.mp hq
+    exact hA.rulesPlain S qs hqs q' hq'
 
 section
 variable {W : World} {A : Anatomy W} {b : Bundle} {d : Doc}
@@ -321,8 +368,8 @@ each of its rules reads back as a constructor, in order. -/
 theorem rules_true (hA : A.Sound) (hb : b.True W id) (hc : check b d = []) {k : Key} {r : Body}
     (hp : Piece.block k "rules" r ∈ d) :
     ∃ S, W.stmt k = some S ∧ W.trusted k = true ∧ W.render "rules" S = some r ∧ A.Rules r S := by
-  obtain ⟨S, hS, ht, hr, hR⟩ := block_rendering hb hc hp hA.rulesIds
-  exact ⟨S, hS, ht, hr, hA.rules S r hr hR⟩
+  obtain ⟨S, hS, ht, hr, hR⟩ := block_rendering hb hc hp fun _ _ h => hA.rulesIds h
+  exact ⟨S, hS, ht, hr, hA.rulesShow hr hR⟩
 
 end
 

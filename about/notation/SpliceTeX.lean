@@ -83,7 +83,7 @@ latex_notation Imprimatur.Image.Of W S i => r"\mathit{image}_{#W}(#S, #i)"
 latex_notation Imprimatur.Entry.True W trusted k e => r"#W \models_{#k} #e" hide trusted := _
 latex_notation Imprimatur.Bundle.True W trusted b => r"#W \models #b" hide trusted := _
 latex_notation Piece.True W p => r"#W \models #p"
-latex_notation Doc.True W d => r"#W \models #d"
+latex_notation SpliceModel.Doc.True W d => r"#W \models #d"
 
 -- Lists, pairs and strings.
 latex_notation List.nil => r"[]"
@@ -120,7 +120,7 @@ latex_notation Diag.drift k => r"\mathsf{drift}(#k)"
 latex_notation Piece => r"\mathit{Piece}"
 latex_notation Seg => r"\mathit{Seg}"
 latex_notation Diag => r"\mathit{Diag}"
-latex_notation Doc => r"\mathit{Doc}"
+latex_notation SpliceModel.Doc => r"\mathit{Doc}"
 latex_notation Body => r"\mathit{Body}"
 latex_notation SlotId => r"\mathit{SlotId}"
 
@@ -132,7 +132,7 @@ latex_category SpliceModel.Bundle => "b"
 latex_category SpliceModel.Entry => "e"
 latex_category SpliceModel.World => "W"
 latex_category Imprimatur.World => "W"
-latex_category Doc => "d"
+latex_category SpliceModel.Doc => "d"
 latex_category Imprimatur.Key => "k"
 latex_category Imprimatur.View => "v"
 latex_category Imprimatur.Hash => "h"
@@ -140,19 +140,18 @@ latex_category Body => "r"
 latex_category Imprimatur.World.Stmt => "S"
 
 -- Two views read: how statements and renderings come apart.
-latex_notation Rule α => r"\texttt{Rule}(#α)"
 latex_notation Anatomy W => r"\texttt{Anatomy}(#W)"
-latex_notation Rule.name f => r"#f.\mathit{name}"
-latex_notation Rule.premises f => r"#f.\mathit{premises}"
-latex_notation Rule.concl f => r"#f.\mathit{concl}"
 latex_notation Anatomy.Part A => r"\mathit{Part}_{#A}"
 latex_notation Anatomy.gather A S => r"\mathit{gather}_{#A}(#S)"
 latex_notation Anatomy.ctors A S => r"\mathit{ctors}_{#A}(#S)"
-latex_notation Anatomy.figure A r => r"\mathit{figure}_{#A}(#r)"
 latex_notation Anatomy.print A q => r"\mathit{print}_{#A}(#q)"
 latex_notation Prose.map (Anatomy.print A) u => r"\mathit{print}^{*}_{#A}(#u)"
 latex_notation Anatomy.PrintsProse A S r => r"#r = \mathit{print}^{\mathsf{prose}}_{#A}(#S)" prec := 50
 latex_notation Anatomy.Faithful A S => r"\mathit{faithful}_{#A}(#S)"
+latex_notation Rule.map (Anatomy.print A) q => r"\mathit{print}^{*}_{#A}(#q)"
+latex_notation List.map (Rule.map (Anatomy.print A)) qs => r"\mathit{print}^{*}_{#A}(#qs)"
+latex_notation Anatomy.PrintsRules A S r => r"#r = \mathit{print}^{\mathsf{rules}}_{#A}(#S)" prec := 50
+latex_notation Anatomy.FaithfulRules A S => r"\mathit{faithful}^{\mathsf{rules}}_{#A}(#S)"
 latex_notation Anatomy.ReadsPart A f q => r"#f \rightsquigarrow_{#A} #q" prec := 50
 latex_notation Anatomy.ReadsAll A fs qs => r"#fs \rightsquigarrow^{*}_{#A} #qs" prec := 50
 latex_notation Anatomy.ReadsKind A t u => r"#t \rightsquigarrow^{\mathsf{kind}}_{#A} #u" prec := 50
@@ -169,7 +168,7 @@ latex_notation Anatomy.Rules A r S => r"\mathit{rules}_{#A}(#r, #S)"
 latex_notation Anatomy.Sound A => r"\mathsf{sound}(#A)"
 latex_category Anatomy => r"\mathcal{A}"
 latex_rule_label Anatomy.Sound.mk "Sound"
-latex_display "Anatomies" := [Rule, Anatomy]
+latex_display "Anatomies" := [Anatomy]
 
 -- What the prose view says (Imprimatur.Layout), and how it is laid out.
 latex_notation VarKind α => r"\texttt{Range}(#α)"
@@ -203,6 +202,80 @@ latex_notation groupParts g => r"\mathsf{parts}(#g)"
 latex_notation Concl.parts c => r"\mathsf{parts}(#c)"
 latex_notation Prose.parts pr => r"\mathsf{parts}(#pr)"
 latex_display "What the prose view says" := [VarKind, VarGroup, Hyp, Concl, Statement, Prose]
+
+-- What the rules view says (Imprimatur.Layout), and how it is laid out.
+latex_notation Mark => r"\texttt{Mark}"
+latex_notation Mark.name m => r"#m.\mathit{name}"
+latex_notation Mark.key m => r"#m.\mathit{key}"
+latex_notation Mark.Plain m => r"\mathsf{plain}(#m)"
+latex_notation Rule α => r"\texttt{Rule}(#α)"
+latex_notation Rule.mark r => r"#r.\mathit{mark}"
+latex_notation Rule.label r => r"#r.\mathit{label}"
+latex_notation Rule.premises r => r"#r.\mathit{premises}"
+latex_notation Rule.concl r => r"#r.\mathit{concl}"
+latex_notation Rule.mk mark label ps c => r"\langle #mark, #label, #ps, #c\rangle"
+latex_notation Rule.Plain r => r"\mathsf{plain}(#r)"
+latex_notation Rule.parts r => r"\mathsf{parts}(#r)"
+latex_notation Item α => r"\texttt{Item}(#α)"
+latex_notation Item.rule r => r"\mathsf{rule}(#r)"
+latex_notation Item.missing n => r"\mathsf{missing}(#n)"
+latex_notation ruleItems rs => r"\mathsf{items}(#rs)"
+latex_notation Line => r"\mathit{Line}"
+latex_notation Line.blank => r"\text{``''}"
+latex_notation Line.beginK => r"\text{``\textbackslash{}begin\{mathpar\}''}"
+latex_notation Line.endK => r"\text{``\textbackslash{}end\{mathpar\}''}"
+latex_notation Line.andK => r"\text{``\textbackslash{}and''}"
+latex_notation Line.openK => r"\text{``\ \ \{''}"
+latex_notation Line.openEmpty => r"\text{``\ \ \{ \}''}"
+latex_notation Line.closeK => r"\text{``\ \ \}''}"
+latex_notation Line.header label => r"\mathsf{header}(#label)"
+latex_notation Line.mark m label => r"\mathsf{mark}(#m, #label)"
+latex_notation Line.line text => r"\mathsf{premise}(#text)"
+latex_notation Line.concl f => r"\mathsf{concl}(#f)"
+latex_notation Line.comment n => r"\mathsf{comment}(#n)"
+latex_notation inferOpen => r"\mathsf{inferOpen}"
+latex_notation indent => r"\mathsf{indent}"
+latex_notation conclOpen => r"\mathsf{conclOpen}"
+latex_notation conclClose => r"\mathsf{conclClose}"
+latex_notation lineBreak => r"\mathsf{lineBreak}"
+latex_notation lineText t => r"\mathsf{lineText}(#t)"
+latex_notation joinLines ls => r"\mathsf{joinLines}(#ls)"
+latex_notation premiseLines ps => r"\mathsf{premiseLines}(#ps)"
+latex_notation bodyLines ps c => r"\mathsf{bodyLines}(#ps, #c)"
+latex_notation markLines o label => r"\mathsf{markLines}(#o, #label)"
+latex_notation ruleLines r => r"\mathsf{ruleLines}(#r)"
+latex_notation itemLines i => r"\mathsf{itemLines}(#i)"
+latex_notation trimAnd ls => r"\mathsf{trimAnd}(#ls)"
+latex_notation figureLines items => r"\mathsf{figureLines}(#items)"
+latex_notation figureChars items => r"\mathsf{figureChars}(#items)"
+latex_notation figureLayout items => r"\mathsf{figure}(#items)"
+latex_notation lines cs => r"\mathsf{lines}(#cs)"
+latex_notation lexLines ls => r"\mathsf{lex}(#ls)"
+latex_notation dropPrefix pre l => r"\mathsf{dropPrefix}(#pre, #l)"
+latex_notation dropSuffix suf l => r"\mathsf{dropSuffix}(#suf, #l)"
+latex_notation parsePremises ps ls => r"\mathsf{premises}_{#ps}(#ls)"
+latex_notation premiseNext ps p ls => r"\mathsf{next}_{#ps}(#p, #ls)"
+latex_notation unbreak ps o ls => r"\mathsf{unbreak}_{#ps}(#o, #ls)"
+latex_notation withPremises mark label o => r"\mathsf{withPremises}(#mark, #label, #o)"
+latex_notation parseBody mark label ls => r"\mathsf{body}(#mark, #label, #ls)"
+latex_notation parseRule ls => r"\mathsf{parseRule}(#ls)"
+latex_notation ruleOf o => r"\mathsf{ruleOf}(#o)"
+latex_notation parseChunk ls => r"\mathsf{chunk}(#ls)"
+latex_notation consRule o os => r"\mathsf{consRule}(#o, #os)"
+latex_notation parseChunks chs => r"\mathsf{chunks}(#chs)"
+latex_notation chunks cur ls => r"\mathsf{split}_{#cur}(#ls)"
+latex_notation bodyOf ls => r"\mathsf{bodyOf}(#ls)"
+latex_notation rulesOf o => r"\mathsf{rulesOf}(#o)"
+latex_notation figureOf ls => r"\mathsf{figureOf}(#ls)"
+latex_notation ofLines o => r"\mathsf{ofLines}(#o)"
+latex_notation figure cs => r"\mathsf{rules}(#cs)"
+latex_display "What the rules view says" := [Mark, Rule, Item]
+latex_display "Lines" := [Line]
+latex_display "The rules layout" := [lineText, joinLines, premiseLines, bodyLines, markLines, ruleLines,
+  itemLines, trimAnd, figureLines, figureChars, figureLayout]
+latex_display "The rules parser" := [parsePremises, premiseNext, unbreak, withPremises, parseBody,
+  parseRule, ruleOf, parseChunk, consRule, parseChunks, chunks, bodyOf, rulesOf, figureOf, ofLines, figure]
+latex_display "Printing rules" := [Anatomy.PrintsRules, Anatomy.FaithfulRules]
 -- Tokens: keywords print as their text.
 latex_notation Kw => r"\mathit{Kw}"
 latex_notation Tok => r"\mathit{Tok}"
@@ -302,6 +375,8 @@ latex_entry "The bundle of a world is true" => SpliceModel.bundleOf_true
 latex_entry "The hash names the statement" => Imprimatur.Image.Of.stmt_eq
 latex_entry "A view shows the statement" => Imprimatur.Bundle.True.view
 latex_entry "The prose parser undoes the layout" => SpliceModel.proseSentence_proseLayout
+latex_entry "The figure parser undoes the layout" => SpliceModel.figure_figureLayout
 latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound.proseShows
+latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound.rulesShow
 latex_entry "Prose shows the statement" => SpliceModel.prose_true
 latex_entry "Rules show the predicate" => SpliceModel.rules_true
