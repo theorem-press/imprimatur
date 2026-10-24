@@ -62,6 +62,15 @@ bundles.
 | **Scanner robustness** | on any input, including truncated files, unbalanced braces and markers inside `verbatim`, `scan` either succeeds or reports an error with a position. It never crashes, and never writes a file. |
 | **Hash invariance** | in the extractor, renaming bound variables or universe parameters doesn't change `stmtHash`; changing a hypothesis does. |
 
+### Differential tests
+
+While the splicer is rewritten as a verified core (docs/verified-splicer.md),
+each rewritten function is run beside the code it replaces, kept verbatim in
+`splice/test/SpliceTest/Reference.lean`, and the two must agree: on
+generated input (`splice/diff/text`), and on every `.tex` file of the test
+cases, the examples and the about paper (`splice/diff/text-corpus`). A
+function's reference copy goes when its phase is complete.
+
 ### Tooling
 
 - **Our own small test harness** in a test-only package: `check`,
