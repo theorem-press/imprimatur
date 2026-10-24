@@ -255,7 +255,7 @@ def staleDiags (changes : Array Change) (diff : Bool) : Array Diag :=
   changes.map fun ch =>
     let what :=
       if ch.contentChanged then s!"the generated content of {ch.key} is out of date"
-      else s!"{ch.key} has no up-to-date sum= checksum"
+      else s!"{ch.key} has no up-to-date sum= or dflt= option"
     let body :=
       if diff && ch.contentChanged then
         what ++ "\n--- current\n+++ regenerated\n" ++ "\n".intercalate (lineDiff ch.old ch.new).toList

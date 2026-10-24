@@ -43,7 +43,7 @@ milestones.*
 | `testkit/` | test-only package: harness, golden files, seeded generator |
 | `extract/test/`, `splice/test/` | test packages; each requires its parent and `testkit/` |
 | `test/` | fixtures shared by the tests: Lean projects, TeX documents, bundles |
-| `bundle/` | the bundle's type, one module, copied into `extract/`, `splice/` and `about/lean/` (`lint/bundle-copies` keeps the copies equal) |
+| `bundle/` | the bundle's type, one module, copied into `extract/` and `splice/` under one module name (`lint/bundle-copies` keeps the copies equal) |
 | `schema/` | the bundle's JSON schema |
 | `about/` | the paper about imprimatur, with the model of the splicer it is proved for |
 | `scripts/` | `test-all.sh`, `lint.sh`, `e2e.sh` and the lint checks |

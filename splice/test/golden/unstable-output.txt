@@ -1,0 +1,19 @@
+$ imprimatur-splice apply --bundle v1.bundle.json
+main.tex: error[unstable-output]: the text apply would write does not scan again, so nothing was written:
+  main.tex:2:3: error[parse-error]: \begin{leanblock} inside \begin{leanblock} at main.tex:1:1; blocks cannot nest, or that block is missing its \end{leanblock}
+  The generated content probably holds markup that ends or opens a block.
+apply: nothing written; 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice check --bundle v1.bundle.json
+main.tex: error[unstable-output]: the text apply would write does not scan again, so nothing was written:
+  main.tex:2:3: error[parse-error]: \begin{leanblock} inside \begin{leanblock} at main.tex:1:1; blocks cannot nest, or that block is missing its \end{leanblock}
+  The generated content probably holds markup that ends or opens a block.
+main.tex:1:1: error[stale]: the generated content of K is out of date
+check: 1 stale, 2 errors, 0 warnings
+[exit 1]
+
+== main.tex
+\begin{leanblock}[view=grammar]{K}{T}
+\end{leanblock}
+

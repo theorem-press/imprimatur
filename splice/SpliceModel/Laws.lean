@@ -148,15 +148,14 @@ theorem not_stale_after_apply {b : Bundle} (hb : WF b) (d : Doc) (k : Key) :
       | some r =>
         have hr : rendering b k' v = some r := by simp [rendering, he, hv]
         simp only [regen, hr, diags, he, hv, fill_fill (hb k' v r hr)] at hx
-        cases ht : e.verdict <;> simp [ht] at hx <;> (try split at hx) <;> simp at hx
+        cases ht : e.verdict <;> simp [ht] at hx
   | text _ => simp [regen, diags] at hx
   | check k' h =>
     cases he : b.find? k' with
     | none => simp [regen, diags, he] at hx
     | some e =>
       simp only [regen, diags, he] at hx
-      cases ht : e.verdict <;> cases hh : e.statement.stmtHash <;> simp [ht, hh] at hx <;>
-        (try split at hx) <;> simp at hx
+      cases ht : e.verdict <;> cases hh : e.statement.stmtHash <;> simp [ht, hh] at hx
 
 /-- After `accept`, `check` reports no drift. -/
 theorem not_drift_after_accept (b : Bundle) (d : Doc) (k : Key) :
@@ -179,8 +178,7 @@ theorem not_drift_after_accept (b : Bundle) (d : Doc) (k : Key) :
     | none => simp [he] at hx
     | some e =>
       simp only [he] at hx
-      cases ht : e.verdict <;> cases hr : e.statement.view? v <;> simp [ht, hr] at hx <;>
-        (try split at hx) <;> (try split at hx) <;> simp at hx
+      cases ht : e.verdict <;> cases hr : e.statement.view? v <;> simp [ht, hr] at hx
 
 /-! ## What `check` guarantees (Theorem 1)
 

@@ -738,8 +738,14 @@ overwrites the text inside it.
   by position or by the surrounding formula. A slot's text therefore
   survives changes to the notation that would alter the formal part.
 - **Default text.** For a new slot, the view supplies the default text, for
-  example the constructor's docstring. After that, the text belongs to the
-  authors.
+  example the constructor's docstring. A block with slots records a digest
+  of its slots' default texts in `dflt=`. While the slots still match it,
+  the authors haven't touched them, so a changed default replaces them.
+  Once the authors edit a slot of the block, the text belongs to the
+  authors: every slot of the block keeps its text, and a later change of
+  default is reported (`slot-default`), listing the slots that differ from
+  their new defaults. A digest per block, not per slot, keeps the markup
+  unchanged, at the price of treating a block's slots together.
 - **Checksums.** Slot contents are replaced by their ids before the block's
   checksum is computed (§10.2). Editing a slot is never a hand edit, and
   editing anything else in the block still is.
@@ -805,7 +811,8 @@ to TeX environments.
   - Together with slots, this replaces project A's special-case rules for
     preserving last-good output and merging paper-side edits.
 - **Keeps slot text.** When it regenerates a block, `apply` copies each
-  slot's existing text into the new content, matched by slot id (§9.5).
+  slot's existing text into the new content, matched by slot id, unless
+  the block's slots still hold the defaults recorded in `dflt=` (§9.5).
 - **Missing keys.** A key with no entry in the bundle is an error.
   `--keep-stale` makes it a warning and leaves the old content.
 - **Rewrites files in place.** Writes are atomic, and every file keeps its
@@ -990,10 +997,11 @@ imprimatur/
     test/                         unit tests and golden bundles of the fixtures
   splice/                         Lake package "imprimatur-splice"
     Splice/Text.lean  Splice/Sha256.lean  Splice/Toml.lean  Splice/Config.lean
-    Splice/Bundle.lean  Splice/Diag.lean  Splice/Scan.lean  Splice/Doc.lean
+    Imprimatur/Bundle.lean  Splice/Diag.lean  Splice/Scan.lean  Splice/Doc.lean
     Splice/Slots.lean  Splice/Apply.lean  Splice/Check.lean  Splice/Strip.lean
     Splice/Manifests.lean  Splice/Cli.lean  Splice/Wrapper.lean  Splice/Version.lean
     Main.lean  SpliceWrapper.lean imprimatur-splice, and the imprimatur wrapper
+    SpliceModel/                  the model, its laws and Theorem 1 (§18.2)
     test/
   testkit/                        test-only package: harness, golden files, seeded generator
   test/                           fixtures/ (Lean projects), tex/ (documents), bundles/
@@ -1112,7 +1120,7 @@ What does it mean for imprimatur to be correct? A paper is correct with
 respect to its Lean development when what it shows is what Lean proved. This
 section states that as two theorems, one about the splicer and one about the
 notation, with the trusted base they rest on. Theorem 1 and the splicer's
-laws are proved for a model of the splicer (`about/lean`); §18.4 says how
+laws are proved for a model of the splicer (`splice/SpliceModel`); §18.4 says how
 the rest is checked.
 
 ### 18.1 What a document claims
@@ -1148,7 +1156,7 @@ strings and so can be proved in Lean, where the splicer is written:
 - **slot preservation:** slot text survives regeneration.
 
 They are proved in Lean for a model of the splicer, in which a document is
-already parsed into pieces (`about/lean`, presented in
+already parsed into pieces (`splice/SpliceModel`, presented in
 `about/imprimatur-paper.tex`, a paper built and checked with imprimatur). The
 splicer itself, which works on TeX source, is property-tested against them
 (docs/TESTING.md, Properties).
@@ -1222,7 +1230,7 @@ stands only for values). It is not checked yet (#43).
 The extractor is meta-programming and will not be verified. Instead:
 
 - **the splicer's laws** and Theorem 1 are proved in Lean for a model of the
-  splicer (`about/lean`); the splicer's scanner and edits are property-tested;
+  splicer (`splice/SpliceModel`); the splicer's scanner and edits are property-tested;
 - **Theorem 2 by translation validation** (`Imprimatur.Validate`), below;
 - **the `Doc` emitter's parenthesisation**, a few dozen lines, is
   unit-tested (`extract/doc/*`), not proved. Its errors are caught formula

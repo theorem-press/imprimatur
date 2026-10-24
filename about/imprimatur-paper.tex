@@ -78,7 +78,7 @@ reduction, whose substitution is a stand-in that we will replace. Figure~\ref{fi
 theorem about it, as a reader of this paper sees them, and the Lean the
 theorem came from, shown by the \texttt{lean} view.
 \begin{figure}[t]
-\begin{leangrammar}[sum=GYQkvbUOd0]{Stlc.Tm}{Terms}
+\begin{leangrammar}[sum=GYQkvbUOd0, dflt=x2x8yBvUWM]{Stlc.Tm}{Terms}
 \label{gram:Stlc.Tm}\begin{LeanDisplay}
 \LeanCategory{M \in \mathit{Term}}{\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\
 \LeanEntry{x_{i}}{\leanslot{Stlc.Tm.var}{a variable}}\\
@@ -129,6 +129,68 @@ generated.}
 \label{fig:example}
 \end{figure}
 
+\begin{figure}[t]
+\footnotesize
+\newcommand{\cs}[1]{\textbackslash{}#1}
+\begin{tabular}{@{}p{.38\linewidth}@{\quad}p{.58\linewidth}@{}}
+\textit{The block, as a piece} & \textit{What \texttt{check} parses}\tabularnewline
+\hline\noalign{\smallskip}
+\raggedright $\mathsf{block}_{\mathtt{Stlc.Tm}}^{\mathtt{grammar|display}}(r_{1})$, where
+$r_{1} = [\mathsf{gen}(\ldots)$,
+$\mathsf{slot}_{\mathtt{Stlc.Tm}}(\text{Terms, with de Bruijn variables})$,
+$\mathsf{gen}(\ldots)$,
+$\mathsf{slot}_{\mathtt{Stlc.Tm.var}}(\text{a variable})$, $\ldots$,
+$\mathsf{slot}_{\mathtt{Stlc.Tm.unit}}(\text{the unit value})$,
+$\mathsf{gen}(\ldots)]$
+&
+\raggedright\texttt{\cs{begin}\{leangrammar\}[sum=...]\{Stlc.Tm\}\{Terms\}}\newline
+\texttt{\cs{label}\{gram:Stlc.Tm\}\cs{begin}\{LeanDisplay\}}\newline
+\texttt{\cs{LeanCategory}\{M \cs{in} \cs{mathit}\{Term\}\}\{\cs{leanslot}\{Stlc.Tm\}\{Terms, with de Bruijn variables\}\}\cs{}\cs{}}\newline
+\texttt{\cs{LeanEntry}\{x\_\{i\}\}\{\cs{leanslot}\{Stlc.Tm.var\}\{a variable\}\}\cs{}\cs{}}\newline
+\texttt{...}\newline
+\texttt{\cs{end}\{LeanDisplay\}}\newline
+\texttt{\cs{end}\{leangrammar\}}
+\tabularnewline\noalign{\medskip}
+\raggedright $\mathsf{block}_{\mathtt{Stlc.Step}}^{\mathtt{rules}}(r_{2})$, where
+$r_{2} = [\mathsf{gen}(\ldots)]$, with no slots
+&
+\raggedright\texttt{\cs{begin}\{leanrules\}[sum=...]\{Stlc.Step\}\{Reduction\}}\newline
+\texttt{\cs{begin}\{mathpar\}}\newline
+\texttt{\cs{inferrule}[(Beta)] \{ \} \{ (\cs{lambda}\{:\}A.\cs{,} M)\cs{;} V \cs{longrightarrow} M[V] \}}\newline
+\texttt{\cs{and} ...}\newline
+\texttt{\cs{end}\{mathpar\}}\newline
+\texttt{\cs{end}\{leanrules\}}
+\tabularnewline\noalign{\medskip}
+\raggedright $\mathsf{block}_{\mathtt{Values\ are\ final}}^{\mathtt{prose}}(r_{3})$, where
+$r_{3} = [\mathsf{gen}(s)]$, with no slots, where $s$ is
+exactly the two lines between the header and \texttt{\cs{end}}, each with
+its newline:\newline
+\texttt{\cs{label}\{thm:Values-are-final\}}\newline
+\texttt{\cs{LeanProse}\{Let \$V, M \cs{in} \cs{mathit}\{Term\}\$. Then
+\$\cs{neg} (V \cs{longrightarrow} M)\$.\}}
+&
+\raggedright\texttt{\cs{begin}\{leantheorem\}[sum=...]\{Values are final\}\{Values are final\}}\newline
+\texttt{\cs{label}\{thm:Values-are-final\}}\newline
+\texttt{\cs{LeanProse}\{Let \$V, M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V \cs{longrightarrow} M)\$.\}}\newline
+\texttt{\cs{end}\{leantheorem\}}
+\tabularnewline\noalign{\medskip}
+\raggedright $\mathsf{block}_{\mathtt{Stlc.values\_final}}^{\mathtt{lean}}(r_{4})$, where
+$r_{4} = [\mathsf{gen}(\ldots)]$, with no slots
+&
+\raggedright\texttt{\cs{begin}\{leansource\}[sum=...]\{Stlc.values\_final\}\{The source\}}\newline
+\texttt{\cs{LeanCode}\{\%}\newline
+\texttt{\cs{LeanKeyword}\{theorem\} \cs{LeanConst}\{values\cs{}\_final\} ...\}}\newline
+\texttt{\cs{end}\{leansource\}}
+\end{tabular}
+\caption{The four blocks of Figure~\ref{fig:example}, as pieces
+(Section~\ref{sec:documents}) and as the \TeX{} that \texttt{check}
+parses. The key is the first argument; the view is the environment's, by
+the paper's aliases; the title and the summary are not part of the piece.
+Each $\mathsf{gen}(\ldots)$ stands for the literal text it
+spans, shown in full for $r_{3}$. Only the grammar has slots.}
+\label{fig:blocks}
+\end{figure}
+
 The figure is the example's thread through the paper: what the bundle says of the theorem, what that means, what the
 paper claims, and what happens when the development changes.
 
@@ -139,7 +201,7 @@ statement, and its proof. The statement and the proof are not in the file,
 and could not be, since the splicer cannot read Lean. The file holds their
 images. So an entry is parametrised by how the two are represented:
 
-\begin{leangrammar}[sum=y7VOO7qd76]{Imprimatur.Entry}{Entries}
+\begin{leangrammar}[sum=y7VOO7qd76, dflt=UXRbK7fNW3]{Imprimatur.Entry}{Entries}
 \label{gram:Imprimatur.Entry}\begin{LeanDisplay}
 \LeanCategory{\texttt{Entry}(\sigma, \pi)}{\leanslot{Imprimatur.Entry}{An entry: what a bundle says of a key}}\\
 \LeanEntry{\mathit{decl} : \texttt{Decl}}{\leanslot{Imprimatur.Entry.decl}{what the key names}}\\
@@ -153,9 +215,18 @@ statements with one hash are one statement, as far as a document can tell.
 The views \emph{show} it: each is the statement rendered by the paper's
 notation. The \TeX{} is a parameter too, $\tau$: in the file it is \TeX{};
 in the model it is \TeX{} with the slots already parsed, a body
-(Section~\ref{sec:documents}).
+(Section~\ref{sec:documents}). The names it uses are strings:
 
-\begin{leangrammar}[sum=1FePWA7SoM]{Imprimatur.Image}{Images of a statement}
+\begin{leandef}[sum=nilI_jgzRM, dflt=lRpPyy-xAJ]{Names}{Names}
+\begin{LeanDisplay}
+\LeanClause{k \in \mathit{Key} \;\deq\; \mathit{String}}{\leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group}}\\
+\LeanClause{v \in \mathit{View} \;\deq\; \mathit{String}}{\leanslot{Imprimatur.View}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …}}\\
+\LeanClause{\mathit{TeX} \;\deq\; \mathit{String}}{\leanslot{Imprimatur.TeX}{TeX source}}\\
+\LeanClause{h \in \mathit{Hash} \;\deq\; \mathit{String}}{\leanslot{Imprimatur.Hash}{A SHA-256, as 64 hexadecimal digits}}
+\end{LeanDisplay}
+\end{leandef}
+
+\begin{leangrammar}[sum=1FePWA7SoM, dflt=IR-OTMnjJo]{Imprimatur.Image}{Images of a statement}
 \label{gram:Imprimatur.Image}\begin{LeanDisplay}
 \LeanCategory{\texttt{Image}(\tau)}{\leanslot{Imprimatur.Image}{A statement as a document may carry it}}\\
 \LeanEntry{\mathit{stmtHash} : \mathsf{Option}(\mathit{Hash})}{\leanslot{Imprimatur.Image.stmtHash}{the hash of the statement's meaning: the statement, with every definition it depends on; none when the dependencies could not be followed}}\\
@@ -170,7 +241,7 @@ in the model it is \TeX{} with the slots already parsed, a body
 Of the proof, the file holds only a verdict: whether Lean accepted it, and
 on what.
 
-\begin{leangrammar}[sum=A26C7HIvD7]{Imprimatur.Verdict}{Verdicts}
+\begin{leangrammar}[sum=A26C7HIvD7, dflt=OjijLYL1Ju]{Imprimatur.Verdict}{Verdicts}
 \label{gram:Imprimatur.Verdict}\begin{LeanDisplay}
 \LeanCategory{\texttt{Verdict}}{\leanslot{Imprimatur.Verdict}{The verdict on a proof: whether Lean accepted it, and on what}}\\
 \LeanEntry{\mathit{axioms} : \mathsf{Array}(\mathit{String})}{\leanslot{Imprimatur.Verdict.axioms}{the axioms the proof uses}}\\
@@ -204,7 +275,7 @@ paper was built with.}
 The proof is absent, and the statement appears twice: as a hash, and as
 \TeX{}. The model's bundle is the same type at the model's parameters:
 
-\begin{leandef}[sum=w7ghbqB2ku]{SpliceModel.Bundle}{The model's bundle}
+\begin{leandef}[sum=w7ghbqB2ku, dflt=URMwEx39ks]{SpliceModel.Bundle}{The model's bundle}
 \begin{LeanDisplay}
 \LeanClause{b \in \mathit{Bundle} \;\deq\; \texttt{Bundle}(\texttt{Image}(\mathit{Body}), \mathbb{B})}{\leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it}}
 \end{LeanDisplay}
@@ -219,7 +290,7 @@ states and whether its proof is trusted; how a statement is hashed and
 rendered; and when a rendering reads back as a statement, up to what the
 notation makes invisible (Section~\ref{sec:faithful}).
 
-\begin{leangrammar}[sum=fsA8oFAYhv]{Imprimatur.World}{Worlds}
+\begin{leangrammar}[sum=fsA8oFAYhv, dflt=ZXPQgExx8a]{Imprimatur.World}{Worlds}
 \label{gram:Imprimatur.World}\begin{LeanDisplay}
 \LeanCategory{W \in \texttt{World}(\tau)}{\leanslot{Imprimatur.World}{An environment, as the extractor presents it}}\\
 \LeanEntry{\mathit{Stmt} : \mathrm{Type}}{\leanslot{Imprimatur.World.Stmt}{statements}}\\
@@ -232,6 +303,17 @@ notation makes invisible (Section~\ref{sec:faithful}).
 \LeanEntry{\mathit{Reads} : \tau \to \mathit{Stmt}_{W} \to \mathrm{Prop}}{\leanslot{Imprimatur.World.Reads}{when a rendering reads back as a statement}}
 \end{LeanDisplay}
 \end{leangrammar}
+
+A statement is what a key names, as Lean holds it: for a theorem, its
+proposition; for a definition, its type and its definition; for an
+inductive type or predicate, its type and its constructors; and for the
+title of a group, its members' statements together. The model looks no
+further. $\mathit{Stmt}_{W}$ is abstract, and a statement is known only by
+what the world says of it: its two hashes, its renderings, and which
+renderings read back as it. The two hashes divide it. $\mathit{sig}_{W}$
+is of the statement as written, and changes when it is reworded;
+$\mathit{hash}_{W}$ is of what it means, the statement with every
+definition it depends on, and changes when any of them does.
 
 For the example, $\mathit{stmt}_{W}$ at the key of \emph{Values are
 final} is the proposition $\neg (V \longrightarrow M)$ under its binders;
@@ -287,7 +369,7 @@ is.
 \end{mathpar}
 \end{leanrules}
 
-\begin{leandef}[sum=BO-FFbUkKC]{Imprimatur.Bundle.True}{True bundles}
+\begin{leandef}[sum=BO-FFbUkKC, dflt=ajF32tA2Kd]{Imprimatur.Bundle.True}{True bundles}
 \begin{LeanDisplay}
 \LeanClause{W \models b \;\deq\; \forall k : \mathit{Key},\ \forall e : \texttt{Entry}(\texttt{Image}(\tau), \pi),\ b[k] = e \implies W \models_{k} e}{\leanslot{Imprimatur.Bundle.True}{A bundle is true of a world when the entry it gives for each key is}}
 \end{LeanDisplay}
@@ -311,7 +393,7 @@ constant or the title of a group, in a view, such as a formula, a sentence
 or a figure of inference rules. Its body is a list of segments: text
 generated from Lean, and slots, whose text the authors own.
 
-\begin{leangrammar}[sum=LI8COyXMC-]{SpliceModel.Seg}{Segments}
+\begin{leangrammar}[sum=LI8COyXMC-, dflt=T0UuA_Mbm_]{SpliceModel.Seg}{Segments}
 \label{gram:SpliceModel.Seg}\begin{LeanDisplay}
 \LeanCategory{\varsigma \in \mathit{Seg}}{\leanslot{SpliceModel.Seg}{A segment of a generated block}}\\
 \LeanEntry{\mathsf{gen}(s)}{\leanslot{SpliceModel.Seg.gen}{text generated from Lean}}\\
@@ -319,7 +401,13 @@ generated from Lean, and slots, whose text the authors own.
 \end{LeanDisplay}
 \end{leangrammar}
 
-\begin{leangrammar}[sum=cJG1zCy1KM]{SpliceModel.Piece}{Pieces}
+\begin{leandef}[sum=RLbAkrZoR2, dflt=7ISAIg9N6w]{SpliceModel.Body}{Bodies}
+\begin{LeanDisplay}
+\LeanClause{r \in \mathit{Body} \;\deq\; \mathsf{List}(\mathit{Seg})}{\leanslot{SpliceModel.Body}{The body of a generated block}}
+\end{LeanDisplay}
+\end{leandef}
+
+\begin{leangrammar}[sum=cJG1zCy1KM, dflt=dNV4EELd-N]{SpliceModel.Piece}{Pieces}
 \label{gram:SpliceModel.Piece}\begin{LeanDisplay}
 \LeanCategory{p \in \mathit{Piece}}{\leanslot{SpliceModel.Piece}{A piece of a document}}\\
 \LeanEntry{\mathsf{text}(s)}{\leanslot{SpliceModel.Piece.text}{hand-written text}}\\
@@ -332,7 +420,7 @@ Regenerating a block fills the rendering's slots with the text the authors
 wrote in the old block, slot by slot, and with the rendering's own text for a
 slot they have not written:
 
-\begin{leandef}[sum=31yBSoeXn6]{SpliceModel.fill}{Filling slots}
+\begin{leandef}[sum=31yBSoeXn6, dflt=FVz-PQMkf8]{SpliceModel.fill}{Filling slots}
 \begin{LeanDisplay}
 \LeanClause{\mathsf{fill}(\mathit{old}, []) \;\deq\; []}{\leanslot{SpliceModel.fill}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}}\\
 \LeanClause{\mathsf{fill}(\mathit{old}, \mathsf{gen}(s) \mathbin{::} r) \;\deq\; \mathsf{gen}(s) \mathbin{::} \mathsf{fill}(\mathit{old}, r)}{}\\
@@ -341,14 +429,15 @@ slot they have not written:
 \end{leandef}
 
 In the example, the theorem is a block $\mathsf{block}^{\mathtt{prose}}_{k}(r)$
-whose $r$ is the sentence of Figure~\ref{fig:example}.
+whose $r$ is the sentence of Figure~\ref{fig:example};
+Figure~\ref{fig:blocks} shows all four of its blocks as pieces.
 
 \verb|imprimatur apply| regenerates every block whose key and view the
 bundle renders, and leaves every other piece as it
-is\leancheck[stmt=5a7f40472101, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
+is\leancheck[stmt=5e0f2ccffe8e, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
 reports what is not as the bundle says:
 
-\begin{leangrammar}[sum=sSBoJwZVEg]{SpliceModel.Diag}{Diagnostics}
+\begin{leangrammar}[sum=sSBoJwZVEg, dflt=22TChVO74M]{SpliceModel.Diag}{Diagnostics}
 \label{gram:SpliceModel.Diag}\begin{LeanDisplay}
 \LeanCategory{x \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
 \LeanEntry{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}\\
@@ -366,7 +455,7 @@ trusted is reported; a block whose view the entry does not render is
 missing it; a block that is not the rendering, with its slots filled, is
 stale; a rendering the bundle says does not read back is unfaithful; a check
 on a key without a hash has none; and a check whose recorded hash is not the
-statement's is drift\leancheck[stmt=ce27f8a301d4, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
+statement's is drift\leancheck[stmt=60aa422d144e, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
 
 \section{The splicer's laws}
 
@@ -381,7 +470,7 @@ and its blocks without their bodies.
 \end{leantheorem}
 
 Second, running it again changes nothing more. This needs each rendering's
-slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=e4ff67e116fd, sig=9d550ab02488]{SpliceModel.WF}.
+slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=c6662354836a, sig=9d550ab02488]{SpliceModel.WF}.
 
 \begin{leantheorem}[sum=rUqQQUgoM3]{Idempotence}{Idempotence}
 \label{thm:Idempotence}
@@ -414,7 +503,7 @@ then, in Section~\ref{sec:attested}, for the prose its authors write.
 A block $\mathsf{block}_{k}^{v}(r)$ claims that the key $k$ states something
 Lean proved, that $r$ is that statement rendered in view $v$, with the
 authors' text in its slots, and that the rendering reads back as the
-statement\leancheck[stmt=f3a293b191c0, sig=a6e738ff2142]{SpliceModel.Piece.True}. Nothing here involves a hash:
+statement\leancheck[stmt=bdd129291fef, sig=a6e738ff2142]{SpliceModel.Piece.True}. Nothing here involves a hash:
 the splicer compares the block's text with the rendering in the bundle,
 and the bundle's verdict says the proof is trusted. If \verb|check| reports
 nothing against a true bundle, warnings included, every block's claim
@@ -426,22 +515,41 @@ holds.
 \end{leantheorem}
 
 \paragraph{The example.} Apply the theorem to the block of \emph{Values
-are final} in Figure~\ref{fig:example}, with $W$ the example's world and
-$b$ the bundle this paper was built with, which \verb|check| accepts. It
-gives a statement $S$ with $\mathit{stmt}_{W}(k) = S$: the key names a
-declaration, the proposition of Section~\ref{sec:meaning}. It gives
-$\mathit{trusted}_{W}(k)$: Lean accepted a proof of $S$ that uses no
-\texttt{sorry} and no axiom, and none of the sixteen constants in its cone
-is untrusted. It gives $\mathit{render}_{W}(\mathtt{prose}, S) = r'$ and
-$r = \mathsf{fill}(\mathsf{slots}(r), r')$: the sentence is that
-proposition rendered, and, the \texttt{prose} view having no slots, is
-$r'$ itself; for the terms grammar above it, the formulas are the
-rendering and the descriptions are the authors'. And it gives
-$\mathit{reads}_{W}(r', S)$: the formula $\neg (V \longrightarrow M)$
-parses back, in the grammar of Appendix~\ref{app:notation}, to $S$, with
-$V$ a value by the convention the appendix records. So a reader who trusts
-the extractor and the notation may conclude: \emph{what I read is a
-theorem of this development, and Lean proved it.}
+are final} in Figure~\ref{fig:example}. Here $W$ is the example's world;
+$b$ is the bundle this paper was built with, which is true of $W$ and
+against which \verb|check| reports nothing; $d$ is this paper; $k$ is the
+key ``\texttt{Values are final}''; $v$ is ``\texttt{prose}''; and $r$ is the
+sentence ``Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow
+M)$.'' The conclusion, $W \models \mathsf{block}^{\mathtt{prose}}_{k}(r)$,
+unfolds into five facts:
+\begin{itemize}
+\item $\mathit{stmt}_{W}(k) = S$, for some statement $S$. The key names a
+  declaration, \texttt{Stlc.values\_final} at line 54 of
+  \texttt{Stlc.lean}, and $S$ is its proposition, the one of
+  Section~\ref{sec:meaning}: for all terms $v$ and $e$, if $v$ is a value
+  then $v$ does not step to $e$.
+\item $\mathit{trusted}_{W}(k) = \mathsf{true}$. Lean accepted a proof of
+  $S$ that uses no \texttt{sorry} and no axiom, and none of the sixteen
+  constants in its cone is untrusted. The bundle's verdict records just
+  this (\texttt{"axioms": []}, \texttt{"sorry": false}, a cone of size 16
+  with nothing untrusted), and $W \models b$ makes the record true.
+\item $\mathit{render}_{W}(\mathtt{prose}, S) = r'$. The \texttt{prose}
+  view of $S$ is a sentence $r'$: the statement's binders become
+  \emph{Let \ldots} and its conclusion \emph{Then \ldots}.
+\item $r = \mathsf{fill}(\mathsf{slots}(r), r')$. The sentence on the page
+  is that rendering, with the authors' text in its slots. The
+  \texttt{prose} view has no slots, so $r$ is $r'$ itself. For the terms
+  grammar above it, the same fact says more: the formulas are the
+  rendering, and the descriptions are the authors'.
+\item $\mathit{reads}_{W}(r', S)$. The formula $\neg (V \longrightarrow
+  M)$ parses back, in the notation of Appendix~\ref{app:notation}, to $S$
+  and to nothing else. There $\longrightarrow$ is reduction,
+  \texttt{Stlc.Step}, and $M$ ranges over terms. $V$ ranges over values,
+  by the notation's convention that values are written $V$, which leaves
+  the source's premise \texttt{IsValue v} implicit.
+\end{itemize}
+So a reader who trusts the extractor and the notation may conclude:
+\emph{what I read is a theorem of this development, and Lean proved it.}
 
 What the reader may not conclude is that the theorem says what they would
 like: $V = V$ would pass as readily. Nor that substitution is real: the
@@ -449,6 +557,202 @@ sentence does not mention it, so the block is the rendering of a proved
 statement in the world with the stand-in and in the world without, and
 nothing in Theorem~\ref{thm:Generated-mathematics} tells the two apart.
 That is the hash's job.
+
+\subsection{What two views show}\label{sec:views}
+
+Theorem~\ref{thm:Generated-mathematics} holds of every view alike, and
+says the same of each: the block is the rendering, and the rendering reads
+back. It can say no more, because a world says nothing of what a view's
+rendering is: $\mathit{render}_{W}$ and $\mathit{reads}_{W}$ are opaque.
+The validator knows more. A rendering comes apart into formulas, and each
+formula is read back on its own, as the part of the statement it shows.
+For two views we model this. A \texttt{prose} sentence is \emph{Let} its
+variables, \emph{Assume} its hypotheses, \emph{Then} its conclusion; a
+\texttt{rules} figure is a list of rules, each with a name, premises and a
+conclusion. An \emph{anatomy} of a world says how each comes apart, and how
+a statement does; for prose, it also says how a statement is printed, a
+part at a time:
+
+\begin{leangrammar}[sum=_8p8JNPcN8, dflt=y7sGVLg-HG]{Anatomies}{Anatomies}
+\label{gram:Anatomies}\begin{LeanDisplay}
+\LeanCategory{\texttt{Telescope}(\alpha)}{\leanslot{SpliceModel.Telescope}{A proposition taken apart, as the prose view shows it}}\\
+\LeanEntry{\mathit{vars} : \mathsf{List}(\alpha)}{\leanslot{SpliceModel.Telescope.vars}{its variables, with their types}}\\
+\LeanEntry{\mathit{hyps} : \mathsf{List}(\alpha)}{\leanslot{SpliceModel.Telescope.hyps}{its hypotheses}}\\
+\LeanEntry{\mathit{concl} : \alpha}{\leanslot{SpliceModel.Telescope.concl}{its conclusion}}\\[.5ex]
+\LeanCategory{\texttt{Rule}(\alpha)}{\leanslot{SpliceModel.Rule}{A rule, as the rules view shows it}}\\
+\LeanEntry{\mathit{name} : \mathit{String}}{\leanslot{SpliceModel.Rule.name}{its name}}\\
+\LeanEntry{\mathit{premises} : \mathsf{List}(\alpha)}{\leanslot{SpliceModel.Rule.premises}{its premises}}\\
+\LeanEntry{\mathit{concl} : \alpha}{\leanslot{SpliceModel.Rule.concl}{its conclusion}}\\[.5ex]
+\LeanCategory{\mathcal{A} \in \texttt{Anatomy}(W)}{\leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart}}\\
+\LeanEntry{\mathit{Part} : \mathrm{Type}}{\leanslot{SpliceModel.Anatomy.Part}{a part of a statement, as the notation shows it}}\\
+\LeanEntry{\mathit{ReadsPart} : \mathit{TeX} \to \mathit{Part}_{\mathcal{A}} \to \mathrm{Prop}}{\leanslot{SpliceModel.Anatomy.ReadsPart}{when a formula reads back as a part}}\\
+\LeanEntry{\mathit{print} : \mathit{Part}_{\mathcal{A}} \to \mathit{TeX}}{\leanslot{SpliceModel.Anatomy.print}{a part printed as a formula, by the notation}}\\
+\LeanEntry{\mathit{telescope} : \mathit{Stmt}_{W} \to \mathsf{Option}(\texttt{Telescope}(\mathit{Part}_{\mathcal{A}}))}{\leanslot{SpliceModel.Anatomy.telescope}{a proposition, taken apart}}\\
+\LeanEntry{\mathit{ctors} : \mathit{Stmt}_{W} \to \mathsf{Option}(\mathsf{List}(\texttt{Rule}(\mathit{Part}_{\mathcal{A}})))}{\leanslot{SpliceModel.Anatomy.ctors}{an inductive predicate's constructors, as rules}}\\
+\LeanEntry{\mathit{figure} : \mathit{Body} \to \mathsf{Option}(\mathsf{List}(\texttt{Rule}(\mathit{TeX})))}{\leanslot{SpliceModel.Anatomy.figure}{a rules figure, taken apart}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+Printing a statement in the \texttt{prose} view is three steps: the
+anatomy takes the statement apart, the notation prints each part as a
+formula, and the layout sets the formulas out as a sentence. The notation
+is faithful on a statement's parts when each, printed, reads back as
+itself:
+
+\begin{leandef}[sum=IdRqUcg7Uh, dflt=rn4I2ME1qw]{Printing prose}{Printing prose}
+\begin{LeanDisplay}
+\LeanClause{r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}}(S) \;\deq\; \exists u,\ \mathit{telescope}_{\mathcal{A}}(S) = u \wedge r = \mathsf{layout}(\mathit{print}^{*}_{\mathcal{A}}(u))}{\leanslot{SpliceModel.Anatomy.PrintsProse}{A body is a statement printed in the prose view: the statement taken apart, each part printed by the notation, and the formulas set out as a sentence}}\\
+\LeanClause{\mathit{faithful}_{\mathcal{A}}(S) \;\deq\; \forall u : \texttt{Telescope}(\mathit{Part}_{\mathcal{A}}),\ \mathit{telescope}_{\mathcal{A}}(S) = u \implies (\forall q \in u.\mathit{vars},\ \mathit{print}_{\mathcal{A}}(q) \rightsquigarrow_{\mathcal{A}} q) \wedge (\forall q \in u.\mathit{hyps},\ \mathit{print}_{\mathcal{A}}(q) \rightsquigarrow_{\mathcal{A}} q) \wedge \mathit{print}_{\mathcal{A}}(u.\mathit{concl}) \rightsquigarrow_{\mathcal{A}} u.\mathit{concl}}{\leanslot{SpliceModel.Anatomy.Faithful}{The notation is faithful on a statement: each of its parts, printed, reads back as itself}}
+\end{LeanDisplay}
+\end{leandef}
+
+The layout is the sentence the extractor writes, without its rarer words
+(\emph{be a type}, hypothesis labels, numbered conjuncts):
+\begin{center}
+\verb|\LeanProse{Let $x$, $y$ and $z$. Assume $h_1$ and $h_2$. Then $c$.}|
+\end{center}
+A part with no formulas is left out, and \emph{Then} with it when nothing
+comes before. A part's formulas are listed with commas, and \emph{and}
+before the last:
+
+\begin{leandef}[sum=AkJKw0j4e1, dflt=W2ZY7SLtV1]{The prose layout}{The prose layout}
+\begin{LeanDisplay}
+\LeanClause{\mathsf{rest}([]) \;\deq\; []}{\leanslot{SpliceModel.andRest}{The formulas of a part after its first, each with the text before it: a comma, and \LeanCodeInline{and} before the last}}\\
+\LeanClause{\mathsf{rest}(f \mathbin{::} \mathit{fs}) \;\deq\; (\mathsf{if}\ \mathit{fs} = []\ \mathsf{then}\ \text{`` and ''}\ \mathsf{else}\ \text{``, ''}, f) \mathbin{::} \mathsf{rest}(\mathit{fs})}{}\\
+\LeanClause{\mathsf{list}(\mathit{first}, []) \;\deq\; []}{\leanslot{SpliceModel.andList}{The formulas of a part, each with the text before it}}\\
+\LeanClause{\mathsf{list}(\mathit{first}, f \mathbin{::} \mathit{fs}) \;\deq\; (\mathit{first}, f) \mathbin{::} \mathsf{rest}(\mathit{fs})}{}\\
+\LeanClause{\mathsf{parts}(t) \;\deq\; \mathsf{list}(\text{``\textbackslash{}LeanProse\{Let ''}, t.\mathit{vars}) \mathbin{+\!\!+} \mathsf{list}(\mathsf{if}\ t.\mathit{vars} = []\ \mathsf{then}\ \text{``\textbackslash{}LeanProse\{Assume ''}\ \mathsf{else}\ \text{``. Assume ''}, t.\mathit{hyps}) \mathbin{+\!\!+} [(\mathsf{if}\ t.\mathit{vars} = [] \wedge t.\mathit{hyps} = []\ \mathsf{then}\ \text{``\textbackslash{}LeanProse\{''}\ \mathsf{else}\ \text{``. Then ''}, t.\mathit{concl})]}{\leanslot{SpliceModel.proseParts}{A sentence's formulas, each with the text before it}}\\
+\LeanClause{\mathsf{join}([]) \;\deq\; \text{``.\}''}}{\leanslot{SpliceModel.joinParts}{Text and formulas, the formulas in dollars, and the sentence's end}}\\
+\LeanClause{\mathsf{join}((s, f) \mathbin{::} \mathit{ps}) \;\deq\; s \mathbin{+\!\!+} \text{``\$''} \mathbin{+\!\!+} f \mathbin{+\!\!+} \text{``\$''} \mathbin{+\!\!+} \mathsf{join}(\mathit{ps})}{}\\
+\LeanClause{\mathsf{layout}(t) \;\deq\; [\mathsf{gen}(\mathsf{join}(\mathsf{parts}(t)))]}{\leanslot{SpliceModel.proseLayout}{\textbf{The prose layout.} Formulas set out as a sentence}}
+\end{LeanDisplay}
+\end{leandef}
+
+Each formula is in dollars, so the parser can take the sentence apart
+again: it splits the text at its dollars, pairs each formula with the text
+before it, and sorts the formulas into their parts by that text,
+\emph{Let} and \emph{Assume} starting a part, a comma or \emph{and}
+continuing one. It is lenient, since it need only undo the layout: other
+text starts the conclusion, and text with no formula after it is dropped.
+
+\begin{leandef}[sum=JrB0fd9Tu8, dflt=oqlFp-yxwf]{The prose parser}{The prose parser}
+\begin{LeanDisplay}
+\LeanClause{c \triangleright [] \;\deq\; [[c]]}{\leanslot{SpliceModel.pushChar}{Put a character at the front of the first piece}}\\
+\LeanClause{c \triangleright (w \mathbin{::} \mathit{ws}) \;\deq\; (c \mathbin{::} w) \mathbin{::} \mathit{ws}}{}\\
+\LeanClause{\mathsf{split}([]) \;\deq\; [[]]}{\leanslot{SpliceModel.splitDollar}{Split text at each dollar}}\\
+\LeanClause{\mathsf{split}(c \mathbin{::} \mathit{cs}) \;\deq\; \mathsf{if}\ c = \texttt{\$}\ \mathsf{then}\ [] \mathbin{::} \mathsf{split}(\mathit{cs})\ \mathsf{else}\ c \triangleright \mathsf{split}(\mathit{cs})}{}\\
+\LeanClause{\mathsf{unjoin}([]) \;\deq\; []}{\leanslot{SpliceModel.unjoin}{Pair each formula with the text before it, from the pieces between dollars}}\\
+\LeanClause{\mathsf{unjoin}([\_]) \;\deq\; []}{}\\
+\LeanClause{\mathsf{unjoin}(s \mathbin{::} f \mathbin{::} \mathit{rest}) \;\deq\; (s, f) \mathbin{::} \mathsf{unjoin}(\mathit{rest})}{}\\
+\LeanClause{\mathsf{opener}(s) \;\deq\; \mathsf{if}\ s = \text{``\textbackslash{}LeanProse\{Let ''}\ \mathsf{then}\ \mathsf{let}\ \mathsf{else}\ (\mathsf{if}\ s = \text{``\textbackslash{}LeanProse\{Assume ''} \vee s = \text{``. Assume ''}\ \mathsf{then}\ \mathsf{assume}\ \mathsf{else}\ \mathsf{then})}{\leanslot{SpliceModel.opener}{The part that a text starts: \LeanCodeInline{Let} the variables, \LeanCodeInline{Assume} the hypotheses, and otherwise the conclusion}}\\
+\LeanClause{\mathsf{sep}(s) \;\deq\; s = \text{``, ''} \vee s = \text{`` and ''}}{\leanslot{SpliceModel.IsSep}{The text between formulas of one part}}\\
+\LeanClause{\mathsf{next}_{\mathit{sec}}(s) \;\deq\; \mathsf{if}\ \mathsf{sep}(s)\ \mathsf{then}\ \mathit{sec}\ \mathsf{else}\ \mathsf{opener}(s)}{\leanslot{SpliceModel.nextSec}{The part of a formula, from the part before it and the text before it: a separator continues the part, and other text starts one}}\\
+\LeanClause{\mathsf{add}_{\mathsf{let}}(f, (\mathit{vs}, \mathit{hs}, \mathit{cs})) \;\deq\; (f \mathbin{::} \mathit{vs}, \mathit{hs}, \mathit{cs})}{\leanslot{SpliceModel.Sec.add}{Add a formula to a part}}\\
+\LeanClause{\mathsf{add}_{\mathsf{assume}}(f, (\mathit{vs}, \mathit{hs}, \mathit{cs})) \;\deq\; (\mathit{vs}, f \mathbin{::} \mathit{hs}, \mathit{cs})}{}\\
+\LeanClause{\mathsf{add}_{\mathsf{then}}(f, (\mathit{vs}, \mathit{hs}, \mathit{cs})) \;\deq\; (\mathit{vs}, \mathit{hs}, f \mathbin{::} \mathit{cs})}{}\\
+\LeanClause{\mathsf{sort}_{\mathit{sec}}([]) \;\deq\; ([], [], [])}{\leanslot{SpliceModel.sortParts}{Sort formulas into parts, by the text before each}}\\
+\LeanClause{\mathsf{sort}_{\mathit{sec}}((s, f) \mathbin{::} \mathit{ps}) \;\deq\; \mathsf{add}_{\mathsf{next}_{\mathit{sec}}(s)}(f, \mathsf{sort}_{\mathsf{next}_{\mathit{sec}}(s)}(\mathit{ps}))}{}\\
+\LeanClause{\mathsf{telescope}((\mathit{vs}, \mathit{hs}, [c])) \;\deq\; \langle \mathit{vs}, \mathit{hs}, c \rangle}{\leanslot{SpliceModel.ofParts}{A sentence whose conclusion is one formula}}\\
+\LeanClause{\mathsf{telescope}((\_, \_, [])) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{telescope}((\_, \_, \_ \mathbin{::} \_ \mathbin{::} \_)) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{sentence}([\mathsf{gen}(s)]) \;\deq\; \mathsf{telescope}(\mathsf{sort}_{\mathsf{then}}(\mathsf{unjoin}(\mathsf{split}(s))))}{\leanslot{SpliceModel.proseSentence}{\textbf{The prose parser.} A sentence taken apart}}\\
+\LeanClause{\mathsf{sentence}(r) \;\deq\; \mathsf{none}}{}
+\end{LeanDisplay}
+\end{leandef}
+
+The parser undoes the layout when every formula is plain, with no dollar
+in it:
+
+\begin{leantheorem}[sum=qxVHw8jbxX]{The prose parser undoes the layout}{The prose parser undoes the layout}
+\label{thm:The-prose-parser-undoes-the-layout}
+\LeanProse{Let $t \in \texttt{Telescope}(\mathit{TeX})$. Assume $\forall f : \mathit{TeX},\ f \in t.\mathit{vars} \vee f \in t.\mathit{hyps} \vee f = t.\mathit{concl} \implies \mathsf{plain}(f)$. Then $\mathsf{sentence}(\mathsf{layout}(t)) = t$.}
+\end{leantheorem}
+
+Reading back undoes printing: the parser takes the sentence apart, and the
+formulas read back as parts, one by one and in order. For rules it is the
+same, with a figure for a sentence:
+
+\begin{leandef}[sum=xn-2qTRHtT, dflt=797FAJ_VEY]{Reading two views}{Reading two views}
+\begin{LeanDisplay}
+\LeanClause{[] \rightsquigarrow^{*}_{\mathcal{A}} [] \;\deq\; \top}{\leanslot{SpliceModel.Anatomy.ReadsAll}{Formulas read back as parts, one by one}}\\
+\LeanClause{f \mathbin{::} \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} q \mathbin{::} \mathit{qs} \;\deq\; f \rightsquigarrow_{\mathcal{A}} q \wedge \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} \mathit{qs}}{}\\
+\LeanClause{[] \rightsquigarrow^{*}_{\mathcal{A}} \_ \mathbin{::} \_ \;\deq\; \bot}{}\\
+\LeanClause{\_ \mathbin{::} \_ \rightsquigarrow^{*}_{\mathcal{A}} [] \;\deq\; \bot}{}\\
+\LeanClause{t \rightsquigarrow^{\mathsf{let}}_{\mathcal{A}} u \;\deq\; t.\mathit{vars} \rightsquigarrow^{*}_{\mathcal{A}} u.\mathit{vars} \wedge t.\mathit{hyps} \rightsquigarrow^{*}_{\mathcal{A}} u.\mathit{hyps} \wedge t.\mathit{concl} \rightsquigarrow_{\mathcal{A}} u.\mathit{concl}}{\leanslot{SpliceModel.Anatomy.ReadsTelescope}{A sentence reads back as a proposition: Let as its variables, Assume as its hypotheses, Then as its conclusion}}\\
+\LeanClause{f \rightsquigarrow^{\mathsf{rule}}_{\mathcal{A}} q \;\deq\; f.\mathit{name} = q.\mathit{name} \wedge f.\mathit{premises} \rightsquigarrow^{*}_{\mathcal{A}} q.\mathit{premises} \wedge f.\mathit{concl} \rightsquigarrow_{\mathcal{A}} q.\mathit{concl}}{\leanslot{SpliceModel.Anatomy.ReadsRule}{A rule reads back as a constructor: the same name, premises as its hypotheses, conclusion as its conclusion}}\\
+\LeanClause{[] \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} [] \;\deq\; \top}{\leanslot{SpliceModel.Anatomy.ReadsRules}{Rules read back as constructors, one by one}}\\
+\LeanClause{f \mathbin{::} \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} q \mathbin{::} \mathit{qs} \;\deq\; f \rightsquigarrow^{\mathsf{rule}}_{\mathcal{A}} q \wedge \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \mathit{qs}}{}\\
+\LeanClause{[] \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \_ \mathbin{::} \_ \;\deq\; \bot}{}\\
+\LeanClause{\_ \mathbin{::} \_ \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} [] \;\deq\; \bot}{}\\
+\LeanClause{\mathit{prose}_{\mathcal{A}}(r, S) \;\deq\; \exists t,\ \exists u,\ \mathsf{sentence}(r) = t \wedge \mathit{telescope}_{\mathcal{A}}(S) = u \wedge t \rightsquigarrow^{\mathsf{let}}_{\mathcal{A}} u}{\leanslot{SpliceModel.Anatomy.Prose}{A prose rendering shows a statement: the sentence and the proposition come apart, and the one reads back as the other}}\\
+\LeanClause{\mathit{rules}_{\mathcal{A}}(r, S) \;\deq\; \exists \mathit{fs},\ \exists \mathit{qs},\ \mathit{figure}_{\mathcal{A}}(r) = \mathit{fs} \wedge \mathit{ctors}_{\mathcal{A}}(S) = \mathit{qs} \wedge \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \mathit{qs}}{\leanslot{SpliceModel.Anatomy.Rules}{A rules rendering shows a statement: the figure and the predicate come apart, and each rule reads back as a constructor, in order}}
+\end{LeanDisplay}
+\end{leandef}
+
+An anatomy is sound when it is the world's. For prose: every formula the
+notation prints is plain; the world prints prose as the anatomy does, with
+the layout; and a prose rendering that reads back is faithful, formula by
+formula. For rules, still taken whole: a rendering has no slots, and one
+that reads back reads back part by part. Of the three for prose, the first
+is a property of the notation, the second is how the extractor prints, and
+the third is what the validator checks of each formula it renders
+(Section~\ref{sec:faithful}). None is proved here; together they are what
+the extractor and the validator are trusted for
+(Section~\ref{sec:trusted}). That the layout has no slots and that the
+parser undoes it are no longer among them: they are proved.
+
+\begin{leanrules}[sum=3ymW4sFUbR]{SpliceModel.Anatomy.Sound}{Sound anatomies}
+\begin{mathpar}
+
+\inferrule[Sound]
+  {
+    \forall q : \mathit{Part}_{\mathcal{A}},\ \mathsf{plain}(\mathit{print}_{\mathcal{A}}(q)) \\
+    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``prose''}, S) = r \implies r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}}(S) \\
+    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``prose''}, S) = r \implies \mathit{reads}_{W}(r, S) \implies \mathit{faithful}_{\mathcal{A}}(S) \\
+    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``rules''}, S) = r \implies \mathsf{ids}(r) = [] \\
+    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``rules''}, S) = r \implies \mathit{reads}_{W}(r, S) \implies \mathit{rules}_{\mathcal{A}}(r, S)
+  }
+  { \mathsf{sound}(\mathcal{A}) }
+
+\end{mathpar}
+\end{leanrules}
+
+For prose, what a reader wants of a rendering then follows, where before
+it was assumed:
+
+\begin{leantheorem}[sum=NswPd9M_rm]{A prose rendering shows its statement}{A prose rendering shows its statement}
+\label{thm:A-prose-rendering-shows-its-statement}
+\LeanProse{Let $W \in \mathit{World}$, $\mathcal{A} \in \texttt{Anatomy}(W)$, $S \in \mathit{Stmt}_{W}$ and $r \in \mathit{Body}$. Assume $\mathsf{sound}(\mathcal{A})$, $\mathit{render}_{W}(\text{``prose''}, S) = r$ and $\mathit{reads}_{W}(r, S)$. Then $\mathit{prose}_{\mathcal{A}}(r, S)$.}
+\end{leantheorem}
+
+Under a sound anatomy, Theorem~\ref{thm:Generated-mathematics} says what a
+prose or a rules block shows, part by part.
+
+\begin{leantheorem}[sum=2BXHwDaIos]{Prose shows the statement}{Prose shows the statement}
+\label{thm:Prose-shows-the-statement}
+\LeanProse{Let $W \in \mathit{World}$, $\mathcal{A} \in \texttt{Anatomy}(W)$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $r \in \mathit{Body}$. Assume $\mathsf{sound}(\mathcal{A})$, $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{block}_{k}^{\text{``prose''}}(r) \in d$. Then there is $S$ such that (1)~$\mathit{stmt}_{W}(k) = S$, (2)~$\mathit{trusted}_{W}(k) = \mathsf{true}$, (3)~$\mathit{render}_{W}(\text{``prose''}, S) = r$ and (4)~$\mathit{prose}_{\mathcal{A}}(r, S)$.}
+\end{leantheorem}
+
+\begin{leantheorem}[sum=5g-OnsOt4_]{Rules show the predicate}{Rules show the predicate}
+\label{thm:Rules-show-the-predicate}
+\LeanProse{Let $W \in \mathit{World}$, $\mathcal{A} \in \texttt{Anatomy}(W)$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $r \in \mathit{Body}$. Assume $\mathsf{sound}(\mathcal{A})$, $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{block}_{k}^{\text{``rules''}}(r) \in d$. Then there is $S$ such that (1)~$\mathit{stmt}_{W}(k) = S$, (2)~$\mathit{trusted}_{W}(k) = \mathsf{true}$, (3)~$\mathit{render}_{W}(\text{``rules''}, S) = r$ and (4)~$\mathit{rules}_{\mathcal{A}}(r, S)$.}
+\end{leantheorem}
+
+In the example, the statement of \emph{Values are final} is printed in
+three steps. The anatomy takes it apart, as the notation shows it, into
+the variables \texttt{v} and \texttt{e} of type \texttt{Tm}, no
+hypotheses, and the conclusion \texttt{¬ Step v e}. Its hypothesis
+\texttt{IsValue v} is not a part, because the notation writes \texttt{v}
+as $V$ and leaves the hypothesis implicit; that a hidden hypothesis is no
+part is the notation's claim, and is in the trusted base. The notation
+prints the variables as $V, M \in \mathit{Term}$ and the conclusion as
+$\neg (V \longrightarrow M)$. The layout sets these out as \emph{Let
+\ldots{} Then \ldots}, with no \emph{Assume}, there being no hypotheses.
+Read back, the sentence comes apart into the same two formulas, and each
+reads back as the part it was printed from. The reduction of
+Figure~\ref{fig:example} comes apart into three rules, and they read back,
+in order, as the three constructors of \texttt{Step}: (Beta) with no
+premises, and (App-Left) and (App-Right) with one each.
 
 Were this all a paper could say, hashes would be unnecessary. They are
 there for what the authors write themselves.
@@ -482,7 +786,7 @@ independently, and the four cases have four readings:
 The lower-left case is the one a reader cannot see. The example's
 substitution is a stand-in:
 
-\begin{leandef}[sum=dLUGSgMoci]{Stlc.subst}{Substitution}
+\begin{leandef}[sum=dLUGSgMoci, dflt=RtBzK4zyFz]{Stlc.subst}{Substitution}
 \begin{LeanDisplay}
 \LeanClause{M[M'] \;\deq\; M}{\leanslot{Stlc.subst}{Substitution, as a stand-in: the body is returned unchanged}}
 \end{LeanDisplay}
@@ -506,13 +810,13 @@ one hash means one statement:
 In the example, the sentence of Figure~\ref{fig:example} is attested prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
 $\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
 source of this paper when the sentence was checked against the Lean. Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
-drift for \verb|check| to report\leancheck[stmt=1e49679eaefa, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
+drift for \verb|check| to report\leancheck[stmt=ac221a60ee5b, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
 
 So a check $\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean
 proved whose hash is $h$; and a document is true when each of its pieces
 is:
 
-\begin{leandef}[sum=dzWzl4ICeZ]{SpliceModel.Piece.True}{What a piece claims}
+\begin{leandef}[sum=dzWzl4ICeZ, dflt=tGvn9VSVcQ]{SpliceModel.Piece.True}{What a piece claims}
 \begin{LeanDisplay}
 \LeanClause{W \models \mathsf{text}(\_) \;\deq\; \top}{\leanslot{SpliceModel.Piece.True}{What a piece claims of a world}}\\
 \LeanClause{W \models \mathsf{block}_{k}^{v}(r) \;\deq\; \exists S,\ \exists r',\ \mathit{stmt}_{W}(k) = S \wedge \mathit{trusted}_{W}(k) = \mathsf{true} \wedge \mathit{render}_{W}(v, S) = r' \wedge r = \mathsf{fill}(\mathsf{slots}(r), r') \wedge \mathit{reads}_{W}(r', S)}{}\\
@@ -689,30 +993,31 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=hEICyivlwu]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=lxijX8zMGu, dflt=JEAy_QLiNY]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
 $M$ & $\mathit{Term}$ & \leanslot{Stlc.Tm}{Terms, with de Bruijn variables} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
 $A$ & $\mathit{Type}$ & \leanslot{Stlc.Ty}{Types} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
+$k$ & $\mathit{Key}$ & \leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group} & \textit{Names}\\
+$v$ & $\mathit{View}$ & \leanslot{Imprimatur.View}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …} & \textit{Names}\\
+$h$ & $\mathit{Hash}$ & \leanslot{Imprimatur.Hash}{A SHA-256, as 64 hexadecimal digits} & \textit{Names}\\
 $b$ & $\mathit{Bundle}$ & \leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it} & \textit{Bundle}\\
 $W$ & $\mathit{World}$ & \leanslot{SpliceModel.World}{A world whose renderings are bodies} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
 $W$ & $\texttt{World}(\tau)$ & \leanslot{Imprimatur.World}{An environment, as the extractor presents it} & \textit{World}, p.~\pageref{gram:Imprimatur.World}\\
-$v$ & $\mathit{View}$ & \leanslot{Imprimatur.View}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …} & \textit{Of}\\
-$h$ & $\mathit{Hash}$ & \leanslot{Imprimatur.Hash}{A SHA-256, as 64 hexadecimal digits} & \textit{Of}\\
 $e$ & $\mathit{Entry}$ & \leanslot{SpliceModel.Entry}{An entry as the splicer holds it: the file's, with each view's TeX parsed into a body, and the verdict read as a bit} & \textit{True}\\
-$k$ & $\mathit{Key}$ & \leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group} & \textit{True}\\
 $\varsigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
+$r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated block} & \textit{Body}\\
 $p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated block} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
 $x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
+$\mathcal{A}$ & $\texttt{Anatomy}(W)$ & \leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart} & \textit{Anatomies}, p.~\pageref{gram:Anatomies}\\
 \end{longtable}
 A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type.
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=0-vQwchjSY]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=bQegeeFaDk, dflt=u2U7b16hvi]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -736,6 +1041,7 @@ $\mathit{view}_{v}(i)$ & \texttt{Imprimatur.Image.view?} & \leanslot{Imprimatur.
 $i.\mathit{views}$ & \texttt{Imprimatur.Image.views} & \leanslot{Imprimatur.Image.views/0}{the renderings, by view}\\
 $\mathit{Key}$ & \texttt{Imprimatur.Key} & \leanslot{Imprimatur.Key/0}{A key: what a document cites, the name of a constant or the title of a group}\\
 $\texttt{Kind}$ & \texttt{Imprimatur.Kind} & \leanslot{Imprimatur.Kind/0}{What a key names}\\
+$\mathit{TeX}$ & \texttt{Imprimatur.TeX} & \leanslot{Imprimatur.TeX/0}{TeX source}\\
 $\texttt{Verdict}$ & \texttt{Imprimatur.Verdict} & \leanslot{Imprimatur.Verdict/0}{The verdict on a proof: whether Lean accepted it, and on what}\\
 $\mathit{View}$ & \texttt{Imprimatur.View} & \leanslot{Imprimatur.View/0}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …}\\
 $\texttt{World}(\tau)$ & \texttt{Imprimatur.World} & \leanslot{Imprimatur.World/0}{A world: an environment, as the extractor presents it, rendered as \LeanCodeInline{τ}}\\
@@ -751,6 +1057,7 @@ $\mathit{trusted}_{W}(k)$ & \texttt{Imprimatur.World.trusted} & \leanslot{Imprim
 $\mathsf{Array}(\alpha)$ & \texttt{Array} & \leanslot{Array/0}{dynamic arrays with elements from \LeanCodeInline{α}}\\
 $\mathbb{B}$ & \texttt{Bool} & \leanslot{Bool/0}{The Boolean values, \LeanCodeInline{true} and \LeanCodeInline{false}}\\
 $\mathsf{true}$ & \texttt{Bool.true} & \leanslot{Bool.true/0}{The Boolean value \LeanCodeInline{true}, not to be confused with the proposition \LeanCodeInline{True}}\\
+$a \mathbin{+\!\!+} b$ & \texttt{HAppend.hAppend} & \leanslot{HAppend.hAppend/0}{\LeanCodeInline{a ++ b} is the result of concatenation of \LeanCodeInline{a} and \LeanCodeInline{b}, usually read "append"}\\
 $\mathsf{List}(\alpha)$ & \texttt{List} & \leanslot{List/0}{Linked lists: ordered lists, in which each element has a reference to the next element}\\
 $a \mathbin{::} l$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
 $[]$ & \texttt{List.nil} & \leanslot{List.nil/0}{The empty list, usually written \LeanCodeInline{[]}}\\
@@ -758,10 +1065,30 @@ $l$ & \texttt{List.toArray} & \leanslot{List.toArray/0}{Converts a \LeanCodeInli
 $a \notin l$ & \texttt{Not} & \leanslot{Not/0}{\LeanCodeInline{Not p}, or \LeanCodeInline{¬p}, is the negation of \LeanCodeInline{p}}\\
 $\mathsf{Option}(\alpha)$ & \texttt{Option} & \leanslot{Option/0}{Optional values, which are either \LeanCodeInline{some} around a value from the underlying type or \LeanCodeInline{none}}\\
 $o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{Gets an optional value, returning a given default on \LeanCodeInline{none}}\\
+$\mathsf{none}$ & \texttt{Option.none} & \leanslot{Option.none/0}{No value}\\
 $x$ & \texttt{Option.some} & \leanslot{Option.some/0}{Some value of type \LeanCodeInline{α}}\\
 $\alpha \times \beta$ & \texttt{Prod} & \leanslot{Prod/0}{The product type, usually written \LeanCodeInline{α × β}}\\
+$(a, b, c)$ & \texttt{Prod.mk} & \leanslot{Prod.mk/0}{Constructs a pair}\\
 $\mathit{String}$ & \texttt{String} & \leanslot{String/0}{A string is a sequence of Unicode scalar values}\\
+$\mathit{cs}$ & \texttt{String.ofList} & \leanslot{String.ofList/0}{Creates a string that contains the characters in a list, in order}\\
+$s$ & \texttt{String.toList} & \leanslot{String.toList/0}{Converts a string to a list of characters}\\
+$\mathsf{if}\ c\ \mathsf{then}\ a\ \mathsf{else}\ b$ & \texttt{ite} & \leanslot{ite/0}{\LeanCodeInline{if c then t else e} is notation for \LeanCodeInline{ite c t e}, "if-then-else", which decides to return \LeanCodeInline{t} or \LeanCodeInline{e} depending on whether \LeanCodeInline{c} is true or false}\\
 \multicolumn{3}{@{}l}{\textit{SpliceModel}}\\
+$\mathit{faithful}_{A}(S)$ & \texttt{Anatomy.Faithful} & \leanslot{SpliceModel.Anatomy.Faithful/0}{The notation is faithful on a statement: each of its parts, printed, reads back as itself}\\
+$\mathit{Part}_{A}$ & \texttt{Anatomy.Part} & \leanslot{SpliceModel.Anatomy.Part/0}{a part of a statement, as the notation shows it}\\
+$r = \mathit{print}^{\mathsf{prose}}_{A}(S)$ & \texttt{Anatomy.PrintsProse} & \leanslot{SpliceModel.Anatomy.PrintsProse/0}{A body is a statement printed in the prose view: the statement taken apart, each part printed by the notation, and the formulas set out as a sentence}\\
+$\mathit{prose}_{A}(r, S)$ & \texttt{Anatomy.Prose} & \leanslot{SpliceModel.Anatomy.Prose/0}{A prose rendering shows a statement: the sentence and the proposition come apart, and the one reads back as the other}\\
+$\mathit{fs} \rightsquigarrow^{*}_{A} \mathit{qs}$ & \texttt{Anatomy.ReadsAll} & \leanslot{SpliceModel.Anatomy.ReadsAll/0}{Formulas read back as parts, one by one}\\
+$f \rightsquigarrow_{A} q$ & \texttt{Anatomy.ReadsPart} & \leanslot{SpliceModel.Anatomy.ReadsPart/0}{when a formula reads back as a part}\\
+$f \rightsquigarrow^{\mathsf{rule}}_{A} q$ & \texttt{Anatomy.ReadsRule} & \leanslot{SpliceModel.Anatomy.ReadsRule/0}{A rule reads back as a constructor: the same name, premises as its hypotheses, conclusion as its conclusion}\\
+$\mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{A} \mathit{qs}$ & \texttt{Anatomy.ReadsRules} & \leanslot{SpliceModel.Anatomy.ReadsRules/0}{Rules read back as constructors, one by one}\\
+$t \rightsquigarrow^{\mathsf{let}}_{A} u$ & \texttt{Anatomy.ReadsTelescope} & \leanslot{SpliceModel.Anatomy.ReadsTelescope/0}{A sentence reads back as a proposition: Let as its variables, Assume as its hypotheses, Then as its conclusion}\\
+$\mathit{rules}_{A}(r, S)$ & \texttt{Anatomy.Rules} & \leanslot{SpliceModel.Anatomy.Rules/0}{A rules rendering shows a statement: the figure and the predicate come apart, and each rule reads back as a constructor, in order}\\
+$\mathsf{sound}(A)$ & \texttt{Anatomy.Sound} & \leanslot{SpliceModel.Anatomy.Sound/0}{The anatomy is the world's}\\
+$\mathit{ctors}_{A}(S)$ & \texttt{Anatomy.ctors} & \leanslot{SpliceModel.Anatomy.ctors/0}{an inductive predicate's constructors, as rules}\\
+$\mathit{figure}_{A}(r)$ & \texttt{Anatomy.figure} & \leanslot{SpliceModel.Anatomy.figure/0}{a rules figure, taken apart}\\
+$\mathit{print}_{A}(q)$ & \texttt{Anatomy.print} & \leanslot{SpliceModel.Anatomy.print/0}{a part printed as a formula, by the notation}\\
+$\mathit{telescope}_{A}(S)$ & \texttt{Anatomy.telescope} & \leanslot{SpliceModel.Anatomy.telescope/0}{a proposition, taken apart}\\
 $\mathsf{broken}(k)$ & \texttt{Diag.brokenRef} & \leanslot{SpliceModel.Diag.brokenRef/0}{the key has no entry}\\
 $\mathsf{drift}(k)$ & \texttt{Diag.drift} & \leanslot{SpliceModel.Diag.drift/0}{the statement has changed since the prose was checked}\\
 $\mathsf{missing}_{k}(v)$ & \texttt{Diag.missingView} & \leanslot{SpliceModel.Diag.missingView/0}{the entry has no rendering in the view}\\
@@ -770,22 +1097,52 @@ $\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{
 $\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.Diag.unfaithful/0}{the rendering does not read back as the statement}\\
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
 $W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
+$\mathsf{sep}(s)$ & \texttt{IsSep} & \leanslot{SpliceModel.IsSep/0}{The text between formulas of one part}\\
 $W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
 $\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\
 $\mathsf{checked}_{k}(h)$ & \texttt{Piece.check} & \leanslot{SpliceModel.Piece.check/0}{a check that hand-written prose matches the statement with this hash}\\
 $\mathsf{text}(s)$ & \texttt{Piece.text} & \leanslot{SpliceModel.Piece.text/0}{hand-written text}\\
+$\mathsf{plain}(f)$ & \texttt{Plain} & \leanslot{SpliceModel.Plain/0}{A formula is plain when it has no dollar in it}\\
+$\texttt{Rule}(\alpha)$ & \texttt{Rule} & \leanslot{SpliceModel.Rule/0}{A rule, as the rules view shows it}\\
+$f.\mathit{concl}$ & \texttt{Rule.concl} & \leanslot{SpliceModel.Rule.concl/0}{its conclusion}\\
+$f.\mathit{name}$ & \texttt{Rule.name} & \leanslot{SpliceModel.Rule.name/0}{its name}\\
+$f.\mathit{premises}$ & \texttt{Rule.premises} & \leanslot{SpliceModel.Rule.premises/0}{its premises}\\
+$\mathsf{add}_{\mathit{sec}}(f, p)$ & \texttt{Sec.add} & \leanslot{SpliceModel.Sec.add/0}{Add a formula to a part}\\
+$\mathsf{then}$ & \texttt{Sec.concl} & \leanslot{SpliceModel.Sec.concl/0}{Then}\\
+$\mathsf{assume}$ & \texttt{Sec.hyps} & \leanslot{SpliceModel.Sec.hyps/0}{Assume}\\
+$\mathsf{let}$ & \texttt{Sec.vars} & \leanslot{SpliceModel.Sec.vars/0}{Let}\\
 $\mathsf{gen}(s)$ & \texttt{Seg.gen} & \leanslot{SpliceModel.Seg.gen/0}{text generated from Lean}\\
 $\mathsf{slot}_{i}(t)$ & \texttt{Seg.slot} & \leanslot{SpliceModel.Seg.slot/0}{a slot, whose text the authors own}\\
-$\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots}\\
+$\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots: a slot's id, and which occurrence of that id in its body it is, from 0}\\
+$\texttt{Telescope}(\alpha)$ & \texttt{Telescope} & \leanslot{SpliceModel.Telescope/0}{A proposition taken apart, as the prose view shows it}\\
+$t.\mathit{concl}$ & \texttt{Telescope.concl} & \leanslot{SpliceModel.Telescope.concl/0}{its conclusion}\\
+$t.\mathit{hyps}$ & \texttt{Telescope.hyps} & \leanslot{SpliceModel.Telescope.hyps/0}{its hypotheses}\\
+$\mathit{print}^{*}_{A}(u)$ & \texttt{Telescope.map} & \leanslot{SpliceModel.Telescope.map/0}{Print each part of a telescope}\\
+$\langle v, h, c \rangle$ & \texttt{Telescope.mk} & \leanslot{SpliceModel.Telescope.mk/0}{}\\
+$t.\mathit{vars}$ & \texttt{Telescope.vars} & \leanslot{SpliceModel.Telescope.vars/0}{its variables, with their types}\\
 $\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
+$\mathsf{list}(s, \mathit{fs})$ & \texttt{andList} & \leanslot{SpliceModel.andList/0}{The formulas of a part, each with the text before it}\\
+$\mathsf{rest}(\mathit{fs})$ & \texttt{andRest} & \leanslot{SpliceModel.andRest/0}{The formulas of a part after its first, each with the text before it: a comma, and \LeanCodeInline{and} before the last}\\
 $\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
 $\mathsf{bundle}_{W}(\mathit{keys})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for some keys and views}\\
 $\mathsf{check}_{b}(d)$ & \texttt{check} & \leanslot{SpliceModel.check/0}{\LeanCodeInline{imprimatur check}: what it reports about a document}\\
+$\texttt{\$}$ & \texttt{dollar} & \leanslot{SpliceModel.dollar/0}{The dollar sign, which opens and closes a formula}\\
 $\mathsf{fill}(\mathit{old}, r)$ & \texttt{fill} & \leanslot{SpliceModel.fill/0}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}\\
 $\mathsf{ids}(r)$ & \texttt{ids} & \leanslot{SpliceModel.ids/0}{The identifiers of a body's slots}\\
+$\mathsf{join}(\mathit{ps})$ & \texttt{joinParts} & \leanslot{SpliceModel.joinParts/0}{Text and formulas, the formulas in dollars, and the sentence's end}\\
 $l[i]$ & \texttt{lookup} & \leanslot{SpliceModel.lookup/0}{The text of slot \LeanCodeInline{i}, the first with that identifier}\\
+$\mathsf{next}_{\mathit{sec}}(s)$ & \texttt{nextSec} & \leanslot{SpliceModel.nextSec/0}{The part of a formula, from the part before it and the text before it: a separator continues the part, and other text starts one}\\
+$\mathsf{telescope}(p)$ & \texttt{ofParts} & \leanslot{SpliceModel.ofParts/0}{A sentence whose conclusion is one formula}\\
+$\mathsf{opener}(s)$ & \texttt{opener} & \leanslot{SpliceModel.opener/0}{The part that a text starts: \LeanCodeInline{Let} the variables, \LeanCodeInline{Assume} the hypotheses, and otherwise the conclusion}\\
 $\lfloor d \rfloor$ & \texttt{outline} & \leanslot{SpliceModel.outline/0}{The outline of a piece: a block without its body}\\
+$\mathsf{layout}(t)$ & \texttt{proseLayout} & \leanslot{SpliceModel.proseLayout/0}{\textbf{The prose layout.} Formulas set out as a sentence}\\
+$\mathsf{parts}(t)$ & \texttt{proseParts} & \leanslot{SpliceModel.proseParts/0}{A sentence's formulas, each with the text before it}\\
+$\mathsf{sentence}(r)$ & \texttt{proseSentence} & \leanslot{SpliceModel.proseSentence/0}{\textbf{The prose parser.} A sentence taken apart}\\
+$c \triangleright \mathit{xs}$ & \texttt{pushChar} & \leanslot{SpliceModel.pushChar/0}{Put a character at the front of the first piece}\\
 $\mathsf{slots}(r)$ & \texttt{slots} & \leanslot{SpliceModel.slots/0}{The slots of a body, with their text}\\
+$\mathsf{sort}_{\mathit{sec}}(\mathit{ps})$ & \texttt{sortParts} & \leanslot{SpliceModel.sortParts/0}{Sort formulas into parts, by the text before each}\\
+$\mathsf{split}(\mathit{cs})$ & \texttt{splitDollar} & \leanslot{SpliceModel.splitDollar/0}{Split text at each dollar}\\
+$\mathsf{unjoin}(\mathit{xs})$ & \texttt{unjoin} & \leanslot{SpliceModel.unjoin/0}{Pair each formula with the text before it, from the pieces between dollars}\\
 \multicolumn{3}{@{}l}{\textit{Stlc}}\\
 $e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction}\\
 $e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\

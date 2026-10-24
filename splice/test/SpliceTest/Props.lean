@@ -155,7 +155,7 @@ def skeleton (fs : Array (String × String)) : Except String (Array String) :=
       if it.kind == .block || it.kind == .inline || it.kind == .ref then
         edits := edits.push { start := it.regionStart, stop := it.regionEnd, text := "⟦region⟧" }
       if let some (a, b) := it.optsSpan then
-        let kept := it.opts.filter (·.key != "sum") |>.map (fun o => s!"{o.key}={o.value}")
+        let kept := it.opts.filter (fun o => o.key != "sum" && o.key != "dflt") |>.map (fun o => s!"{o.key}={o.value}")
         let text := if kept.isEmpty then "" else "[" ++ ", ".intercalate kept.toList ++ "]"
         edits := edits.push { start := a, stop := b, text }
     return applyEdits s edits
@@ -169,7 +169,8 @@ def prop {α : Type} (f : α → Except String Unit) : α → Except String Unit
 
 /-! ## The properties -/
 
-/-- Locality: `apply` changes nothing outside generated regions and `sum=`. -/
+/-- Locality: `apply` changes nothing outside generated regions, `sum=` and
+`dflt=`. -/
 def locality : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let after ← applyFiles fs b
   let s1 ← skeleton fs
@@ -190,7 +191,9 @@ def fixedPoint : Array (String × String) × Bundle (Image TeX) Verdict → Exce
     s!"check after apply reports {o.changes.size} changes and {o.diags.size} diagnostics:\n\
       {"\n".intercalate (o.diags.map (·.render)).toList}"
 
-/-- Slot preservation: a slot present before and after keeps its text. -/
+/-- Slot preservation: a slot present before and after keeps its text,
+unless its block's slots still hold the defaults it recorded (`dflt=`),
+which take the new defaults. -/
 def slotPreservation : Array (String × String) × Bundle (Image TeX) Verdict → Except String Unit := fun (fs, b) => do
   let before ← itemsOf fs
   let after ← itemsOf (← applyFiles fs b)
@@ -199,6 +202,7 @@ def slotPreservation : Array (String × String) × Bundle (Image TeX) Verdict �
     let spec := itemSlots config i1
     let r1 := s1.slice i1.regionStart i1.regionEnd
     let r2 := s2.slice i2.regionStart i2.regionEnd
+    if i1.opt? "dflt" == slotDigest spec r1 && (i1.opt? "dflt").isSome then continue
     let new := findSlots spec r2
     for sl in findSlots spec r1 do
       if let some sl2 := new.find? (fun n => n.id == sl.id && n.occ == sl.occ) then

@@ -3,8 +3,9 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Doc
-import Splice.Bundle
+import Imprimatur.Bundle
 import Splice.Slots
+import Splice.Core.Rewrite
 
 /-!
 # Applying a bundle
@@ -19,6 +20,10 @@ writes its outputs, and `check` reports them without writing (§10.3).
 - **Slots.** Each slot's text is carried from the old content to the new,
   matched by id and occurrence (DESIGN §9.5). Slots that disappear are
   reported with their text.
+- **Default slot text.** A block records the digest of its slots' default
+  texts as `dflt=`. While its slots still match that digest, nobody has
+  edited them, so they take the new defaults. Once one is edited, all keep
+  their text, and a default that changed is reported.
 - **All or nothing.** If anything is an error, `apply` writes nothing.
 -/
 
@@ -62,6 +67,8 @@ structure Outcome where
   changes : Array Change := #[]
   /-- Errors and warnings. -/
   diags : Array Diag := #[]
+  /-- The files that change, by index, as the chunks `apply` would write. -/
+  rewritten : Array (Nat × List Core.Scan.Chunk) := #[]
 
 /-- Escape TeX's special characters. -/
 def texEscape (s : String) : String :=
@@ -112,10 +119,6 @@ def optEdits (s : Src) (it : Item) (kvs : Array (String × String)) : Array Edit
     | none => edits := edits.push { start := it.insertAt, stop := it.insertAt, text := "[" ++ text ++ "]" }
   return edits
 
-/-- The edit that sets an item's `sum=` option. -/
-def sumEdit (s : Src) (it : Item) (sum : String) : Edit :=
-  (optEdits s it #[("sum", sum)])[0]?.getD { start := it.insertAt, stop := it.insertAt, text := "" }
-
 /-- Whether braces in `t` balance. -/
 def bracesBalance (t : String) : Bool :=
   let s := Src.ofString "" ("{" ++ t ++ "}")
@@ -162,10 +165,15 @@ def mergeSlots (o : ApplyOpts) (spec : Option SlotSpec) (old new : String) :
         (oldSlots.find? (fun os => !os.isMacro && os.id == outer)).orElse (fun _ => byId)
       | none => byId
     else byId
-  let merged := mapSlots new newSlots fun ns =>
-    match matchOld ns with
-    | some os => toLf (os.text old)
-    | none => ns.text new
+  -- An ordinary merge is the model's `fill` (`Core.Slots.mergeBody`), for
+  -- which slot preservation is proved; `migrate-slots` matches on `outer`.
+  let merged :=
+    if o.migrate then
+      mapSlots new newSlots fun ns =>
+        match matchOld ns with
+        | some os => toLf (os.text old)
+        | none => ns.text new
+    else SpliceModel.Body.text (Core.Slots.mergeBody o.renames.toList spec old.toList new.toList)
   let used := newSlots.filterMap matchOld |>.map (·.textStart)
   let orphans := oldSlots.filter (fun os => !used.contains os.textStart)
   return (merged, orphans)
@@ -190,105 +198,235 @@ def blockLabels (doc : Doc) : Array (Nat × Nat × String) := Id.run do
       if let some l := a.labelFor it.key occ then out := out.push (fi, ii, l)
   return out
 
-/-- Work out what applying `bundle` to `doc` would do. -/
-def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome := Id.run do
-  let cfg := doc.cfg
+/-- An item's characters, rewritten by edits at positions in the file. -/
+def rewriteItem (it : Item) (raw : List Char) (edits : Array Edit) : List Char :=
+  Core.Rewrite.splice raw 0 (Core.Rewrite.sortEdits (edits.toList.map fun e =>
+    { start := e.start - it.start, stop := e.stop - it.start, text := e.text.toList }))
+
+/-- What planning one item gives: its diagnostics, in order, and, if it
+changes, the change and its edits (at positions in the file). -/
+structure ItemResult where
+  /-- Errors and warnings. -/
+  diags : Array Diag := #[]
+  /-- The change, if the item changes. -/
+  change : Option Change := none
+  /-- Its edits. -/
+  edits : Array Edit := #[]
+
+/-- Plan one item: the `i`th of file `fi`, whose line endings are mostly
+`eol`. -/
+def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bundle (Image TeX) Verdict)
+    (o : ApplyOpts) (s : Src) (fi : Nat) (eol : String) (it : Item) (ii : Nat) : ItemResult := Id.run do
+  if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then return {}
+  let loc := s.locString it.start
+  let missing :=
+    if o.keepStale then
+      Diag.warn "missing-key" loc s!"no entry for {it.key} in the bundle; keeping the old content"
+    else
+      Diag.err "missing-key" loc s!"no entry for {it.key} in the bundle \
+        (is the name right, and was the extractor asked for it?)"
+  let some e := bundle.find? it.key
+    | return { diags := #[missing] }
+  let spec := itemSlots cfg it
+  let view := itemView cfg it
+  let generated : Except String String :=
+    if it.kind == .ref then renderRef o.links o.commit it.key e
+    else match e.statement.view? view with
+      | some t => .ok t
+      | none => .error <| match e.statement.error? view with
+        | some why => s!"the {view} view of {it.key} failed to render: {why}"
+        | none => s!"the bundle has no {view} view for {it.key}"
+  let new ← match generated with
+    | .ok t => pure t
+    | .error msg =>
+      let code := if it.kind == .ref then "bad-ref" else "missing-view"
+      return { diags := #[Diag.err code loc msg] }
+  -- The alias's template: a label, a wrapper, …
+  let new := match cfg.alias? it.name with
+    | some a =>
+      if it.kind == .block then
+        let label := (labels.find? (fun (a, b, _) => a == fi && b == ii)).map (·.2.2)
+        a.fill new it.key it.title label
+      else new
+    | none => new
+  -- The `meta` view leaves its source location to the profile (DESIGN §11).
+  let new ← if (new.splitOn metaSourceMarker).length > 1 then
+      match renderRef o.links o.commit it.key e with
+      | .ok ref => pure (new.replace metaSourceMarker ("\\leanmetasource{" ++ ref ++ "}"))
+      | .error msg => return { diags := #[Diag.err "bad-ref" loc msg] }
+    else pure new
+  let old := s.slice it.regionStart it.regionEnd
+  let mut ds : Array Diag := #[]
+  -- Slots that still hold the defaults they were written with take the
+  -- new defaults; edited ones keep their text.
+  let defaults := if it.kind == .block then slotDigest spec new else none
+  let recorded := it.opt? "dflt"
+  let untouched := recorded.isSome && slotDigest spec old == recorded
+  let (merged, orphans) := if untouched then (new, #[]) else mergeSlots o spec old new
+  if recorded.isSome && !untouched && recorded != defaults then
+    -- The digest says that some default changed, not which: list the
+    -- slots that differ from their new defaults.
+    let newSlots := findSlots spec new
+    let mut differ : Array String := #[]
+    for ms in findSlots spec merged do
+      let some ns := newSlots.find? (fun n => n.id == ms.id && n.occ == ms.occ) | continue
+      if normalize (ms.text merged) != normalize (ns.text new) then
+        differ := differ.push s!"  {ms.id}\n    kept:    {ms.text merged}\n    default: {ns.text new}"
+    unless differ.isEmpty do
+      ds := ds.push (Diag.warn "slot-default" loc
+        s!"default slot text of {it.key} has changed, but its slots were edited, so all keep \
+          their text. These differ from their new defaults:\n{"\n".intercalate differ.toList}\n\
+          Update any that are stale by hand.")
+  for sl in orphans do
+    ds := ds.push (Diag.warn "orphan-slot" loc
+      s!"slot {sl.id} of {it.key} is no longer generated, so its text is dropped:\n{sl.text old}\n\
+        If the slot was renamed, rerun with --rename-slot {sl.id}=NEW.")
+  -- Shape the content: a block's content ends with a newline and starts on
+  -- its own line; then use the file's line endings.
+  let content :=
+    if it.kind == .block then
+      let c := if merged.isEmpty || merged.endsWith "\n" then merged else merged ++ "\n"
+      if it.regionStart == it.headerEnd then "\n" ++ c else c
+    else merged
+  let content := withEol eol (toLf content)
+  -- Content that would change the document's structure is refused.
+  let isComment := ((cfg.alias? it.name).map (·.comment)).getD false
+  let endMarker := if isComment then "%END" ++ it.name else "\\end{" ++ it.name ++ "}"
+  if (it.kind == .block && (content.splitOn endMarker).length > 1) ||
+      (it.kind != .block && !bracesBalance content) then
+    let why := if it.kind == .block then "it contains " ++ endMarker else "its braces don't balance"
+    return { diags := ds.push (Diag.err "bad-content" loc
+      s!"the generated text for {it.key} would break the document ({why})") }
+  let same := normalize old == normalize content
+  let sum := checksum spec content
+  if it.kind != .ref then
+    if let some recorded := it.opt? "sum" then
+      if !same && checksum spec old != recorded && !o.force.contains it.key then
+        return { diags := ds.push (Diag.err "hand-edit" loc
+          s!"the generated content of {it.key} was edited by hand, so it was not regenerated.\n\
+            Move the edit into Lean or into a slot, or rerun with --force {it.key} to overwrite it.") }
+  let mut itemEdits : Array Edit := #[]
+  if !same then
+    itemEdits := itemEdits.push { start := it.regionStart, stop := it.regionEnd, text := content }
+  let mut opts : Array (String × String) := #[]
+  if it.kind != .ref && it.opt? "sum" != some sum then opts := opts.push ("sum", sum)
+  if let some d := defaults then
+    if recorded != some d then opts := opts.push ("dflt", d)
+  itemEdits := itemEdits ++ optEdits s it opts
+  if itemEdits.isEmpty then return { diags := ds }
+  return { diags := ds, change := some { loc, key := it.key, old, new := content, contentChanged := !same },
+           edits := itemEdits }
+
+/-- Rewrite a file's chunks: each item with edits, within its own
+characters. Text is left as it is. -/
+def rewriteChunks (edits : List (Nat × Array Edit)) (chunks : List Core.Scan.Chunk) :
+    List Core.Scan.Chunk :=
+  chunks.map fun
+    | .item it raw =>
+      match edits.find? (·.1 == it.start) with
+      | some (_, es) => .item it (rewriteItem it raw es)
+      | none => .item it raw
+    | ch => ch
+
+/-- What planning one file gives: its diagnostics and changes, in order, and
+its chunks rewritten, if any item changes. -/
+structure FileResult where
+  /-- Errors and warnings. -/
+  diags : Array Diag := #[]
+  /-- The items that change. -/
+  changes : Array Change := #[]
+  /-- The chunks `apply` would write, if the file changes. -/
+  rewritten : Option (List Core.Scan.Chunk) := none
+
+/-- Plan one file, the `fi`th. -/
+def planFile (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bundle (Image TeX) Verdict)
+    (o : ApplyOpts) (f : SourceFile) (fi : Nat) : FileResult :=
+  let eol := dominantEol f.src.chars
+  let rs := f.scan.items.toList.zipIdx.map fun (it, ii) =>
+    (it, planItem cfg labels bundle o f.src fi eol it ii)
+  let edits := rs.filterMap fun (it, r) => if r.change.isSome then some (it.start, r.edits) else none
+  { diags := (rs.map (·.2.diags)).foldl (· ++ ·) #[],
+    changes := (rs.filterMap (·.2.change)).toArray,
+    rewritten := if edits.isEmpty then none else some (rewriteChunks edits f.chunks) }
+
+/-- Work out what applying `bundle` to `doc` would do, without checking the
+result (`plan` does). Each item that changes is rewritten within its own
+characters, and a file is its chunks, printed again. -/
+def planOnce (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome :=
   let labels := blockLabels doc
-  let mut out : Outcome := { diags := doc.diags }
-  for (f, fi) in doc.files.toList.zip (List.range doc.files.size) do
-    let s := f.src
-    let eol := dominantEol s.chars
-    let mut edits : Array Edit := #[]
-    for (it, ii) in f.scan.items.toList.zip (List.range f.scan.items.size) do
-      if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then continue
-      let loc := s.locString it.start
-      let missing :=
-        if o.keepStale then
-          Diag.warn "missing-key" loc s!"no entry for {it.key} in the bundle; keeping the old content"
-        else
-          Diag.err "missing-key" loc s!"no entry for {it.key} in the bundle \
-            (is the name right, and was the extractor asked for it?)"
-      let some e := bundle.find? it.key
-        | out := { out with diags := out.diags.push missing }
-          continue
-      let spec := itemSlots cfg it
-      let view := itemView cfg it
-      let generated : Except String String :=
-        if it.kind == .ref then renderRef o.links o.commit it.key e
-        else match e.statement.view? view with
-          | some t => .ok t
-          | none => .error <| match e.statement.error? view with
-            | some why => s!"the {view} view of {it.key} failed to render: {why}"
-            | none => s!"the bundle has no {view} view for {it.key}"
-      if let .error msg := generated then
-        let code := if it.kind == .ref then "bad-ref" else "missing-view"
-        out := { out with diags := out.diags.push (Diag.err code loc msg) }
-        continue
-      let new := match generated with
-        | .ok t => t
-        | .error _ => ""
-      -- The alias's template: a label, a wrapper, …
-      let new := match cfg.alias? it.name with
-        | some a =>
-          if it.kind == .block then
-            let label := (labels.find? (fun (a, b, _) => a == fi && b == ii)).map (·.2.2)
-            a.fill new it.key it.title label
-          else new
-        | none => new
-      -- The `meta` view leaves its source location to the profile (DESIGN §11).
-      let new ← if (new.splitOn metaSourceMarker).length > 1 then
-          match renderRef o.links o.commit it.key e with
-          | .ok ref => pure (new.replace metaSourceMarker ("\\leanmetasource{" ++ ref ++ "}"))
-          | .error msg =>
-            out := { out with diags := out.diags.push (Diag.err "bad-ref" loc msg) }
-            continue
-        else pure new
-      let old := s.slice it.regionStart it.regionEnd
-      let (merged, orphans) := mergeSlots o spec old new
-      for sl in orphans do
-        let d := Diag.warn "orphan-slot" loc
-          s!"slot {sl.id} of {it.key} is no longer generated, so its text is dropped:\n{sl.text old}\n\
-            If the slot was renamed, rerun with --rename-slot {sl.id}=NEW."
-        out := { out with diags := out.diags.push d }
-      -- Shape the content: a block's content ends with a newline and starts on
-      -- its own line; then use the file's line endings.
-      let content :=
-        if it.kind == .block then
-          let c := if merged.isEmpty || merged.endsWith "\n" then merged else merged ++ "\n"
-          if it.regionStart == it.headerEnd then "\n" ++ c else c
-        else merged
-      let content := withEol eol (toLf content)
-      -- Content that would change the document's structure is refused.
-      let isComment := ((cfg.alias? it.name).map (·.comment)).getD false
-      let endMarker := if isComment then "%END" ++ it.name else "\\end{" ++ it.name ++ "}"
-      if (it.kind == .block && (content.splitOn endMarker).length > 1) ||
-          (it.kind != .block && !bracesBalance content) then
-        let why := if it.kind == .block then "it contains " ++ endMarker else "its braces don't balance"
-        let d := Diag.err "bad-content" loc
-          s!"the generated text for {it.key} would break the document ({why})"
-        out := { out with diags := out.diags.push d }
-        continue
-      let same := normalize old == normalize content
-      let sum := checksum spec content
-      if it.kind != .ref then
-        if let some recorded := it.opt? "sum" then
-          if !same && checksum spec old != recorded && !o.force.contains it.key then
-            let d := Diag.err "hand-edit" loc
-              s!"the generated content of {it.key} was edited by hand, so it was not regenerated.\n\
-                Move the edit into Lean or into a slot, or rerun with --force {it.key} to overwrite it."
-            out := { out with diags := out.diags.push d }
-            continue
-      let mut itemEdits : Array Edit := #[]
-      if !same then
-        itemEdits := itemEdits.push { start := it.regionStart, stop := it.regionEnd, text := content }
-      if it.kind != .ref && it.opt? "sum" != some sum then
-        itemEdits := itemEdits.push (sumEdit s it sum)
-      unless itemEdits.isEmpty do
-        let ch : Change := { loc, key := it.key, old, new := content, contentChanged := !same }
-        out := { out with changes := out.changes.push ch }
-        edits := edits ++ itemEdits
-    unless edits.isEmpty do
-      out := { out with outputs := out.outputs.push (s.path, applyEdits s edits) }
-  return out
+  let rs := doc.files.toList.zipIdx.map fun (f, fi) =>
+    (f, fi, planFile doc.cfg labels bundle o f fi)
+  { diags := (rs.map (·.2.2.diags)).foldl (· ++ ·) doc.diags,
+    changes := (rs.map (·.2.2.changes)).foldl (· ++ ·) #[],
+    outputs := (rs.filterMap fun (f, _, r) =>
+      r.rewritten.map fun cs => (f.src.path, String.ofList (Core.Scan.print cs))).toArray,
+    rewritten := (rs.filterMap fun (_, fi, r) => r.rewritten.map (fi, ·)).toArray }
+
+/-- What items chunks hold, to compare scans: each item's form, name and key. -/
+def itemShapes (chunks : List Core.Scan.Chunk) : List (ItemKind × String × String) :=
+  chunks.filterMap fun
+    | .item it _ => some (it.kind, it.name, it.key)
+    | .text _ => none
+
+/-- The check that a file `apply` would write scans again to the chunks it
+built: `none` if it does. -/
+def rescanDiag (doc : Doc) (fi : Nat) (chunks : List Core.Scan.Chunk) : Option Diag :=
+  match doc.files[fi]? with
+  | none => none
+  | some f =>
+    let text := String.ofList (Core.Scan.print chunks)
+    match scanChunks doc.cfg (Src.ofString f.src.path text) f.switchesIn f.scannedLive with
+    | .error d =>
+      some (Diag.err "unstable-output" f.src.path
+        s!"the text apply would write does not scan again, so nothing was written:\n{d.render}\n\
+          The generated content probably holds markup that ends or opens a block.")
+    | .ok (again, _, _) =>
+      if again.map Core.Scan.Chunk.raw == chunks.map Core.Scan.Chunk.raw &&
+          itemShapes again == itemShapes chunks then none
+      else some (Diag.err "unstable-output" f.src.path
+        "the text apply would write scans differently from what apply built, so nothing was written")
+
+/-- The document as `apply` would leave it: each file with its new text. -/
+def rewrittenDoc (doc : Doc) (out : Outcome) : Doc :=
+  let files := doc.files.map fun f =>
+    (f.src.path, ((out.outputs.find? (·.1 == f.src.path)).map (·.2)).getD f.src.text)
+  { Doc.ofFiles doc.cfg files with manifests := doc.manifests }
+
+/-- The check that planning again on what `apply` would write finds nothing
+to do: `none` if it does. -/
+def fixedPointDiag (again : Outcome) : Option Diag :=
+  if hasErrors again.diags then
+    some (Diag.err "not-fixed-point" ""
+      s!"applying the bundle to what apply would write fails, so nothing was written:\n\
+        {"\n".intercalate (again.diags.filter (·.severity == .error) |>.map (·.render)).toList}")
+  else match again.changes[0]? with
+    | some ch => some (Diag.err "not-fixed-point" ch.loc
+        s!"applying the bundle again would change {ch.key}, so nothing was written")
+    | none =>
+      if again.outputs.isEmpty then none
+      else some (Diag.err "not-fixed-point" "" "applying the bundle again would write again")
+
+/-- The checks that each file `apply` would write scans again as built. -/
+def rescanDiags (doc : Doc) (out : Outcome) : Array Diag :=
+  (out.rewritten.toList.filterMap fun p => rescanDiag doc p.1 p.2).toArray
+
+/-- The checks of what `apply` would write: that it scans again as built,
+and, if it does, that planning again on it finds nothing to do. -/
+def checkDiags (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) (out : Outcome) :
+    Array Diag :=
+  let ds := rescanDiags doc out
+  if ds.isEmpty then (fixedPointDiag (planOnce (rewrittenDoc doc out) bundle o)).toList.toArray else ds
+
+/-- Work out what applying `bundle` to `doc` would do (DESIGN §10.2), and
+check it before anything can be written (docs/verified-splicer.md, phase
+5). Each file that would change must scan again to the chunks `apply` built
+(`unstable-output`), and planning again on the result must change nothing
+(`not-fixed-point`); otherwise it is an error, and `apply` writes nothing.
+Idempotence and the fixed point are therefore what `apply` checks of its own
+output (`SpliceModel.Splicer.plan_fixed_point`). -/
+def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome :=
+  let out := planOnce doc bundle o
+  if hasErrors out.diags || out.outputs.isEmpty then out
+  else { out with diags := out.diags ++ checkDiags doc bundle o out }
 
 end Splice

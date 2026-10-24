@@ -13,6 +13,8 @@ latex_style applied_variables := call
 -- Each metavariable stands for one type, and a variable of that type is
 -- written with it.
 latex_style categories := strict
+-- List literals are written [a, b], not a :: b :: [].
+latex_style lists := literal
 
 -- The splicer's functions.
 latex_notation SpliceModel.apply b d => r"\mathsf{apply}_{#b}(#d)"
@@ -136,6 +138,75 @@ latex_category Imprimatur.Hash => "h"
 latex_category Body => "r"
 latex_category Imprimatur.World.Stmt => "S"
 
+-- Two views read: how statements and renderings come apart.
+latex_notation Telescope α => r"\texttt{Telescope}(#α)"
+latex_notation Rule α => r"\texttt{Rule}(#α)"
+latex_notation Anatomy W => r"\texttt{Anatomy}(#W)"
+latex_notation Telescope.vars t => r"#t.\mathit{vars}"
+latex_notation Telescope.hyps t => r"#t.\mathit{hyps}"
+latex_notation Telescope.concl t => r"#t.\mathit{concl}"
+latex_notation Rule.name f => r"#f.\mathit{name}"
+latex_notation Rule.premises f => r"#f.\mathit{premises}"
+latex_notation Rule.concl f => r"#f.\mathit{concl}"
+latex_notation Anatomy.Part A => r"\mathit{Part}_{#A}"
+latex_notation Anatomy.telescope A S => r"\mathit{telescope}_{#A}(#S)"
+latex_notation Anatomy.ctors A S => r"\mathit{ctors}_{#A}(#S)"
+latex_notation Anatomy.figure A r => r"\mathit{figure}_{#A}(#r)"
+latex_notation Anatomy.print A q => r"\mathit{print}_{#A}(#q)"
+latex_notation Telescope.map (Anatomy.print A) u => r"\mathit{print}^{*}_{#A}(#u)"
+latex_notation proseLayout t => r"\mathsf{layout}(#t)"
+latex_notation proseSentence r => r"\mathsf{sentence}(#r)"
+latex_notation Plain f => r"\mathsf{plain}(#f)"
+latex_notation Anatomy.PrintsProse A S r => r"#r = \mathit{print}^{\mathsf{prose}}_{#A}(#S)" prec := 50
+latex_notation Anatomy.Faithful A S => r"\mathit{faithful}_{#A}(#S)"
+latex_notation Anatomy.ReadsPart A f q => r"#f \rightsquigarrow_{#A} #q" prec := 50
+latex_notation Anatomy.ReadsAll A fs qs => r"#fs \rightsquigarrow^{*}_{#A} #qs" prec := 50
+latex_notation Anatomy.ReadsTelescope A t u => r"#t \rightsquigarrow^{\mathsf{let}}_{#A} #u" prec := 50
+latex_notation Anatomy.ReadsRule A f q => r"#f \rightsquigarrow^{\mathsf{rule}}_{#A} #q" prec := 50
+latex_notation Anatomy.ReadsRules A fs qs => r"#fs \rightsquigarrow^{\mathsf{rules}}_{#A} #qs" prec := 50
+latex_notation Anatomy.Prose A r S => r"\mathit{prose}_{#A}(#r, #S)"
+latex_notation Anatomy.Rules A r S => r"\mathit{rules}_{#A}(#r, #S)"
+latex_notation Anatomy.Sound A => r"\mathsf{sound}(#A)"
+latex_category Anatomy => r"\mathcal{A}"
+latex_rule_label Anatomy.Sound.mk "Sound"
+latex_display "Anatomies" := [Telescope, Rule, Anatomy]
+-- The prose layout, and its parser.
+latex_notation andRest fs => r"\mathsf{rest}(#fs)"
+latex_notation andList s fs => r"\mathsf{list}(#s, #fs)"
+latex_notation proseParts t => r"\mathsf{parts}(#t)"
+latex_notation joinParts ps => r"\mathsf{join}(#ps)"
+latex_notation splitDollar cs => r"\mathsf{split}(#cs)"
+latex_notation unjoin xs => r"\mathsf{unjoin}(#xs)"
+latex_notation opener s => r"\mathsf{opener}(#s)"
+latex_notation IsSep s => r"\mathsf{sep}(#s)"
+latex_notation nextSec sec s => r"\mathsf{next}_{#sec}(#s)"
+latex_notation pushChar c xs => r"#c \triangleright #xs" prec := 67
+latex_notation ofParts p => r"\mathsf{telescope}(#p)"
+latex_notation Sec.add f sec p => r"\mathsf{add}_{#sec}(#f, #p)"
+latex_notation dollar => r"\texttt{\$}"
+latex_notation Telescope.mk v h c => r"\langle #v, #h, #c \rangle"
+latex_notation ite c a b => r"\mathsf{if}\ #c\ \mathsf{then}\ #a\ \mathsf{else}\ #b" prec := 10
+latex_notation a ++ b => r"#a \mathbin{+\!\!+} #b" prec := 65 assoc := left
+latex_notation Prod.mk a (Prod.mk b c) => r"(#a, #b, #c)"
+latex_notation Option.none => r"\mathsf{none}"
+latex_notation sortParts sec ps => r"\mathsf{sort}_{#sec}(#ps)"
+latex_notation Sec.vars => r"\mathsf{let}"
+latex_notation Sec.hyps => r"\mathsf{assume}"
+latex_notation Sec.concl => r"\mathsf{then}"
+latex_notation Sec => r"\mathit{Part}"
+latex_notation String.ofList cs => r"#cs"
+latex_notation String.toList s => r"#s"
+latex_notation Char => r"\mathit{Char}"
+latex_display "The prose layout" := [andRest, andList, proseParts, joinParts, proseLayout]
+latex_display "The prose parser" := [pushChar, splitDollar, unjoin, opener, IsSep, nextSec, Sec.add,
+  sortParts, ofParts, proseSentence]
+latex_display "Printing prose" := [Anatomy.PrintsProse, Anatomy.Faithful]
+latex_display "Reading two views" := [Anatomy.ReadsAll, Anatomy.ReadsTelescope,
+  Anatomy.ReadsRule, Anatomy.ReadsRules, Anatomy.Prose, Anatomy.Rules]
+
+-- The names a bundle uses, all strings.
+latex_display "Names" := [Imprimatur.Key, Imprimatur.View, Imprimatur.TeX, Imprimatur.Hash]
+
 -- The results, by title.
 latex_entry "Locality" => SpliceModel.apply_outline
 latex_entry "Idempotence" => SpliceModel.apply_apply
@@ -148,3 +219,7 @@ latex_entry "Attested prose faces its statement" => SpliceModel.attested
 latex_entry "The bundle of a world is true" => SpliceModel.bundleOf_true
 latex_entry "The hash names the statement" => Imprimatur.Image.Of.stmt_eq
 latex_entry "A view shows the statement" => Imprimatur.Bundle.True.view
+latex_entry "The prose parser undoes the layout" => SpliceModel.proseSentence_proseLayout
+latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound.proseShows
+latex_entry "Prose shows the statement" => SpliceModel.prose_true
+latex_entry "Rules show the predicate" => SpliceModel.rules_true

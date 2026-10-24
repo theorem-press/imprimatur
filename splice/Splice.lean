@@ -7,7 +7,7 @@ import Splice.Text
 import Splice.Sha256
 import Splice.Toml
 import Splice.Config
-import Splice.Bundle
+import Imprimatur.Bundle
 import Splice.Diag
 import Splice.Scan
 import Splice.Manifests

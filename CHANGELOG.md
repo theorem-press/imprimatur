@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Slots that the authors never edited now follow their defaults. A block
+  with slots records a digest of its slots' default texts in `dflt=`; while
+  its slots still match it, `apply` gives them the new defaults when a
+  docstring changes. Once a slot of the block is edited, all keep their
+  text, and a changed default is reported once (`slot-default`). The first
+  `apply` after upgrading adds `dflt=` to every block with slots.
 - The bundle is a Lean type, `bundle/Bundle.lean`, of which the file is the
   JSON: `Bundle (Image TeX) Verdict`, an entry being what a key names, the
   images of its statement (hashes and views) and the verdict on its proof.

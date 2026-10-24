@@ -52,7 +52,7 @@ bundles.
 
 | Property | Statement |
 |---|---|
-| **Locality** | `apply` never changes a byte outside a block's generated region and its `sum=` option. This is checked by masking the blocks and comparing. |
+| **Locality** | `apply` never changes a byte outside a block's generated region and its `sum=` and `dflt=` options. This is checked by masking the blocks and comparing. |
 | **Idempotence** | `apply(apply(d, b), b) = apply(d, b)`. |
 | **Fixed point** | `check(apply(d, b), b)` reports nothing stale. |
 | **Slot preservation** | for every slot id present both before and after, the slot's text after `apply` equals its text before. |
@@ -61,6 +61,21 @@ bundles.
 | **Strip** | after `strip`, the output contains no imprimatur markers, and contains every generated region verbatim. |
 | **Scanner robustness** | on any input, including truncated files, unbalanced braces and markers inside `verbatim`, `scan` either succeeds or reports an error with a position. It never crashes, and never writes a file. |
 | **Hash invariance** | in the extractor, renaming bound variables or universe parameters doesn't change `stmtHash`; changing a hypothesis does. |
+
+### Differential tests
+
+While the splicer is rewritten as a verified core (docs/verified-splicer.md),
+each rewritten function is run beside the code it replaces, kept verbatim in
+`splice/test/SpliceTest/Reference.lean`, and the two must agree: on
+generated input (`splice/diff/text`), and on every `.tex` file of the test
+cases, the examples and the about paper (`splice/diff/text-corpus`). A
+function's reference copy goes when its phase is complete. The scanner is
+compared on whole scan results, for typeset and untypeset files, with and
+without switches (`splice/diff/scan*`), and timed against the reference on
+the about paper repeated to 0.7 and 1.4 MB: at most five times slower, and
+no worse than linear (`splice/diff/scan-speed-*`, `splice/diff/scan-linear`).
+The timing gate caught a block reader that measured the rest of the file
+for every block, which made scanning quadratic.
 
 ### Tooling
 
@@ -224,9 +239,11 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§9.4 | a document compiles with `imprimatur.sty` (pdflatex and lualatex) and shows the spliced content | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§9.5 | slots keep their text by id; slot edits are not hand edits | `e2e/semantics`, `splice/slots/merge`, `splice/checksum/ignores-slot-text`, `splice/prop/slot-preservation`, `splice/prop/edit-detection`, `splice/golden/slots`, `splice/golden/unicode` | M1 |
 | D§9.5 | orphaned slots are dropped with their text printed; `--rename-slot` | `splice/slots/orphans`, `splice/slots/rename`, `splice/golden/slots` | M1 |
+| D§9.5 | slots still holding the defaults recorded in `dflt=` take new defaults; edited ones keep their text, and a changed default is reported once | `splice/golden/slot-defaults`, `splice/golden/slots`, `splice/prop/slot-preservation` | M6 |
 | D§9.5 | slots declared by position; `migrate-slots` | `splice/slots/found`, `splice/slots/outer`, `splice/golden/positional-slots`, `splice/golden/migrate-slots` | M1 |
 | D§10.1 | `scan` follows `\input`, `\include`, `\subfile`, skips comments, `\verb` and `verbatim`; malformed markup is an error with a position | `splice/scan/inputs`, `splice/scan/comment-skipped`, `splice/scan/verb-skipped`, `splice/scan/verbatim-skipped`, `splice/scan/unclosed-block`, `splice/prop/scanner-robustness`, `splice/prop/scanner-truncated`, `splice/golden/basic`, `splice/golden/comments-verbatim`, `splice/golden/macro-args`, `splice/golden/parse-errors`, `splice/golden/outside` | M1 |
-| D§10.2 | `apply` is idempotent, changes nothing outside regions and `sum=`, and touches only changed files | `splice/prop/idempotence`, `splice/prop/locality`, `splice/prop/fixed-point`, `splice/golden/basic` | M1 |
+| D§10.2 | `apply` refuses output that doesn't scan back to what it built, or that applying again would change | `splice/golden/unstable-output` | M6 |
+| D§10.2 | `apply` is idempotent, changes nothing outside regions, `sum=` and `dflt=`, and touches only changed files | `splice/prop/idempotence`, `splice/prop/locality`, `splice/prop/fixed-point`, `splice/golden/basic` | M1 |
 | D§10.2 | checksums normalise line endings and trailing whitespace | `splice/prop/normalisation`, `splice/normalize/crlf-and-trailing`, `splice/golden/crlf` | M1 |
 | D§10.2 | hand edits are refused without `--force`; nothing is written when there is an error | `splice/prop/edit-detection`, `splice/golden/hand-edit` | M1 |
 | D§10.2 | missing keys are errors; `--keep-stale` | `splice/golden/failures` | M1 |

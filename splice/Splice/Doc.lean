@@ -22,6 +22,14 @@ structure SourceFile where
   src : Src
   /-- What the scanner found. -/
   scan : ScanResult
+  /-- The file cut into chunks, text and items, by the verified scanner;
+  they print back to the text (`Core.Scan.print_scan`). -/
+  chunks : List Core.Scan.Chunk := []
+  /-- The `\newif` switches declared before the file was scanned. -/
+  switchesIn : Switches := #[]
+  /-- Whether the file was scanned as typeset (before the document's own
+  liveness is applied). -/
+  scannedLive : Bool := true
   /-- Whether the file is typeset: reached from a branch that is on. -/
   live : Bool := true
 
@@ -89,11 +97,11 @@ def Doc.load {m : Type → Type} [Monad m] (cfg : Config) (read : String → m (
             s!"{path} does not exist, so it was not scanned (it may be generated later)")
         continue
     let src := Src.ofString path text
-    match scanSrcWith cfg src switches live with
+    match scanChunks cfg src switches live with
     | .error d => diags := diags.push d
-    | .ok (scan, sw) =>
+    | .ok (chunks, scan, sw) =>
+      files := files.push { src, scan, chunks, switchesIn := switches, scannedLive := live }
       switches := sw
-      files := files.push { src, scan }
       for (macroName, p, pos, inputLive) in scan.inputs do
         if p.startsWith "/" || p.startsWith "\\" || (p.toList.getD 1 ' ') == ':' then
           let d := Diag.warn "absolute-input" (src.locString pos)

@@ -1,0 +1,6 @@
+apply --bundle v1.bundle.json
+check --bundle v2.bundle.json
+apply --bundle v2.bundle.json
+!replace main.tex "a scalar constant" "a scalar constant, edited by its authors"
+apply --bundle v3.bundle.json
+apply --bundle v3.bundle.json

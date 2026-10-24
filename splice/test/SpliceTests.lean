@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import SpliceTest.Unit
 import SpliceTest.Golden
 import SpliceTest.Props
+import SpliceTest.Diff
 import Testkit
 
 /-!
@@ -27,3 +28,4 @@ def main : IO UInt32 :=
     SpliceTest.Unit.tests
     SpliceTest.Golden.tests
     SpliceTest.Props.tests
+    SpliceTest.Diff.tests
