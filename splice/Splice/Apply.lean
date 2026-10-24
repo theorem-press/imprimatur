@@ -213,56 +213,62 @@ structure ItemResult where
   /-- Its edits. -/
   edits : Array Edit := #[]
 
-/-- Plan one item: the `i`th of file `fi`, whose line endings are mostly
-`eol`. -/
-def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bundle (Image TeX) Verdict)
-    (o : ApplyOpts) (s : Src) (fi : Nat) (eol : String) (it : Item) (ii : Nat) : ItemResult := Id.run do
-  if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then return {}
-  let loc := s.locString it.start
-  let missing :=
-    if o.keepStale then
-      Diag.warn "missing-key" loc s!"no entry for {it.key} in the bundle; keeping the old content"
-    else
-      Diag.err "missing-key" loc s!"no entry for {it.key} in the bundle \
-        (is the name right, and was the extractor asked for it?)"
-  let some e := bundle.find? it.key
-    | return { diags := #[missing] }
-  let spec := itemSlots cfg it
+/-- The generated text of an item, from its bundle entry: its view's
+rendering, or, for `\leanref`, its source location. -/
+def generatedOf (cfg : Config) (o : ApplyOpts) (loc : String) (it : Item) (e : Entry (Image TeX) Verdict) :
+    Except Diag String :=
   let view := itemView cfg it
-  let generated : Except String String :=
-    if it.kind == .ref then renderRef o.links o.commit it.key e
-    else match e.statement.view? view with
-      | some t => .ok t
-      | none => .error <| match e.statement.error? view with
-        | some why => s!"the {view} view of {it.key} failed to render: {why}"
-        | none => s!"the bundle has no {view} view for {it.key}"
-  let new ← match generated with
-    | .ok t => pure t
-    | .error msg =>
-      let code := if it.kind == .ref then "bad-ref" else "missing-view"
-      return { diags := #[Diag.err code loc msg] }
-  -- The alias's template: a label, a wrapper, …
+  if it.kind == .ref then
+    match renderRef o.links o.commit it.key e with
+    | .ok t => .ok t
+    | .error msg => .error (Diag.err "bad-ref" loc msg)
+  else match e.statement.view? view with
+    | some t => .ok t
+    | none => .error <| Diag.err "missing-view" loc <| match e.statement.error? view with
+      | some why => s!"the {view} view of {it.key} failed to render: {why}"
+      | none => s!"the bundle has no {view} view for {it.key}"
+
+/-- What an item's region shows, from its generated text: the alias's
+template and label around it (blocks), and, for the `meta` view, its source
+location (DESIGN §11). -/
+def renderItem (cfg : Config) (labels : Array (Nat × Nat × String)) (o : ApplyOpts) (loc : String)
+    (fi ii : Nat) (it : Item) (e : Entry (Image TeX) Verdict) (g : String) : Except Diag String :=
   let new := match cfg.alias? it.name with
     | some a =>
       if it.kind == .block then
         let label := (labels.find? (fun (a, b, _) => a == fi && b == ii)).map (·.2.2)
-        a.fill new it.key it.title label
-      else new
-    | none => new
-  -- The `meta` view leaves its source location to the profile (DESIGN §11).
-  let new ← if (new.splitOn metaSourceMarker).length > 1 then
-      match renderRef o.links o.commit it.key e with
-      | .ok ref => pure (new.replace metaSourceMarker ("\\leanmetasource{" ++ ref ++ "}"))
-      | .error msg => return { diags := #[Diag.err "bad-ref" loc msg] }
-    else pure new
-  let old := s.slice it.regionStart it.regionEnd
-  let mut ds : Array Diag := #[]
-  -- Slots that still hold the defaults they were written with take the
-  -- new defaults; edited ones keep their text.
+        a.fill g it.key it.title label
+      else g
+    | none => g
+  if (new.splitOn metaSourceMarker).length > 1 then
+    match renderRef o.links o.commit it.key e with
+    | .ok ref => .ok (new.replace metaSourceMarker ("\\leanmetasource{" ++ ref ++ "}"))
+    | .error msg => .error (Diag.err "bad-ref" loc msg)
+  else .ok new
+
+/-- An item's region, regenerated from `new` and the region's old text
+`old`: slots that still hold the defaults recorded in `dflt=` take the new
+defaults, edited ones keep their text (an ordinary merge is the model's
+`fill`); a block's content ends with a newline and starts on its own line;
+and the file's line endings are used. Also the merged text, the slot
+digest of the new defaults, and the warnings about slots. -/
+structure RegionContent where
+  /-- The content to write. -/
+  content : String
+  /-- The digest of the new slot defaults, for a block. -/
+  defaults : Option String
+  /-- Warnings: defaults that changed in an edited block, slots dropped. -/
+  warnings : Array Diag
+
+/-- Regenerate an item's region (see `RegionContent`). -/
+def regionContent (cfg : Config) (o : ApplyOpts) (loc eol : String) (it : Item) (new old : String) :
+    RegionContent := Id.run do
+  let spec := itemSlots cfg it
   let defaults := if it.kind == .block then slotDigest spec new else none
   let recorded := it.opt? "dflt"
   let untouched := recorded.isSome && slotDigest spec old == recorded
   let (merged, orphans) := if untouched then (new, #[]) else mergeSlots o spec old new
+  let mut ds : Array Diag := #[]
   if recorded.isSome && !untouched && recorded != defaults then
     -- The digest says that some default changed, not which: list the
     -- slots that differ from their new defaults.
@@ -281,41 +287,83 @@ def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bu
     ds := ds.push (Diag.warn "orphan-slot" loc
       s!"slot {sl.id} of {it.key} is no longer generated, so its text is dropped:\n{sl.text old}\n\
         If the slot was renamed, rerun with --rename-slot {sl.id}=NEW.")
-  -- Shape the content: a block's content ends with a newline and starts on
-  -- its own line; then use the file's line endings.
   let content :=
     if it.kind == .block then
       let c := if merged.isEmpty || merged.endsWith "\n" then merged else merged ++ "\n"
       if it.regionStart == it.headerEnd then "\n" ++ c else c
     else merged
-  let content := withEol eol (toLf content)
-  -- Content that would change the document's structure is refused.
+  return { content := withEol eol (toLf content), defaults, warnings := ds }
+
+/-- Content that would change the document's structure, refused. -/
+def badContent? (cfg : Config) (loc : String) (it : Item) (content : String) : Option Diag :=
   let isComment := ((cfg.alias? it.name).map (·.comment)).getD false
   let endMarker := if isComment then "%END" ++ it.name else "\\end{" ++ it.name ++ "}"
   if (it.kind == .block && (content.splitOn endMarker).length > 1) ||
       (it.kind != .block && !bracesBalance content) then
     let why := if it.kind == .block then "it contains " ++ endMarker else "its braces don't balance"
-    return { diags := ds.push (Diag.err "bad-content" loc
-      s!"the generated text for {it.key} would break the document ({why})") }
-  let same := normalize old == normalize content
-  let sum := checksum spec content
+    some (Diag.err "bad-content" loc s!"the generated text for {it.key} would break the document ({why})")
+  else none
+
+/-- A region edited by hand: its content isn't what was generated (by its
+`sum=`), and is about to be replaced without `--force`. -/
+def handEdited? (o : ApplyOpts) (spec : Option SlotSpec) (loc : String) (it : Item) (old : String)
+    (same : Bool) : Option Diag :=
   if it.kind != .ref then
-    if let some recorded := it.opt? "sum" then
+    match it.opt? "sum" with
+    | some recorded =>
       if !same && checksum spec old != recorded && !o.force.contains it.key then
-        return { diags := ds.push (Diag.err "hand-edit" loc
+        some (Diag.err "hand-edit" loc
           s!"the generated content of {it.key} was edited by hand, so it was not regenerated.\n\
-            Move the edit into Lean or into a slot, or rerun with --force {it.key} to overwrite it.") }
-  let mut itemEdits : Array Edit := #[]
-  if !same then
-    itemEdits := itemEdits.push { start := it.regionStart, stop := it.regionEnd, text := content }
-  let mut opts : Array (String × String) := #[]
-  if it.kind != .ref && it.opt? "sum" != some sum then opts := opts.push ("sum", sum)
-  if let some d := defaults then
-    if recorded != some d then opts := opts.push ("dflt", d)
-  itemEdits := itemEdits ++ optEdits s it opts
-  if itemEdits.isEmpty then return { diags := ds }
-  return { diags := ds, change := some { loc, key := it.key, old, new := content, contentChanged := !same },
-           edits := itemEdits }
+            Move the edit into Lean or into a slot, or rerun with --force {it.key} to overwrite it.")
+      else none
+    | none => none
+  else none
+
+/-- The edits that write an item's content and options. -/
+def itemEdits (s : Src) (it : Item) (rc : RegionContent) (same : Bool) (sum : String) : Array Edit :=
+  let region : Array Edit :=
+    if !same then #[{ start := it.regionStart, stop := it.regionEnd, text := rc.content }] else #[]
+  let opts : Array (String × String) :=
+    (if it.kind != .ref && it.opt? "sum" != some sum then #[("sum", sum)] else #[]) ++
+    (match rc.defaults with
+     | some d => if it.opt? "dflt" != some d then #[("dflt", d)] else #[]
+     | none => #[])
+  region ++ optEdits s it opts
+
+/-- Plan one item: the `i`th of file `fi`, whose line endings are mostly
+`eol`. -/
+def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bundle (Image TeX) Verdict)
+    (o : ApplyOpts) (s : Src) (fi : Nat) (eol : String) (it : Item) (ii : Nat) : ItemResult :=
+  if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then {}
+  else
+  let loc := s.locString it.start
+  match bundle.find? it.key with
+  | none =>
+    { diags := #[if o.keepStale then
+        Diag.warn "missing-key" loc s!"no entry for {it.key} in the bundle; keeping the old content"
+      else
+        Diag.err "missing-key" loc s!"no entry for {it.key} in the bundle \
+          (is the name right, and was the extractor asked for it?)"] }
+  | some e =>
+    match generatedOf cfg o loc it e with
+    | .error d => { diags := #[d] }
+    | .ok g =>
+      match renderItem cfg labels o loc fi ii it e g with
+      | .error d => { diags := #[d] }
+      | .ok new =>
+        let old := s.slice it.regionStart it.regionEnd
+        let rc := regionContent cfg o loc eol it new old
+        match badContent? cfg loc it rc.content with
+        | some d => { diags := rc.warnings.push d }
+        | none =>
+          let same := normalize old == normalize rc.content
+          match handEdited? o (itemSlots cfg it) loc it old same with
+          | some d => { diags := rc.warnings.push d }
+          | none =>
+            let edits := itemEdits s it rc same (checksum (itemSlots cfg it) rc.content)
+            if edits.isEmpty then { diags := rc.warnings }
+            else { diags := rc.warnings, edits,
+                   change := some { loc, key := it.key, old, new := rc.content, contentChanged := !same } }
 
 /-- Rewrite a file's chunks: each item with edits, within its own
 characters. Text is left as it is. -/

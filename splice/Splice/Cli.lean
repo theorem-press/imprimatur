@@ -185,8 +185,7 @@ def runIn (root : System.FilePath) (a : Args) : ExceptT String CliM UInt32 := do
             let q := (p.parent.getD dir) / c
             if ← (q.isDir : IO _) then continue
             if ← (q.pathExists : IO _) then queue := queue.push q
-      let ds := sortDiags doc (o.diags ++ audit doc bundle ++ macroDiags doc bundle extra ++
-        staleDiags o.changes a.diff)
+      let ds := checkDoc doc bundle opts extra a.diff
       report ds
       let failed := hasErrors ds
       if failed then
