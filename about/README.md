@@ -3,8 +3,10 @@
 `imprimatur-paper.tex` is a short paper about imprimatur, built with
 imprimatur, in the PACMPL format (`acmart`, `acmsmall`). Its theorems are DESIGN §18.2's: the splicer's laws (locality,
 idempotence, the fixed point, slot preservation) and Theorem 1, what a
-successful `imprimatur check` guarantees. They are proved in `lean/`, a
-model of the splicer in which a document is already parsed into pieces.
+successful `imprimatur check` guarantees. They are proved in the splicer's
+package, `splice/SpliceModel`, for a model of the splicer in which a
+document is already parsed into pieces; `lean/` requires that package. The
+plan to prove them of the splicer's own code is `docs/verified-splicer.md`.
 
 Its running example is a small simply typed λ-calculus (`lean/Stlc.lean`,
 with its notation in `notation/StlcTeX.lean`), whose substitution is a
@@ -12,12 +14,12 @@ stand-in: Section 6 replaces it, renames a hypothesis, and weakens the
 theorem, and quotes what `imprimatur check` says each time.
 
 The model is built on the bundle's type, `bundle/Bundle.lean`, of which the
-JSON that passes from the extractor to the splicer is the file; `lean/` holds
-a copy of it, under the extractor's module name, which the lint keeps equal
-to the source.
+JSON that passes from the extractor to the splicer is the file; the splicer
+holds a copy of it, under the extractor's module name, which the lint keeps
+equal to the source.
 
 Every definition and theorem displayed in the paper is generated from
-`lean/`; every hand-written claim about it carries a `\leancheck`. The
+`lean/` and the model; every hand-written claim about it carries a `\leancheck`. The
 notation is in `notation/SpliceTeX.lean`, read in external mode.
 
 It also states Theorem 2, that rendering is faithful, as what translation

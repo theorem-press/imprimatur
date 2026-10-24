@@ -12,6 +12,17 @@ linter.all = true
 [[lean_lib]]
 name = "Splice"
 
+# The bundle's type: a copy of bundle/Bundle.lean, under the module name the
+# extractor gives it (lint/bundle-copies).
+[[lean_lib]]
+name = "Imprimatur"
+roots = ["Imprimatur.Bundle"]
+
+# The model of the splicer, and its laws and Theorem 1 (DESIGN §18.2). Not a
+# default target, so building the splicer doesn't build proofs; CI builds it.
+[[lean_lib]]
+name = "SpliceModel"
+
 [[lean_exe]]
 name = "imprimatur-splice"
 root = "Main"

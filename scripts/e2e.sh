@@ -148,11 +148,13 @@ for engine in pdflatex lualatex; do
 done
 
 # e2e/about: the paper about imprimatur (about/), whose theorems are proved in
-# its Lean model of the splicer. The committed paper must be what `build`
+# the splicer's model (splice/SpliceModel). The committed paper must be what `build`
 # makes, `check` must report nothing at all (warnings included: every formula
 # reads back), and it must typeset.
 echo "== e2e/about"
 work="e2e-out/about"; rm -rf "$work"; mkdir -p "$work"
+# The paper's Lean requires the splice package at ../../splice.
+ln -sfn "$ROOT/splice" e2e-out/splice
 (cd about && tar --exclude=.lake --exclude=.imprimatur --exclude='*.pdf' --exclude='*.aux' \
   --exclude='*.log' --exclude='*.fls' --exclude='*.fdb_latexmk' -cf - .) | (cd "$work" && tar -xf -)
 if ! (cd "$work/lean" && lake build -q > ../lake.log 2>&1); then

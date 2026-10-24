@@ -12,8 +12,10 @@ development's environment; the splicer edits TeX and never sees Lean. All
 that passes between them is the bundle, a JSON file, and this module is its
 type: the file is the JSON of a `Bundle (Image TeX) Verdict`, and nothing else.
 The source is `bundle/Bundle.lean`, copied into both packages
-(`extract/Imprimatur/Bundle.lean`, `splice/Splice/Bundle.lean`); the shipped
-packages have no dependencies, and the lint checks that the copies agree.
+(`extract/Imprimatur/Bundle.lean`, `splice/Imprimatur/Bundle.lean`), under
+one module name, so that the extractor and the splicer's model are one
+module when the paper is built; the shipped packages have no dependencies,
+and the lint checks that the copies agree.
 
 An entry is what the bundle says of a key: what the key names, its
 statement, and its proof. The statement and the proof are not in the file,
@@ -22,7 +24,7 @@ Of the statement, the hash that names it and the TeX that shows it
 (`Image`); of the proof, the verdict on it: no `sorry`, which axioms, which
 untrusted constants (`Verdict`). So an entry is parametrised by how the two
 are represented, `Entry σ π`. The file is `Entry (Image TeX) Verdict`. The model of
-the splicer in `about/lean`, which proves what `check` guarantees, is `Entry`
+the splicer in `splice/SpliceModel`, which proves what `check` guarantees, is `Entry`
 at a simpler image, and a bit.
 
 The TeX in an image is a parameter, `Image τ`: in the file `τ` is TeX; in

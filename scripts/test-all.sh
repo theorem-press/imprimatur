@@ -39,7 +39,12 @@ if want testkit; then
   step testkit
   (cd testkit && lake build --wfail && lake test)
 fi
-want splice && lean_tests splice
+if want splice; then
+  lean_tests splice
+  # The splicer's model and its proofs (DESIGN §18.2): not a default target.
+  step "splice model and proofs"
+  (cd splice && lake build --wfail SpliceModel)
+fi
 if want extract; then
   # The fixture Lean projects must build on every toolchain in the matrix. The
   # weak variant of Trust is built first, so the extractor tests see the

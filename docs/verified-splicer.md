@@ -66,8 +66,9 @@ From an inventory of `splice/` (about 4,200 lines):
   L2  Shell            Cli, Wrapper, Doc.loadIO, Manifests, Toml, JSON, SHA-256
 ```
 
-- **L0, the model,** moves from `about/lean` into the splice package as
-  `Splice.Model`, with its laws. It stays small and readable, because the
+- **L0, the model,** moves from `about/lean` into the splice package, with
+  its laws. (Done, phase 1: the library `SpliceModel`, keeping its module and
+  namespace names, so the paper and its slots are unchanged.) It stays small and readable, because the
   paper presents it.
 - **L1, the core,** replaces today's `Scan`, `Slots`, `Text`, `Apply` and the
   pure part of `Check`. The binary runs it, and the theorems are about it.
@@ -351,7 +352,7 @@ a phase says otherwise. Each phase can be merged on its own.
 | Phase | Work | Exit criterion |
 |---|---|---|
 | 0 | **Freeze behaviour.** A differential harness that runs old and new functions side by side on the property generator and on a corpus: every `test/tex` case, every example, the about paper, and the spike papers. It also times them, and runs a 1 MB document (see Performance). | The harness and its timing gate run in CI. |
-| 1 | **One model.** Move `SpliceModel` into `splice/` as `Splice.Model` plus `SpliceProofs`; `about/lean` requires it. The paper is unchanged. | The paper builds from the moved constants. |
+| 1 | **One model.** Move `SpliceModel` into `splice/`, as a library that isn't a default target; the splicer's bundle copy takes the module name `Imprimatur.Bundle`; `about/lean` requires the splice package. The paper is unchanged. | Done: the paper builds byte for byte from the moved constants. |
 | 2 | **Text kernel.** `toLf`, `normalize`, `withEol`, `dominantEol` on `List Char`, structural, with lemmas: `normalize` is idempotent; `normalize ∘ toLf = normalize`; `withEol` then `toLf` is `toLf`. | Old and new agree on the corpus. |
 | 3 | **Lossless scanner.** `Chunk`, `scan` and `print`, with the lossless, compositional and complete theorems. Positions come from chunk lengths. | Agrees with the old scanner (items, positions, diagnostics) on the corpus and 10⁵ generated documents; then the old one is deleted. |
 | 4 | **Bodies and slots.** `parseBody` (both slot forms, `outer`) and `Body.print`, lossless; `mergeBody` via the model's `fill`; `sum` and `dflt` on bodies; `dflt` in the model. | Slot preservation proved for `mergeBody`. |
