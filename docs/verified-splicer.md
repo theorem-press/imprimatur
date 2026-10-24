@@ -228,18 +228,73 @@ calls, quantified over every configuration, bundle and set of files:
    `applyFiles … fs' = .ok fs'`.
 4. **Fixed point:** after `applyFiles`, `checkFiles` reports nothing stale.
 5. **Slot preservation:** with the `dflt` caveat above.
-6. **Theorem 1, generated mathematics:** if `W ⊨ b` and `checkFiles` reports
-   nothing (warnings included), then every block and inline item in the
-   files shows a statement Lean proved. Its body, normalised, is the
-   normalised fill of the world's rendering, and that rendering reads back
-   as the statement.
-7. **Theorem 1, attested prose,** and **the typeset mathematics is true:**
-   as in the model, now of the files.
+6. **Theorem 1:** what a clean `check` guarantees, stated in full below.
 
-Normalisation is explicit in item 6: the code compares bodies up to line
-endings, trailing whitespace and blank lines at the ends, so the theorem
-says *equal after normalisation*. That these don't change what TeX typesets
-joins the trusted base, alongside TeX itself.
+### Theorem 1, precisely
+
+```lean
+theorem checkFiles_sound
+    (W : World TeX) (b : Bundle (Image TeX) Verdict)
+    (cfg : Config) (o : ApplyOpts) (fs : List (Path × String)) (env : MacroEnv)
+    (hb : b.True W (Verdict.trusted cfg.allowedAxioms))
+    (hc : checkFiles cfg b o fs env = []) :
+    Files.True W cfg fs
+```
+
+Its pieces, in words:
+
+- **`W : World TeX`** is the development as the extractor presents it, with
+  renderings as TeX. This is `Imprimatur.World`, today's type.
+- **`hb`** says the bundle is true of the world. Each entry names what its
+  key names, its hashes and views are those of the key's statement, and its
+  verdict is the world's. The verdict counts as *trusted* by the
+  configuration's own rule, `Verdict.trusted cfg.allowedAxioms`: no
+  `sorry`, no axioms outside `allowed_axioms`, and nothing untrusted in the
+  cone, which is what `audit` checks through `trustProblems`. Nothing in the
+  splicer establishes `hb`. It is the extractor's claim, and
+  `bundleOf_true` shows that an honest extractor makes it true.
+- **`hc`** says that `check` reports nothing, warnings included, for exactly
+  the files the command line read. The warnings must be included because
+  `unfaithful-rendering`, a rendering that doesn't read back, is a warning.
+  A variant with `hc` only for errors drops the read-back conclusion below.
+- **`Files.True W cfg fs`** says that every file scans, and every *claim* it
+  makes is true of `W`. The claims are read off the lossless scan:
+
+| Item in the file | Its claim |
+|---|---|
+| block or `\leaninline` on key `k`, in view `v` (as `itemView` computes it, with `notation=` and the theorem options), with body `r` | there are `S` and `r'` such that: `W.stmt k = some S`; `W.trusted k`; `W.render v S = some r'`; `normalize r = normalize (shape (fill (slots r) (renderItem cfg labels syn r')))`, where `renderItem` applies the alias's template, label and meta source exactly as `plan` does; and, if the item is live (typeset), `W.Reads r' S` |
+| `\leanref` on `k` | `W.stmt k` is some statement (the key is declared). The link text makes no claim about the statement |
+| `\leancheck[stmt=h]{k₁,…,kₙ}` | each `kᵢ` is declared and trusted, and `h` is the first 12 hex digits of the statement hash (for one key), or of the hash of the keys' hashes joined by commas (for several), as `checkHashes` computes |
+| `\leancheck{k₁,…}` without `stmt=` | each `kᵢ` is declared and trusted |
+| `\lean{k}` in an environment with `\leanok` (blueprint) | `k` is declared and trusted |
+| `\lean{k}` without `\leanok`, `\leanindex`, `\leanhypref`, text | no claim |
+
+Its corollaries are the model's, now about files:
+
+- **The typeset mathematics is true:** the live claims of the first row are
+  what a reader sees, and each shows a proved statement, rendered, reading
+  back as it.
+- **Attested prose faces its statement:** if the world's hash is injective
+  *on 12-digit prefixes* among the statements in question, a `\leancheck`
+  that checks clean names the statement the prose was checked against.
+- **Prose and rules show their statements:** Theorems 6.3–6.5, with the
+  anatomy assumptions.
+
+Three features of this statement are forced by the code, and the paper
+should say so.
+
+- **Normalisation.** The code compares bodies up to line endings, trailing
+  whitespace and blank lines at the ends, so the claim is equality *after*
+  `normalize`. That this doesn't change what TeX typesets joins the trusted
+  base.
+- **Read-back only for live items.** `audit` checks `problems` only for
+  items TeX typesets. An item in an `\iffalse` branch is regenerated and
+  checked for staleness, but not read back.
+- **Twelve digits.** `\leancheck` records 48 bits of the hash. The
+  collision assumption for attested prose is therefore about 48-bit
+  prefixes, not SHA-256. That is weak enough for an adversary to forge, but
+  adequate against accident. Recording the full hash, or more digits, would
+  strengthen the theorem's assumption at no cost to the proof.
 
 ### What stays unproved
 
@@ -294,7 +349,7 @@ a phase says otherwise. Each phase can be merged on its own.
 
 | Phase | Work | Exit criterion |
 |---|---|---|
-| 0 | **Freeze behaviour.** A differential harness that runs old and new functions side by side on the property generator and on a corpus: every `test/tex` case, every example, the about paper, and the spike papers. | The harness runs in CI. |
+| 0 | **Freeze behaviour.** A differential harness that runs old and new functions side by side on the property generator and on a corpus: every `test/tex` case, every example, the about paper, and the spike papers. It also times them, and runs a 1 MB document (see Performance). | The harness and its timing gate run in CI. |
 | 1 | **One model.** Move `SpliceModel` into `splice/` as `Splice.Model` plus `SpliceProofs`; `about/lean` requires it. The paper is unchanged. | The paper builds from the moved constants. |
 | 2 | **Text kernel.** `toLf`, `normalize`, `withEol`, `dominantEol` on `List Char`, structural, with lemmas: `normalize` is idempotent; `normalize ∘ toLf = normalize`; `withEol` then `toLf` is `toLf`. | Old and new agree on the corpus. |
 | 3 | **Lossless scanner.** `Chunk`, `scan` and `print`, with the lossless, compositional and complete theorems. Positions come from chunk lengths. | Agrees with the old scanner (items, positions, diagnostics) on the corpus and 10⁵ generated documents; then the old one is deleted. |
@@ -308,6 +363,41 @@ Phase 3 is the largest: it is a rewrite of 600 lines of imperative scanner,
 with proofs. Phases 4–6 are mostly reorganisation around the model's existing
 proofs.
 
+## Performance
+
+Today `check` on the about paper (85 KB of TeX, a 117 KB bundle) takes
+about 0.18 s and 74 MB, most of it start-up and JSON. The extractor, run by
+`imprimatur build`, takes seconds to minutes. So the splicer's speed matters
+only if it changes complexity.
+
+- **Constant factor.** A `Char` in an `Array` is an unboxed scalar; a
+  `List Char` allocates a cell per character, about 3–4 words, and walking
+  it chases pointers. Expect scanning and memory to be about 2–5× today's,
+  with no change in complexity.
+- **Rules that keep it linear.** These are enforced by review and by the
+  timing gate below.
+  - **No left-nested appends.** Output is built with accumulators, or in
+    reverse and reversed once; never as `acc ++ piece` in a loop, which is
+    quadratic on lists.
+  - **Tail recursion on long lists.** A function that recurses once per
+    character without a tail call uses a stack frame per character, about
+    300,000 for a 300 KB file, and can overflow the stack. That is a crash,
+    not just slowness. Every recursion over a file's characters is
+    tail-recursive, with an accumulator. Its proof goes through a lemma
+    equating it with the simple, non-tail-recursive definition, which is the
+    one the theorems use.
+  - **Convert once.** `String.toList` and `String.ofList` run once per file
+    and once per output, never per item.
+  - **No new quadratic work.** Matching slots by id and numbering repeated
+    ids are O(n²) per block today, and stay so. A notation table with
+    hundreds of slots is where that would show. A map by id, if needed, is a
+    separate change.
+- **The timing gate.** Phase 0's harness also times the old and new code on
+  the largest corpus paper and on a generated document of twice its size.
+  CI fails if the new code is more than 5× slower than the old, or if
+  doubling the input more than about doubles its time. The same harness
+  runs a 1 MB generated document, to catch stack overflow.
+
 ## Risks
 
 - **Scanner fidelity.** A rewrite can change behaviour in corners such as
@@ -318,8 +408,8 @@ proofs.
   change names between versions. Keeping our own small lemma file, and
   avoiding broad `simp` sets in the long proofs, limits the churn to one
   place.
-- **Performance.** `List Char` with care about appends should be linear. The
-  differential harness also times both versions on the largest corpus paper.
+- **Performance.** See Performance above: a constant factor if the rules
+  hold, enforced by a timing gate.
 - **Scope creep in the model.** The model must stay readable for the paper.
   Concrete detail (raw options, positions, line endings) lives in L1 with its
   own lemmas, and reaches the model only through `abs`.
