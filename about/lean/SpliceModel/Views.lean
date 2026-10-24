@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import SpliceModel.Laws
+import SpliceModel.Prose
 
 /-!
 # What the prose and rules views show
@@ -15,25 +16,25 @@ part. A `prose` sentence is *Let* its variables, *Assume* its hypotheses,
 *Then* its conclusion; a `rules` figure is a list of rules, each with
 premises and a conclusion.
 
-How a rendering comes apart, how a statement does, and when a formula reads
-back as a part, are an anatomy of the world. That the world's `Reads` is
-the anatomy's, for these two views, is an assumption (`Anatomy.Sound`): it
-is what the extractor and the validator are trusted for. Under it, Theorem 1
-says, of a prose or a rules block, what the block shows, part by part.
+How a statement comes apart, how each part is printed as a formula, and
+when a formula reads back as a part, are an anatomy of the world. For the
+prose view, the anatomy's printed formulas are set out as a sentence by the
+prose layout, which the prose parser undoes (`SpliceModel.Prose`). Printing
+is then
+
+  render "prose" S = proseLayout (map print (telescope S)),
+
+and what is assumed (`Anatomy.Sound`) is that the world prints prose so,
+that no printed formula has a dollar in it, and, for each formula, that it
+reads back as its part, which is what the validator checks. That a prose
+rendering reads back part by part is then a theorem. The rules view is still assumed to read back part by part. Under
+these assumptions, Theorem 1 says, of a prose or a rules block, what the
+block shows, part by part.
 -/
 
 namespace SpliceModel
 
 open Imprimatur
-
-/-- A proposition taken apart, as the prose view shows it. -/
-structure Telescope (α : Type) where
-  /-- its variables, with their types -/
-  vars : List α
-  /-- its hypotheses -/
-  hyps : List α
-  /-- its conclusion -/
-  concl : α
 
 /-- A rule, as the rules view shows it. -/
 structure Rule (α : Type) where
@@ -51,12 +52,12 @@ structure Anatomy (W : World) where
   Part : Type
   /-- when a formula reads back as a part -/
   ReadsPart : TeX → Part → Prop
+  /-- a part printed as a formula, by the notation -/
+  print : Part → TeX
   /-- a proposition, taken apart -/
   telescope : W.Stmt → Option (Telescope Part)
   /-- an inductive predicate's constructors, as rules -/
   ctors : W.Stmt → Option (List (Rule Part))
-  /-- a prose sentence, taken apart: Let, Assume, Then -/
-  sentence : Body → Option (Telescope TeX)
   /-- a rules figure, taken apart -/
   figure : Body → Option (List (Rule TeX))
 
@@ -87,23 +88,41 @@ def Anatomy.ReadsRules : List (Rule TeX) → List (Rule A.Part) → Prop
   | [], _ :: _ => False
   | _ :: _, [] => False
 
+/-- A body is a statement printed in the prose view: the statement taken
+apart, each part printed by the notation, and the formulas set out as a
+sentence. -/
+def Anatomy.PrintsProse (S : W.Stmt) (r : Body) : Prop :=
+  ∃ u, A.telescope S = some u ∧ r = proseLayout (u.map A.print)
+
+/-- The notation is faithful on a statement: each of its parts, printed,
+reads back as itself. -/
+def Anatomy.Faithful (S : W.Stmt) : Prop :=
+  ∀ u, A.telescope S = some u →
+    (∀ q ∈ u.vars, A.ReadsPart (A.print q) q) ∧ (∀ q ∈ u.hyps, A.ReadsPart (A.print q) q) ∧
+      A.ReadsPart (A.print u.concl) u.concl
+
 /-- A prose rendering shows a statement: the sentence and the proposition
 come apart, and the one reads back as the other. -/
 def Anatomy.Prose (r : Body) (S : W.Stmt) : Prop :=
-  ∃ t u, A.sentence r = some t ∧ A.telescope S = some u ∧ A.ReadsTelescope t u
+  ∃ t u, proseSentence r = some t ∧ A.telescope S = some u ∧ A.ReadsTelescope t u
 
 /-- A rules rendering shows a statement: the figure and the predicate come
 apart, and each rule reads back as a constructor, in order. -/
 def Anatomy.Rules (r : Body) (S : W.Stmt) : Prop :=
   ∃ fs qs, A.figure r = some fs ∧ A.ctors S = some qs ∧ A.ReadsRules fs qs
 
-/-- The anatomy is the world's: prose and rules renderings have no slots, and
-one that reads back reads back part by part. -/
+/-- The anatomy is the world's. No printed formula has a dollar in it; the
+world prints prose as the anatomy does, with the prose layout; and a prose
+rendering that reads back reads back formula by formula, which is what the
+validator checks. Rules renderings have no slots, and one that reads back
+reads back part by part. -/
 structure Anatomy.Sound : Prop where
-  /-- a prose rendering has no slots -/
-  proseIds : ∀ S r, W.render "prose" S = some r → ids r = []
-  /-- a prose rendering that reads back shows its statement -/
-  prose : ∀ S r, W.render "prose" S = some r → W.Reads r S → A.Prose r S
+  /-- a printed formula has no dollar in it -/
+  plain : ∀ q, Plain (A.print q)
+  /-- the world prints prose as the anatomy does -/
+  prose : ∀ S r, W.render "prose" S = some r → A.PrintsProse S r
+  /-- a prose rendering that reads back reads back formula by formula -/
+  formulas : ∀ S r, W.render "prose" S = some r → W.Reads r S → A.Faithful S
   /-- a rules rendering has no slots -/
   rulesIds : ∀ S r, W.render "rules" S = some r → ids r = []
   /-- a rules rendering that reads back shows its statement -/
@@ -116,6 +135,34 @@ theorem fill_of_ids_nil {old : List (SlotId × String)} : ∀ {r : Body}, ids r 
   | [], _ => rfl
   | .gen _ :: r, h => by simp only [fill, fill_of_ids_nil (r := r) h]
   | .slot _ _ :: _, h => by simp [ids] at h
+
+/-- Formulas each printed from a part, and reading back as it, read back as
+the parts. -/
+theorem Anatomy.readsAll_map {W : World} (A : Anatomy W) :
+    ∀ {qs : List A.Part}, (∀ q ∈ qs, A.ReadsPart (A.print q) q) → A.ReadsAll (qs.map A.print) qs
+  | [], _ => trivial
+  | q :: _, h => ⟨h q (List.mem_cons_self ..), A.readsAll_map fun q' hq => h q' (List.mem_cons_of_mem _ hq)⟩
+
+/-- A prose rendering has no slots. -/
+theorem Anatomy.Sound.proseIds {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
+    (hr : W.render "prose" S = some r) : ids r = [] := by
+  obtain ⟨u, _, rfl⟩ := hA.prose S r hr
+  exact ids_proseLayout _
+
+/-- **A prose rendering shows its statement.** When it reads back, the
+sentence comes apart into the formulas printed from the statement's parts,
+and each reads back as its part. -/
+theorem Anatomy.Sound.proseShows {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
+    (hr : W.render "prose" S = some r) (hR : W.Reads r S) : A.Prose r S := by
+  have hF := hA.formulas S r hr hR
+  obtain ⟨u, hu, rfl⟩ := hA.prose S r hr
+  obtain ⟨hv, hh, hc⟩ := hF u hu
+  have hl : proseSentence (proseLayout (u.map A.print)) = some (u.map A.print) := by
+    apply proseSentence_proseLayout
+    intro f hf
+    simp only [Telescope.map, List.mem_map] at hf
+    rcases hf with ⟨q, _, rfl⟩ | ⟨q, _, rfl⟩ | rfl <;> exact hA.plain _
+  exact ⟨u.map A.print, u, hl, hu, A.readsAll_map hv, A.readsAll_map hh, hc⟩
 
 section
 variable {W : World} {A : Anatomy W} {b : Bundle} {d : Doc}
@@ -136,8 +183,8 @@ Then its conclusion. -/
 theorem prose_true (hA : A.Sound) (hb : b.True W id) (hc : check b d = []) {k : Key} {r : Body}
     (hp : Piece.block k "prose" r ∈ d) :
     ∃ S, W.stmt k = some S ∧ W.trusted k = true ∧ W.render "prose" S = some r ∧ A.Prose r S := by
-  obtain ⟨S, hS, ht, hr, hR⟩ := block_rendering hb hc hp hA.proseIds
-  exact ⟨S, hS, ht, hr, hA.prose S r hr hR⟩
+  obtain ⟨S, hS, ht, hr, hR⟩ := block_rendering hb hc hp fun _ _ h => hA.proseIds h
+  exact ⟨S, hS, ht, hr, hA.proseShows hr hR⟩
 
 /-- **Rules show the predicate.** If `check` reports nothing against a true
 bundle, a rules block names a statement Lean proved, is its rendering, and
