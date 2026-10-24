@@ -1120,7 +1120,8 @@ What does it mean for imprimatur to be correct? A paper is correct with
 respect to its Lean development when what it shows is what Lean proved. This
 section states that as two theorems, one about the splicer and one about the
 notation, with the trusted base they rest on. Theorem 1 and the splicer's
-laws are proved for a model of the splicer (`splice/SpliceModel`); §18.4 says how
+laws are proved for a model of the splicer (`splice/SpliceModel`), and
+then for the splicer's own code (docs/verified-splicer.md); §18.4 says how
 the rest is checked.
 
 ### 18.1 What a document claims
@@ -1157,9 +1158,19 @@ strings and so can be proved in Lean, where the splicer is written:
 
 They are proved in Lean for a model of the splicer, in which a document is
 already parsed into pieces (`splice/SpliceModel`, presented in
-`about/imprimatur-paper.tex`, a paper built and checked with imprimatur). The
-splicer itself, which works on TeX source, is property-tested against them
-(docs/TESTING.md, Properties).
+`about/imprimatur-paper.tex`, a paper built and checked with imprimatur),
+and for the splicer's own code, the functions the binary runs
+(docs/verified-splicer.md): its scanner is lossless
+(`Splice.Core.Scan.print_scan`); an ordinary slot merge is the model's
+`fill` (`Splice.Core.Slots.mergeBody_keeps`); `apply` changes nothing
+outside items (`SpliceModel.Splicer.planOnce_text`) and reaches a fixed
+point, which it checks of its own output before writing
+(`SpliceModel.Splicer.plan_fixed_point`); and Theorem 1 holds of
+`Splice.checkDoc`, which is what `check` reports
+(`SpliceModel.Theorem1.checkDoc_block`, `checkDoc_ref`, `checkDoc_check`).
+They depend on Lean's standard axioms only (`lint/axioms`), and the verified
+code may not use what a proof can't see into (`lint/verified`). The property
+tests (docs/TESTING.md, Properties) and the differential tests remain.
 
 ### 18.3 Theorem 2: rendering is faithful
 
@@ -1308,7 +1319,10 @@ which side condition 2 excludes.
 
 ### 18.5 The trusted base
 
-The Lean kernel; the extractor's reading of the environment; collision
+The Lean kernel and compiler; the extractor's reading of the environment
+(#76); the splicer's shell, which reads files, the configuration and the
+bundle and writes what `apply` returns; the scanner's reading of TeX, which
+the theorems take as the specification of where markup is; collision
 resistance of SHA-256; the notation module as the paper's dictionary (Lean
 checks its names, not its choice of symbols); TeX, since the theorems stop
 at TeX source; and, for attested claims, the person who checked the prose.
