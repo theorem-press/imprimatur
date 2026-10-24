@@ -738,8 +738,14 @@ overwrites the text inside it.
   by position or by the surrounding formula. A slot's text therefore
   survives changes to the notation that would alter the formal part.
 - **Default text.** For a new slot, the view supplies the default text, for
-  example the constructor's docstring. After that, the text belongs to the
-  authors.
+  example the constructor's docstring. A block with slots records a digest
+  of its slots' default texts in `dflt=`. While the slots still match it,
+  the authors haven't touched them, so a changed default replaces them.
+  Once the authors edit a slot of the block, the text belongs to the
+  authors: every slot of the block keeps its text, and a later change of
+  default is reported (`slot-default`), listing the slots that differ from
+  their new defaults. A digest per block, not per slot, keeps the markup
+  unchanged, at the price of treating a block's slots together.
 - **Checksums.** Slot contents are replaced by their ids before the block's
   checksum is computed (§10.2). Editing a slot is never a hand edit, and
   editing anything else in the block still is.
@@ -805,7 +811,8 @@ to TeX environments.
   - Together with slots, this replaces project A's special-case rules for
     preserving last-good output and merging paper-side edits.
 - **Keeps slot text.** When it regenerates a block, `apply` copies each
-  slot's existing text into the new content, matched by slot id (§9.5).
+  slot's existing text into the new content, matched by slot id, unless
+  the block's slots still hold the defaults recorded in `dflt=` (§9.5).
 - **Missing keys.** A key with no entry in the bundle is an error.
   `--keep-stale` makes it a warning and leaves the old content.
 - **Rewrites files in place.** Writes are atomic, and every file keeps its

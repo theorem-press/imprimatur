@@ -136,6 +136,7 @@ def cases : Array String := #[
   "splice/golden/parse-errors",
   "splice/golden/positional-slots",
   "splice/golden/refs",
+  "splice/golden/slot-defaults",
   "splice/golden/slots",
   "splice/golden/strip",
   "splice/golden/unicode",

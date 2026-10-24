@@ -20,7 +20,7 @@ check: 0 stale, 0 errors, 0 warnings
 [exit 0]
 
 == main.tex
-\begin{leangrammar}[sum=tWPeHRPtnb]{Lambda}{Terms:}%
+\begin{leangrammar}[sum=tWPeHRPtnb, dflt=LXcEnpD820]{Lambda}{Terms:}%
 \Category{e}{expressions}\\
 \entry{x}{variable}\\
 \entry{\lambda x.\, e}{abstraction, as the authors put it}\\

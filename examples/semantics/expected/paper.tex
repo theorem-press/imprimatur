@@ -32,14 +32,14 @@ name. The grammar is generated from the inductive types. The descriptions on
 the right are the authors': imprimatur keeps them when it regenerates the
 grammar, and uses the constructors' docstrings only for new ones.
 
-\begin{leangrammar}[sum=-gvNYDo1w4]{Stlc.Ty}{Types}
+\begin{leangrammar}[sum=-gvNYDo1w4, dflt=VDpvVT8fbS]{Stlc.Ty}{Types}
 \label{gram:Stlc.Ty}\begin{LeanGrammar}
 \LeanProduction{\tau}{types}{\mathsf{b}}{\leanslot{Stlc.Ty.base}{the base type}}
 \LeanAlternative{\tau_{1} \to \tau_{2}}{\leanslot{Stlc.Ty.arrow}{functions}}
 \end{LeanGrammar}
 \end{leangrammar}
 
-\begin{leangrammar}[sum=FuF0yc-Xpz]{Stlc.Tm}{Terms}
+\begin{leangrammar}[sum=FuF0yc-Xpz, dflt=Z7b8j8i4cU]{Stlc.Tm}{Terms}
 \label{gram:Stlc.Tm}\begin{LeanGrammar}
 \LeanProduction{e}{terms, with names}{x}{\leanslot{Stlc.Tm.var}{a variable}}
 \LeanAlternative{\lambda x{:}\tau.\, e}{\leanslot{Stlc.Tm.lam}{an abstraction, binding $x$ in $e$}}
@@ -258,7 +258,7 @@ prime ranges over the same type. imprimatur generates the table from the
 categories the notation declares, and checks that every variable printed with
 a metavariable has its type.
 
-\begin{leanconventions}[sum=hkPr-RgjND]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=hkPr-RgjND, dflt=FkVnVPwHEw]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
@@ -272,7 +272,7 @@ The notation, grouped by where it is defined: the paper's own (\textit{Stlc})
 and Lean's. Each is written as the paper writes it, with the Lean constant it
 stands for.
 
-\begin{leannotation}[sum=wgbTFD2MXK]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=wgbTFD2MXK, dflt=6oqRwSRbwl]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
 $\Gamma, x{:}\tau$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\

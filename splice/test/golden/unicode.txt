@@ -14,7 +14,7 @@ apply: 0 items updated in 0 files; 0 errors, 0 warnings
 
 == main.tex
 Ünïcödé prose: λ → ∀ 𝔽.
-\begin{leanblock}[sum=j7eopW8pbA]{Uni.α₁}{Γ ⊢ e : τ}
+\begin{leanblock}[sum=j7eopW8pbA, dflt=Vr58OiQsoJ]{Uni.α₁}{Γ ⊢ e : τ}
 Γ ⊢ λ x. e : τ₁ → τ₂ \leanslot{α₁}{édité ✓}
 \end{leanblock}
 

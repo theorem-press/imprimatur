@@ -97,9 +97,9 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
   `[sum=…]` after the marker name.
 
 **Options** go in the optional argument: `view`, `wrap`, `label`, `sum`,
-`notation`, `include`, `exclude`, and the theorem modifiers `rule`, `def`,
-`forall` and `names` ([views.md](views.md)). The splicer writes `sum=`
-itself.
+`dflt`, `notation`, `include`, `exclude`, and the theorem modifiers `rule`,
+`def`, `forall` and `names` ([views.md](views.md)). The splicer writes
+`sum=` and `dflt=` itself.
 
 ## Where generated content goes
 
@@ -168,6 +168,15 @@ id and by occurrence. There are two forms:
   listed macro is a slot, identified by the text of another argument. This
   matches existing grammar markup without edits.
 
+**Default text.** A new slot gets the view's default, usually a docstring.
+A block with slots records a digest of its slots' default texts in `dflt=`.
+While its slots still match that digest, nobody has edited them, so when a
+default changes in Lean, `apply` gives the slots the new defaults. Once any
+slot of the block is edited, the block's slots all keep their text. If a
+default then changes, `apply` and `check` warn (`slot-default`), listing
+the slots whose text differs from its new default, and record the new
+digest so the warning is given once.
+
 A slot that the new content no longer has is dropped, and its text is
 printed as an `orphan-slot` warning. `--rename-slot OLD=NEW` keeps the text
 when the slot was renamed. `migrate-slots --bundle B` rewrites slots by
@@ -206,7 +215,7 @@ Every message has a stable code.
 
 | Code | Severity | Meaning |
 |---|---|---|
-| `stale` | error (`check`) | content or `sum=` is out of date; `apply` would change it |
+| `stale` | error (`check`) | content, `sum=` or `dflt=` is out of date; `apply` would change it |
 | `hand-edit` | error | generated content was edited by hand |
 | `missing-key` | error, or warning with `--keep-stale` | the bundle has no entry for the key |
 | `missing-view` | error | the entry has no such view, or the view failed to render (the reason is shown) |
@@ -221,6 +230,7 @@ Every message has a stable code.
 | `leanok-untrusted` | error | a blueprint node marked `\leanok` depends on an untrusted declaration |
 | `bad-manifest`, `missing-manifest` | error, warning | a comparator manifest can't be read, or a pattern matches none |
 | `orphan-slot` | warning | a slot disappeared; its text is printed |
+| `slot-default` | warning | a slot default changed in a block whose slots were edited, so the slots keep their text; those that differ from their new defaults are listed |
 | `undefined-macro` | warning | generated content uses a macro that nothing defines: not a file of the document, a package of the paper's own beside its main file (or a local file one loads), LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty. List a package's macros in `known_macros = ["toprule", …]` |
 | `missing-input` | warning | an `\input`ed file doesn't exist |
 | `absolute-input` | warning | an `\input` names an absolute path, which isn't followed |
