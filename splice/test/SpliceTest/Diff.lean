@@ -83,6 +83,35 @@ partial def configFor (f : System.FilePath) : IO Splice.Config := do
     | none => return Props.config
   up (f.parent.getD ".") 4
 
+/-- A region's text, with what the slot finder must get right: `\leanslot`s,
+repeated ids, slots by position (some holding exactly one `\leanslot`),
+comments, spacing, malformed macros and unbalanced braces. -/
+def region : Gen String := do
+  let parts ← Gen.listOf (Gen.frequency [
+    (3, Props.content true), (2, Props.grammarContent),
+    (1, Gen.elem #["\\entry{v}{ \\leanslot{s1}{inner} }", "\\entry{x}{\\leanslot{s0}{a}b}",
+      "% \\leanslot{s0}{in a comment}\n", "\\leanslot{s2}", "\\leanslot {s0} {spaced}",
+      "\\entry{x}", "{", "}", "\\leanslot{s0}{", "\\\\leanslot", "100\\%", "\r\n"])])
+  return "\n".intercalate parts
+
+/-- What a slot list is, as text. -/
+def slotsShown (sl : Array Splice.Slot) : String := (repr sl).pretty
+
+/-- The slot finder and the merge agree with the reference on one region,
+and one pair of regions. -/
+def slotsAgree (old new : String) : Except String Unit := do
+  for spec in [none, some { macros := #["\\entry"], arg := 2, idArg := 1 : Splice.SlotSpec }] do
+    for t in [old, new] do
+      let a := slotsShown (Splice.findSlots spec t)
+      let b := slotsShown (Reference.findSlots spec t)
+      expect (a == b) s!"findSlots differs on {repr t}:\n  new: {a}\n  old: {b}"
+    for renames in [#[], #[("s0", "s1")], #[("x", "v"), ("s2", "s0")]] do
+      let o : Splice.ApplyOpts := { renames }
+      let (m1, o1) := Splice.mergeSlots o spec old new
+      let (m2, o2) := Reference.mergeSlots o spec old new
+      expect (m1 == m2) s!"mergeSlots differs (renames {renames}):\n  old: {repr old}\n  new: {repr new}\n  got: {repr m1}\n  ref: {repr m2}"
+      expect (slotsShown o1 == slotsShown o2) s!"orphans differ (renames {renames})"
+
 /-- How long scanning takes, in milliseconds, and the length of what it
 gives (which forces the work). -/
 def timeScan (f : Unit → String) : IO (Nat × Nat) := do
@@ -138,5 +167,15 @@ def tests : TestM Unit := group "differential" do
     | .error e => badScan := badScan.push s!"{f}: {e}"
   check "splice/diff/scan-corpus" badScan.isEmpty ("\n".intercalate badScan.toList)
   scanSpeed
+  -- Slots: on generated regions, and on whole corpus files as regions.
+  forAll "splice/diff/slots" (do return (← region, ← region)) (fun p => (repr p).pretty)
+    fun (a, b) => slotsAgree a b
+  let mut badSlots := #[]
+  for f in files do
+    let t ← IO.FS.readFile f
+    match slotsAgree t t with
+    | .ok () => pure ()
+    | .error e => badSlots := badSlots.push s!"{f}: {e}"
+  check "splice/diff/slots-corpus" badSlots.isEmpty ("\n".intercalate badSlots.toList)
 
 end SpliceTest.Diff

@@ -434,7 +434,7 @@ Figure~\ref{fig:blocks} shows all four of its blocks as pieces.
 
 \verb|imprimatur apply| regenerates every block whose key and view the
 bundle renders, and leaves every other piece as it
-is\leancheck[stmt=5a7f40472101, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
+is\leancheck[stmt=5e0f2ccffe8e, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
 reports what is not as the bundle says:
 
 \begin{leangrammar}[sum=sSBoJwZVEg, dflt=22TChVO74M]{SpliceModel.Diag}{Diagnostics}
@@ -455,7 +455,7 @@ trusted is reported; a block whose view the entry does not render is
 missing it; a block that is not the rendering, with its slots filled, is
 stale; a rendering the bundle says does not read back is unfaithful; a check
 on a key without a hash has none; and a check whose recorded hash is not the
-statement's is drift\leancheck[stmt=ce27f8a301d4, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
+statement's is drift\leancheck[stmt=60aa422d144e, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
 
 \section{The splicer's laws}
 
@@ -470,7 +470,7 @@ and its blocks without their bodies.
 \end{leantheorem}
 
 Second, running it again changes nothing more. This needs each rendering's
-slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=e4ff67e116fd, sig=9d550ab02488]{SpliceModel.WF}.
+slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=c6662354836a, sig=9d550ab02488]{SpliceModel.WF}.
 
 \begin{leantheorem}[sum=rUqQQUgoM3]{Idempotence}{Idempotence}
 \label{thm:Idempotence}
@@ -503,7 +503,7 @@ then, in Section~\ref{sec:attested}, for the prose its authors write.
 A block $\mathsf{block}_{k}^{v}(r)$ claims that the key $k$ states something
 Lean proved, that $r$ is that statement rendered in view $v$, with the
 authors' text in its slots, and that the rendering reads back as the
-statement\leancheck[stmt=f3a293b191c0, sig=a6e738ff2142]{SpliceModel.Piece.True}. Nothing here involves a hash:
+statement\leancheck[stmt=bdd129291fef, sig=a6e738ff2142]{SpliceModel.Piece.True}. Nothing here involves a hash:
 the splicer compares the block's text with the rendering in the bundle,
 and the bundle's verdict says the proof is trusted. If \verb|check| reports
 nothing against a true bundle, warnings included, every block's claim
@@ -810,7 +810,7 @@ one hash means one statement:
 In the example, the sentence of Figure~\ref{fig:example} is attested prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
 $\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
 source of this paper when the sentence was checked against the Lean. Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
-drift for \verb|check| to report\leancheck[stmt=1e49679eaefa, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
+drift for \verb|check| to report\leancheck[stmt=ac221a60ee5b, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
 
 So a check $\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean
 proved whose hash is $h$; and a document is true when each of its pieces
@@ -1017,7 +1017,7 @@ A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=bQegeeFaDk, dflt=hnFFdS74MI]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=bQegeeFaDk, dflt=u2U7b16hvi]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -1113,7 +1113,7 @@ $\mathsf{assume}$ & \texttt{Sec.hyps} & \leanslot{SpliceModel.Sec.hyps/0}{Assume
 $\mathsf{let}$ & \texttt{Sec.vars} & \leanslot{SpliceModel.Sec.vars/0}{Let}\\
 $\mathsf{gen}(s)$ & \texttt{Seg.gen} & \leanslot{SpliceModel.Seg.gen/0}{text generated from Lean}\\
 $\mathsf{slot}_{i}(t)$ & \texttt{Seg.slot} & \leanslot{SpliceModel.Seg.slot/0}{a slot, whose text the authors own}\\
-$\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots}\\
+$\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots: a slot's id, and which occurrence of that id in its body it is, from 0}\\
 $\texttt{Telescope}(\alpha)$ & \texttt{Telescope} & \leanslot{SpliceModel.Telescope/0}{A proposition taken apart, as the prose view shows it}\\
 $t.\mathit{concl}$ & \texttt{Telescope.concl} & \leanslot{SpliceModel.Telescope.concl/0}{its conclusion}\\
 $t.\mathit{hyps}$ & \texttt{Telescope.hyps} & \leanslot{SpliceModel.Telescope.hyps/0}{its hypotheses}\\

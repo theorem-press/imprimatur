@@ -26,8 +26,10 @@ namespace SpliceModel
 
 open Imprimatur
 
-/-- The identifiers of slots. -/
-abbrev SlotId := String
+/-- The identifiers of slots: a slot's id, and which occurrence of that id
+in its body it is, from 0. A body may repeat an id; each occurrence keeps
+its own text. -/
+abbrev SlotId := String × Nat
 
 /-- A segment of a generated block. -/
 inductive Seg where
@@ -39,6 +41,15 @@ inductive Seg where
 
 /-- The body of a generated block. -/
 abbrev Body := List Seg
+
+/-- The text of a segment: what it generates, or the slot's text. -/
+def Seg.text : Seg → String
+  | .gen s => s
+  | .slot _ t => t
+
+/-- The text of a body, its segments' in order: what a generated region
+holds once the slots are filled. -/
+def Body.text (r : Body) : String := String.join (r.map Seg.text)
 
 /-- The slots of a body, with their text. -/
 def slots : Body → List (SlotId × String)

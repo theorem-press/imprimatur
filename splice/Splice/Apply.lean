@@ -162,10 +162,15 @@ def mergeSlots (o : ApplyOpts) (spec : Option SlotSpec) (old new : String) :
         (oldSlots.find? (fun os => !os.isMacro && os.id == outer)).orElse (fun _ => byId)
       | none => byId
     else byId
-  let merged := mapSlots new newSlots fun ns =>
-    match matchOld ns with
-    | some os => toLf (os.text old)
-    | none => ns.text new
+  -- An ordinary merge is the model's `fill` (`Core.Slots.mergeBody`), for
+  -- which slot preservation is proved; `migrate-slots` matches on `outer`.
+  let merged :=
+    if o.migrate then
+      mapSlots new newSlots fun ns =>
+        match matchOld ns with
+        | some os => toLf (os.text old)
+        | none => ns.text new
+    else SpliceModel.Body.text (Core.Slots.mergeBody o.renames.toList spec old.toList new.toList)
   let used := newSlots.filterMap matchOld |>.map (·.textStart)
   let orphans := oldSlots.filter (fun os => !used.contains os.textStart)
   return (merged, orphans)
