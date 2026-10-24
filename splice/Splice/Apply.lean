@@ -19,6 +19,10 @@ writes its outputs, and `check` reports them without writing (§10.3).
 - **Slots.** Each slot's text is carried from the old content to the new,
   matched by id and occurrence (DESIGN §9.5). Slots that disappear are
   reported with their text.
+- **Default slot text.** A block records the digest of its slots' default
+  texts as `dflt=`. While its slots still match that digest, nobody has
+  edited them, so they take the new defaults. Once one is edited, all keep
+  their text, and a default that changed is reported.
 - **All or nothing.** If anything is an error, `apply` writes nothing.
 -/
 
@@ -111,10 +115,6 @@ def optEdits (s : Src) (it : Item) (kvs : Array (String × String)) : Array Edit
         edits := edits.push { start := b - 1, stop := b - 1, text := ", " ++ text }
     | none => edits := edits.push { start := it.insertAt, stop := it.insertAt, text := "[" ++ text ++ "]" }
   return edits
-
-/-- The edit that sets an item's `sum=` option. -/
-def sumEdit (s : Src) (it : Item) (sum : String) : Edit :=
-  (optEdits s it #[("sum", sum)])[0]?.getD { start := it.insertAt, stop := it.insertAt, text := "" }
 
 /-- Whether braces in `t` balance. -/
 def bracesBalance (t : String) : Bool :=
@@ -244,7 +244,27 @@ def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Out
             continue
         else pure new
       let old := s.slice it.regionStart it.regionEnd
-      let (merged, orphans) := mergeSlots o spec old new
+      -- Slots that still hold the defaults they were written with take the
+      -- new defaults; edited ones keep their text.
+      let defaults := if it.kind == .block then slotDigest spec new else none
+      let recorded := it.opt? "dflt"
+      let untouched := recorded.isSome && slotDigest spec old == recorded
+      let (merged, orphans) := if untouched then (new, #[]) else mergeSlots o spec old new
+      if recorded.isSome && !untouched && recorded != defaults then
+        -- The digest says that some default changed, not which: list the
+        -- slots that differ from their new defaults.
+        let newSlots := findSlots spec new
+        let mut differ : Array String := #[]
+        for ms in findSlots spec merged do
+          let some ns := newSlots.find? (fun n => n.id == ms.id && n.occ == ms.occ) | continue
+          if normalize (ms.text merged) != normalize (ns.text new) then
+            differ := differ.push s!"  {ms.id}\n    kept:    {ms.text merged}\n    default: {ns.text new}"
+        unless differ.isEmpty do
+          let d := Diag.warn "slot-default" loc
+            s!"default slot text of {it.key} has changed, but its slots were edited, so all keep \
+              their text. These differ from their new defaults:\n{"\n".intercalate differ.toList}\n\
+              Update any that are stale by hand."
+          out := { out with diags := out.diags.push d }
       for sl in orphans do
         let d := Diag.warn "orphan-slot" loc
           s!"slot {sl.id} of {it.key} is no longer generated, so its text is dropped:\n{sl.text old}\n\
@@ -281,8 +301,11 @@ def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Out
       let mut itemEdits : Array Edit := #[]
       if !same then
         itemEdits := itemEdits.push { start := it.regionStart, stop := it.regionEnd, text := content }
-      if it.kind != .ref && it.opt? "sum" != some sum then
-        itemEdits := itemEdits.push (sumEdit s it sum)
+      let mut opts : Array (String × String) := #[]
+      if it.kind != .ref && it.opt? "sum" != some sum then opts := opts.push ("sum", sum)
+      if let some d := defaults then
+        if recorded != some d then opts := opts.push ("dflt", d)
+      itemEdits := itemEdits ++ optEdits s it opts
       unless itemEdits.isEmpty do
         let ch : Change := { loc, key := it.key, old, new := content, contentChanged := !same }
         out := { out with changes := out.changes.push ch }

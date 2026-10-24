@@ -14,7 +14,7 @@ $\top$
 Between \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}} and \leanref{Demo.c}{Demo/Basic.lean:7}.
 \leancheck{Demo.thm}
 Inline check \leancheck{Demo.c} stays in its sentence.
-\begin{leanrules}[sum=KfjcoB50Rl]{Rules}{Some rules}%
+\begin{leanrules}[sum=KfjcoB50Rl, dflt=YQN4Y7vp-8]{Rules}{Some rules}%
 \inferrule{A}{B} \leanslot{R.one}{the first rule}
 \end{leanrules}
 \leanindex

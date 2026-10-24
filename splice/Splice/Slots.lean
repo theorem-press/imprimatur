@@ -137,4 +137,15 @@ def checksum (spec : Option SlotSpec) (text : String) : String :=
   let blank := mapSlots text (findSlots spec text) (fun _ => "")
   String.ofList ((Sha256.base64url (Sha256.hash (normalize blank).toUTF8)).toList.take 10)
 
+/-- The digest of a region's slots (DESIGN §9.5): each slot's id and text,
+normalised, in order, hashed like a checksum. `apply` records the digest of
+the default texts as `dflt=`; while the slots still match it, the authors
+have not edited them, and `apply` may replace them with new defaults. A
+region with no slots has no digest. -/
+def slotDigest (spec : Option SlotSpec) (text : String) : Option String :=
+  let sls := findSlots spec text
+  if sls.isEmpty then none else
+    let parts := sls.toList.map fun sl => sl.id ++ "\x00" ++ normalize (sl.text text) ++ "\x00"
+    some (String.ofList ((Sha256.base64url (Sha256.hash (String.join parts).toUTF8)).toList.take 10))
+
 end Splice

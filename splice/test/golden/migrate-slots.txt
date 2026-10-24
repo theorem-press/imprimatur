@@ -7,7 +7,7 @@ check: 0 stale, 0 errors, 0 warnings
 [exit 0]
 
 == main.tex
-\begin{leangrammar}[sum=Jlwze6tHHT]{Lambda}{Lambda:}
+\begin{leangrammar}[sum=Jlwze6tHHT, dflt=brb2p0m0k8]{Lambda}{Lambda:}
 \entry{x}{\leanslot{Expr.var}{a variable, in the authors' words}}\\
 \entry{\lambda x.\, e}{\leanslot{Expr.lam}{an abstraction}}
 \end{leangrammar}
