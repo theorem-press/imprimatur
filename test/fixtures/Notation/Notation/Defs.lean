@@ -107,4 +107,18 @@ theorem joins (alpha beta gamma delta epsilon zeta eta theta iota kappa lambda' 
       (join eta theta))) (join (join iota kappa) (join lambda' mu)) + 1 := by
   sorry
 
+/-- Existentials in the conclusion: "there is … such that", nested, over
+numbered conjuncts. -/
+theorem witnesses (n : Nat) : ∃ m : Nat, ∃ k : Nat, m = n ∧ k = m :=
+  ⟨n, n, rfl, rfl⟩
+
+/-- Hypotheses but no variables: an "Assume" sentence first, then "if and
+only if". -/
+theorem hypsOnly (h : 1 = 1) (h' : 2 = 2) : True ↔ True :=
+  Iff.rfl
+
+/-- A conclusion alone: no "Let", no "Assume", no "Then". -/
+theorem bare : True :=
+  trivial
+
 end Notation

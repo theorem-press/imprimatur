@@ -36,6 +36,8 @@ structure Fixture where
   keys : Array String
   /-- Views to ask for. -/
   views : Array String := #["lean", "meta"]
+  /-- What the document refers to: hypotheses by name, for prose labels. -/
+  document : DocumentInfo := {}
   deriving Inhabited
 
 /-- The fixtures and the keys exported from each. -/
@@ -52,8 +54,9 @@ def fixtures : Array Fixture := #[
   { dir := "Notation", module := `Notation, strip := #[`Notation],
     keys := #["Notation.arith", "Notation.logic", "Notation.sets", "Notation.order",
       "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.joins", "Notation.typed",
-      "Notation.binderRules"],
-    views := #["math", "prose", "math:named", "math:binders"] },
+      "Notation.binderRules", "Notation.witnesses", "Notation.hypsOnly", "Notation.bare"],
+    views := #["math", "prose", "math:named", "math:binders"],
+    document := { hypRefs := #[("Notation.project", "hd")] } },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
     keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
       "Lookup and size", "Types and terms", "Prod", "Stlc.Claim",
@@ -79,7 +82,7 @@ def maskToolchain (bundle : String) : String :=
 
 /-- Export a fixture's bundle in-process. -/
 unsafe def exportFixture (f : Fixture) (used : Option (IO.Ref (Array String)) := none)
-    (document : DocumentInfo := {}) : IO ExportResult := do
+    (document : DocumentInfo := f.document) : IO ExportResult := do
   let dir := fixturesDir / f.dir
   let lib := dir / ".lake" / "build" / "lib" / "lean"
   unless ← lib.pathExists do
