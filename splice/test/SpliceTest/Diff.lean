@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Splice
 import Testkit
 import SpliceTest.Reference
+import SpliceTest.Props
 
 /-!
 # Differential tests (docs/verified-splicer.md, phase 0)
@@ -52,6 +53,66 @@ where
       else if e.path.extension == some "tex" then out := out.push e.path
     return out
 
+/-- What a scan gives, as text: its result, or its error. -/
+def scanShown (r : Splice.ScanM (Splice.ScanResult × Splice.Switches)) : String :=
+  match r with
+  | .ok v => (repr v).pretty
+  | .error d => d.render
+
+/-- The scanner agrees with the reference on one file, typeset or not, and
+with or without switches declared. -/
+def scanAgrees (cfg : Splice.Config) (path text : String) : Except String Unit := do
+  let s := Splice.Src.ofString path text
+  for live in [true, false] do
+    for sw in [#[], #[("draft", true), ("final", false)]] do
+      let new := scanShown (Splice.scanSrcWith cfg s sw live)
+      let old := scanShown (Reference.scanSrcWith cfg s sw live)
+      expect (new == old) s!"scan (live={live}, switches={sw}) differs:\n  new: {new}\n  old: {old}"
+
+/-- The configuration a corpus file is scanned with: its directory's
+`imprimatur.toml`, or the nearest above it, or the property tests'. -/
+partial def configFor (f : System.FilePath) : IO Splice.Config := do
+  let rec up (d : System.FilePath) (n : Nat) : IO Splice.Config := do
+    let t := d / "imprimatur.toml"
+    if ← t.pathExists then
+      match Splice.Config.parse (← IO.FS.readFile t) with
+      | .ok c => return c
+      | .error _ => return Props.config
+    match d.parent with
+    | some p => if n == 0 then return Props.config else up p (n - 1)
+    | none => return Props.config
+  up (f.parent.getD ".") 4
+
+/-- How long scanning takes, in milliseconds, and the length of what it
+gives (which forces the work). -/
+def timeScan (f : Unit → String) : IO (Nat × Nat) := do
+  let t0 ← IO.monoMsNow
+  let n := (f ()).length
+  let t1 ← IO.monoMsNow
+  return (t1 - t0, n)
+
+/-- The timing gate (docs/verified-splicer.md, Performance): on the about
+paper repeated to about 0.7 MB and 1.4 MB, the scanner is at most five times
+slower than the reference, and doubling the input at most about doubles its
+time. The largest also checks that the scanner's recursion is not as deep as
+the file. -/
+def scanSpeed : TestM Unit := do
+  let path : System.FilePath := "../../about/imprimatur-paper.tex"
+  let base ← IO.FS.readFile path
+  let cfg ← configFor path
+  let mut times : Array Nat := #[]
+  for k in [8, 16] do
+    let s := Splice.Src.ofString "big.tex" (String.join (List.replicate k base))
+    let (tn, n1) ← timeScan fun _ => scanShown (Splice.scanSrcWith cfg s #[] true)
+    let (to, n2) ← timeScan fun _ => scanShown (Reference.scanSrcWith cfg s #[] true)
+    IO.println s!"  scan of {s.size / 1000} K characters: {tn} ms, reference {to} ms"
+    check s!"splice/diff/scan-speed-{k}" (n1 == n2 && tn ≤ 5 * to + 100)
+      s!"the scanner took {tn} ms, the reference {to} ms"
+    times := times.push tn
+  if let #[t1, t2] := times then
+    check "splice/diff/scan-linear" (t2 ≤ 3 * t1 + 100)
+      s!"doubling the input took the scanner from {t1} ms to {t2} ms"
+
 /-- The differential tests. -/
 def tests : TestM Unit := group "differential" do
   forAll "splice/diff/text" text (fun t => (repr t).pretty) textAgrees
@@ -63,5 +124,19 @@ def tests : TestM Unit := group "differential" do
     | .ok () => pure ()
     | .error e => bad := bad.push s!"{f}: {e}"
   check "splice/diff/text-corpus" bad.isEmpty ("\n".intercalate bad.toList)
+  -- The scanner, on generated documents and noise, and on the corpus.
+  forAll "splice/diff/scan" Props.docAndBundle (fun x => Props.showFiles x.1) fun (fs, _) =>
+    fs.forM fun (p, t) => scanAgrees Props.config p t
+  forAll "splice/diff/scan-noise" Props.texNoise (fun t => (repr t).pretty)
+    (scanAgrees Props.config "r.tex")
+  forAll "splice/diff/scan-truncated" Props.truncated (fun t => (repr t).pretty)
+    (scanAgrees Props.config "r.tex")
+  let mut badScan := #[]
+  for f in files do
+    match scanAgrees (← configFor f) f.toString (← IO.FS.readFile f) with
+    | .ok () => pure ()
+    | .error e => badScan := badScan.push s!"{f}: {e}"
+  check "splice/diff/scan-corpus" badScan.isEmpty ("\n".intercalate badScan.toList)
+  scanSpeed
 
 end SpliceTest.Diff

@@ -69,7 +69,13 @@ each rewritten function is run beside the code it replaces, kept verbatim in
 `splice/test/SpliceTest/Reference.lean`, and the two must agree: on
 generated input (`splice/diff/text`), and on every `.tex` file of the test
 cases, the examples and the about paper (`splice/diff/text-corpus`). A
-function's reference copy goes when its phase is complete.
+function's reference copy goes when its phase is complete. The scanner is
+compared on whole scan results, for typeset and untypeset files, with and
+without switches (`splice/diff/scan*`), and timed against the reference on
+the about paper repeated to 0.7 and 1.4 MB: at most five times slower, and
+no worse than linear (`splice/diff/scan-speed-*`, `splice/diff/scan-linear`).
+The timing gate caught a block reader that measured the rest of the file
+for every block, which made scanning quadratic.
 
 ### Tooling
 
