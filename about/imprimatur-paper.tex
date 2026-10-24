@@ -130,6 +130,12 @@ source. What the reader sees depends further on:
   Assume \ldots\ Then \ldots}), whose reading the view fixes.
 \item \TeX{} itself, in which two macros may print alike.
 \end{itemize}
+Wiedijk calls a failure of this kind \emph{weak}: one that needs
+definitions or notation beyond a system's basic library~\cite{Wiedijk12}.
+The notation's entries above are all weak, since imprimatur's printer is
+the notation module. What translation validation rules out
+(Section~\ref{sec:faithful}) is the rest: a rendering that reads back, in
+the notation's own grammar, as a statement other than its own.
 
 \paragraph{Attested prose.} A \verb|\leancheck| records the first 12
 hexadecimal digits of a statement hash. That the prose still faces the
@@ -1091,9 +1097,10 @@ build checks.
 The theorems say the text is the \emph{rendering} of the statement, and
 that it reads back, $\mathit{reads}_{W}(r, S)$. A reader must indeed
 recover the statement from the text: this is Pollack's question of
-believing a machine-checked proof~\cite{Pollack98}, and Wiedijk's
-\emph{Pollack-consistency}, that printing a term and parsing it back gives
-the same term~\cite{Wiedijk12}.
+believing a machine-checked proof~\cite{Pollack98}. Wiedijk makes part of
+it precise: a system is \emph{Pollack-consistent} when no contradiction
+follows from equating terms it prints alike, as a consistent system is
+when parsing a printed term gives back that term~\cite{Wiedijk12}.
 
 The notation module defines both directions. Read as a grammar, each of its
 rules is a mixfix production whose holes are typed by Lean's types and
@@ -1110,7 +1117,10 @@ have: an atom reads as itself, and a rule's rendering as the rule's pattern
 with its holes' readings. It then parses the typeset formula, and records
 in the bundle, for each view, the formulas with two readings, with none, or
 with one that is not the expected reading, a \emph{misread}; \verb|check|
-reports them where the formula is. The last is what the check is for. A
+reports them where the formula is. This is the check Wiedijk proposes,
+printing each term and parsing it back~\cite[\S8.1]{Wiedijk12}, except
+that where his printer then falls back to a fail-safe syntax, imprimatur
+refuses the formula. The last is what the check is for. A
 renderer that left out the parentheses its holes need would print
 $(\lambda r\, q.\, e) = M$ as $\lambda r\, q.\, e = M$, a formula that
 reads back uniquely, and wrongly. Made to do so, imprimatur reports six
@@ -1148,6 +1158,20 @@ them has the grammar the formulas were checked in.
 Ringer et al.\ survey proof engineering for program correctness,
 including how proofs must change as the programs they are about
 change~\cite{Ringer19}.
+
+Pollack asks how a reader can believe a machine-checked proof, and
+separates whether it is a derivation from whether what it derives means
+what is claimed; for the second, the reader reads a printed formula, so
+the parser and printer must be trusted as well as the
+kernel~\cite{Pollack98}. Wiedijk makes the printer's part precise as
+Pollack-consistency, shows by hidden types, coercions and notation that
+HOL Light, Isabelle, Coq and Mizar fail it, and proposes printing each
+term, parsing it back, and falling back to a fail-safe syntax when the two
+differ~\cite{Wiedijk12}. imprimatur's printer is a paper's notation and its
+reader is a person, so it parses back in a grammar that stands in for the
+reader, and checks each formula rather than proving the printer; the prose
+layout it proves
+(Theorem~\ref{thm:The-prose-parser-undoes-the-layout}).
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{imprimatur-paper}
