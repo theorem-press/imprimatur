@@ -310,6 +310,13 @@ def scanSrcWith (cfg : Config) (s : Src) (switches : Switches) (live : Bool := t
   | .ok (_, r, sw) => .ok (r, sw)
   | .error (i, msg) => .error (Diag.err "parse-error" (s.locString i) msg)
 
+/-- Scan one file as `scanSrcWith` does, keeping its chunks too. -/
+def scanChunks (cfg : Config) (s : Src) (switches : Switches) (live : Bool := true) :
+    ScanM (List Core.Scan.Chunk × ScanResult × Switches) :=
+  match Core.Scan.scan cfg s.locString live switches s.chars.toList with
+  | .ok v => .ok v
+  | .error (i, msg) => .error (Diag.err "parse-error" (s.locString i) msg)
+
 /-- Scan one file, with no switches declared. -/
 def scanSrc (cfg : Config) (s : Src) : ScanM ScanResult :=
   (·.1) <$> scanSrcWith cfg s #[]

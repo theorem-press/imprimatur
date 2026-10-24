@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Splice.Doc
 import Imprimatur.Bundle
 import Splice.Slots
+import Splice.Core.Rewrite
 
 /-!
 # Applying a bundle
@@ -66,6 +67,8 @@ structure Outcome where
   changes : Array Change := #[]
   /-- Errors and warnings. -/
   diags : Array Diag := #[]
+  /-- The files that change, by index, as the chunks `apply` would write. -/
+  rewritten : Array (Nat × List Core.Scan.Chunk) := #[]
 
 /-- Escape TeX's special characters. -/
 def texEscape (s : String) : String :=
@@ -195,15 +198,23 @@ def blockLabels (doc : Doc) : Array (Nat × Nat × String) := Id.run do
       if let some l := a.labelFor it.key occ then out := out.push (fi, ii, l)
   return out
 
-/-- Work out what applying `bundle` to `doc` would do. -/
-def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome := Id.run do
+/-- An item's characters, rewritten by edits at positions in the file. -/
+def rewriteItem (it : Item) (raw : List Char) (edits : Array Edit) : List Char :=
+  Core.Rewrite.splice raw 0 (Core.Rewrite.sortEdits (edits.toList.map fun e =>
+    { start := e.start - it.start, stop := e.stop - it.start, text := e.text.toList }))
+
+/-- Work out what applying `bundle` to `doc` would do, without checking the
+result (`plan` does). Each item that changes is rewritten within its own
+characters, and a file is its chunks, printed again. -/
+def planOnce (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome := Id.run do
   let cfg := doc.cfg
   let labels := blockLabels doc
   let mut out : Outcome := { diags := doc.diags }
   for (f, fi) in doc.files.toList.zip (List.range doc.files.size) do
     let s := f.src
     let eol := dominantEol s.chars
-    let mut edits : Array Edit := #[]
+    -- The edits of each item that changes, by the item's start.
+    let mut edits : Array (Nat × Array Edit) := #[]
     for (it, ii) in f.scan.items.toList.zip (List.range f.scan.items.size) do
       if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then continue
       let loc := s.locString it.start
@@ -314,9 +325,59 @@ def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Out
       unless itemEdits.isEmpty do
         let ch : Change := { loc, key := it.key, old, new := content, contentChanged := !same }
         out := { out with changes := out.changes.push ch }
-        edits := edits ++ itemEdits
+        edits := edits.push (it.start, itemEdits)
     unless edits.isEmpty do
-      out := { out with outputs := out.outputs.push (s.path, applyEdits s edits) }
+      let chunks := f.chunks.map fun
+        | .item it raw =>
+          match edits.find? (·.1 == it.start) with
+          | some (_, es) => .item it (rewriteItem it raw es)
+          | none => .item it raw
+        | ch => ch
+      out := { out with outputs := out.outputs.push (s.path, String.ofList (Core.Scan.print chunks)),
+                        rewritten := out.rewritten.push (fi, chunks) }
   return out
+
+/-- What items chunks hold, to compare scans: each item's form, name and key. -/
+def itemShapes (chunks : List Core.Scan.Chunk) : List (ItemKind × String × String) :=
+  chunks.filterMap fun
+    | .item it _ => some (it.kind, it.name, it.key)
+    | .text _ => none
+
+/-- Work out what applying `bundle` to `doc` would do (DESIGN §10.2), and
+check it before anything can be written (docs/verified-splicer.md, phase
+5). Each file that would change must scan again to the chunks `apply` built
+(`unstable-output`), and planning again on the result must change nothing
+(`not-fixed-point`); otherwise it is an error, and `apply` writes nothing.
+Idempotence and the fixed point are therefore what `apply` checks of its own
+output, not only properties tested. -/
+def plan (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) : Outcome := Id.run do
+  let out := planOnce doc bundle o
+  if hasErrors out.diags || out.outputs.isEmpty then return out
+  let mut ds : Array Diag := #[]
+  for (fi, chunks) in out.rewritten do
+    let some f := doc.files[fi]? | continue
+    let text := String.ofList (Core.Scan.print chunks)
+    match scanChunks doc.cfg (Src.ofString f.src.path text) f.switchesIn f.scannedLive with
+    | .error d =>
+      ds := ds.push (Diag.err "unstable-output" f.src.path
+        s!"the text apply would write does not scan again, so nothing was written:\n{d.render}\n\
+          The generated content probably holds markup that ends or opens a block.")
+    | .ok (again, _, _) =>
+      unless again.map Core.Scan.Chunk.raw == chunks.map Core.Scan.Chunk.raw &&
+          itemShapes again == itemShapes chunks do
+        ds := ds.push (Diag.err "unstable-output" f.src.path
+          "the text apply would write scans differently from what apply built, so nothing was written")
+  if ds.isEmpty then
+    let files := doc.files.map fun f =>
+      (f.src.path, ((out.outputs.find? (·.1 == f.src.path)).map (·.2)).getD f.src.text)
+    let again := planOnce { Doc.ofFiles doc.cfg files with manifests := doc.manifests } bundle o
+    if hasErrors again.diags then
+      ds := ds.push (Diag.err "not-fixed-point" ""
+        s!"applying the bundle to what apply would write fails, so nothing was written:\n\
+          {"\n".intercalate (again.diags.filter (·.severity == .error) |>.map (·.render)).toList}")
+    else if let some ch := again.changes[0]? then
+      ds := ds.push (Diag.err "not-fixed-point" ch.loc
+        s!"applying the bundle again would change {ch.key}, so nothing was written")
+  return { out with diags := out.diags ++ ds }
 
 end Splice

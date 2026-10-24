@@ -140,6 +140,7 @@ def cases : Array String := #[
   "splice/golden/slots",
   "splice/golden/strip",
   "splice/golden/unicode",
+  "splice/golden/unstable-output",
   "splice/golden/validation"]
 
 /-- Every case, compared with its golden transcript. -/

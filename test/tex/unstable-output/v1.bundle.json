@@ -1,0 +1,18 @@
+{
+ "entries": {
+  "K": {
+   "decl": "K",
+   "kind": "inductive",
+   "views": {
+    "grammar": "x \\begin{leanblock}{J}{U} y"
+   }
+  }
+ },
+ "producer": {
+  "lean": "v4.35.0",
+  "project": "demo",
+  "tool": "hand-written",
+  "version": "0"
+ },
+ "schema": "imprimatur-bundle/1"
+}

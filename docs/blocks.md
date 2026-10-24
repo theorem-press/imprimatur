@@ -230,6 +230,8 @@ Every message has a stable code.
 | `leanok-untrusted` | error | a blueprint node marked `\leanok` depends on an untrusted declaration |
 | `bad-manifest`, `missing-manifest` | error, warning | a comparator manifest can't be read, or a pattern matches none |
 | `orphan-slot` | warning | a slot disappeared; its text is printed |
+| `unstable-output` | error | the text `apply` would write doesn't scan back to what it built (the generated content opens or ends a block, for instance), so nothing is written |
+| `not-fixed-point` | error | applying the bundle again to what `apply` would write would change it, so nothing is written |
 | `slot-default` | warning | a slot default changed in a block whose slots were edited, so the slots keep their text; those that differ from their new defaults are listed |
 | `undefined-macro` | warning | generated content uses a macro that nothing defines: not a file of the document, a package of the paper's own beside its main file (or a local file one loads), LaTeX, amsmath, amssymb, mathpartir or imprimatur.sty. List a package's macros in `known_macros = ["toprule", …]` |
 | `missing-input` | warning | an `\input`ed file doesn't exist |
