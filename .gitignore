@@ -26,3 +26,5 @@ _site/
 /about/*.blg
 # PDFs fetched by the add-citation skill (third-party; not redistributed)
 /Papers/
+/about/.refresh-*.log
+/about/analytics/.venv/

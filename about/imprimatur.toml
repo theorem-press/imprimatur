@@ -4,7 +4,7 @@ lean_project = "lean"
 mode = "external"
 imports = ["SpliceModel", "Stlc"]
 notation = ["notation/SpliceTeX.lean", "notation/StlcTeX.lean"]
-strip_namespaces = ["SpliceModel", "Stlc"]
+strip_namespaces = ["SpliceModel", "Stlc", "Imprimatur.Layout"]
 
 [aliases]
 # The paper's own environments, each with the view it shows.

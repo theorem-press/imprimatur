@@ -93,9 +93,14 @@ replaces.
 
 \paragraph{The hypothesis.} That the bundle is true of the development is
 the extractor's claim. The model says what it means, and that an honest
-extractor's bundle is true (Theorem~\ref{thm:The-bundle-of-a-world-is-true});
-the extractor itself, which renders and hashes inside Lean, is
-metaprogramming and is not verified.
+extractor's bundle is true (Theorem~\ref{thm:The-bundle-of-a-world-is-true}).
+The extractor gathers what a view says inside Lean's metaprogramming,
+which is not verified: which binders are variables and which hypotheses,
+which notation rule a term matches, and the hash of a statement. How it
+then lays a sentence or a figure out, where its emitter puts parentheses,
+and what precedence a notation rule's holes need are a pure module it
+shares with the splicer, and Section~\ref{sec:views} proves of that module
+that the layouts read back.
 
 \paragraph{Reading the paper.} The theorems are about what the splicer
 reads, so how it reads is trusted:
@@ -116,7 +121,9 @@ source. What the reader sees depends further on:
   trailing blanks and blank lines at its ends are normalised; that these
   do not change what \TeX{} typesets is assumed.
 \item The parser that reads formulas back, and, where an expected reading
-  is incomplete, the grammar's mirroring of the renderer.
+  is incomplete, that the grammar follows the renderer. The precedence each
+  hole of a rule needs is one function both call, so that part holds by
+  construction.
 \item The notation module, as the paper's dictionary. Lean checks its names,
   not its choice of symbols: a rule that wrote addition as $a - b$ would read
   back faithfully. Appendix~\ref{app:notation} puts the dictionary in the
@@ -126,10 +133,18 @@ source. What the reader sees depends further on:
   binder does not say that $V$ is a value; a synonym is an equation the
   notation asserts and nothing checks.
 \item The text of a block that is not a formula: the authors' text in
-  slots, and the sentences of the \verb|prose| view (\emph{Let \ldots\
-  Assume \ldots\ Then \ldots}), whose reading the view fixes.
+  slots. The sentences of the \verb|prose| view (\emph{Let \ldots\
+  Assume \ldots\ Then \ldots}) and the lines of a \verb|rules| figure are
+  not trusted: their parsers undo their layouts
+  (Section~\ref{sec:views}).
 \item \TeX{} itself, in which two macros may print alike.
 \end{itemize}
+Wiedijk calls a failure of this kind \emph{weak}: one that needs
+definitions or notation beyond a system's basic library~\cite{Wiedijk12}.
+The notation's entries above are all weak, since imprimatur's printer is
+the notation module. What translation validation rules out
+(Section~\ref{sec:faithful}) is the rest: a rendering that reads back, in
+the notation's own grammar, as a statement other than its own.
 
 \paragraph{Attested prose.} A \verb|\leancheck| records the first 12
 hexadecimal digits of a statement hash. That the prose still faces the
@@ -501,12 +516,12 @@ Figure~\ref{fig:blocks} shows all four of its blocks as pieces.
 
 \verb|imprimatur apply| regenerates every block whose key and view the
 bundle renders, and leaves every other piece as it
-is\leancheck[stmt=5e0f2ccffe8e, sig=7546958bfb76]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
+is\leancheck[stmt=5e0f2ccffe8e, sig=ebc91d37e1fb]{SpliceModel.apply, SpliceModel.regen}. \verb|imprimatur check|
 reports what is not as the bundle says:
 
-\begin{leangrammar}[sum=sSBoJwZVEg, dflt=22TChVO74M]{SpliceModel.Diag}{Diagnostics}
+\begin{leangrammar}[sum=m4EvdIBDWb, dflt=22TChVO74M]{SpliceModel.Diag}{Diagnostics}
 \label{gram:SpliceModel.Diag}\begin{LeanDisplay}
-\LeanCategory{x \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
+\LeanCategory{\delta \in \mathit{Diag}}{\leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports}}\\
 \LeanEntry{\mathsf{broken}(k)}{\leanslot{SpliceModel.Diag.brokenRef}{the key has no entry}}\\
 \LeanEntry{\mathsf{untrusted}(k)}{\leanslot{SpliceModel.Diag.untrusted}{the key's proof is not trusted}}\\
 \LeanEntry{\mathsf{missing}_{k}(v)}{\leanslot{SpliceModel.Diag.missingView}{the entry has no rendering in the view}}\\
@@ -522,7 +537,7 @@ trusted is reported; a block whose view the entry does not render is
 missing it; a block that is not the rendering, with its slots filled, is
 stale; a rendering the bundle says does not read back is unfaithful; a check
 on a key without a hash has none; and a check whose recorded hash is not the
-statement's is drift\leancheck[stmt=60aa422d144e, sig=680ab0e4d2e0]{SpliceModel.diags, SpliceModel.check}.
+statement's is drift\leancheck[stmt=60aa422d144e, sig=f7f8465157d7]{SpliceModel.diags, SpliceModel.check}.
 
 \section{The splicer's laws}
 
@@ -633,172 +648,566 @@ back. It can say no more, because a world says nothing of what a view's
 rendering is: $\mathit{render}_{W}$ and $\mathit{reads}_{W}$ are opaque.
 The validator knows more. A rendering comes apart into formulas, and each
 formula is read back on its own, as the part of the statement it shows.
-For two views we model this. A \texttt{prose} sentence is \emph{Let} its
-variables, \emph{Assume} its hypotheses, \emph{Then} its conclusion; a
-\texttt{rules} figure is a list of rules, each with a name, premises and a
-conclusion. An \emph{anatomy} of a world says how each comes apart, and how
-a statement does; for prose, it also says how a statement is printed, a
-part at a time:
+For two views we model this. The \texttt{prose} view of a theorem is a
+sentence: \emph{Let} its variables, grouped by type; \emph{Assume} its
+hypotheses, each labelled when the paper refers to it; \emph{Then} its
+conclusion, which may be numbered conjuncts, \emph{if and only if}, or
+\emph{there is $v$ such that}. Of a definition it is \emph{We define $f$}.
+What the view says is this, with each formula a value of a type $\alpha$:
+\TeX{} in the extractor, and a part of a statement in the model.
 
-\begin{leangrammar}[sum=_8p8JNPcN8, dflt=y7sGVLg-HG]{Anatomies}{Anatomies}
+\begin{leangrammar}[sum=GTh7mymoN-, dflt=iR90hcWEu0]{What the prose view says}{What the prose view says}
+\label{gram:What-the-prose-view-says}\begin{LeanDisplay}
+\LeanCategory{\texttt{Range}(\alpha)}{\leanslot{Imprimatur.Layout.VarKind}{What a group of variables ranges over, as the sentence says it}}\\
+\LeanEntry{{\in}\, \mathit{ty}}{\leanslot{Imprimatur.Layout.VarKind.ofType}{\LeanCodeInline{x, y ∈ T}: a type}}\\
+\LeanEntry{\text{a type}}{\leanslot{Imprimatur.Layout.VarKind.type}{\emph{be a type}, \emph{be types}}}\\
+\LeanEntry{\text{a proposition}}{\leanslot{Imprimatur.Layout.VarKind.prop}{\emph{be a proposition}, \emph{be propositions}}}\\[.5ex]
+\LeanCategory{\texttt{Group}(\alpha)}{\leanslot{Imprimatur.Layout.VarGroup}{A group of consecutive variables of one type: their names, rendered}}\\
+\LeanEntry{\mathit{names} : \mathsf{List}(\alpha)}{\leanslot{Imprimatur.Layout.VarGroup.names}{The names, as variables}}\\
+\LeanEntry{\mathit{kind} : \texttt{Range}(\alpha)}{\leanslot{Imprimatur.Layout.VarGroup.kind}{What they range over}}\\[.5ex]
+\LeanCategory{\texttt{Hyp}(\alpha)}{\leanslot{Imprimatur.Layout.Hyp}{A hypothesis: its label, when the paper refers to it (the name, escaped for TeX), and its formula}}\\
+\LeanEntry{\mathit{label} : \mathsf{Option}(\mathsf{List}(\mathit{Char}))}{\leanslot{Imprimatur.Layout.Hyp.label}{The label, if any}}\\
+\LeanEntry{\mathit{formula} : \alpha}{\leanslot{Imprimatur.Layout.Hyp.formula}{The formula}}\\[.5ex]
+\LeanCategory{\texttt{Concl}(\alpha)}{\leanslot{Imprimatur.Layout.Concl}{The conclusion, in words}}\\
+\LeanEntry{\mathsf{just}(f)}{\leanslot{Imprimatur.Layout.Concl.formula}{A formula}}\\
+\LeanEntry{\mathsf{all}(\mathit{fs})}{\leanslot{Imprimatur.Layout.Concl.conjuncts}{Conjuncts, numbered \LeanCodeInline{(1)}, \LeanCodeInline{(2)}, …}}\\
+\LeanEntry{\mathsf{iff}(\mathit{lhs}, \mathit{rhs})}{\leanslot{Imprimatur.Layout.Concl.iff}{\emph{lhs if and only if rhs}}}\\
+\LeanEntry{\mathsf{some}(w, \mathit{body})}{\leanslot{Imprimatur.Layout.Concl.exists_}{\emph{there is v such that …}}}\\[.5ex]
+\LeanCategory{\texttt{Statement}(\alpha)}{\leanslot{Imprimatur.Layout.Statement}{What a theorem's sentence says}}\\
+\LeanEntry{\mathit{vars} : \mathsf{List}(\texttt{Group}(\alpha))}{\leanslot{Imprimatur.Layout.Statement.vars}{The variables, in groups}}\\
+\LeanEntry{\mathit{hyps} : \mathsf{List}(\texttt{Hyp}(\alpha))}{\leanslot{Imprimatur.Layout.Statement.hyps}{The hypotheses}}\\
+\LeanEntry{\mathit{concl} : \texttt{Concl}(\alpha)}{\leanslot{Imprimatur.Layout.Statement.concl}{The conclusion}}\\[.5ex]
+\LeanCategory{\texttt{Prose}(\alpha)}{\leanslot{Imprimatur.Layout.Prose}{What the prose view says: of a definition, \emph{We define f}; of a theorem, its sentence}}\\
+\LeanEntry{\mathsf{define}(\mathit{formula})}{\leanslot{Imprimatur.Layout.Prose.define}{\emph{We define f}}}\\
+\LeanEntry{\mathsf{statement}(s)}{\leanslot{Imprimatur.Layout.Prose.statement}{A theorem's sentence}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+The \texttt{rules} view of an inductive predicate is a figure: a rule per
+constructor, with its label, its premises and its conclusion, and before
+it a label macro when the style asks for one, so that prose can refer to
+the rule. An item of a figure is a rule, or a name that is no
+constructor, left as a comment:
+
+\begin{leangrammar}[sum=HkuHoJLtFP, dflt=ZhA3YcDoWl]{What the rules view says}{What the rules view says}
+\label{gram:What-the-rules-view-says}\begin{LeanDisplay}
+\LeanCategory{\texttt{Mark}}{\leanslot{Imprimatur.Layout.Mark}{The \LeanCodeInline{\textbackslash{}macro\{Key\}\{label\}\%} written before a rule, when the style asks for it}}\\
+\LeanEntry{\mathit{name} : \mathsf{List}(\mathit{Char})}{\leanslot{Imprimatur.Layout.Mark.name}{the macro's name}}\\
+\LeanEntry{\mathit{key} : \mathsf{List}(\mathit{Char})}{\leanslot{Imprimatur.Layout.Mark.key}{the rule's key: its name, without spaces}}\\[.5ex]
+\LeanCategory{\texttt{Rule}(\alpha)}{\leanslot{Imprimatur.Layout.Rule}{A rule, as the rules view shows it}}\\
+\LeanEntry{\mathit{mark} : \mathsf{Option}(\texttt{Mark})}{\leanslot{Imprimatur.Layout.Rule.mark}{its label macro, if the style writes one}}\\
+\LeanEntry{\mathit{label} : \mathsf{List}(\mathit{Char})}{\leanslot{Imprimatur.Layout.Rule.label}{its label}}\\
+\LeanEntry{\mathit{premises} : \mathsf{List}(\alpha)}{\leanslot{Imprimatur.Layout.Rule.premises}{its premises}}\\
+\LeanEntry{\mathit{concl} : \alpha}{\leanslot{Imprimatur.Layout.Rule.concl}{its conclusion}}\\[.5ex]
+\LeanCategory{\texttt{Item}(\alpha)}{\leanslot{Imprimatur.Layout.Item}{An item of a figure: a rule, or a name that is no constructor}}\\
+\LeanEntry{\mathsf{rule}(\mathit{ru})}{\leanslot{Imprimatur.Layout.Item.rule}{a rule}}\\
+\LeanEntry{\mathsf{missing}(\mathit{name})}{\leanslot{Imprimatur.Layout.Item.missing}{a name that is no constructor, left as a comment}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+An \emph{anatomy} of a world says what each view says of a statement, and
+how each part is printed:
+
+\begin{leangrammar}[sum=ruOeSySE9f, dflt=U7nVGjB9vZ]{Anatomies}{Anatomies}
 \label{gram:Anatomies}\begin{LeanDisplay}
-\LeanCategory{\texttt{Telescope}(\alpha)}{\leanslot{SpliceModel.Telescope}{A proposition taken apart, as the prose view shows it}}\\
-\LeanEntry{\mathit{vars} : \mathsf{List}(\alpha)}{\leanslot{SpliceModel.Telescope.vars}{its variables, with their types}}\\
-\LeanEntry{\mathit{hyps} : \mathsf{List}(\alpha)}{\leanslot{SpliceModel.Telescope.hyps}{its hypotheses}}\\
-\LeanEntry{\mathit{concl} : \alpha}{\leanslot{SpliceModel.Telescope.concl}{its conclusion}}\\[.5ex]
-\LeanCategory{\texttt{Rule}(\alpha)}{\leanslot{SpliceModel.Rule}{A rule, as the rules view shows it}}\\
-\LeanEntry{\mathit{name} : \mathit{String}}{\leanslot{SpliceModel.Rule.name}{its name}}\\
-\LeanEntry{\mathit{premises} : \mathsf{List}(\alpha)}{\leanslot{SpliceModel.Rule.premises}{its premises}}\\
-\LeanEntry{\mathit{concl} : \alpha}{\leanslot{SpliceModel.Rule.concl}{its conclusion}}\\[.5ex]
 \LeanCategory{\mathcal{A} \in \texttt{Anatomy}(W)}{\leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart}}\\
 \LeanEntry{\mathit{Part} : \mathrm{Type}}{\leanslot{SpliceModel.Anatomy.Part}{a part of a statement, as the notation shows it}}\\
-\LeanEntry{\mathit{ReadsPart} : \mathit{TeX} \to \mathit{Part}_{\mathcal{A}} \to \mathrm{Prop}}{\leanslot{SpliceModel.Anatomy.ReadsPart}{when a formula reads back as a part}}\\
-\LeanEntry{\mathit{print} : \mathit{Part}_{\mathcal{A}} \to \mathit{TeX}}{\leanslot{SpliceModel.Anatomy.print}{a part printed as a formula, by the notation}}\\
-\LeanEntry{\mathit{telescope} : \mathit{Stmt}_{W} \to \mathsf{Option}(\texttt{Telescope}(\mathit{Part}_{\mathcal{A}}))}{\leanslot{SpliceModel.Anatomy.telescope}{a proposition, taken apart}}\\
-\LeanEntry{\mathit{ctors} : \mathit{Stmt}_{W} \to \mathsf{Option}(\mathsf{List}(\texttt{Rule}(\mathit{Part}_{\mathcal{A}})))}{\leanslot{SpliceModel.Anatomy.ctors}{an inductive predicate's constructors, as rules}}\\
-\LeanEntry{\mathit{figure} : \mathit{Body} \to \mathsf{Option}(\mathsf{List}(\texttt{Rule}(\mathit{TeX})))}{\leanslot{SpliceModel.Anatomy.figure}{a rules figure, taken apart}}
+\LeanEntry{\mathit{ReadsPart} : \mathsf{List}(\mathit{Char}) \to \mathit{Part}_{\mathcal{A}} \to \mathrm{Prop}}{\leanslot{SpliceModel.Anatomy.ReadsPart}{when a formula reads back as a part}}\\
+\LeanEntry{\mathit{print} : \mathit{Part}_{\mathcal{A}} \to \mathsf{List}(\mathit{Char})}{\leanslot{SpliceModel.Anatomy.print}{a part printed as a formula, by the notation}}\\
+\LeanEntry{\mathit{gather} : \mathit{Stmt}_{W} \to \mathsf{Option}(\texttt{Prose}(\mathit{Part}_{\mathcal{A}}))}{\leanslot{SpliceModel.Anatomy.gather}{what the prose view says of a statement: its parts, in their places}}\\
+\LeanEntry{\mathit{ctors} : \mathit{Stmt}_{W} \to \mathsf{Option}(\mathsf{List}(\texttt{Rule}(\mathit{Part}_{\mathcal{A}})))}{\leanslot{SpliceModel.Anatomy.ctors}{what the rules view says of an inductive predicate: its constructors, as rules}}
 \end{LeanDisplay}
 \end{leangrammar}
 
 Printing a statement in the \texttt{prose} view is three steps: the
-anatomy takes the statement apart, the notation prints each part as a
-formula, and the layout sets the formulas out as a sentence. The notation
-is faithful on a statement's parts when each, printed, reads back as
-itself:
+anatomy gathers what the view says, the notation prints each part as a
+formula, and the layout sets the formulas out as the sentence. The
+notation is faithful on a statement when each part the view shows,
+printed, reads back as itself:
 
-\begin{leandef}[sum=IdRqUcg7Uh, dflt=rn4I2ME1qw]{Printing prose}{Printing prose}
+\begin{leandef}[sum=GDJ37WXYDd, dflt=OoYcjdDwDi]{Printing prose}{Printing prose}
 \begin{LeanDisplay}
-\LeanClause{r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}}(S) \;\deq\; \exists u,\ \mathit{telescope}_{\mathcal{A}}(S) = u \wedge r = \mathsf{layout}(\mathit{print}^{*}_{\mathcal{A}}(u))}{\leanslot{SpliceModel.Anatomy.PrintsProse}{A body is a statement printed in the prose view: the statement taken apart, each part printed by the notation, and the formulas set out as a sentence}}\\
-\LeanClause{\mathit{faithful}_{\mathcal{A}}(S) \;\deq\; \forall u : \texttt{Telescope}(\mathit{Part}_{\mathcal{A}}),\ \mathit{telescope}_{\mathcal{A}}(S) = u \implies (\forall q \in u.\mathit{vars},\ \mathit{print}_{\mathcal{A}}(q) \rightsquigarrow_{\mathcal{A}} q) \wedge (\forall q \in u.\mathit{hyps},\ \mathit{print}_{\mathcal{A}}(q) \rightsquigarrow_{\mathcal{A}} q) \wedge \mathit{print}_{\mathcal{A}}(u.\mathit{concl}) \rightsquigarrow_{\mathcal{A}} u.\mathit{concl}}{\leanslot{SpliceModel.Anatomy.Faithful}{The notation is faithful on a statement: each of its parts, printed, reads back as itself}}
+\LeanClause{r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}}(S) \;\deq\; \exists u,\ \mathit{gather}_{\mathcal{A}}(S) = u \wedge r = [\mathsf{gen}(\mathsf{layout}(\mathit{print}^{*}_{\mathcal{A}}(u)))]}{\leanslot{SpliceModel.Anatomy.PrintsProse}{A body is a statement printed in the prose view: what the view says of the statement, each part printed by the notation, and the formulas set out as the sentence by the extractor's layout}}\\
+\LeanClause{\mathit{faithful}_{\mathcal{A}}(S) \;\deq\; \forall u : \texttt{Prose}(\mathit{Part}_{\mathcal{A}}),\ \mathit{gather}_{\mathcal{A}}(S) = u \implies (\forall q \in \mathsf{parts}(u),\ \mathit{print}_{\mathcal{A}}(q) \rightsquigarrow_{\mathcal{A}} q)}{\leanslot{SpliceModel.Anatomy.Faithful}{The notation is faithful on a statement: each part the prose view shows, printed, reads back as itself}}
 \end{LeanDisplay}
 \end{leandef}
 
-The layout is the sentence the extractor writes, without its rarer words
-(\emph{be a type}, hypothesis labels, numbered conjuncts):
-\begin{center}
-\verb|\LeanProse{Let $x$, $y$ and $z$. Assume $h_1$ and $h_2$. Then $c$.}|
-\end{center}
-A part with no formulas is left out, and \emph{Then} with it when nothing
-comes before. A part's formulas are listed with commas, and \emph{and}
-before the last:
+The layout is the extractor's own, from the module the extractor runs
+(Section~\ref{sec:code}). The sentence is a list of tokens, printed in
+order: the words of the sentence, the formulas in dollars, a hypothesis's
+label, an item number. A group's names are listed with commas, and
+\emph{and} before the last; so are the groups, the hypotheses and the
+conjuncts; a sentence is left out when it has nothing to say, and
+\emph{Then} with it when nothing comes before.
 
-\begin{leandef}[sum=AkJKw0j4e1, dflt=W2ZY7SLtV1]{The prose layout}{The prose layout}
+\begin{leandef}[sum=ehcB5YG3Ab, dflt=bn3eokn83Q]{The prose layout}{The prose layout}
 \begin{LeanDisplay}
-\LeanClause{\mathsf{rest}([]) \;\deq\; []}{\leanslot{SpliceModel.andRest}{The formulas of a part after its first, each with the text before it: a comma, and \LeanCodeInline{and} before the last}}\\
-\LeanClause{\mathsf{rest}(f \mathbin{::} \mathit{fs}) \;\deq\; (\mathsf{if}\ \mathit{fs} = []\ \mathsf{then}\ \text{`` and ''}\ \mathsf{else}\ \text{``, ''}, f) \mathbin{::} \mathsf{rest}(\mathit{fs})}{}\\
-\LeanClause{\mathsf{list}(\mathit{first}, []) \;\deq\; []}{\leanslot{SpliceModel.andList}{The formulas of a part, each with the text before it}}\\
-\LeanClause{\mathsf{list}(\mathit{first}, f \mathbin{::} \mathit{fs}) \;\deq\; (\mathit{first}, f) \mathbin{::} \mathsf{rest}(\mathit{fs})}{}\\
-\LeanClause{\mathsf{parts}(t) \;\deq\; \mathsf{list}(\text{``\textbackslash{}LeanProse\{Let ''}, t.\mathit{vars}) \mathbin{+\!\!+} \mathsf{list}(\mathsf{if}\ t.\mathit{vars} = []\ \mathsf{then}\ \text{``\textbackslash{}LeanProse\{Assume ''}\ \mathsf{else}\ \text{``. Assume ''}, t.\mathit{hyps}) \mathbin{+\!\!+} [(\mathsf{if}\ t.\mathit{vars} = [] \wedge t.\mathit{hyps} = []\ \mathsf{then}\ \text{``\textbackslash{}LeanProse\{''}\ \mathsf{else}\ \text{``. Then ''}, t.\mathit{concl})]}{\leanslot{SpliceModel.proseParts}{A sentence's formulas, each with the text before it}}\\
-\LeanClause{\mathsf{join}([]) \;\deq\; \text{``.\}''}}{\leanslot{SpliceModel.joinParts}{Text and formulas, the formulas in dollars, and the sentence's end}}\\
-\LeanClause{\mathsf{join}((s, f) \mathbin{::} \mathit{ps}) \;\deq\; s \mathbin{+\!\!+} \text{``\$''} \mathbin{+\!\!+} f \mathbin{+\!\!+} \text{``\$''} \mathbin{+\!\!+} \mathsf{join}(\mathit{ps})}{}\\
-\LeanClause{\mathsf{layout}(t) \;\deq\; [\mathsf{gen}(\mathsf{join}(\mathsf{parts}(t)))]}{\leanslot{SpliceModel.proseLayout}{\textbf{The prose layout.} Formulas set out as a sentence}}
+\LeanClause{\mathsf{rest}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.andRestToks}{\LeanCodeInline{x}, \LeanCodeInline{x and y}, \LeanCodeInline{x, y and z}: the items after the first, each with its separator before it}}\\
+\LeanClause{\mathsf{rest}([y]) \;\deq\; \text{`` and ''} \mathbin{::} y}{}\\
+\LeanClause{\mathsf{rest}(y \mathbin{::} z \mathbin{::} \mathit{zs}) \;\deq\; \text{``, ''} \mathbin{::} y \mathbin{+\!\!+} \mathsf{rest}(z \mathbin{::} \mathit{zs})}{}\\
+\LeanClause{\mathsf{list}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.andToks}{\LeanCodeInline{x}, \LeanCodeInline{x and y}, \LeanCodeInline{x, y and z}}}\\
+\LeanClause{\mathsf{list}(y \mathbin{::} \mathit{ys}) \;\deq\; y \mathbin{+\!\!+} \mathsf{rest}(\mathit{ys})}{}\\
+\LeanClause{\mathsf{names}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.joinComma}{The names of a group, \LeanCodeInline{x, y}}}\\
+\LeanClause{\mathsf{names}([n]) \;\deq\; n}{}\\
+\LeanClause{\mathsf{names}(n \mathbin{::} \mathit{ns}) \;\deq\; n \mathbin{+\!\!+} \mathsf{commaSep} \mathbin{+\!\!+} \mathsf{names}(\mathit{ns})}{}\\
+\LeanClause{\mathsf{group}(\langle \mathit{names}, {\in}\, \mathit{ty}\rangle) \;\deq\; [\text{\$}\mathsf{names}(\mathit{names}) \mathbin{+\!\!+} \mathsf{inSep} \mathbin{+\!\!+} \mathit{ty}\text{\$}]}{\leanslot{Imprimatur.Layout.groupToks}{A group of variables: \LeanCodeInline{\$x, y \textbackslash{}in T\$}, \LeanCodeInline{\$x\$ be a type}, \LeanCodeInline{\$x, y\$ be types}, …}}\\
+\LeanClause{\mathsf{group}(\langle [], \text{a type}\rangle) \;\deq\; [\text{\$}[]\text{\$},\ \text{`` be types''}]}{}\\
+\LeanClause{\mathsf{group}(\langle [n], \text{a type}\rangle) \;\deq\; [\text{\$}n\text{\$},\ \text{`` be a type''}]}{}\\
+\LeanClause{\mathsf{group}(\langle n \mathbin{::} n' \mathbin{::} \mathit{ns}, \text{a type}\rangle) \;\deq\; [\text{\$}\mathsf{names}(n \mathbin{::} n' \mathbin{::} \mathit{ns})\text{\$},\ \text{`` be types''}]}{}\\
+\LeanClause{\mathsf{group}(\langle [], \text{a proposition}\rangle) \;\deq\; [\text{\$}[]\text{\$},\ \text{`` be propositions''}]}{}\\
+\LeanClause{\mathsf{group}(\langle [n], \text{a proposition}\rangle) \;\deq\; [\text{\$}n\text{\$},\ \text{`` be a proposition''}]}{}\\
+\LeanClause{\mathsf{group}(\langle n \mathbin{::} n' \mathbin{::} \mathit{ns}, \text{a proposition}\rangle) \;\deq\; [\text{\$}\mathsf{names}(n \mathbin{::} n' \mathbin{::} \mathit{ns})\text{\$},\ \text{`` be propositions''}]}{}\\
+\LeanClause{\mathsf{hyp}(\langle n, f\rangle) \;\deq\; [\mathsf{label}(n),\ \text{\$}f\text{\$}]}{\leanslot{Imprimatur.Layout.hypToks}{A hypothesis: its label, if any, and its formula}}\\
+\LeanClause{\mathsf{hyp}(\langle \mathsf{none}, f\rangle) \;\deq\; [\text{\$}f\text{\$}]}{}\\
+\LeanClause{\mathsf{numbered}_{i}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.numbered}{Conjuncts numbered from \LeanCodeInline{i}: \LeanCodeInline{(i)\textasciitilde{}\$f\$}, …}}\\
+\LeanClause{\mathsf{numbered}_{i}(f \mathbin{::} \mathit{fs}) \;\deq\; [\mathsf{item}(\mathsf{decimal}(i)),\ \text{\$}f\text{\$}] \mathbin{::} \mathsf{numbered}_{i + 1}(\mathit{fs})}{}\\
+\LeanClause{\mathsf{then}(\mathsf{just}(f)) \;\deq\; [\text{\$}f\text{\$}]}{\leanslot{Imprimatur.Layout.conclToks}{A conclusion, in words}}\\
+\LeanClause{\mathsf{then}(\mathsf{all}(\mathit{fs})) \;\deq\; \mathsf{list}(\mathsf{numbered}_{1}(\mathit{fs}))}{}\\
+\LeanClause{\mathsf{then}(\mathsf{iff}(\mathit{lhs}, \mathit{rhs})) \;\deq\; [\text{\$}\mathit{lhs}\text{\$},\ \text{`` if and only if ''},\ \text{\$}\mathit{rhs}\text{\$}]}{}\\
+\LeanClause{\mathsf{then}(\mathsf{some}(w, \mathit{body})) \;\deq\; \text{``there is ''} \mathbin{::} \text{\$}w\text{\$} \mathbin{::} \text{`` such that ''} \mathbin{::} \mathsf{then}(\mathit{body})}{}\\
+\LeanClause{\mathsf{let}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.letToks}{The \emph{Let} sentence, if there are variables}}\\
+\LeanClause{\mathsf{let}(g \mathbin{::} \mathit{gs}) \;\deq\; [\text{``Let ''} \mathbin{::} \mathsf{list}(\LeanMathConst{List.map}\,\LeanMathConst{groupToks}\,(g \mathbin{::} \mathit{gs}))]}{}\\
+\LeanClause{\mathsf{assume}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.assumeToks}{The \emph{Assume} sentence, if there are hypotheses}}\\
+\LeanClause{\mathsf{assume}(\mathit{hy} \mathbin{::} \mathit{hs}) \;\deq\; [\text{``Assume ''} \mathbin{::} \mathsf{list}(\LeanMathConst{List.map}\,\LeanMathConst{hypToks}\,(\mathit{hy} \mathbin{::} \mathit{hs}))]}{}\\
+\LeanClause{\mathsf{thenKw}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.thenKw}{\emph{Then}, after another sentence}}\\
+\LeanClause{\mathsf{thenKw}(\_ \mathbin{::} \_) \;\deq\; [\text{``Then ''}]}{}\\
+\LeanClause{\mathsf{then}(\mathit{before}, c) \;\deq\; \mathsf{thenKw}(\mathit{before}) \mathbin{+\!\!+} \mathsf{then}(c)}{\leanslot{Imprimatur.Layout.thenToks}{The \emph{Then} sentence}}\\
+\LeanClause{\mathsf{sentences}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.sentencesToks}{Sentences, each ending with a full stop, separated by a space}}\\
+\LeanClause{\mathsf{sentences}([y]) \;\deq\; y}{}\\
+\LeanClause{\mathsf{sentences}(y \mathbin{::} z \mathbin{::} \mathit{zs}) \;\deq\; y \mathbin{+\!\!+} \text{``. ''} \mathbin{::} \mathsf{sentences}(z \mathbin{::} \mathit{zs})}{}\\
+\LeanClause{\mathsf{statement}(s) \;\deq\; \mathsf{sentences}(\mathsf{let}(s.\mathit{vars}) \mathbin{+\!\!+} \mathsf{assume}(s.\mathit{hyps}) \mathbin{+\!\!+} [\mathsf{then}(\mathsf{let}(s.\mathit{vars}) \mathbin{+\!\!+} \mathsf{assume}(s.\mathit{hyps}), s.\mathit{concl})]) \mathbin{+\!\!+} [\text{``.\}''}]}{\leanslot{Imprimatur.Layout.statementToks}{The tokens of a theorem's sentence, after \LeanCodeInline{\textbackslash{}LeanProse\{}: its sentences, and the end}}\\
+\LeanClause{\mathsf{toks}(\mathsf{define}(f)) \;\deq\; [\text{``\textbackslash{}LeanProse\{''},\ \text{``We define ''},\ \text{\$}f\text{\$},\ \text{``.\}''}]}{\leanslot{Imprimatur.Layout.proseToks}{The tokens of the prose view}}\\
+\LeanClause{\mathsf{toks}(\mathsf{statement}(s)) \;\deq\; \text{``\textbackslash{}LeanProse\{''} \mathbin{::} \mathsf{statement}(s)}{}\\
+\LeanClause{\mathsf{text}(a) \;\deq\; \mathsf{spelling}(a)}{\leanslot{Imprimatur.Layout.tokChars}{The text of a token}}\\
+\LeanClause{\mathsf{text}(\text{\$}l\text{\$}) \;\deq\; \LeanMathConst{Char.ofNat}\,36 \mathbin{::} l \mathbin{+\!\!+} [\LeanMathConst{Char.ofNat}\,36]}{}\\
+\LeanClause{\mathsf{text}(\mathsf{label}(l)) \;\deq\; \mathsf{labelOpen} \mathbin{+\!\!+} l \mathbin{+\!\!+} [\LeanMathConst{Char.ofNat}\,125,\ \LeanMathConst{Char.ofNat}\,32]}{}\\
+\LeanClause{\mathsf{text}(\mathsf{item}(l)) \;\deq\; \LeanMathConst{Char.ofNat}\,40 \mathbin{::} l \mathbin{+\!\!+} [\LeanMathConst{Char.ofNat}\,41,\ \LeanMathConst{Char.ofNat}\,126]}{}\\
+\LeanClause{\mathsf{text}(\mathit{ts}) \;\deq\; \LeanMathConst{List.flatten}\,(\LeanMathConst{List.map}\,\LeanMathConst{tokChars}\,\mathit{ts})}{\leanslot{Imprimatur.Layout.printToks}{The text of tokens, in order}}\\
+\LeanClause{\mathsf{layout}(\mathit{pr}) \;\deq\; \mathsf{chars}(\mathit{pr})}{\leanslot{Imprimatur.Layout.proseLayout}{The prose layout, as a string}}
 \end{LeanDisplay}
 \end{leandef}
 
-Each formula is in dollars, so the parser can take the sentence apart
-again: it splits the text at its dollars, pairs each formula with the text
-before it, and sorts the formulas into their parts by that text,
-\emph{Let} and \emph{Assume} starting a part, a comma or \emph{and}
-continuing one. It is lenient, since it need only undo the layout: other
-text starts the conclusion, and text with no formula after it is dropped.
+The parser takes the text apart again, in two steps. A lexer reads the
+tokens back: a formula at a dollar, an item number at a parenthesis, a
+label at \verb|\LeanHyp{|, and otherwise the word at the front, no word
+being a prefix of another. Then the sentence is read off the tokens,
+\emph{Let} and \emph{Assume} starting a sentence, a comma or \emph{and}
+continuing one, and a group's names coming apart from each other at
+commas and from their type at \verb|\in|:
 
-\begin{leandef}[sum=JrB0fd9Tu8, dflt=oqlFp-yxwf]{The prose parser}{The prose parser}
+\begin{leandef}[sum=ogjquOsFzs, dflt=L1S9ztjLWQ]{The prose parser}{The prose parser}
 \begin{LeanDisplay}
-\LeanClause{c \triangleright [] \;\deq\; [[c]]}{\leanslot{SpliceModel.pushChar}{Put a character at the front of the first piece}}\\
-\LeanClause{c \triangleright (w \mathbin{::} \mathit{ws}) \;\deq\; (c \mathbin{::} w) \mathbin{::} \mathit{ws}}{}\\
-\LeanClause{\mathsf{split}([]) \;\deq\; [[]]}{\leanslot{SpliceModel.splitDollar}{Split text at each dollar}}\\
-\LeanClause{\mathsf{split}(c \mathbin{::} \mathit{cs}) \;\deq\; \mathsf{if}\ c = \texttt{\$}\ \mathsf{then}\ [] \mathbin{::} \mathsf{split}(\mathit{cs})\ \mathsf{else}\ c \triangleright \mathsf{split}(\mathit{cs})}{}\\
-\LeanClause{\mathsf{unjoin}([]) \;\deq\; []}{\leanslot{SpliceModel.unjoin}{Pair each formula with the text before it, from the pieces between dollars}}\\
-\LeanClause{\mathsf{unjoin}([\_]) \;\deq\; []}{}\\
-\LeanClause{\mathsf{unjoin}(s \mathbin{::} f \mathbin{::} \mathit{rest}) \;\deq\; (s, f) \mathbin{::} \mathsf{unjoin}(\mathit{rest})}{}\\
-\LeanClause{\mathsf{opener}(s) \;\deq\; \mathsf{if}\ s = \text{``\textbackslash{}LeanProse\{Let ''}\ \mathsf{then}\ \mathsf{let}\ \mathsf{else}\ (\mathsf{if}\ s = \text{``\textbackslash{}LeanProse\{Assume ''} \vee s = \text{``. Assume ''}\ \mathsf{then}\ \mathsf{assume}\ \mathsf{else}\ \mathsf{then})}{\leanslot{SpliceModel.opener}{The part that a text starts: \LeanCodeInline{Let} the variables, \LeanCodeInline{Assume} the hypotheses, and otherwise the conclusion}}\\
-\LeanClause{\mathsf{sep}(s) \;\deq\; s = \text{``, ''} \vee s = \text{`` and ''}}{\leanslot{SpliceModel.IsSep}{The text between formulas of one part}}\\
-\LeanClause{\mathsf{next}_{\mathit{sec}}(s) \;\deq\; \mathsf{if}\ \mathsf{sep}(s)\ \mathsf{then}\ \mathit{sec}\ \mathsf{else}\ \mathsf{opener}(s)}{\leanslot{SpliceModel.nextSec}{The part of a formula, from the part before it and the text before it: a separator continues the part, and other text starts one}}\\
-\LeanClause{\mathsf{add}_{\mathsf{let}}(f, (\mathit{vs}, \mathit{hs}, \mathit{cs})) \;\deq\; (f \mathbin{::} \mathit{vs}, \mathit{hs}, \mathit{cs})}{\leanslot{SpliceModel.Sec.add}{Add a formula to a part}}\\
-\LeanClause{\mathsf{add}_{\mathsf{assume}}(f, (\mathit{vs}, \mathit{hs}, \mathit{cs})) \;\deq\; (\mathit{vs}, f \mathbin{::} \mathit{hs}, \mathit{cs})}{}\\
-\LeanClause{\mathsf{add}_{\mathsf{then}}(f, (\mathit{vs}, \mathit{hs}, \mathit{cs})) \;\deq\; (\mathit{vs}, \mathit{hs}, f \mathbin{::} \mathit{cs})}{}\\
-\LeanClause{\mathsf{sort}_{\mathit{sec}}([]) \;\deq\; ([], [], [])}{\leanslot{SpliceModel.sortParts}{Sort formulas into parts, by the text before each}}\\
-\LeanClause{\mathsf{sort}_{\mathit{sec}}((s, f) \mathbin{::} \mathit{ps}) \;\deq\; \mathsf{add}_{\mathsf{next}_{\mathit{sec}}(s)}(f, \mathsf{sort}_{\mathsf{next}_{\mathit{sec}}(s)}(\mathit{ps}))}{}\\
-\LeanClause{\mathsf{telescope}((\mathit{vs}, \mathit{hs}, [c])) \;\deq\; \langle \mathit{vs}, \mathit{hs}, c \rangle}{\leanslot{SpliceModel.ofParts}{A sentence whose conclusion is one formula}}\\
-\LeanClause{\mathsf{telescope}((\_, \_, [])) \;\deq\; \mathsf{none}}{}\\
-\LeanClause{\mathsf{telescope}((\_, \_, \_ \mathbin{::} \_ \mathbin{::} \_)) \;\deq\; \mathsf{none}}{}\\
-\LeanClause{\mathsf{sentence}([\mathsf{gen}(s)]) \;\deq\; \mathsf{telescope}(\mathsf{sort}_{\mathsf{then}}(\mathsf{unjoin}(\mathsf{split}(s))))}{\leanslot{SpliceModel.proseSentence}{\textbf{The prose parser.} A sentence taken apart}}\\
-\LeanClause{\mathsf{sentence}(r) \;\deq\; \mathsf{none}}{}
+\LeanClause{\mathsf{groups}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{`` be a type''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterGroup}_{\mathit{acc}}(\langle \mathsf{splitAll}_{\mathsf{commaSep}}(f), \text{a type}\rangle, \mathit{ts})}{\leanslot{Imprimatur.Layout.parseGroups}{The groups of a \emph{Let} sentence, onto \LeanCodeInline{acc} (held reversed): a formula, then its kind, then what follows it}}\\
+\LeanClause{\mathsf{groups}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{`` be types''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterGroup}_{\mathit{acc}}(\langle \mathsf{splitAll}_{\mathsf{commaSep}}(f), \text{a type}\rangle, \mathit{ts})}{}\\
+\LeanClause{\mathsf{groups}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{`` be a proposition''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterGroup}_{\mathit{acc}}(\langle \mathsf{splitAll}_{\mathsf{commaSep}}(f), \text{a proposition}\rangle, \mathit{ts})}{}\\
+\LeanClause{\mathsf{groups}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{`` be propositions''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterGroup}_{\mathit{acc}}(\langle \mathsf{splitAll}_{\mathsf{commaSep}}(f), \text{a proposition}\rangle, \mathit{ts})}{}\\
+\LeanClause{\mathsf{groups}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{ofType}_{\mathit{acc}}(\mathit{ts}, \mathsf{splitFirst}_{\mathsf{inSep}}(f))}{}\\
+\LeanClause{\mathsf{groups}_{\mathit{acc}}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{ofType}_{\mathit{acc}}(\mathit{ts}, (\mathit{ns}, \mathit{ty})) \;\deq\; \mathsf{afterGroup}_{\mathit{acc}}(\langle \mathsf{splitAll}_{\mathsf{commaSep}}(\mathit{ns}), {\in}\, \mathit{ty}\rangle, \mathit{ts})}{\leanslot{Imprimatur.Layout.ofTypeGroup}{A group of a type: its names and its type, if they come apart}}\\
+\LeanClause{\mathsf{ofType}_{\mathit{acc}}(\mathit{ts}, \mathsf{none}) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{afterGroup}_{\mathit{acc}}(g, \text{``, ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{groups}_{g \mathbin{::} \mathit{acc}}(\mathit{ts})}{\leanslot{Imprimatur.Layout.afterGroup}{After a group: another, or the end of the sentence}}\\
+\LeanClause{\mathsf{afterGroup}_{\mathit{acc}}(g, \text{`` and ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{groups}_{g \mathbin{::} \mathit{acc}}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{afterGroup}_{\mathit{acc}}(g, \text{``. ''} \mathbin{::} \mathit{ts}) \;\deq\; (\LeanMathConst{List.reverse}\,(g \mathbin{::} \mathit{acc}), \mathit{ts})}{}\\
+\LeanClause{\mathsf{afterGroup}_{\mathit{acc}}(g, x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(\mathsf{label}(n) \mathbin{::} \text{\$}f\text{\$} \mathbin{::} \text{``, ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{hyps}_{\langle n, f\rangle \mathbin{::} \mathit{acc}}(\mathit{ts})}{\leanslot{Imprimatur.Layout.parseHyps}{The hypotheses of an \emph{Assume} sentence, onto \LeanCodeInline{acc} (held reversed): each labelled or not, then what follows it; the sentence ends before \emph{Then}}}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(\mathsf{label}(n) \mathbin{::} \text{\$}f\text{\$} \mathbin{::} \text{`` and ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{hyps}_{\langle n, f\rangle \mathbin{::} \mathit{acc}}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(\mathsf{label}(n) \mathbin{::} \text{\$}f\text{\$} \mathbin{::} \text{``. ''} \mathbin{::} \text{``Then ''} \mathbin{::} \mathit{ts}) \;\deq\; (\LeanMathConst{List.reverse}\,(\langle n, f\rangle \mathbin{::} \mathit{acc}), \mathit{ts})}{}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{``, ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{hyps}_{\langle \mathsf{none}, f\rangle \mathbin{::} \mathit{acc}}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{`` and ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{hyps}_{\langle \mathsf{none}, f\rangle \mathbin{::} \mathit{acc}}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(\text{\$}f\text{\$} \mathbin{::} \text{``. ''} \mathbin{::} \text{``Then ''} \mathbin{::} \mathit{ts}) \;\deq\; (\LeanMathConst{List.reverse}\,(\langle \mathsf{none}, f\rangle \mathbin{::} \mathit{acc}), \mathit{ts})}{}\\
+\LeanClause{\mathsf{hyps}_{\mathit{acc}}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{items}_{\mathit{acc}}(\text{``, ''} \mathbin{::} \mathsf{item}(\_) \mathbin{::} \text{\$}f\text{\$} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{items}_{f \mathbin{::} \mathit{acc}}(\mathit{ts})}{\leanslot{Imprimatur.Layout.parseItems}{The conjuncts after the first, onto \LeanCodeInline{acc} (held reversed)}}\\
+\LeanClause{\mathsf{items}_{\mathit{acc}}(\text{`` and ''} \mathbin{::} \mathsf{item}(\_) \mathbin{::} \text{\$}f\text{\$} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{items}_{f \mathbin{::} \mathit{acc}}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{items}_{\mathit{acc}}(x) \;\deq\; (\mathsf{all}(\LeanMathConst{List.reverse}\,\mathit{acc}), x)}{}\\
+\LeanClause{\mathsf{afterSuch}(w, (c, \mathit{rest})) \;\deq\; (\mathsf{some}(w, c), \mathit{rest})}{\leanslot{Imprimatur.Layout.afterSuch}{The conclusion after \emph{there is w such that}, once the rest is read}}\\
+\LeanClause{\mathsf{afterSuch}(w, \mathsf{none}) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{concl}(\text{``there is ''} \mathbin{::} \text{\$}w\text{\$} \mathbin{::} \text{`` such that ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterSuch}(w, \mathsf{concl}(\mathit{ts}))}{\leanslot{Imprimatur.Layout.parseConcl}{A conclusion}}\\
+\LeanClause{\mathsf{concl}(\mathsf{item}(\_) \mathbin{::} \text{\$}f\text{\$} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{items}_{[f]}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{concl}(\text{\$}\mathit{lhs}\text{\$} \mathbin{::} \text{`` if and only if ''} \mathbin{::} \text{\$}\mathit{rhs}\text{\$} \mathbin{::} \mathit{ts}) \;\deq\; (\mathsf{iff}(\mathit{lhs}, \mathit{rhs}), \mathit{ts})}{}\\
+\LeanClause{\mathsf{concl}(\text{\$}f\text{\$} \mathbin{::} \mathit{ts}) \;\deq\; (\mathsf{just}(f), \mathit{ts})}{}\\
+\LeanClause{\mathsf{concl}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{finishWith}(\mathit{gs}, \mathit{hs}, (c, [\text{``.\}''}])) \;\deq\; \langle \mathit{gs}, \mathit{hs}, c\rangle}{\leanslot{Imprimatur.Layout.finishWith}{The sentence, once its conclusion ends the text}}\\
+\LeanClause{\mathsf{finishWith}(\mathit{gs}, \mathit{hs}, x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{finish}(\mathit{gs}, \mathit{hs}, \mathit{ts}) \;\deq\; \mathsf{finishWith}(\mathit{gs}, \mathit{hs}, \mathsf{concl}(\mathit{ts}))}{\leanslot{Imprimatur.Layout.finish}{The conclusion, which ends the sentence}}\\
+\LeanClause{\mathsf{afterAssume}(\mathit{gs}, (\mathit{hs}, \mathit{ts})) \;\deq\; \mathsf{finish}(\mathit{gs}, \mathit{hs}, \mathit{ts})}{\leanslot{Imprimatur.Layout.afterAssume}{After the hypotheses: the conclusion}}\\
+\LeanClause{\mathsf{afterAssume}(\mathit{gs}, \mathsf{none}) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{afterLet}((\mathit{gs}, \text{``Assume ''} \mathbin{::} \mathit{ts})) \;\deq\; \mathsf{afterAssume}(\mathit{gs}, \mathsf{hyps}_{[]}(\mathit{ts}))}{\leanslot{Imprimatur.Layout.afterLet}{After the groups: the hypotheses, or the conclusion}}\\
+\LeanClause{\mathsf{afterLet}((\mathit{gs}, \text{``Then ''} \mathbin{::} \mathit{ts})) \;\deq\; \mathsf{finish}(\mathit{gs}, [], \mathit{ts})}{}\\
+\LeanClause{\mathsf{afterLet}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{statement}(\text{``Let ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterLet}(\mathsf{groups}_{[]}(\mathit{ts}))}{\leanslot{Imprimatur.Layout.parseStatement}{A theorem's sentence, after \LeanCodeInline{\textbackslash{}LeanProse\{}}}\\
+\LeanClause{\mathsf{statement}(\text{``Assume ''} \mathbin{::} \mathit{ts}) \;\deq\; \mathsf{afterAssume}([], \mathsf{hyps}_{[]}(\mathit{ts}))}{}\\
+\LeanClause{\mathsf{statement}(x) \;\deq\; \mathsf{finish}([], [], x)}{}\\
+\LeanClause{\mathsf{parse}([\text{``\textbackslash{}LeanProse\{''},\ \text{``We define ''},\ \text{\$}f\text{\$},\ \text{``.\}''}]) \;\deq\; \mathsf{define}(f)}{\leanslot{Imprimatur.Layout.parseProse}{The prose view, from its tokens}}\\
+\LeanClause{\mathsf{parse}(\text{``\textbackslash{}LeanProse\{''} \mathbin{::} \mathit{ts}) \;\deq\; \LeanMathConst{Option.map}\,\LeanMathConst{Prose.statement}\,\mathsf{statement}(\mathit{ts})}{}\\
+\LeanClause{\mathsf{parse}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{sentence}(\mathit{cs}) \;\deq\; \LeanMathConst{Option.bind}\,\mathsf{lex}(\mathit{cs})\,\LeanMathConst{parseProse}}{\leanslot{Imprimatur.Layout.proseSentence}{\textbf{The prose parser:} the prose view, taken apart}}
 \end{LeanDisplay}
 \end{leandef}
 
-The parser undoes the layout when every formula is plain, with no dollar
-in it:
+The parser undoes the layout when what it is given is plain: no formula
+has a dollar in it, no name has a comma-space, a group's names have no
+\verb|\in|, a group has a name, a conjunction a conjunct, and no label a
+closing brace. This is the extractor's layout and the extractor's parser,
+so the theorem is about the code that runs:
 
-\begin{leantheorem}[sum=qxVHw8jbxX]{The prose parser undoes the layout}{The prose parser undoes the layout}
+\begin{leantheorem}[sum=9XeApCtqKz]{The prose parser undoes the layout}{The prose parser undoes the layout}
 \label{thm:The-prose-parser-undoes-the-layout}
-\LeanProse{Let $t \in \texttt{Telescope}(\mathit{TeX})$. Assume $\forall f : \mathit{TeX},\ f \in t.\mathit{vars} \vee f \in t.\mathit{hyps} \vee f = t.\mathit{concl} \implies \mathsf{plain}(f)$. Then $\mathsf{sentence}(\mathsf{layout}(t)) = t$.}
+\LeanProse{Let $\mathit{pr} \in \texttt{Prose}(\mathsf{List}(\mathit{Char}))$. Assume $\mathsf{plain}(\mathit{pr})$. Then $\mathsf{sentence}(\mathsf{layout}(\mathit{pr})) = \mathit{pr}$.}
 \end{leantheorem}
 
-Reading back undoes printing: the parser takes the sentence apart, and the
-formulas read back as parts, one by one and in order. For rules it is the
-same, with a figure for a sentence:
+Printing a predicate in the \texttt{rules} view is the same three steps,
+with a figure for a sentence: the anatomy says which rules its
+constructors are, the notation prints each premise and conclusion, and the
+layout sets the rules out as the figure.
 
-\begin{leandef}[sum=xn-2qTRHtT, dflt=797FAJ_VEY]{Reading two views}{Reading two views}
+\begin{leandef}[sum=kUNzlKsN1c, dflt=Q-8Y76pGB2]{Printing rules}{Printing rules}
 \begin{LeanDisplay}
-\LeanClause{[] \rightsquigarrow^{*}_{\mathcal{A}} [] \;\deq\; \top}{\leanslot{SpliceModel.Anatomy.ReadsAll}{Formulas read back as parts, one by one}}\\
-\LeanClause{f \mathbin{::} \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} q \mathbin{::} \mathit{qs} \;\deq\; f \rightsquigarrow_{\mathcal{A}} q \wedge \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} \mathit{qs}}{}\\
-\LeanClause{[] \rightsquigarrow^{*}_{\mathcal{A}} \_ \mathbin{::} \_ \;\deq\; \bot}{}\\
-\LeanClause{\_ \mathbin{::} \_ \rightsquigarrow^{*}_{\mathcal{A}} [] \;\deq\; \bot}{}\\
-\LeanClause{t \rightsquigarrow^{\mathsf{let}}_{\mathcal{A}} u \;\deq\; t.\mathit{vars} \rightsquigarrow^{*}_{\mathcal{A}} u.\mathit{vars} \wedge t.\mathit{hyps} \rightsquigarrow^{*}_{\mathcal{A}} u.\mathit{hyps} \wedge t.\mathit{concl} \rightsquigarrow_{\mathcal{A}} u.\mathit{concl}}{\leanslot{SpliceModel.Anatomy.ReadsTelescope}{A sentence reads back as a proposition: Let as its variables, Assume as its hypotheses, Then as its conclusion}}\\
-\LeanClause{f \rightsquigarrow^{\mathsf{rule}}_{\mathcal{A}} q \;\deq\; f.\mathit{name} = q.\mathit{name} \wedge f.\mathit{premises} \rightsquigarrow^{*}_{\mathcal{A}} q.\mathit{premises} \wedge f.\mathit{concl} \rightsquigarrow_{\mathcal{A}} q.\mathit{concl}}{\leanslot{SpliceModel.Anatomy.ReadsRule}{A rule reads back as a constructor: the same name, premises as its hypotheses, conclusion as its conclusion}}\\
-\LeanClause{[] \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} [] \;\deq\; \top}{\leanslot{SpliceModel.Anatomy.ReadsRules}{Rules read back as constructors, one by one}}\\
-\LeanClause{f \mathbin{::} \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} q \mathbin{::} \mathit{qs} \;\deq\; f \rightsquigarrow^{\mathsf{rule}}_{\mathcal{A}} q \wedge \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \mathit{qs}}{}\\
-\LeanClause{[] \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \_ \mathbin{::} \_ \;\deq\; \bot}{}\\
-\LeanClause{\_ \mathbin{::} \_ \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} [] \;\deq\; \bot}{}\\
-\LeanClause{\mathit{prose}_{\mathcal{A}}(r, S) \;\deq\; \exists t,\ \exists u,\ \mathsf{sentence}(r) = t \wedge \mathit{telescope}_{\mathcal{A}}(S) = u \wedge t \rightsquigarrow^{\mathsf{let}}_{\mathcal{A}} u}{\leanslot{SpliceModel.Anatomy.Prose}{A prose rendering shows a statement: the sentence and the proposition come apart, and the one reads back as the other}}\\
-\LeanClause{\mathit{rules}_{\mathcal{A}}(r, S) \;\deq\; \exists \mathit{fs},\ \exists \mathit{qs},\ \mathit{figure}_{\mathcal{A}}(r) = \mathit{fs} \wedge \mathit{ctors}_{\mathcal{A}}(S) = \mathit{qs} \wedge \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \mathit{qs}}{\leanslot{SpliceModel.Anatomy.Rules}{A rules rendering shows a statement: the figure and the predicate come apart, and each rule reads back as a constructor, in order}}
+\LeanClause{r = \mathit{print}^{\mathsf{rules}}_{\mathcal{A}}(S) \;\deq\; \exists \mathit{qs},\ \mathit{ctors}_{\mathcal{A}}(S) = \mathit{qs} \wedge r = [\mathsf{gen}(\mathsf{figure}(\mathsf{items}(\mathit{print}^{*}_{\mathcal{A}}(\mathit{qs}))))]}{\leanslot{SpliceModel.Anatomy.PrintsRules}{A body is a statement printed in the rules view: the rules the view says its constructors are, each formula printed by the notation, and the rules set out as the figure by the extractor's layout}}\\
+\LeanClause{\mathit{faithful}^{\mathsf{rules}}_{\mathcal{A}}(S) \;\deq\; \forall \mathit{qs} : \mathsf{List}(\texttt{Rule}(\mathit{Part}_{\mathcal{A}})),\ \mathit{ctors}_{\mathcal{A}}(S) = \mathit{qs} \implies (\forall q \in \LeanMathConst{List.flatten}\,(\LeanMathConst{List.map}\,\LeanMathConst{Rule.parts}\,\mathit{qs}),\ \mathit{print}_{\mathcal{A}}(q) \rightsquigarrow_{\mathcal{A}} q)}{\leanslot{SpliceModel.Anatomy.FaithfulRules}{The notation is faithful on a predicate: each part its rules show, printed, reads back as itself}}
 \end{LeanDisplay}
 \end{leandef}
 
-An anatomy is sound when it is the world's. For prose: every formula the
-notation prints is plain; the world prints prose as the anatomy does, with
-the layout; and a prose rendering that reads back is faithful, formula by
-formula. For rules, still taken whole: a rendering has no slots, and one
-that reads back reads back part by part. Of the three for prose, the first
-is a property of the notation, the second is how the extractor prints, and
-the third is what the validator checks of each formula it renders
+The layout prints the figure line by line:
+\texttt{\textbackslash{}begin\{mathpar\}}, then each rule between blank
+lines, with \texttt{\textbackslash{}and} after it but the last, then
+\texttt{\textbackslash{}end\{mathpar\}}. A rule is its mark, if any, its
+header \texttt{\textbackslash{}inferrule[label]}, its premises between
+braces, one per line and each but the last ended by
+\texttt{\textbackslash{}\textbackslash{}}, and its conclusion in braces.
+
+\begin{leangrammar}[sum=1l1nnfyheG, dflt=G4hMXcQ6iN]{Lines}{Lines}
+\label{gram:Lines}\begin{LeanDisplay}
+\LeanCategory{\mathit{Line}}{\leanslot{Imprimatur.Layout.Line}{A line of the figure}}\\
+\LeanEntry{\text{``''}}{\leanslot{Imprimatur.Layout.Line.blank}{an empty line}}\\
+\LeanEntry{\text{``\textbackslash{}begin\{mathpar\}''}}{\leanslot{Imprimatur.Layout.Line.beginK}{\LeanCodeInline{\textbackslash{}begin\{mathpar\}}}}\\
+\LeanEntry{\text{``\textbackslash{}end\{mathpar\}''}}{\leanslot{Imprimatur.Layout.Line.endK}{\LeanCodeInline{\textbackslash{}end\{mathpar\}}}}\\
+\LeanEntry{\text{``\textbackslash{}and''}}{\leanslot{Imprimatur.Layout.Line.andK}{\LeanCodeInline{\textbackslash{}and}, between rules}}\\
+\LeanEntry{\text{``\ \ \{''}}{\leanslot{Imprimatur.Layout.Line.openK}{\LeanCodeInline{  \{}, opening the premises}}\\
+\LeanEntry{\text{``\ \ \{ \}''}}{\leanslot{Imprimatur.Layout.Line.openEmpty}{\LeanCodeInline{  \{ \}}, no premises}}\\
+\LeanEntry{\text{``\ \ \}''}}{\leanslot{Imprimatur.Layout.Line.closeK}{\LeanCodeInline{  \}}, closing the premises}}\\
+\LeanEntry{\mathsf{header}(\mathit{label})}{\leanslot{Imprimatur.Layout.Line.header}{\LeanCodeInline{\textbackslash{}inferrule[label]}}}\\
+\LeanEntry{\mathsf{mark}(m, \mathit{label})}{\leanslot{Imprimatur.Layout.Line.mark}{\LeanCodeInline{\textbackslash{}macro\{Key\}\{label\}\%}, before the header}}\\
+\LeanEntry{\mathsf{premise}(\mathit{text})}{\leanslot{Imprimatur.Layout.Line.line}{a premise, indented}}\\
+\LeanEntry{\mathsf{concl}(f)}{\leanslot{Imprimatur.Layout.Line.concl}{\LeanCodeInline{  \{ f \}}, the conclusion}}\\
+\LeanEntry{\mathsf{comment}(\mathit{name})}{\leanslot{Imprimatur.Layout.Line.comment}{\LeanCodeInline{\% name is not a constructor}}}
+\end{LeanDisplay}
+\end{leangrammar}
+
+\begin{leandef}[sum=Nynn0Q5AsE, dflt=dhuno8fhv9]{The rules layout}{The rules layout}
+\begin{LeanDisplay}
+\LeanClause{\mathsf{lineText}(\text{``''}) \;\deq\; []}{\leanslot{Imprimatur.Layout.lineText}{The text of a line}}\\
+\LeanClause{\mathsf{lineText}(\text{``\textbackslash{}begin\{mathpar\}''}) \;\deq\; \text{``\textbackslash{}begin\{mathpar\}''}}{}\\
+\LeanClause{\mathsf{lineText}(\text{``\textbackslash{}end\{mathpar\}''}) \;\deq\; \text{``\textbackslash{}end\{mathpar\}''}}{}\\
+\LeanClause{\mathsf{lineText}(\text{``\textbackslash{}and''}) \;\deq\; \text{``\textbackslash{}and''}}{}\\
+\LeanClause{\mathsf{lineText}(\text{``\ \ \{''}) \;\deq\; \text{``  \{''}}{}\\
+\LeanClause{\mathsf{lineText}(\text{``\ \ \{ \}''}) \;\deq\; \text{``  \{ \}''}}{}\\
+\LeanClause{\mathsf{lineText}(\text{``\ \ \}''}) \;\deq\; \text{``  \}''}}{}\\
+\LeanClause{\mathsf{lineText}(\mathsf{header}(\mathit{label})) \;\deq\; \mathsf{inferOpen} \mathbin{+\!\!+} (\mathit{label} \mathbin{+\!\!+} [\LeanMathConst{Char.ofNat}\,93])}{}\\
+\LeanClause{\mathsf{lineText}(\mathsf{mark}(m, \mathit{label})) \;\deq\; \LeanMathConst{Char.ofNat}\,92 \mathbin{::} (m.\mathit{name} \mathbin{+\!\!+} \LeanMathConst{Char.ofNat}\,123 \mathbin{::} (m.\mathit{key} \mathbin{+\!\!+} \LeanMathConst{Char.ofNat}\,125 \mathbin{::} \LeanMathConst{Char.ofNat}\,123 \mathbin{::} (\mathit{label} \mathbin{+\!\!+} [\LeanMathConst{Char.ofNat}\,125,\ \LeanMathConst{Char.ofNat}\,37])))}{}\\
+\LeanClause{\mathsf{lineText}(\mathsf{premise}(\mathit{text})) \;\deq\; \mathsf{indent} \mathbin{+\!\!+} \mathit{text}}{}\\
+\LeanClause{\mathsf{lineText}(\mathsf{concl}(f)) \;\deq\; \mathsf{conclOpen} \mathbin{+\!\!+} (f \mathbin{+\!\!+} \mathsf{conclClose})}{}\\
+\LeanClause{\mathsf{lineText}(\mathsf{comment}(\mathit{name})) \;\deq\; \text{``\% ''} \mathbin{+\!\!+} \mathit{name} \mathbin{+\!\!+} \text{`` is not a constructor''}}{}\\
+\LeanClause{\mathsf{joinLines}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.joinLines}{Lines, each ended by a newline but the last}}\\
+\LeanClause{\mathsf{joinLines}([l]) \;\deq\; l}{}\\
+\LeanClause{\mathsf{joinLines}(l \mathbin{::} l' \mathbin{::} \mathit{ls}) \;\deq\; l \mathbin{+\!\!+} \LeanMathConst{Char.ofNat}\,10 \mathbin{::} \mathsf{joinLines}(l' \mathbin{::} \mathit{ls})}{}\\
+\LeanClause{\mathsf{premiseLines}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.premiseLines}{The premises, one per line, each but the last ended by \LeanCodeInline{ \textbackslash{}\textbackslash{}}}}\\
+\LeanClause{\mathsf{premiseLines}([l]) \;\deq\; [\mathsf{premise}(l)]}{}\\
+\LeanClause{\mathsf{premiseLines}(l \mathbin{::} l' \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{premise}(l \mathbin{+\!\!+} \mathsf{lineBreak}) \mathbin{::} \mathsf{premiseLines}(l' \mathbin{::} \mathit{ls})}{}\\
+\LeanClause{\mathsf{bodyLines}([], x) \;\deq\; [\text{``\ \ \{ \}''},\ \mathsf{concl}(x)]}{\leanslot{Imprimatur.Layout.bodyLines}{A rule's body: its premises between braces, if any, then its conclusion}}\\
+\LeanClause{\mathsf{bodyLines}(\mathit{pm} \mathbin{::} \mathit{ps}, x) \;\deq\; \text{``\ \ \{''} \mathbin{::} (\mathsf{premiseLines}(\mathit{pm} \mathbin{::} \mathit{ps}) \mathbin{+\!\!+} [\text{``\ \ \}''},\ \mathsf{concl}(x)])}{}\\
+\LeanClause{\mathsf{markLines}(m, x) \;\deq\; [\mathsf{mark}(m, x)]}{\leanslot{Imprimatur.Layout.markLines}{A rule's mark, if it has one}}\\
+\LeanClause{\mathsf{markLines}(\mathsf{none}, \_) \;\deq\; []}{}\\
+\LeanClause{\mathsf{ruleLines}(\mathit{ru}) \;\deq\; \mathsf{markLines}(\mathit{ru}.\mathit{mark}, \mathit{ru}.\mathit{label}) \mathbin{+\!\!+} \mathsf{header}(\mathit{ru}.\mathit{label}) \mathbin{::} \mathsf{bodyLines}(\mathit{ru}.\mathit{premises}, \mathit{ru}.\mathit{concl})}{\leanslot{Imprimatur.Layout.ruleLines}{A rule's lines: its mark, its header, its body}}\\
+\LeanClause{\mathsf{itemLines}(\mathsf{rule}(\mathit{ru})) \;\deq\; \text{``''} \mathbin{::} (\mathsf{ruleLines}(\mathit{ru}) \mathbin{+\!\!+} [\text{``''},\ \text{``\textbackslash{}and''}])}{\leanslot{Imprimatur.Layout.itemLines}{An item's lines: a rule between blank lines, then \LeanCodeInline{\textbackslash{}and}; or a comment}}\\
+\LeanClause{\mathsf{itemLines}(\mathsf{missing}(\mathit{name})) \;\deq\; [\mathsf{comment}(\mathit{name})]}{}\\
+\LeanClause{\mathsf{trimAnd}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.trimAnd}{The lines less a final \LeanCodeInline{\textbackslash{}and}}}\\
+\LeanClause{\mathsf{trimAnd}([\text{``\textbackslash{}and''}]) \;\deq\; []}{}\\
+\LeanClause{\mathsf{trimAnd}(l \mathbin{::} \mathit{ls}) \;\deq\; l \mathbin{::} \mathsf{trimAnd}(\mathit{ls})}{}\\
+\LeanClause{\mathsf{figureLines}(\mathit{items}) \;\deq\; \text{``\textbackslash{}begin\{mathpar\}''} \mathbin{::} \mathsf{trimAnd}(\LeanMathConst{List.flatten}\,(\LeanMathConst{List.map}\,\LeanMathConst{itemLines}\,\mathit{items})) \mathbin{+\!\!+} [\text{``\textbackslash{}end\{mathpar\}''}]}{\leanslot{Imprimatur.Layout.figureLines}{The figure's lines: \LeanCodeInline{\textbackslash{}begin\{mathpar\}}, the items' lines less the \LeanCodeInline{\textbackslash{}and} after the last, \LeanCodeInline{\textbackslash{}end\{mathpar\}}}}\\
+\LeanClause{\mathsf{figureChars}(\mathit{items}) \;\deq\; \mathsf{joinLines}(\LeanMathConst{List.map}\,\LeanMathConst{lineText}\,\mathsf{figureLines}(\mathit{items}))}{\leanslot{Imprimatur.Layout.figureChars}{The text of the figure}}\\
+\LeanClause{\mathsf{figure}(\mathit{items}) \;\deq\; \mathsf{figureChars}(\mathit{items})}{\leanslot{Imprimatur.Layout.figureLayout}{The rules layout, as a string}}
+\end{LeanDisplay}
+\end{leandef}
+
+The parser reads the lines back, each by its shape: blank, a keyword
+line, a mark (which ends in \texttt{\%}), a header, an indented premise or
+a conclusion in braces. Then the figure's body comes apart at its
+\texttt{\textbackslash{}and} lines, and each chunk is read as a rule:
+
+\begin{leandef}[sum=_Y54auDUFQ, dflt=JD3QBXbh0s]{The rules parser}{The rules parser}
+\begin{LeanDisplay}
+\LeanClause{\mathsf{premises}_{\mathit{ps}}(\mathsf{premise}(\mathit{pm}) \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{next}_{\mathit{ps}}(\mathit{pm}, \mathit{ls})}{\leanslot{Imprimatur.Layout.parsePremises}{The premises up to the closing brace, onto \LeanCodeInline{ps} (held reversed)}}\\
+\LeanClause{\mathsf{premises}_{\mathit{ps}}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{next}_{\mathit{ps}}(\mathit{pm}, \text{``\ \ \}''} \mathbin{::} \mathit{ls}) \;\deq\; (\LeanMathConst{List.reverse}\,(\mathit{pm} \mathbin{::} \mathit{ps}), \mathit{ls})}{\leanslot{Imprimatur.Layout.premiseNext}{After a premise: the closing brace, so it was the last; or another, so it ends in \LeanCodeInline{ \textbackslash{}\textbackslash{}}}}\\
+\LeanClause{\mathsf{next}_{\mathit{ps}}(\mathit{pm}, \mathsf{premise}(\mathit{pm}') \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{unbreak}_{\mathit{ps}}(\mathsf{dropSuffix}(\mathsf{lineBreak}, \mathit{pm}), \mathsf{premise}(\mathit{pm}') \mathbin{::} \mathit{ls})}{}\\
+\LeanClause{\mathsf{next}_{\mathit{ps}}(\mathit{pm}, x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{unbreak}_{\mathit{ps}}(\mathit{pm}, x) \;\deq\; \mathsf{premises}_{\mathit{pm} \mathbin{::} \mathit{ps}}(x)}{\leanslot{Imprimatur.Layout.unbreak}{A premise less its \LeanCodeInline{ \textbackslash{}\textbackslash{}}, then the rest}}\\
+\LeanClause{\mathsf{unbreak}_{\mathit{ps}}(\mathsf{none}, \_) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{withPremises}(\mathit{mark}, \mathit{label}, (\mathit{ps}, \mathsf{concl}(c) \mathbin{::} \mathit{ls})) \;\deq\; (\langle \mathit{mark}, \mathit{label}, \mathit{ps}, c\rangle, \mathit{ls})}{\leanslot{Imprimatur.Layout.withPremises}{The rule, once its premises are read: its conclusion follows them}}\\
+\LeanClause{\mathsf{withPremises}(\mathit{mark}, \mathit{label}, x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{body}(\mathit{mark}, \mathit{label}, \text{``\ \ \{ \}''} \mathbin{::} \mathsf{concl}(c) \mathbin{::} \mathit{ls}) \;\deq\; (\langle \mathit{mark}, \mathit{label}, [], c\rangle, \mathit{ls})}{\leanslot{Imprimatur.Layout.parseBody}{A rule's body: no premises and its conclusion, or its premises}}\\
+\LeanClause{\mathsf{body}(\mathit{mark}, \mathit{label}, \text{``\ \ \{''} \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{withPremises}(\mathit{mark}, \mathit{label}, \mathsf{premises}_{[]}(\mathit{ls}))}{}\\
+\LeanClause{\mathsf{body}(\mathit{mark}, \mathit{label}, x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{parseRule}(\mathsf{mark}(m, \mathit{label}) \mathbin{::} \mathsf{header}(\mathit{label}') \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{if}\ \mathit{label} = \mathit{label}'\ \mathsf{then}\ \mathsf{body}(m, \mathit{label}, \mathit{ls})\ \mathsf{else}\ \mathsf{none}}{\leanslot{Imprimatur.Layout.parseRule}{A rule: its mark, if any, then its header, then its body}}\\
+\LeanClause{\mathsf{parseRule}(\mathsf{header}(\mathit{label}) \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{body}(\mathsf{none}, \mathit{label}, \mathit{ls})}{}\\
+\LeanClause{\mathsf{parseRule}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{ruleOf}((\mathit{ru}, [\text{``''}])) \;\deq\; \mathit{ru}}{\leanslot{Imprimatur.Layout.ruleOf}{A rule, which must end its chunk}}\\
+\LeanClause{\mathsf{ruleOf}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{chunk}(\text{``''} \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{ruleOf}(\mathsf{parseRule}(\mathit{ls}))}{\leanslot{Imprimatur.Layout.parseChunk}{A chunk between \LeanCodeInline{\textbackslash{}and}s: a blank line, then a rule}}\\
+\LeanClause{\mathsf{chunk}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{consRule}(\mathit{ru}, \mathit{rs}) \;\deq\; \mathit{ru} \mathbin{::} \mathit{rs}}{\leanslot{Imprimatur.Layout.consRule}{A rule, onto rules}}\\
+\LeanClause{\mathsf{consRule}(\mathsf{none}, \_) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{consRule}(\_, \mathsf{none}) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{chunks}([]) \;\deq\; []}{\leanslot{Imprimatur.Layout.parseChunks}{The rules of the chunks}}\\
+\LeanClause{\mathsf{chunks}(\mathit{ch} \mathbin{::} \mathit{chs}) \;\deq\; \mathsf{consRule}(\mathsf{chunk}(\mathit{ch}), \mathsf{chunks}(\mathit{chs}))}{}\\
+\LeanClause{\mathsf{split}_{\mathit{cur}}([]) \;\deq\; [\LeanMathConst{List.reverse}\,\mathit{cur}]}{\leanslot{Imprimatur.Layout.chunks}{The chunks between \LeanCodeInline{\textbackslash{}and} lines, the current one held reversed}}\\
+\LeanClause{\mathsf{split}_{\mathit{cur}}(\text{``\textbackslash{}and''} \mathbin{::} \mathit{ls}) \;\deq\; \LeanMathConst{List.reverse}\,\mathit{cur} \mathbin{::} \mathsf{split}_{[]}(\mathit{ls})}{}\\
+\LeanClause{\mathsf{split}_{\mathit{cur}}(l \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{split}_{l \mathbin{::} \mathit{cur}}(\mathit{ls})}{}\\
+\LeanClause{\mathsf{bodyOf}([]) \;\deq\; \mathsf{none}}{\leanslot{Imprimatur.Layout.bodyOf}{The lines before the final \LeanCodeInline{\textbackslash{}end\{mathpar\}}}}\\
+\LeanClause{\mathsf{bodyOf}([\text{``\textbackslash{}end\{mathpar\}''}]) \;\deq\; []}{}\\
+\LeanClause{\mathsf{bodyOf}(l \mathbin{::} \mathit{ls}) \;\deq\; \LeanMathConst{Option.map}\,(\LeanMathConst{List.cons}\,l)\,\mathsf{bodyOf}(\mathit{ls})}{}\\
+\LeanClause{\mathsf{rulesOf}(\mathit{ls}) \;\deq\; \mathsf{chunks}(\mathsf{split}_{[]}(\mathit{ls}))}{\leanslot{Imprimatur.Layout.rulesOf}{The rules of a body}}\\
+\LeanClause{\mathsf{rulesOf}(\mathsf{none}) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{figureOf}([\text{``\textbackslash{}begin\{mathpar\}''},\ \text{``\textbackslash{}end\{mathpar\}''}]) \;\deq\; []}{\leanslot{Imprimatur.Layout.figureOf}{The figure's rules: none between \LeanCodeInline{\textbackslash{}begin\{mathpar\}} and \LeanCodeInline{\textbackslash{}end\{mathpar\}}, or those of its body}}\\
+\LeanClause{\mathsf{figureOf}(\text{``\textbackslash{}begin\{mathpar\}''} \mathbin{::} \mathit{ls}) \;\deq\; \mathsf{rulesOf}(\mathsf{bodyOf}(\mathit{ls}))}{}\\
+\LeanClause{\mathsf{figureOf}(x) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{ofLines}(\mathit{ls}) \;\deq\; \mathsf{figureOf}(\mathit{ls})}{\leanslot{Imprimatur.Layout.ofLines}{The figure of the lines, if they lex}}\\
+\LeanClause{\mathsf{ofLines}(\mathsf{none}) \;\deq\; \mathsf{none}}{}\\
+\LeanClause{\mathsf{rules}(\mathit{cs}) \;\deq\; \mathsf{ofLines}(\mathsf{lex}(\mathsf{lines}(\mathit{cs})))}{\leanslot{Imprimatur.Layout.figure}{The rules of a figure, read back from its text}}
+\end{LeanDisplay}
+\end{leandef}
+
+The parser undoes the layout when the figure is plain: no formula, label,
+macro or key holds a newline, a macro's name holds no opening brace, and
+a key no closing one.
+
+\begin{leantheorem}[sum=1-X1fCucqb]{The figure parser undoes the layout}{The figure parser undoes the layout}
+\label{thm:The-figure-parser-undoes-the-layout}
+\LeanProse{Let $\mathit{rs} \in \mathsf{List}(\texttt{Rule}(\mathsf{List}(\mathit{Char})))$. Assume $\forall \mathit{ru} \in \mathit{rs},\ \mathsf{plain}(\mathit{ru})$. Then $\mathsf{rules}(\mathsf{figure}(\mathsf{items}(\mathit{rs}))) = \mathit{rs}$.}
+\end{leantheorem}
+
+Reading back undoes printing: the parser takes the sentence or the figure
+apart, and the formulas read back as parts, one by one and in their
+places. What is read back as what:
+
+\begin{leanrules}[sum=lXGr4pDv69]{Reading back}{Reading back}
+\begin{mathpar}
+
+\inferrule[Nil]
+  { }
+  { [] \rightsquigarrow^{*}_{\mathcal{A}} [] }
+
+\and
+
+\inferrule[Cons]
+  {
+    f \rightsquigarrow_{\mathcal{A}} q \\
+    \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} \mathit{qs}
+  }
+  { f \mathbin{::} \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} q \mathbin{::} \mathit{qs} }
+
+\and
+
+\inferrule[OfType]
+  {
+    t \rightsquigarrow_{\mathcal{A}} q
+  }
+  { {\in}\, t \rightsquigarrow^{\mathsf{kind}}_{\mathcal{A}} {\in}\, q }
+
+\and
+
+\inferrule[Type]
+  { }
+  { \text{a type} \rightsquigarrow^{\mathsf{kind}}_{\mathcal{A}} \text{a type} }
+
+\and
+
+\inferrule[Prop]
+  { }
+  { \text{a proposition} \rightsquigarrow^{\mathsf{kind}}_{\mathcal{A}} \text{a proposition} }
+
+\and
+
+\inferrule[Mk]
+  {
+    g.\mathit{names} \rightsquigarrow^{*}_{\mathcal{A}} u.\mathit{names} \\
+    g.\mathit{kind} \rightsquigarrow^{\mathsf{kind}}_{\mathcal{A}} u.\mathit{kind}
+  }
+  { g \rightsquigarrow^{\mathsf{group}}_{\mathcal{A}} u }
+
+\and
+
+\inferrule[Nil]
+  { }
+  { [] \rightsquigarrow^{\mathsf{groups}}_{\mathcal{A}} [] }
+
+\and
+
+\inferrule[Cons]
+  {
+    g \rightsquigarrow^{\mathsf{group}}_{\mathcal{A}} u \\
+    \mathit{gs} \rightsquigarrow^{\mathsf{groups}}_{\mathcal{A}} \mathit{us}
+  }
+  { g \mathbin{::} \mathit{gs} \rightsquigarrow^{\mathsf{groups}}_{\mathcal{A}} u \mathbin{::} \mathit{us} }
+
+\and
+
+\inferrule[Mk]
+  {
+    \mathit{hy}.\mathit{label} = u.\mathit{label} \\
+    \mathit{hy}.\mathit{formula} \rightsquigarrow_{\mathcal{A}} u.\mathit{formula}
+  }
+  { \mathit{hy} \rightsquigarrow^{\mathsf{hyp}}_{\mathcal{A}} u }
+
+\and
+
+\inferrule[Nil]
+  { }
+  { [] \rightsquigarrow^{\mathsf{hyps}}_{\mathcal{A}} [] }
+
+\and
+
+\inferrule[Cons]
+  {
+    \mathit{hy} \rightsquigarrow^{\mathsf{hyp}}_{\mathcal{A}} u \\
+    \mathit{hs} \rightsquigarrow^{\mathsf{hyps}}_{\mathcal{A}} \mathit{us}
+  }
+  { \mathit{hy} \mathbin{::} \mathit{hs} \rightsquigarrow^{\mathsf{hyps}}_{\mathcal{A}} u \mathbin{::} \mathit{us} }
+
+\and
+
+\inferrule[Formula]
+  {
+    f \rightsquigarrow_{\mathcal{A}} q
+  }
+  { \mathsf{just}(f) \rightsquigarrow^{\mathsf{then}}_{\mathcal{A}} \mathsf{just}(q) }
+
+\and
+
+\inferrule[Conjuncts]
+  {
+    \mathit{fs} \rightsquigarrow^{*}_{\mathcal{A}} \mathit{qs}
+  }
+  { \mathsf{all}(\mathit{fs}) \rightsquigarrow^{\mathsf{then}}_{\mathcal{A}} \mathsf{all}(\mathit{qs}) }
+
+\and
+
+\inferrule[Iff]
+  {
+    \mathit{lhs} \rightsquigarrow_{\mathcal{A}} \mathit{lhs}' \\
+    \mathit{rhs} \rightsquigarrow_{\mathcal{A}} \mathit{rhs}'
+  }
+  { \mathsf{iff}(\mathit{lhs}, \mathit{rhs}) \rightsquigarrow^{\mathsf{then}}_{\mathcal{A}} \mathsf{iff}(\mathit{lhs}', \mathit{rhs}') }
+
+\and
+
+\inferrule[Exists]
+  {
+    w \rightsquigarrow_{\mathcal{A}} w' \\
+    c \rightsquigarrow^{\mathsf{then}}_{\mathcal{A}} c'
+  }
+  { \mathsf{some}(w, c) \rightsquigarrow^{\mathsf{then}}_{\mathcal{A}} \mathsf{some}(w', c') }
+
+\and
+
+\inferrule[Define]
+  {
+    f \rightsquigarrow_{\mathcal{A}} q
+  }
+  { \mathsf{define}(f) \rightsquigarrow^{\mathsf{prose}}_{\mathcal{A}} \mathsf{define}(q) }
+
+\and
+
+\inferrule[Statement]
+  {
+    s.\mathit{vars} \rightsquigarrow^{\mathsf{groups}}_{\mathcal{A}} u.\mathit{vars} \\
+    s.\mathit{hyps} \rightsquigarrow^{\mathsf{hyps}}_{\mathcal{A}} u.\mathit{hyps} \\
+    s.\mathit{concl} \rightsquigarrow^{\mathsf{then}}_{\mathcal{A}} u.\mathit{concl}
+  }
+  { \mathsf{statement}(s) \rightsquigarrow^{\mathsf{prose}}_{\mathcal{A}} \mathsf{statement}(u) }
+
+\and
+
+\inferrule[Mk]
+  {
+    f.\mathit{mark} = q.\mathit{mark} \\
+    f.\mathit{label} = q.\mathit{label} \\
+    f.\mathit{premises} \rightsquigarrow^{*}_{\mathcal{A}} q.\mathit{premises} \\
+    f.\mathit{concl} \rightsquigarrow_{\mathcal{A}} q.\mathit{concl}
+  }
+  { f \rightsquigarrow^{\mathsf{rule}}_{\mathcal{A}} q }
+
+\and
+
+\inferrule[Nil]
+  { }
+  { [] \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} [] }
+
+\and
+
+\inferrule[Cons]
+  {
+    f \rightsquigarrow^{\mathsf{rule}}_{\mathcal{A}} q \\
+    \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \mathit{qs}
+  }
+  { f \mathbin{::} \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} q \mathbin{::} \mathit{qs} }
+
+\end{mathpar}
+\end{leanrules}
+
+A rendering shows a statement when its parser takes it apart, the view
+says what the statement's parts are, and the one reads back as the other:
+
+\begin{leandef}[sum=wgSbGvPBak, dflt=OsQIPYCe0W]{Reading two views}{Reading two views}
+\begin{LeanDisplay}
+\LeanClause{\mathit{prose}_{\mathcal{A}}(r, S) \;\deq\; \exists t,\ \exists u,\ \mathsf{sentence}(\LeanMathConst{Body.text}\,r) = t \wedge \mathit{gather}_{\mathcal{A}}(S) = u \wedge t \rightsquigarrow^{\mathsf{prose}}_{\mathcal{A}} u}{\leanslot{SpliceModel.Anatomy.Prose}{A prose rendering shows a statement: the parser takes the sentence apart, the view says what the statement's parts are, and the one reads back as the other}}\\
+\LeanClause{\mathit{rules}_{\mathcal{A}}(r, S) \;\deq\; \exists \mathit{fs},\ \exists \mathit{qs},\ \mathsf{rules}(\LeanMathConst{Body.text}\,r) = \mathit{fs} \wedge \mathit{ctors}_{\mathcal{A}}(S) = \mathit{qs} \wedge \mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{\mathcal{A}} \mathit{qs}}{\leanslot{SpliceModel.Anatomy.Rules}{A rules rendering shows a statement: the parser takes the figure apart, the view says what the predicate's rules are, and each rule reads back as a constructor, in order}}
+\end{LeanDisplay}
+\end{leandef}
+
+An anatomy is sound when it is the world's. For prose: what the notation
+prints of a statement is plain; the world prints prose as the anatomy
+does, with the layout; and a prose rendering that reads back is faithful,
+formula by formula. For rules, the same three. Of each three, the first
+is a property of the notation, the second is how the extractor prints,
+and the third is what the validator checks of each formula it renders
 (Section~\ref{sec:faithful}). None is proved here; together they are what
 the extractor and the validator are trusted for
-(Section~\ref{sec:trusted}). That the layout has no slots and that the
-parser undoes it are no longer among them: they are proved.
+(Section~\ref{sec:trusted}). That the layouts have no slots and that the
+parsers undo them are proved.
 
-\begin{leanrules}[sum=3ymW4sFUbR]{SpliceModel.Anatomy.Sound}{Sound anatomies}
+\begin{leanrules}[sum=onxjEAp01b]{SpliceModel.Anatomy.Sound}{Sound anatomies}
 \begin{mathpar}
 
 \inferrule[Sound]
   {
-    \forall q : \mathit{Part}_{\mathcal{A}},\ \mathsf{plain}(\mathit{print}_{\mathcal{A}}(q)) \\
+    \forall S : \mathit{Stmt}_{W},\ \forall u : \texttt{Prose}(\mathit{Part}_{\mathcal{A}}),\ \mathit{gather}_{\mathcal{A}}(S) = u \implies \mathsf{plain}(\mathit{print}^{*}_{\mathcal{A}}(u)) \\
     \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``prose''}, S) = r \implies r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}}(S) \\
     \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``prose''}, S) = r \implies \mathit{reads}_{W}(r, S) \implies \mathit{faithful}_{\mathcal{A}}(S) \\
-    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``rules''}, S) = r \implies \mathsf{ids}(r) = [] \\
-    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``rules''}, S) = r \implies \mathit{reads}_{W}(r, S) \implies \mathit{rules}_{\mathcal{A}}(r, S)
+    \forall S : \mathit{Stmt}_{W},\ \forall \mathit{qs} : \mathsf{List}(\texttt{Rule}(\mathit{Part}_{\mathcal{A}})),\ \mathit{ctors}_{\mathcal{A}}(S) = \mathit{qs} \implies (\forall q \in \mathit{qs},\ \mathsf{plain}(\mathit{print}^{*}_{\mathcal{A}}(q))) \\
+    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``rules''}, S) = r \implies r = \mathit{print}^{\mathsf{rules}}_{\mathcal{A}}(S) \\
+    \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{render}_{W}(\text{``rules''}, S) = r \implies \mathit{reads}_{W}(r, S) \implies \mathit{faithful}^{\mathsf{rules}}_{\mathcal{A}}(S)
   }
   { \mathsf{sound}(\mathcal{A}) }
 
 \end{mathpar}
 \end{leanrules}
 
-For prose, what a reader wants of a rendering then follows, where before
-it was assumed:
+What a reader wants of a rendering then follows, where before it was
+assumed:
 
 \begin{leantheorem}[sum=NswPd9M_rm]{A prose rendering shows its statement}{A prose rendering shows its statement}
 \label{thm:A-prose-rendering-shows-its-statement}
 \LeanProse{Let $W \in \mathit{World}$, $\mathcal{A} \in \texttt{Anatomy}(W)$, $S \in \mathit{Stmt}_{W}$ and $r \in \mathit{Body}$. Assume $\mathsf{sound}(\mathcal{A})$, $\mathit{render}_{W}(\text{``prose''}, S) = r$ and $\mathit{reads}_{W}(r, S)$. Then $\mathit{prose}_{\mathcal{A}}(r, S)$.}
 \end{leantheorem}
 
+\begin{leantheorem}[sum=CDO76CT5mo]{A rules rendering shows its predicate}{A rules rendering shows its predicate}
+\label{thm:A-rules-rendering-shows-its-predicate}
+\LeanProse{Let $W \in \mathit{World}$, $\mathcal{A} \in \texttt{Anatomy}(W)$, $S \in \mathit{Stmt}_{W}$ and $r \in \mathit{Body}$. Assume $\mathsf{sound}(\mathcal{A})$, $\mathit{render}_{W}(\text{``rules''}, S) = r$ and $\mathit{reads}_{W}(r, S)$. Then $\mathit{rules}_{\mathcal{A}}(r, S)$.}
+\end{leantheorem}
+
 Under a sound anatomy, Theorem~\ref{thm:Generated-mathematics} says what a
 prose or a rules block shows, part by part.
-
-\begin{leantheorem}[sum=2BXHwDaIos]{Prose shows the statement}{Prose shows the statement}
-\label{thm:Prose-shows-the-statement}
-\LeanProse{Let $W \in \mathit{World}$, $\mathcal{A} \in \texttt{Anatomy}(W)$, $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$, $k \in \mathit{Key}$ and $r \in \mathit{Body}$. Assume $\mathsf{sound}(\mathcal{A})$, $W \models b$, $\mathsf{check}_{b}(d) = []$ and $\mathsf{block}_{k}^{\text{``prose''}}(r) \in d$. Then there is $S$ such that (1)~$\mathit{stmt}_{W}(k) = S$, (2)~$\mathit{trusted}_{W}(k) = \mathsf{true}$, (3)~$\mathit{render}_{W}(\text{``prose''}, S) = r$ and (4)~$\mathit{prose}_{\mathcal{A}}(r, S)$.}
-\end{leantheorem}
 
 \begin{leantheorem}[sum=5g-OnsOt4_]{Rules show the predicate}{Rules show the predicate}
 \label{thm:Rules-show-the-predicate}
@@ -806,9 +1215,9 @@ prose or a rules block shows, part by part.
 \end{leantheorem}
 
 In the example, the statement of \emph{Values are final} is printed in
-three steps. The anatomy takes it apart, as the notation shows it, into
-the variables \texttt{v} and \texttt{e} of type \texttt{Tm}, no
-hypotheses, and the conclusion \texttt{¬ Step v e}. Its hypothesis
+three steps. The anatomy gathers what the view says, as the notation shows
+it: one group of variables, \texttt{v} and \texttt{e} of type \texttt{Tm},
+no hypotheses, and the conclusion \texttt{¬ Step v e}. Its hypothesis
 \texttt{IsValue v} is not a part, because the notation writes \texttt{v}
 as $V$ and leaves the hypothesis implicit; that a hidden hypothesis is no
 part is the notation's claim, and is in the trusted base. The notation
@@ -817,8 +1226,10 @@ $\neg (V \longrightarrow M)$. The layout sets these out as \emph{Let
 \ldots{} Then \ldots}, with no \emph{Assume}, there being no hypotheses.
 Read back, the sentence comes apart into the same two formulas, and each
 reads back as the part it was printed from. The reduction of
-Figure~\ref{fig:example} comes apart into three rules, and they read back,
-in order, as the three constructors of \texttt{Step}: (Beta) with no
+Figure~\ref{fig:example} is printed the same way: three rules, each with
+its label and its mark, and the layout sets them out as the figure. Read
+back, the figure comes apart into the three rules, and they read back, in
+order, as the three constructors of \texttt{Step}: (Beta) with no
 premises, and (App-Left) and (App-Right) with one each.
 
 Were this all a paper could say, hashes would be unnecessary. They are
@@ -877,7 +1288,7 @@ one hash means one statement:
 In the example, the sentence of Figure~\ref{fig:example} is attested prose: a value does not reduce\leancheck[stmt=4ad202811bf6, sig=cc8cbdb3f5cf]{Stlc.values_final}. Its piece is
 $\mathsf{checked}_{k}(h)$, with $h$ the statement hash recorded in the
 source of this paper when the sentence was checked against the Lean. Accepting the current hashes, \verb|imprimatur accept|, likewise leaves no
-drift for \verb|check| to report\leancheck[stmt=ac221a60ee5b, sig=692b1df8e983]{SpliceModel.not_drift_after_accept}.
+drift for \verb|check| to report\leancheck[stmt=ac221a60ee5b, sig=ae37b9c987a8]{SpliceModel.not_drift_after_accept}.
 
 So a check $\mathsf{checked}_{k}(h)$ claims that $k$ states something Lean
 proved whose hash is $h$; and a document is true when each of its pieces
@@ -1085,15 +1496,33 @@ regions: line endings, trailing blanks and blank lines at the ends do not
 count. Every theorem here depends only on Lean's standard axioms, which the
 build checks.
 
+\paragraph{Laying out.} The extractor's share of the code that runs is one
+module, \texttt{Imprimatur.Layout}, copied byte for byte into the extractor
+and the splicer, with a check that keeps the copies equal, and depending on
+Lean's core alone, so that it builds on every Lean version the extractor
+supports. It holds the prose and rules layouts and their parsers
+(Section~\ref{sec:views}); the tree a formula is rendered as and its
+emitter, which is the one place parentheses are decided; and the precedence
+a notation rule's holes need, which the renderer and the validator's grammar
+both call. Every definition in it is total, and the check that keeps the
+splicer's verified code free of \texttt{partial}, unchecked indexing and
+\texttt{sorry} covers it. The \verb|prose| and \verb|rules| views gather
+what a statement says inside Lean, each formula already rendered, and call
+the module's layout; what they write is byte for byte what they wrote
+before, which the extractor's golden bundles check. The theorems of
+Section~\ref{sec:views} are proved in the splicer's package, whose Lean
+version is pinned, of the module the extractor runs.
+
 \section{Rendering is faithful}
 \label{sec:faithful}
 
 The theorems say the text is the \emph{rendering} of the statement, and
 that it reads back, $\mathit{reads}_{W}(r, S)$. A reader must indeed
 recover the statement from the text: this is Pollack's question of
-believing a machine-checked proof~\cite{Pollack98}, and Wiedijk's
-\emph{Pollack-consistency}, that printing a term and parsing it back gives
-the same term~\cite{Wiedijk12}.
+believing a machine-checked proof~\cite{Pollack98}. Wiedijk makes part of
+it precise: a system is \emph{Pollack-consistent} when no contradiction
+follows from equating terms it prints alike, as a consistent system is
+when parsing a printed term gives back that term~\cite{Wiedijk12}.
 
 The notation module defines both directions. Read as a grammar, each of its
 rules is a mixfix production whose holes are typed by Lean's types and
@@ -1110,7 +1539,10 @@ have: an atom reads as itself, and a rule's rendering as the rule's pattern
 with its holes' readings. It then parses the typeset formula, and records
 in the bundle, for each view, the formulas with two readings, with none, or
 with one that is not the expected reading, a \emph{misread}; \verb|check|
-reports them where the formula is. The last is what the check is for. A
+reports them where the formula is. This is the check Wiedijk proposes,
+printing each term and parsing it back~\cite[\S8.1]{Wiedijk12}, except
+that where his printer then falls back to a fail-safe syntax, imprimatur
+refuses the formula. The last is what the check is for. A
 renderer that left out the parentheses its holes need would print
 $(\lambda r\, q.\, e) = M$ as $\lambda r\, q.\, e = M$, a formula that
 reads back uniquely, and wrongly. Made to do so, imprimatur reports six
@@ -1118,8 +1550,7 @@ misreads in a twenty-page paper about another Lean development.
 
 A few forms (a quantifier's binders, a case analysis, an associative chain)
 are not given an expected reading, and only what is below them is
-compared. There the check rests on the grammar mirroring the renderer, as
-both are built from the same rules. In that twenty-page paper, 610 of the
+compared. There the check rests on the grammar following the renderer; the precedence each hole needs is one function both call, and the rest is built from the same rules. In that twenty-page paper, 610 of the
 662 formulas with one reading are compared in full, 21 in part, and 31 not
 at all.
 
@@ -1149,6 +1580,20 @@ Ringer et al.\ survey proof engineering for program correctness,
 including how proofs must change as the programs they are about
 change~\cite{Ringer19}.
 
+Pollack asks how a reader can believe a machine-checked proof, and
+separates whether it is a derivation from whether what it derives means
+what is claimed; for the second, the reader reads a printed formula, so
+the parser and printer must be trusted as well as the
+kernel~\cite{Pollack98}. Wiedijk makes the printer's part precise as
+Pollack-consistency, shows by hidden types, coercions and notation that
+HOL Light, Isabelle, Coq and Mizar fail it, and proposes printing each
+term, parsing it back, and falling back to a fail-safe syntax when the two
+differ~\cite{Wiedijk12}. imprimatur's printer is a paper's notation and its
+reader is a person, so it parses back in a grammar that stands in for the
+reader, and checks each formula rather than proving the printer; the prose
+layout it proves
+(Theorem~\ref{thm:The-prose-parser-undoes-the-layout}).
+
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{imprimatur-paper}
 
@@ -1161,7 +1606,7 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=lxijX8zMGu, dflt=JEAy_QLiNY]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=Sk8pknLGr7, dflt=JEAy_QLiNY]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
@@ -1177,7 +1622,7 @@ $e$ & $\mathit{Entry}$ & \leanslot{SpliceModel.Entry}{An entry as the splicer ho
 $\varsigma$ & $\mathit{Seg}$ & \leanslot{SpliceModel.Seg}{A segment of a generated block} & \textit{Seg}, p.~\pageref{gram:SpliceModel.Seg}\\
 $r$ & $\mathit{Body}$ & \leanslot{SpliceModel.Body}{The body of a generated block} & \textit{Body}\\
 $p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \textit{Piece}, p.~\pageref{gram:SpliceModel.Piece}\\
-$x$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
+$\delta$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 $\mathcal{A}$ & $\texttt{Anatomy}(W)$ & \leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart} & \textit{Anatomies}, p.~\pageref{gram:Anatomies}\\
 \end{longtable}
@@ -1185,7 +1630,7 @@ A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=bQegeeFaDk, dflt=u2U7b16hvi]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=fhSoO3uQm3, dflt=5yBX6eR55d]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -1209,6 +1654,154 @@ $\mathit{view}_{v}(i)$ & \texttt{Imprimatur.Image.view?} & \leanslot{Imprimatur.
 $i.\mathit{views}$ & \texttt{Imprimatur.Image.views} & \leanslot{Imprimatur.Image.views/0}{the renderings, by view}\\
 $\mathit{Key}$ & \texttt{Imprimatur.Key} & \leanslot{Imprimatur.Key/0}{A key: what a document cites, the name of a constant or the title of a group}\\
 $\texttt{Kind}$ & \texttt{Imprimatur.Kind} & \leanslot{Imprimatur.Kind/0}{What a key names}\\
+$\texttt{Concl}(\alpha)$ & \texttt{Concl} & \leanslot{Imprimatur.Layout.Concl/0}{The conclusion, in words}\\
+$\mathsf{all}(\mathit{fs})$ & \texttt{Concl.conjuncts} & \leanslot{Imprimatur.Layout.Concl.conjuncts/0}{Conjuncts, numbered \LeanCodeInline{(1)}, \LeanCodeInline{(2)}, …}\\
+$\mathsf{some}(w, c)$ & \texttt{Concl.exists\_} & \leanslot{Imprimatur.Layout.Concl.exists_/0}{\emph{there is v such that …}}\\
+$\mathsf{just}(f)$ & \texttt{Concl.formula} & \leanslot{Imprimatur.Layout.Concl.formula/0}{A formula}\\
+$\mathsf{iff}(\mathit{lhs}, \mathit{rhs})$ & \texttt{Concl.iff} & \leanslot{Imprimatur.Layout.Concl.iff/0}{\emph{lhs if and only if rhs}}\\
+$\texttt{Hyp}(\alpha)$ & \texttt{Hyp} & \leanslot{Imprimatur.Layout.Hyp/0}{A hypothesis: its label, when the paper refers to it (the name, escaped for TeX), and its formula}\\
+$\mathit{hy}.\mathit{formula}$ & \texttt{Hyp.formula} & \leanslot{Imprimatur.Layout.Hyp.formula/0}{The formula}\\
+$\mathit{hy}.\mathit{label}$ & \texttt{Hyp.label} & \leanslot{Imprimatur.Layout.Hyp.label/0}{The label, if any}\\
+$\langle l, f\rangle$ & \texttt{Hyp.mk} & \leanslot{Imprimatur.Layout.Hyp.mk/0}{}\\
+$\texttt{Item}(\alpha)$ & \texttt{Item} & \leanslot{Imprimatur.Layout.Item/0}{An item of a figure: a rule, or a name that is no constructor}\\
+$\mathsf{missing}(n)$ & \texttt{Item.missing} & \leanslot{Imprimatur.Layout.Item.missing/0}{a name that is no constructor, left as a comment}\\
+$\mathsf{rule}(r)$ & \texttt{Item.rule} & \leanslot{Imprimatur.Layout.Item.rule/0}{a rule}\\
+$\text{`` and ''}$ & \texttt{Kw.andK} & \leanslot{Imprimatur.Layout.Kw.andK/0}{\LeanCodeInline{ and }}\\
+$\text{``Assume ''}$ & \texttt{Kw.assumeK} & \leanslot{Imprimatur.Layout.Kw.assumeK/0}{\LeanCodeInline{Assume }}\\
+$\text{`` be a proposition''}$ & \texttt{Kw.beAProp} & \leanslot{Imprimatur.Layout.Kw.beAProp/0}{\LeanCodeInline{ be a proposition}}\\
+$\text{`` be a type''}$ & \texttt{Kw.beAType} & \leanslot{Imprimatur.Layout.Kw.beAType/0}{\LeanCodeInline{ be a type}}\\
+$\text{`` be propositions''}$ & \texttt{Kw.beProps} & \leanslot{Imprimatur.Layout.Kw.beProps/0}{\LeanCodeInline{ be propositions}}\\
+$\text{`` be types''}$ & \texttt{Kw.beTypes} & \leanslot{Imprimatur.Layout.Kw.beTypes/0}{\LeanCodeInline{ be types}}\\
+$\text{``, ''}$ & \texttt{Kw.comma} & \leanslot{Imprimatur.Layout.Kw.comma/0}{\LeanCodeInline{, }}\\
+$\text{``. ''}$ & \texttt{Kw.dotSpace} & \leanslot{Imprimatur.Layout.Kw.dotSpace/0}{`}\\
+$\text{``.\}''}$ & \texttt{Kw.endK} & \leanslot{Imprimatur.Layout.Kw.endK/0}{\LeanCodeInline{.\}}, the end}\\
+$\text{`` if and only if ''}$ & \texttt{Kw.iffK} & \leanslot{Imprimatur.Layout.Kw.iffK/0}{\LeanCodeInline{ if and only if }}\\
+$\text{``Let ''}$ & \texttt{Kw.letK} & \leanslot{Imprimatur.Layout.Kw.letK/0}{\LeanCodeInline{Let }}\\
+$\text{``\textbackslash{}LeanProse\{''}$ & \texttt{Kw.prose} & \leanslot{Imprimatur.Layout.Kw.prose/0}{\LeanCodeInline{\textbackslash{}LeanProse\{}}\\
+$\text{`` such that ''}$ & \texttt{Kw.suchThat} & \leanslot{Imprimatur.Layout.Kw.suchThat/0}{\LeanCodeInline{ such that }}\\
+$\text{``Then ''}$ & \texttt{Kw.thenK} & \leanslot{Imprimatur.Layout.Kw.thenK/0}{\LeanCodeInline{Then }}\\
+$\text{``there is ''}$ & \texttt{Kw.thereIs} & \leanslot{Imprimatur.Layout.Kw.thereIs/0}{\LeanCodeInline{there is }}\\
+$\text{``We define ''}$ & \texttt{Kw.weDefine} & \leanslot{Imprimatur.Layout.Kw.weDefine/0}{\LeanCodeInline{We define }}\\
+$\mathit{Line}$ & \texttt{Line} & \leanslot{Imprimatur.Layout.Line/0}{A line of the figure}\\
+$\text{``\textbackslash{}and''}$ & \texttt{Line.andK} & \leanslot{Imprimatur.Layout.Line.andK/0}{\LeanCodeInline{\textbackslash{}and}, between rules}\\
+$\text{``\textbackslash{}begin\{mathpar\}''}$ & \texttt{Line.beginK} & \leanslot{Imprimatur.Layout.Line.beginK/0}{\LeanCodeInline{\textbackslash{}begin\{mathpar\}}}\\
+$\text{``''}$ & \texttt{Line.blank} & \leanslot{Imprimatur.Layout.Line.blank/0}{an empty line}\\
+$\text{``\ \ \}''}$ & \texttt{Line.closeK} & \leanslot{Imprimatur.Layout.Line.closeK/0}{\LeanCodeInline{  \}}, closing the premises}\\
+$\mathsf{comment}(n)$ & \texttt{Line.comment} & \leanslot{Imprimatur.Layout.Line.comment/0}{\LeanCodeInline{\% name is not a constructor}}\\
+$\mathsf{concl}(f)$ & \texttt{Line.concl} & \leanslot{Imprimatur.Layout.Line.concl/0}{\LeanCodeInline{  \{ f \}}, the conclusion}\\
+$\text{``\textbackslash{}end\{mathpar\}''}$ & \texttt{Line.endK} & \leanslot{Imprimatur.Layout.Line.endK/0}{\LeanCodeInline{\textbackslash{}end\{mathpar\}}}\\
+$\mathsf{header}(\mathit{label})$ & \texttt{Line.header} & \leanslot{Imprimatur.Layout.Line.header/0}{\LeanCodeInline{\textbackslash{}inferrule[label]}}\\
+$\mathsf{premise}(\mathit{text})$ & \texttt{Line.line} & \leanslot{Imprimatur.Layout.Line.line/0}{a premise, indented}\\
+$\mathsf{mark}(m, \mathit{label})$ & \texttt{Line.mark} & \leanslot{Imprimatur.Layout.Line.mark/0}{\LeanCodeInline{\textbackslash{}macro\{Key\}\{label\}\%}, before the header}\\
+$\text{``\ \ \{ \}''}$ & \texttt{Line.openEmpty} & \leanslot{Imprimatur.Layout.Line.openEmpty/0}{\LeanCodeInline{  \{ \}}, no premises}\\
+$\text{``\ \ \{''}$ & \texttt{Line.openK} & \leanslot{Imprimatur.Layout.Line.openK/0}{\LeanCodeInline{  \{}, opening the premises}\\
+$\texttt{Mark}$ & \texttt{Mark} & \leanslot{Imprimatur.Layout.Mark/0}{The \LeanCodeInline{\textbackslash{}macro\{Key\}\{label\}\%} written before a rule, when the style asks for it}\\
+$m.\mathit{key}$ & \texttt{Mark.key} & \leanslot{Imprimatur.Layout.Mark.key/0}{the rule's key: its name, without spaces}\\
+$m.\mathit{name}$ & \texttt{Mark.name} & \leanslot{Imprimatur.Layout.Mark.name/0}{the macro's name}\\
+$\texttt{Prose}(\alpha)$ & \texttt{Prose} & \leanslot{Imprimatur.Layout.Prose/0}{What the prose view says: of a definition, \emph{We define f}; of a theorem, its sentence}\\
+$\mathsf{plain}(\mathit{pr})$ & \texttt{Prose.Plain} & \leanslot{Imprimatur.Layout.Prose.Plain/0}{A sentence whose parts are plain}\\
+$\mathsf{define}(f)$ & \texttt{Prose.define} & \leanslot{Imprimatur.Layout.Prose.define/0}{\emph{We define f}}\\
+$\mathsf{statement}(s)$ & \texttt{Prose.statement} & \leanslot{Imprimatur.Layout.Prose.statement/0}{A theorem's sentence}\\
+$\texttt{Rule}(\alpha)$ & \texttt{Rule} & \leanslot{Imprimatur.Layout.Rule/0}{A rule, as the rules view shows it}\\
+$\mathsf{plain}(r)$ & \texttt{Rule.Plain} & \leanslot{Imprimatur.Layout.Rule.Plain/0}{A rule whose lines each hold one line}\\
+$r.\mathit{concl}$ & \texttt{Rule.concl} & \leanslot{Imprimatur.Layout.Rule.concl/0}{its conclusion}\\
+$r.\mathit{label}$ & \texttt{Rule.label} & \leanslot{Imprimatur.Layout.Rule.label/0}{its label}\\
+$r.\mathit{mark}$ & \texttt{Rule.mark} & \leanslot{Imprimatur.Layout.Rule.mark/0}{its label macro, if the style writes one}\\
+$\langle \mathit{mark}, \mathit{label}, \mathit{ps}, c\rangle$ & \texttt{Rule.mk} & \leanslot{Imprimatur.Layout.Rule.mk/0}{}\\
+$r.\mathit{premises}$ & \texttt{Rule.premises} & \leanslot{Imprimatur.Layout.Rule.premises/0}{its premises}\\
+$\texttt{Statement}(\alpha)$ & \texttt{Statement} & \leanslot{Imprimatur.Layout.Statement/0}{What a theorem's sentence says}\\
+$s.\mathit{concl}$ & \texttt{Statement.concl} & \leanslot{Imprimatur.Layout.Statement.concl/0}{The conclusion}\\
+$s.\mathit{hyps}$ & \texttt{Statement.hyps} & \leanslot{Imprimatur.Layout.Statement.hyps/0}{The hypotheses}\\
+$\langle \mathit{gs}, \mathit{hs}, c\rangle$ & \texttt{Statement.mk} & \leanslot{Imprimatur.Layout.Statement.mk/0}{}\\
+$s.\mathit{vars}$ & \texttt{Statement.vars} & \leanslot{Imprimatur.Layout.Statement.vars/0}{The variables, in groups}\\
+$\text{\$}f\text{\$}$ & \texttt{Tok.formula} & \leanslot{Imprimatur.Layout.Tok.formula/0}{A formula, in dollars}\\
+$\mathsf{item}(\mathit{ds})$ & \texttt{Tok.item} & \leanslot{Imprimatur.Layout.Tok.item/0}{An item number, \LeanCodeInline{(digits)\textasciitilde{}}}\\
+$\mathit{word}$ & \texttt{Tok.kw} & \leanslot{Imprimatur.Layout.Tok.kw/0}{A keyword}\\
+$\mathsf{label}(n)$ & \texttt{Tok.label} & \leanslot{Imprimatur.Layout.Tok.label/0}{A hypothesis label, \LeanCodeInline{\textbackslash{}LeanHyp\{name\} }}\\
+$\texttt{Group}(\alpha)$ & \texttt{VarGroup} & \leanslot{Imprimatur.Layout.VarGroup/0}{A group of consecutive variables of one type: their names, rendered}\\
+$g.\mathit{kind}$ & \texttt{VarGroup.kind} & \leanslot{Imprimatur.Layout.VarGroup.kind/0}{What they range over}\\
+$\langle \mathit{names}, \mathit{kind}\rangle$ & \texttt{VarGroup.mk} & \leanslot{Imprimatur.Layout.VarGroup.mk/0}{}\\
+$g.\mathit{names}$ & \texttt{VarGroup.names} & \leanslot{Imprimatur.Layout.VarGroup.names/0}{The names, as variables}\\
+$\texttt{Range}(\alpha)$ & \texttt{VarKind} & \leanslot{Imprimatur.Layout.VarKind/0}{What a group of variables ranges over, as the sentence says it}\\
+${\in}\, t$ & \texttt{VarKind.ofType} & \leanslot{Imprimatur.Layout.VarKind.ofType/0}{\LeanCodeInline{x, y ∈ T}: a type}\\
+$\text{a proposition}$ & \texttt{VarKind.prop} & \leanslot{Imprimatur.Layout.VarKind.prop/0}{\emph{be a proposition}, \emph{be propositions}}\\
+$\text{a type}$ & \texttt{VarKind.type} & \leanslot{Imprimatur.Layout.VarKind.type/0}{\emph{be a type}, \emph{be types}}\\
+$\mathsf{afterAssume}(\mathit{gs}, o)$ & \texttt{afterAssume} & \leanslot{Imprimatur.Layout.afterAssume/0}{After the hypotheses: the conclusion}\\
+$\mathsf{afterGroup}_{\mathit{acc}}(g, \mathit{ts})$ & \texttt{afterGroup} & \leanslot{Imprimatur.Layout.afterGroup/0}{After a group: another, or the end of the sentence}\\
+$\mathsf{afterLet}(o)$ & \texttt{afterLet} & \leanslot{Imprimatur.Layout.afterLet/0}{After the groups: the hypotheses, or the conclusion}\\
+$\mathsf{afterSuch}(w, o)$ & \texttt{afterSuch} & \leanslot{Imprimatur.Layout.afterSuch/0}{The conclusion after \emph{there is w such that}, once the rest is read}\\
+$\mathsf{rest}(\mathit{ys})$ & \texttt{andRestToks} & \leanslot{Imprimatur.Layout.andRestToks/0}{\LeanCodeInline{x}, \LeanCodeInline{x and y}, \LeanCodeInline{x, y and z}: the items after the first, each with its separator before it}\\
+$\mathsf{list}(\mathit{ys})$ & \texttt{andToks} & \leanslot{Imprimatur.Layout.andToks/0}{\LeanCodeInline{x}, \LeanCodeInline{x and y}, \LeanCodeInline{x, y and z}}\\
+$\mathsf{assume}(\mathit{hs})$ & \texttt{assumeToks} & \leanslot{Imprimatur.Layout.assumeToks/0}{The \emph{Assume} sentence, if there are hypotheses}\\
+$\mathsf{bodyLines}(\mathit{ps}, c)$ & \texttt{bodyLines} & \leanslot{Imprimatur.Layout.bodyLines/0}{A rule's body: its premises between braces, if any, then its conclusion}\\
+$\mathsf{bodyOf}(\mathit{ls})$ & \texttt{bodyOf} & \leanslot{Imprimatur.Layout.bodyOf/0}{The lines before the final \LeanCodeInline{\textbackslash{}end\{mathpar\}}}\\
+$\mathsf{split}_{\mathit{cur}}(\mathit{ls})$ & \texttt{chunks} & \leanslot{Imprimatur.Layout.chunks/0}{The chunks between \LeanCodeInline{\textbackslash{}and} lines, the current one held reversed}\\
+$\mathsf{commaSep}$ & \texttt{commaSep} & \leanslot{Imprimatur.Layout.commaSep/0}{\LeanCodeInline{, }}\\
+$\mathsf{conclClose}$ & \texttt{conclClose} & \leanslot{Imprimatur.Layout.conclClose/0}{\LeanCodeInline{ \}}, after the conclusion}\\
+$\mathsf{conclOpen}$ & \texttt{conclOpen} & \leanslot{Imprimatur.Layout.conclOpen/0}{\LeanCodeInline{  \{ }, before the conclusion}\\
+$\mathsf{then}(c)$ & \texttt{conclToks} & \leanslot{Imprimatur.Layout.conclToks/0}{A conclusion, in words}\\
+$\mathsf{consRule}(o, \mathit{os})$ & \texttt{consRule} & \leanslot{Imprimatur.Layout.consRule/0}{A rule, onto rules}\\
+$\mathsf{decimal}(n)$ & \texttt{decimal} & \leanslot{Imprimatur.Layout.decimal/0}{The decimal digits of a number}\\
+$\mathsf{dropSuffix}(\mathit{suf}, l)$ & \texttt{dropSuffix} & \leanslot{Imprimatur.Layout.dropSuffix/0}{The text before a suffix, if it has it}\\
+$\mathsf{rules}(\mathit{cs})$ & \texttt{figure} & \leanslot{Imprimatur.Layout.figure/0}{The rules of a figure, read back from its text}\\
+$\mathsf{figureChars}(\mathit{items})$ & \texttt{figureChars} & \leanslot{Imprimatur.Layout.figureChars/0}{The text of the figure}\\
+$\mathsf{figure}(\mathit{items})$ & \texttt{figureLayout} & \leanslot{Imprimatur.Layout.figureLayout/0}{The rules layout, as a string}\\
+$\mathsf{figureLines}(\mathit{items})$ & \texttt{figureLines} & \leanslot{Imprimatur.Layout.figureLines/0}{The figure's lines: \LeanCodeInline{\textbackslash{}begin\{mathpar\}}, the items' lines less the \LeanCodeInline{\textbackslash{}and} after the last, \LeanCodeInline{\textbackslash{}end\{mathpar\}}}\\
+$\mathsf{figureOf}(\mathit{ls})$ & \texttt{figureOf} & \leanslot{Imprimatur.Layout.figureOf/0}{The figure's rules: none between \LeanCodeInline{\textbackslash{}begin\{mathpar\}} and \LeanCodeInline{\textbackslash{}end\{mathpar\}}, or those of its body}\\
+$\mathsf{finish}(\mathit{gs}, \mathit{hs}, \mathit{ts})$ & \texttt{finish} & \leanslot{Imprimatur.Layout.finish/0}{The conclusion, which ends the sentence}\\
+$\mathsf{finishWith}(\mathit{gs}, \mathit{hs}, o)$ & \texttt{finishWith} & \leanslot{Imprimatur.Layout.finishWith/0}{The sentence, once its conclusion ends the text}\\
+$\mathsf{group}(g)$ & \texttt{groupToks} & \leanslot{Imprimatur.Layout.groupToks/0}{A group of variables: \LeanCodeInline{\$x, y \textbackslash{}in T\$}, \LeanCodeInline{\$x\$ be a type}, \LeanCodeInline{\$x, y\$ be types}, …}\\
+$\mathsf{hyp}(\mathit{hy})$ & \texttt{hypToks} & \leanslot{Imprimatur.Layout.hypToks/0}{A hypothesis: its label, if any, and its formula}\\
+$\mathsf{inSep}$ & \texttt{inSep} & \leanslot{Imprimatur.Layout.inSep/0}{\LeanCodeInline{ \textbackslash{}in }}\\
+$\mathsf{indent}$ & \texttt{indent} & \leanslot{Imprimatur.Layout.indent/0}{The indentation of a premise}\\
+$\mathsf{inferOpen}$ & \texttt{inferOpen} & \leanslot{Imprimatur.Layout.inferOpen/0}{\LeanCodeInline{\textbackslash{}inferrule[}}\\
+$\mathsf{itemLines}(i)$ & \texttt{itemLines} & \leanslot{Imprimatur.Layout.itemLines/0}{An item's lines: a rule between blank lines, then \LeanCodeInline{\textbackslash{}and}; or a comment}\\
+$\mathsf{names}(\mathit{ns})$ & \texttt{joinComma} & \leanslot{Imprimatur.Layout.joinComma/0}{The names of a group, \LeanCodeInline{x, y}}\\
+$\mathsf{joinLines}(\mathit{ls})$ & \texttt{joinLines} & \leanslot{Imprimatur.Layout.joinLines/0}{Lines, each ended by a newline but the last}\\
+$\mathsf{spelling}(\mathit{word})$ & \texttt{kwText} & \leanslot{Imprimatur.Layout.kwText/0}{The text of a keyword}\\
+$\mathsf{labelOpen}$ & \texttt{labelOpen} & \leanslot{Imprimatur.Layout.labelOpen/0}{\LeanCodeInline{\textbackslash{}LeanHyp\{}}\\
+$\mathsf{let}(\mathit{gs})$ & \texttt{letToks} & \leanslot{Imprimatur.Layout.letToks/0}{The \emph{Let} sentence, if there are variables}\\
+$\mathsf{lex}(\mathit{cs})$ & \texttt{lex} & \leanslot{Imprimatur.Layout.lex/0}{Lex the text into tokens}\\
+$\mathsf{lex}(\mathit{ls})$ & \texttt{lexLines} & \leanslot{Imprimatur.Layout.lexLines/0}{The lines read back}\\
+$\mathsf{lineBreak}$ & \texttt{lineBreak} & \leanslot{Imprimatur.Layout.lineBreak/0}{\LeanCodeInline{ \textbackslash{}\textbackslash{}}, after a premise that another follows}\\
+$\mathsf{lineText}(t)$ & \texttt{lineText} & \leanslot{Imprimatur.Layout.lineText/0}{The text of a line}\\
+$\mathsf{lines}(\mathit{cs})$ & \texttt{lines} & \leanslot{Imprimatur.Layout.lines/0}{The lines of the text}\\
+$\mathsf{markLines}(o, \mathit{label})$ & \texttt{markLines} & \leanslot{Imprimatur.Layout.markLines/0}{A rule's mark, if it has one}\\
+$\mathsf{numbered}_{i}(\mathit{fs})$ & \texttt{numbered} & \leanslot{Imprimatur.Layout.numbered/0}{Conjuncts numbered from \LeanCodeInline{i}: \LeanCodeInline{(i)\textasciitilde{}\$f\$}, …}\\
+$\mathsf{ofLines}(o)$ & \texttt{ofLines} & \leanslot{Imprimatur.Layout.ofLines/0}{The figure of the lines, if they lex}\\
+$\mathsf{ofType}_{\mathit{acc}}(\mathit{ts}, o)$ & \texttt{ofTypeGroup} & \leanslot{Imprimatur.Layout.ofTypeGroup/0}{A group of a type: its names and its type, if they come apart}\\
+$\mathsf{body}(\mathit{mark}, \mathit{label}, \mathit{ls})$ & \texttt{parseBody} & \leanslot{Imprimatur.Layout.parseBody/0}{A rule's body: no premises and its conclusion, or its premises}\\
+$\mathsf{chunk}(\mathit{ls})$ & \texttt{parseChunk} & \leanslot{Imprimatur.Layout.parseChunk/0}{A chunk between \LeanCodeInline{\textbackslash{}and}s: a blank line, then a rule}\\
+$\mathsf{chunks}(\mathit{chs})$ & \texttt{parseChunks} & \leanslot{Imprimatur.Layout.parseChunks/0}{The rules of the chunks}\\
+$\mathsf{concl}(\mathit{ts})$ & \texttt{parseConcl} & \leanslot{Imprimatur.Layout.parseConcl/0}{A conclusion}\\
+$\mathsf{groups}_{\mathit{acc}}(\mathit{ts})$ & \texttt{parseGroups} & \leanslot{Imprimatur.Layout.parseGroups/0}{The groups of a \emph{Let} sentence, onto \LeanCodeInline{acc} (held reversed): a formula, then its kind, then what follows it}\\
+$\mathsf{hyps}_{\mathit{acc}}(\mathit{ts})$ & \texttt{parseHyps} & \leanslot{Imprimatur.Layout.parseHyps/0}{The hypotheses of an \emph{Assume} sentence, onto \LeanCodeInline{acc} (held reversed): each labelled or not, then what follows it; the sentence ends before \emph{Then}}\\
+$\mathsf{items}_{\mathit{acc}}(\mathit{ts})$ & \texttt{parseItems} & \leanslot{Imprimatur.Layout.parseItems/0}{The conjuncts after the first, onto \LeanCodeInline{acc} (held reversed)}\\
+$\mathsf{premises}_{\mathit{ps}}(\mathit{ls})$ & \texttt{parsePremises} & \leanslot{Imprimatur.Layout.parsePremises/0}{The premises up to the closing brace, onto \LeanCodeInline{ps} (held reversed)}\\
+$\mathsf{parse}(\mathit{ts})$ & \texttt{parseProse} & \leanslot{Imprimatur.Layout.parseProse/0}{The prose view, from its tokens}\\
+$\mathsf{parseRule}(\mathit{ls})$ & \texttt{parseRule} & \leanslot{Imprimatur.Layout.parseRule/0}{A rule: its mark, if any, then its header, then its body}\\
+$\mathsf{statement}(\mathit{ts})$ & \texttt{parseStatement} & \leanslot{Imprimatur.Layout.parseStatement/0}{A theorem's sentence, after \LeanCodeInline{\textbackslash{}LeanProse\{}}\\
+$\mathsf{premiseLines}(\mathit{ps})$ & \texttt{premiseLines} & \leanslot{Imprimatur.Layout.premiseLines/0}{The premises, one per line, each but the last ended by \LeanCodeInline{ \textbackslash{}\textbackslash{}}}\\
+$\mathsf{next}_{\mathit{ps}}(p, \mathit{ls})$ & \texttt{premiseNext} & \leanslot{Imprimatur.Layout.premiseNext/0}{After a premise: the closing brace, so it was the last; or another, so it ends in \LeanCodeInline{ \textbackslash{}\textbackslash{}}}\\
+$\mathsf{text}(\mathit{ts})$ & \texttt{printToks} & \leanslot{Imprimatur.Layout.printToks/0}{The text of tokens, in order}\\
+$\mathsf{chars}(\mathit{pr})$ & \texttt{proseChars} & \leanslot{Imprimatur.Layout.proseChars/0}{\textbf{The prose layout:} the text of the prose view}\\
+$\mathsf{layout}(\mathit{pr})$ & \texttt{proseLayout} & \leanslot{Imprimatur.Layout.proseLayout/0}{The prose layout, as a string}\\
+$\mathsf{sentence}(\mathit{cs})$ & \texttt{proseSentence} & \leanslot{Imprimatur.Layout.proseSentence/0}{\textbf{The prose parser:} the prose view, taken apart}\\
+$\mathsf{toks}(\mathit{pr})$ & \texttt{proseToks} & \leanslot{Imprimatur.Layout.proseToks/0}{The tokens of the prose view}\\
+$\mathsf{items}(\mathit{rs})$ & \texttt{ruleItems} & \leanslot{Imprimatur.Layout.ruleItems/0}{Rules, as the items of a figure}\\
+$\mathsf{ruleLines}(r)$ & \texttt{ruleLines} & \leanslot{Imprimatur.Layout.ruleLines/0}{A rule's lines: its mark, its header, its body}\\
+$\mathsf{ruleOf}(o)$ & \texttt{ruleOf} & \leanslot{Imprimatur.Layout.ruleOf/0}{A rule, which must end its chunk}\\
+$\mathsf{rulesOf}(o)$ & \texttt{rulesOf} & \leanslot{Imprimatur.Layout.rulesOf/0}{The rules of a body}\\
+$\mathsf{sentences}(\mathit{ss})$ & \texttt{sentencesToks} & \leanslot{Imprimatur.Layout.sentencesToks/0}{Sentences, each ending with a full stop, separated by a space}\\
+$\mathsf{splitAll}_{\mathit{sep}}(\mathit{cs})$ & \texttt{splitAll} & \leanslot{Imprimatur.Layout.splitAll/0}{Split at every occurrence of \LeanCodeInline{sep}}\\
+$\mathsf{splitFirst}_{\mathit{sep}}(\mathit{cs})$ & \texttt{splitFirst} & \leanslot{Imprimatur.Layout.splitFirst/0}{Split at the first occurrence of \LeanCodeInline{sep}: the text before, and after}\\
+$\mathsf{statement}(s)$ & \texttt{statementToks} & \leanslot{Imprimatur.Layout.statementToks/0}{The tokens of a theorem's sentence, after \LeanCodeInline{\textbackslash{}LeanProse\{}: its sentences, and the end}\\
+$\mathsf{thenKw}(\mathit{ss})$ & \texttt{thenKw} & \leanslot{Imprimatur.Layout.thenKw/0}{\emph{Then}, after another sentence}\\
+$\mathsf{then}(\mathit{ss}, c)$ & \texttt{thenToks} & \leanslot{Imprimatur.Layout.thenToks/0}{The \emph{Then} sentence}\\
+$\mathsf{text}(t)$ & \texttt{tokChars} & \leanslot{Imprimatur.Layout.tokChars/0}{The text of a token}\\
+$\mathsf{trimAnd}(\mathit{ls})$ & \texttt{trimAnd} & \leanslot{Imprimatur.Layout.trimAnd/0}{The lines less a final \LeanCodeInline{\textbackslash{}and}}\\
+$\mathsf{unbreak}_{\mathit{ps}}(o, \mathit{ls})$ & \texttt{unbreak} & \leanslot{Imprimatur.Layout.unbreak/0}{A premise less its \LeanCodeInline{ \textbackslash{}\textbackslash{}}, then the rest}\\
+$\mathsf{withPremises}(\mathit{mark}, \mathit{label}, o)$ & \texttt{withPremises} & \leanslot{Imprimatur.Layout.withPremises/0}{The rule, once its premises are read: its conclusion follows them}\\
 $\mathit{TeX}$ & \texttt{Imprimatur.TeX} & \leanslot{Imprimatur.TeX/0}{TeX source}\\
 $\texttt{Verdict}$ & \texttt{Imprimatur.Verdict} & \leanslot{Imprimatur.Verdict/0}{The verdict on a proof: whether Lean accepted it, and on what}\\
 $\mathit{View}$ & \texttt{Imprimatur.View} & \leanslot{Imprimatur.View/0}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …}\\
@@ -1225,6 +1818,7 @@ $\mathit{trusted}_{W}(k)$ & \texttt{Imprimatur.World.trusted} & \leanslot{Imprim
 $\mathsf{Array}(\alpha)$ & \texttt{Array} & \leanslot{Array/0}{dynamic arrays with elements from \LeanCodeInline{α}}\\
 $\mathbb{B}$ & \texttt{Bool} & \leanslot{Bool/0}{The Boolean values, \LeanCodeInline{true} and \LeanCodeInline{false}}\\
 $\mathsf{true}$ & \texttt{Bool.true} & \leanslot{Bool.true/0}{The Boolean value \LeanCodeInline{true}, not to be confused with the proposition \LeanCodeInline{True}}\\
+$\mathit{Char}$ & \texttt{Char} & \leanslot{Char/0}{Characters are Unicode [scalar values](http://www.unicode.org/glossary/\#unicode\_scalar\_value)}\\
 $a \mathbin{+\!\!+} b$ & \texttt{HAppend.hAppend} & \leanslot{HAppend.hAppend/0}{\LeanCodeInline{a ++ b} is the result of concatenation of \LeanCodeInline{a} and \LeanCodeInline{b}, usually read "append"}\\
 $\mathsf{List}(\alpha)$ & \texttt{List} & \leanslot{List/0}{Linked lists: ordered lists, in which each element has a reference to the next element}\\
 $a \mathbin{::} l$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
@@ -1236,27 +1830,37 @@ $o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{
 $\mathsf{none}$ & \texttt{Option.none} & \leanslot{Option.none/0}{No value}\\
 $x$ & \texttt{Option.some} & \leanslot{Option.some/0}{Some value of type \LeanCodeInline{α}}\\
 $\alpha \times \beta$ & \texttt{Prod} & \leanslot{Prod/0}{The product type, usually written \LeanCodeInline{α × β}}\\
-$(a, b, c)$ & \texttt{Prod.mk} & \leanslot{Prod.mk/0}{Constructs a pair}\\
 $\mathit{String}$ & \texttt{String} & \leanslot{String/0}{A string is a sequence of Unicode scalar values}\\
 $\mathit{cs}$ & \texttt{String.ofList} & \leanslot{String.ofList/0}{Creates a string that contains the characters in a list, in order}\\
 $s$ & \texttt{String.toList} & \leanslot{String.toList/0}{Converts a string to a list of characters}\\
 $\mathsf{if}\ c\ \mathsf{then}\ a\ \mathsf{else}\ b$ & \texttt{ite} & \leanslot{ite/0}{\LeanCodeInline{if c then t else e} is notation for \LeanCodeInline{ite c t e}, "if-then-else", which decides to return \LeanCodeInline{t} or \LeanCodeInline{e} depending on whether \LeanCodeInline{c} is true or false}\\
 \multicolumn{3}{@{}l}{\textit{SpliceModel}}\\
-$\mathit{faithful}_{A}(S)$ & \texttt{Anatomy.Faithful} & \leanslot{SpliceModel.Anatomy.Faithful/0}{The notation is faithful on a statement: each of its parts, printed, reads back as itself}\\
+$\mathsf{parts}(\mathit{pr})$ & \texttt{Prose.parts} & \leanslot{Imprimatur.Layout.Prose.parts/0}{The formulas the prose view shows, in order}\\
+$\mathit{faithful}_{A}(S)$ & \texttt{Anatomy.Faithful} & \leanslot{SpliceModel.Anatomy.Faithful/0}{The notation is faithful on a statement: each part the prose view shows, printed, reads back as itself}\\
+$\mathit{faithful}^{\mathsf{rules}}_{A}(S)$ & \texttt{Anatomy.FaithfulRules} & \leanslot{SpliceModel.Anatomy.FaithfulRules/0}{The notation is faithful on a predicate: each part its rules show, printed, reads back as itself}\\
 $\mathit{Part}_{A}$ & \texttt{Anatomy.Part} & \leanslot{SpliceModel.Anatomy.Part/0}{a part of a statement, as the notation shows it}\\
-$r = \mathit{print}^{\mathsf{prose}}_{A}(S)$ & \texttt{Anatomy.PrintsProse} & \leanslot{SpliceModel.Anatomy.PrintsProse/0}{A body is a statement printed in the prose view: the statement taken apart, each part printed by the notation, and the formulas set out as a sentence}\\
-$\mathit{prose}_{A}(r, S)$ & \texttt{Anatomy.Prose} & \leanslot{SpliceModel.Anatomy.Prose/0}{A prose rendering shows a statement: the sentence and the proposition come apart, and the one reads back as the other}\\
+$r = \mathit{print}^{\mathsf{prose}}_{A}(S)$ & \texttt{Anatomy.PrintsProse} & \leanslot{SpliceModel.Anatomy.PrintsProse/0}{A body is a statement printed in the prose view: what the view says of the statement, each part printed by the notation, and the formulas set out as the sentence by the extractor's layout}\\
+$r = \mathit{print}^{\mathsf{rules}}_{A}(S)$ & \texttt{Anatomy.PrintsRules} & \leanslot{SpliceModel.Anatomy.PrintsRules/0}{A body is a statement printed in the rules view: the rules the view says its constructors are, each formula printed by the notation, and the rules set out as the figure by the extractor's layout}\\
+$\mathit{prose}_{A}(r, S)$ & \texttt{Anatomy.Prose} & \leanslot{SpliceModel.Anatomy.Prose/0}{A prose rendering shows a statement: the parser takes the sentence apart, the view says what the statement's parts are, and the one reads back as the other}\\
 $\mathit{fs} \rightsquigarrow^{*}_{A} \mathit{qs}$ & \texttt{Anatomy.ReadsAll} & \leanslot{SpliceModel.Anatomy.ReadsAll/0}{Formulas read back as parts, one by one}\\
+$c \rightsquigarrow^{\mathsf{then}}_{A} u$ & \texttt{Anatomy.ReadsConcl} & \leanslot{SpliceModel.Anatomy.ReadsConcl/0}{A conclusion reads back, in its shape}\\
+$g \rightsquigarrow^{\mathsf{group}}_{A} u$ & \texttt{Anatomy.ReadsGroup} & \leanslot{SpliceModel.Anatomy.ReadsGroup/0}{A group of variables reads back: name by name, and what it ranges over}\\
+$\mathit{gs} \rightsquigarrow^{\mathsf{groups}}_{A} \mathit{us}$ & \texttt{Anatomy.ReadsGroups} & \leanslot{SpliceModel.Anatomy.ReadsGroups/0}{Groups read back, one by one}\\
+$\mathit{hy} \rightsquigarrow^{\mathsf{hyp}}_{A} u$ & \texttt{Anatomy.ReadsHyp} & \leanslot{SpliceModel.Anatomy.ReadsHyp/0}{A hypothesis reads back: the same label, and its formula}\\
+$\mathit{hs} \rightsquigarrow^{\mathsf{hyps}}_{A} \mathit{us}$ & \texttt{Anatomy.ReadsHyps} & \leanslot{SpliceModel.Anatomy.ReadsHyps/0}{Hypotheses read back, one by one}\\
+$t \rightsquigarrow^{\mathsf{kind}}_{A} u$ & \texttt{Anatomy.ReadsKind} & \leanslot{SpliceModel.Anatomy.ReadsKind/0}{What a group ranges over reads back}\\
 $f \rightsquigarrow_{A} q$ & \texttt{Anatomy.ReadsPart} & \leanslot{SpliceModel.Anatomy.ReadsPart/0}{when a formula reads back as a part}\\
-$f \rightsquigarrow^{\mathsf{rule}}_{A} q$ & \texttt{Anatomy.ReadsRule} & \leanslot{SpliceModel.Anatomy.ReadsRule/0}{A rule reads back as a constructor: the same name, premises as its hypotheses, conclusion as its conclusion}\\
+$t \rightsquigarrow^{\mathsf{prose}}_{A} u$ & \texttt{Anatomy.ReadsProse} & \leanslot{SpliceModel.Anatomy.ReadsProse/0}{A sentence reads back as what the view says: Let as its variables, Assume as its hypotheses, Then as its conclusion}\\
+$f \rightsquigarrow^{\mathsf{rule}}_{A} q$ & \texttt{Anatomy.ReadsRule} & \leanslot{SpliceModel.Anatomy.ReadsRule/0}{A rule reads back as a constructor: the same mark and label, premises as its hypotheses, conclusion as its conclusion}\\
 $\mathit{fs} \rightsquigarrow^{\mathsf{rules}}_{A} \mathit{qs}$ & \texttt{Anatomy.ReadsRules} & \leanslot{SpliceModel.Anatomy.ReadsRules/0}{Rules read back as constructors, one by one}\\
-$t \rightsquigarrow^{\mathsf{let}}_{A} u$ & \texttt{Anatomy.ReadsTelescope} & \leanslot{SpliceModel.Anatomy.ReadsTelescope/0}{A sentence reads back as a proposition: Let as its variables, Assume as its hypotheses, Then as its conclusion}\\
-$\mathit{rules}_{A}(r, S)$ & \texttt{Anatomy.Rules} & \leanslot{SpliceModel.Anatomy.Rules/0}{A rules rendering shows a statement: the figure and the predicate come apart, and each rule reads back as a constructor, in order}\\
+$\mathit{rules}_{A}(r, S)$ & \texttt{Anatomy.Rules} & \leanslot{SpliceModel.Anatomy.Rules/0}{A rules rendering shows a statement: the parser takes the figure apart, the view says what the predicate's rules are, and each rule reads back as a constructor, in order}\\
 $\mathsf{sound}(A)$ & \texttt{Anatomy.Sound} & \leanslot{SpliceModel.Anatomy.Sound/0}{The anatomy is the world's}\\
-$\mathit{ctors}_{A}(S)$ & \texttt{Anatomy.ctors} & \leanslot{SpliceModel.Anatomy.ctors/0}{an inductive predicate's constructors, as rules}\\
-$\mathit{figure}_{A}(r)$ & \texttt{Anatomy.figure} & \leanslot{SpliceModel.Anatomy.figure/0}{a rules figure, taken apart}\\
-$\mathit{print}_{A}(q)$ & \texttt{Anatomy.print} & \leanslot{SpliceModel.Anatomy.print/0}{a part printed as a formula, by the notation}\\
-$\mathit{telescope}_{A}(S)$ & \texttt{Anatomy.telescope} & \leanslot{SpliceModel.Anatomy.telescope/0}{a proposition, taken apart}\\
+$\mathit{ctors}_{A}(S)$ & \texttt{Anatomy.ctors} & \leanslot{SpliceModel.Anatomy.ctors/0}{what the rules view says of an inductive predicate: its constructors, as rules}\\
+$\mathit{gather}_{A}(S)$ & \texttt{Anatomy.gather} & \leanslot{SpliceModel.Anatomy.gather/0}{what the prose view says of a statement: its parts, in their places}\\
+$\mathit{print}^{*}_{A}(q)$ & \texttt{Anatomy.print} & \leanslot{SpliceModel.Anatomy.print/0}{a part printed as a formula, by the notation}\\
+$\mathit{print}^{*}_{A}(\mathit{qs})$ & \texttt{Anatomy.print} & \leanslot{SpliceModel.Anatomy.print/1}{a part printed as a formula, by the notation}\\
+$\mathit{print}^{*}_{A}(u)$ & \texttt{Anatomy.print} & \leanslot{SpliceModel.Anatomy.print/2}{a part printed as a formula, by the notation}\\
+$\mathit{print}_{A}(q)$ & \texttt{Anatomy.print} & \leanslot{SpliceModel.Anatomy.print/3}{a part printed as a formula, by the notation}\\
 $\mathsf{broken}(k)$ & \texttt{Diag.brokenRef} & \leanslot{SpliceModel.Diag.brokenRef/0}{the key has no entry}\\
 $\mathsf{drift}(k)$ & \texttt{Diag.drift} & \leanslot{SpliceModel.Diag.drift/0}{the statement has changed since the prose was checked}\\
 $\mathsf{missing}_{k}(v)$ & \texttt{Diag.missingView} & \leanslot{SpliceModel.Diag.missingView/0}{the entry has no rendering in the view}\\
@@ -1265,52 +1869,22 @@ $\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{
 $\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.Diag.unfaithful/0}{the rendering does not read back as the statement}\\
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
 $W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
-$\mathsf{sep}(s)$ & \texttt{IsSep} & \leanslot{SpliceModel.IsSep/0}{The text between formulas of one part}\\
 $W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
 $\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\
 $\mathsf{checked}_{k}(h)$ & \texttt{Piece.check} & \leanslot{SpliceModel.Piece.check/0}{a check that hand-written prose matches the statement with this hash}\\
 $\mathsf{text}(s)$ & \texttt{Piece.text} & \leanslot{SpliceModel.Piece.text/0}{hand-written text}\\
-$\mathsf{plain}(f)$ & \texttt{Plain} & \leanslot{SpliceModel.Plain/0}{A formula is plain when it has no dollar in it}\\
-$\texttt{Rule}(\alpha)$ & \texttt{Rule} & \leanslot{SpliceModel.Rule/0}{A rule, as the rules view shows it}\\
-$f.\mathit{concl}$ & \texttt{Rule.concl} & \leanslot{SpliceModel.Rule.concl/0}{its conclusion}\\
-$f.\mathit{name}$ & \texttt{Rule.name} & \leanslot{SpliceModel.Rule.name/0}{its name}\\
-$f.\mathit{premises}$ & \texttt{Rule.premises} & \leanslot{SpliceModel.Rule.premises/0}{its premises}\\
-$\mathsf{add}_{\mathit{sec}}(f, p)$ & \texttt{Sec.add} & \leanslot{SpliceModel.Sec.add/0}{Add a formula to a part}\\
-$\mathsf{then}$ & \texttt{Sec.concl} & \leanslot{SpliceModel.Sec.concl/0}{Then}\\
-$\mathsf{assume}$ & \texttt{Sec.hyps} & \leanslot{SpliceModel.Sec.hyps/0}{Assume}\\
-$\mathsf{let}$ & \texttt{Sec.vars} & \leanslot{SpliceModel.Sec.vars/0}{Let}\\
 $\mathsf{gen}(s)$ & \texttt{Seg.gen} & \leanslot{SpliceModel.Seg.gen/0}{text generated from Lean}\\
 $\mathsf{slot}_{i}(t)$ & \texttt{Seg.slot} & \leanslot{SpliceModel.Seg.slot/0}{a slot, whose text the authors own}\\
 $\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots: a slot's id, and which occurrence of that id in its body it is, from 0}\\
-$\texttt{Telescope}(\alpha)$ & \texttt{Telescope} & \leanslot{SpliceModel.Telescope/0}{A proposition taken apart, as the prose view shows it}\\
-$t.\mathit{concl}$ & \texttt{Telescope.concl} & \leanslot{SpliceModel.Telescope.concl/0}{its conclusion}\\
-$t.\mathit{hyps}$ & \texttt{Telescope.hyps} & \leanslot{SpliceModel.Telescope.hyps/0}{its hypotheses}\\
-$\mathit{print}^{*}_{A}(u)$ & \texttt{Telescope.map} & \leanslot{SpliceModel.Telescope.map/0}{Print each part of a telescope}\\
-$\langle v, h, c \rangle$ & \texttt{Telescope.mk} & \leanslot{SpliceModel.Telescope.mk/0}{}\\
-$t.\mathit{vars}$ & \texttt{Telescope.vars} & \leanslot{SpliceModel.Telescope.vars/0}{its variables, with their types}\\
 $\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
-$\mathsf{list}(s, \mathit{fs})$ & \texttt{andList} & \leanslot{SpliceModel.andList/0}{The formulas of a part, each with the text before it}\\
-$\mathsf{rest}(\mathit{fs})$ & \texttt{andRest} & \leanslot{SpliceModel.andRest/0}{The formulas of a part after its first, each with the text before it: a comma, and \LeanCodeInline{and} before the last}\\
 $\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
 $\mathsf{bundle}_{W}(\mathit{keys})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for some keys and views}\\
 $\mathsf{check}_{b}(d)$ & \texttt{check} & \leanslot{SpliceModel.check/0}{\LeanCodeInline{imprimatur check}: what it reports about a document}\\
-$\texttt{\$}$ & \texttt{dollar} & \leanslot{SpliceModel.dollar/0}{The dollar sign, which opens and closes a formula}\\
 $\mathsf{fill}(\mathit{old}, r)$ & \texttt{fill} & \leanslot{SpliceModel.fill/0}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}\\
 $\mathsf{ids}(r)$ & \texttt{ids} & \leanslot{SpliceModel.ids/0}{The identifiers of a body's slots}\\
-$\mathsf{join}(\mathit{ps})$ & \texttt{joinParts} & \leanslot{SpliceModel.joinParts/0}{Text and formulas, the formulas in dollars, and the sentence's end}\\
 $l[i]$ & \texttt{lookup} & \leanslot{SpliceModel.lookup/0}{The text of slot \LeanCodeInline{i}, the first with that identifier}\\
-$\mathsf{next}_{\mathit{sec}}(s)$ & \texttt{nextSec} & \leanslot{SpliceModel.nextSec/0}{The part of a formula, from the part before it and the text before it: a separator continues the part, and other text starts one}\\
-$\mathsf{telescope}(p)$ & \texttt{ofParts} & \leanslot{SpliceModel.ofParts/0}{A sentence whose conclusion is one formula}\\
-$\mathsf{opener}(s)$ & \texttt{opener} & \leanslot{SpliceModel.opener/0}{The part that a text starts: \LeanCodeInline{Let} the variables, \LeanCodeInline{Assume} the hypotheses, and otherwise the conclusion}\\
 $\lfloor d \rfloor$ & \texttt{outline} & \leanslot{SpliceModel.outline/0}{The outline of a piece: a block without its body}\\
-$\mathsf{layout}(t)$ & \texttt{proseLayout} & \leanslot{SpliceModel.proseLayout/0}{\textbf{The prose layout.} Formulas set out as a sentence}\\
-$\mathsf{parts}(t)$ & \texttt{proseParts} & \leanslot{SpliceModel.proseParts/0}{A sentence's formulas, each with the text before it}\\
-$\mathsf{sentence}(r)$ & \texttt{proseSentence} & \leanslot{SpliceModel.proseSentence/0}{\textbf{The prose parser.} A sentence taken apart}\\
-$c \triangleright \mathit{xs}$ & \texttt{pushChar} & \leanslot{SpliceModel.pushChar/0}{Put a character at the front of the first piece}\\
 $\mathsf{slots}(r)$ & \texttt{slots} & \leanslot{SpliceModel.slots/0}{The slots of a body, with their text}\\
-$\mathsf{sort}_{\mathit{sec}}(\mathit{ps})$ & \texttt{sortParts} & \leanslot{SpliceModel.sortParts/0}{Sort formulas into parts, by the text before each}\\
-$\mathsf{split}(\mathit{cs})$ & \texttt{splitDollar} & \leanslot{SpliceModel.splitDollar/0}{Split text at each dollar}\\
-$\mathsf{unjoin}(\mathit{xs})$ & \texttt{unjoin} & \leanslot{SpliceModel.unjoin/0}{Pair each formula with the text before it, from the pieces between dollars}\\
 \multicolumn{3}{@{}l}{\textit{Stlc}}\\
 $e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction}\\
 $e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
@@ -1321,5 +1895,24 @@ $e[v]$ & \texttt{subst} & \leanslot{Stlc.subst/0}{Substitution, as a stand-in: t
 \end{longtable}
 \end{leannotation}
 \endgroup
+
+\section{The development}\label{app:development}
+
+Figure~\ref{fig:development} shows imprimatur's Lean by component, and
+each component's lines by the kind of declaration that holds them. The
+bundle's type is counted once, though the extractor and the splicer each
+hold a copy of it. The splicer's model and its proofs are in the splicer's
+package; the last bar is the Lean of this paper: its example and its
+notation.
+
+\begin{figure}[h]
+\includegraphics[width=\linewidth]{development-chart.png}
+\caption{imprimatur's Lean, in lines, by component and by the kind of
+the declaration that holds each line. A line before a file's first
+declaration is \emph{other}; \emph{notation} is imprimatur's own
+commands, such as \texttt{latex\_notation}. Drawn by
+\texttt{analytics/chart.py}.}
+\label{fig:development}
+\end{figure}
 
 \end{document}

@@ -27,6 +27,33 @@
         "prose": "\\LeanProse{Let $a, b, c \\in \\mathbb{N}$, $i \\in \\mathbb{Z}$ and $L \\in \\mathbb{N}$. Then (1)~$a + b - c \\cdot 2 / 1 \\bmod 3 = b^{2}$, (2)~$-i \\ne i$, (3)~$a < b$, (4)~$a \\le b$, (5)~$b > a$, (6)~$b \\ge a$, (7)~$a + 1 = a + 1$, (8)~$(\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a$, (9)~$(a, b) = (a, b)$, (10)~$L = i$ and (11)~$\\LeanMathConst{Subtype.mk}\\,a = a$.}"
       }
     },
+    "Notation.bare": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
+      "decl": "Notation.bare",
+      "doc": "A conclusion alone: no \"Let\", no \"Assume\", no \"Then\".",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanProse", "\\LeanSorryFree", "\\leanmetasource", "\\top"],
+      "sigHash": "d7949ad9ed6a72dbe2bb92d16c43ddcfa8ff1cd009754da9dea272f6564799ee",
+      "sorry": false,
+      "source": {
+        "line": 121,
+        "path": "Notation/Defs.lean"
+      },
+      "stmtHash": "cbf57ca2ac2c1a288bed379a97bc1a2199e85c57d7213acfa5fb8d64c46b1717",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{bare} : \\LeanConst{True}}",
+        "math": "\\LeanMath{\\top}",
+        "math:binders": "\\LeanMath{\\top}",
+        "math:named": "\\LeanMath{\\top}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A conclusion alone: no \"Let\", no \"Assume\", no \"Then\".}",
+        "prose": "\\LeanProse{$\\top$.}"
+      }
+    },
     "Notation.binderRules": {
       "axioms": ["sorryAx"],
       "cone": {
@@ -79,6 +106,33 @@
         "math:named": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a \\LeanCodeInline{match}, which falls back to Lean's printer.}",
         "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$ and (4)~$\\mathrm{true} \\ne \\mathrm{false}$.}"
+      }
+    },
+    "Notation.hypsOnly": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
+      "decl": "Notation.hypsOnly",
+      "doc": "Hypotheses but no variables: an \"Assume\" sentence first, then \"if and\nonly if\".",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNumber", "\\LeanProse", "\\LeanSorryFree", "\\iff", "\\implies", "\\leanmetasource", "\\top", "\\wedge"],
+      "sigHash": "cc5dedf191c60ddbfaa5194e99461a7a15ccb65fd15f32d5f8ac70eff0d542e1",
+      "sorry": false,
+      "source": {
+        "line": 117,
+        "path": "Notation/Defs.lean"
+      },
+      "stmtHash": "ebe62c77e7806d9cd0c9e45e1a4907bb2ffc09e047bdaf984f6c984d1eec08b2",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{hypsOnly} (\\LeanBound{h} : \\LeanNumber{1} = \\LeanNumber{1}) (\\LeanBound{h'} : \\LeanNumber{2} = \\LeanNumber{2}) : \\LeanConst{True} ↔ \\LeanConst{True}}",
+        "math": "\\LeanMath{1 = 1 \\wedge 2 = 2 \\implies (\\top \\iff \\top)}",
+        "math:binders": "\\LeanMath{1 = 1 \\wedge 2 = 2 \\implies (\\top \\iff \\top)}",
+        "math:named": "\\LeanMath{1 = 1 \\wedge 2 = 2 \\implies (\\top \\iff \\top)}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Hypotheses but no variables: an \"Assume\" sentence first, then \"if and\nonly if\".}",
+        "prose": "\\LeanProse{Assume $1 = 1$ and $2 = 2$. Then $\\top$ if and only if $\\top$.}"
       }
     },
     "Notation.joins": {
@@ -199,7 +253,7 @@
       "decl": "Notation.project",
       "doc": "Notation from the project: every feature of a rule.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\implies", "\\in", "\\leanmetasource", "\\lub", "\\mathbb", "\\mathbf", "\\mathbin", "\\mathrm", "\\models", "\\neg", "\\rho", "\\to", "\\triangleright", "\\vdash", "\\wedge"],
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanHyp", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\implies", "\\in", "\\leanmetasource", "\\lub", "\\mathbb", "\\mathbf", "\\mathbin", "\\mathrm", "\\models", "\\neg", "\\rho", "\\to", "\\triangleright", "\\vdash", "\\wedge"],
       "sigHash": "c134fb1e52b319051da4329bdb04b49634aa06ab95f5c032ecb4bb13072cea7b",
       "sorry": true,
       "source": {
@@ -213,7 +267,7 @@
         "math:binders": "\\LeanMath{2n = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge (\\vdash L \\wedge (n = m \\Rightarrow n \\models m))}",
         "math:named": "\\LeanMath{\\mathrm{dbl}(n) = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Notation from the project: every feature of a rule.}",
-        "prose": "\\LeanProse{Let $n, m, k \\in \\mathbb{N}$, $\\rho \\in \\LeanMathConst{Fin}\\,0 \\to \\mathbb{N}$ and $L \\in \\mathbb{N}$. Assume $2n = m$, $\\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho$, $\\lub{n, m, k, n} = k$ and $\\mathbf{0} = 0$. Then (1)~$n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k$, (2)~$\\vdash L$ and (3)~$n = m \\implies n \\models m$.}"
+        "prose": "\\LeanProse{Let $n, m, k \\in \\mathbb{N}$, $\\rho \\in \\LeanMathConst{Fin}\\,0 \\to \\mathbb{N}$ and $L \\in \\mathbb{N}$. Assume \\LeanHyp{hd} $2n = m$, $\\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho$, $\\lub{n, m, k, n} = k$ and $\\mathbf{0} = 0$. Then (1)~$n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k$, (2)~$\\vdash L$ and (3)~$n = m \\implies n \\models m$.}"
       }
     },
     "Notation.sets": {
@@ -295,6 +349,33 @@
         "math:named": "\\LeanMath{s \\sqsubseteq t \\wedge m \\le n}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A typed pattern: \\LeanCodeInline{≤} on sets has its own notation; on numbers it doesn't.}",
         "prose": "\\LeanProse{Let $s, t \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $m, n \\in \\mathbb{N}$. Then (1)~$s \\sqsubseteq t$ and (2)~$m \\le n$.}"
+      }
+    },
+    "Notation.witnesses": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
+      "decl": "Notation.witnesses",
+      "doc": "Existentials in the conclusion: \"there is … such that\", nested, over\nnumbered conjuncts.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanProse", "\\LeanSorryFree", "\\exists", "\\in", "\\leanmetasource", "\\mathbb", "\\wedge"],
+      "sigHash": "c2c923c587cdcd9a478e8cb4850dd8c88521e5c7b4a22dc7a042cfee23faef2f",
+      "sorry": false,
+      "source": {
+        "line": 112,
+        "path": "Notation/Defs.lean"
+      },
+      "stmtHash": "d87f370e2af19f39552d16f9c9bd3dbcccd63d556ef1c6ecc67378e3a965ac6a",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{witnesses} (\\LeanBound{n} : \\LeanConst{Nat}) : ∃ \\LeanBound{m} \\LeanBound{k}, \\LeanBound{m} = \\LeanBound{n} ∧ \\LeanBound{k} = \\LeanBound{m}}",
+        "math": "\\LeanMath{\\exists m,\\ \\exists k,\\ m = n \\wedge k = m}",
+        "math:binders": "\\LeanMath{\\exists m, k.\\, m = n \\wedge k = m}",
+        "math:named": "\\LeanMath{\\exists m,\\ \\exists k,\\ m = n \\wedge k = m}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Existentials in the conclusion: \"there is … such that\", nested, over\nnumbered conjuncts.}",
+        "prose": "\\LeanProse{Let $n \\in \\mathbb{N}$. Then there is $m$ such that there is $k$ such that (1)~$m = n$ and (2)~$k = m$.}"
       }
     }
   },

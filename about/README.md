@@ -38,11 +38,17 @@ imprimatur check                       # 0 stale, 0 errors, 0 warnings
 TEXINPUTS="../tex//:" latexmk -pdf imprimatur-paper.tex   # needs acmart (texlive-publishers) and its fonts (texlive-fonts-extra)
 ```
 
+The appendix's chart of imprimatur's Lean, `development-chart.png`, is
+drawn by `analytics/chart.py` (`cd analytics && uv run chart.py`), which
+fails if a Lean file in the repository is in none of its components.
+
+`./refresh.sh` does all but the toolchain install, redrawing the chart too, stopping unless `check`
+reports nothing and the paper typesets with every reference resolved;
+`--dry-run` shows what `build` would change without writing it.
+
 Its references are in `imprimatur-paper.bib`, typeset by BibTeX with
-acmart's `ACM-Reference-Format.bst` (latexmk runs BibTeX itself). If
-acmart is installed by hand rather than from texlive-publishers, BibTeX
-may not find the style: add `BSTINPUTS=<acmart's directory>:` to the
-command.
+acmart's `ACM-Reference-Format.bst`, a copy of which is in this directory
+(latexmk runs BibTeX itself).
 
 CI does the same (`e2e/about` in `scripts/e2e.sh`), and fails if the
 committed paper is not what `imprimatur build` makes, or if `check` reports

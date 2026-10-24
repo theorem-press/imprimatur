@@ -312,17 +312,9 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
       if hidden.contains v then
         holeIdx := holeIdx + 1
         continue
-      let need :=
-        if depth > 0 then 0
-        else if r.prec ≥ Doc.maxPrec then
-          if partIdx == 1 || partIdx == parts.size then Doc.maxPrec else 0
-        else
-          let first := topIdx == 0
-          let last := topIdx + 1 == topCount
-          match r.assoc with
-          | "left" => if first then r.prec else r.prec + 1
-          | "right" => if last then r.prec else r.prec + 1
-          | _ => r.prec + 1
+      -- The precedence the hole needs: the renderer's own policy.
+      let need := Doc.holeNeeds r.prec r.assoc depth (partIdx == 1 || partIdx == parts.size)
+        (topIdx == 0) (topIdx + 1 == topCount)
       -- A chain's operands may each be of their own type (a tuple
       -- `(a, b, c)`), so a type variable among them is left open.
       let so := sortOf v
