@@ -38,6 +38,10 @@ imprimatur check                       # 0 stale, 0 errors, 0 warnings
 TEXINPUTS="../tex//:" latexmk -pdf imprimatur-paper.tex   # needs acmart (texlive-publishers) and its fonts (texlive-fonts-extra)
 ```
 
+`./refresh.sh` does all but the toolchain install, stopping unless `check`
+reports nothing and the paper typesets with every reference resolved;
+`--dry-run` shows what `build` would change without writing it.
+
 Its references are in `imprimatur-paper.bib`, typeset by BibTeX with
 acmart's `ACM-Reference-Format.bst`, a copy of which is in this directory
 (latexmk runs BibTeX itself).
