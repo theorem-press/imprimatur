@@ -1298,7 +1298,9 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   no reader could parse.
 - **The trusted part** is a small chart parser that counts at most two
   readings, with a work budget, and, where the expected reading has a `⁇`,
-  the mirroring of `Validate.ofRule` against `Render.fillTemplate`. On
+  that `Validate.ofRule` follows `Render.fillTemplate`; the precedence each
+  hole needs is one function they share, `Doc.holeNeeds` in the module
+  `Imprimatur.Layout`, so that part holds by construction. On
   project B's standalone document, 610 of the 662 formulas with one reading
   have an expected reading without `⁇`, 21 have one in part, and 31 have
   none (#41 would close the gap). Making the emitter drop the parentheses its holes need is caught
@@ -1321,8 +1323,13 @@ which side condition 2 excludes.
 
 ### 18.5 The trusted base
 
-The Lean kernel and compiler; the extractor's reading of the environment
-(#76); the splicer's shell, which reads files, the configuration and the
+The Lean kernel and compiler; the extractor's reading of the environment,
+which gathers what a view says (binders, `isProp`, notation matching,
+`inferType`), and its read-back parser's completeness, checked per formula
+(docs/verified-extractor.md says what is proved instead: the prose and
+rules layouts, the emitter's parentheses and the holes' precedences are the
+shared module `Imprimatur.Layout`, and the paper's theorems are about it);
+the splicer's shell, which reads files, the configuration and the
 bundle and writes what `apply` returns; the scanner's reading of TeX, which
 the theorems take as the specification of where markup is; collision
 resistance of SHA-256; the notation module as the paper's dictionary (Lean

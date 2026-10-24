@@ -4,8 +4,9 @@
 """lint/verified: the splicer's verified code stays provable.
 
 The theorems about the splicer (docs/verified-splicer.md) are about the code
-in splice/Splice/Core and splice/SpliceModel. That code must not use what a
-proof can't see into, or what would make a theorem hollow: `partial`,
+in splice/Splice/Core and splice/SpliceModel, and those about the extractor's
+layouts and emitter (docs/verified-extractor.md) about the shared module in
+bundle/. That code must not use what a proof can't see into, or what would make a theorem hollow: `partial`,
 `while` and `repeat` (whose loops are opaque), `unsafe`, `implemented_by`
 and `@[extern]` (which replace a definition by unproved code), `!` indexing
 (which can panic), and `sorry` or `native_decide` (which prove nothing, or
@@ -17,6 +18,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DIRS = [ROOT / "splice" / "Splice" / "Core", ROOT / "splice" / "SpliceModel"]
+FILES = [ROOT / "bundle" / "Layout.lean"]
 FORBIDDEN = [
     (r"\bpartial\b", "partial"), (r"\bwhile\b", "while"), (r"\brepeat\b", "repeat"),
     (r"\bunsafe\b", "unsafe"), (r"\bimplemented_by\b", "implemented_by"),
@@ -54,8 +56,9 @@ def strip(text):
 
 def main():
     errors = []
-    for d in DIRS:
-        for path in sorted(d.glob("**/*.lean")):
+    paths = [p for d in DIRS for p in sorted(d.glob("**/*.lean"))] + FILES
+    if True:
+        for path in paths:
             for lineno, line in enumerate(strip(path.read_text(encoding="utf-8")).splitlines(), 1):
                 for pat, what in FORBIDDEN:
                     if re.search(pat, line):

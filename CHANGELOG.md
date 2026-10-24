@@ -5,6 +5,20 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The extractor's prose and rules layouts, its formula emitter and the
+  precedence policy of a notation rule's holes are one pure, total module,
+  `bundle/Layout.lean`, copied into both packages (`lint/bundle-copies`),
+  checked by `lint/verified`, and proved of in the paper's model
+  (docs/verified-extractor.md): the prose parser undoes the prose layout,
+  for the whole sentence the extractor writes (labels, *be a type*,
+  numbered conjuncts, *if and only if*, nested *there is*); the figure
+  parser undoes the rules layout; and a prose or rules rendering that reads
+  back shows its statement part by part, where before the rules view was
+  assumed to. The renderer and the validator's grammar call one
+  `Doc.holeNeeds`, so the grammar demands of an argument what the renderer
+  gives it by construction, not by mirroring. `proseView` and `rulesView`
+  now gather what the view says, then lay it out; their output is
+  unchanged.
 - The splicer's laws and Theorem 1 are proved of the splicer's own code, not
   only of a model (docs/verified-splicer.md). The scanner, the slot finder
   and the text kernel are rewritten as total, tail-recursive functions on

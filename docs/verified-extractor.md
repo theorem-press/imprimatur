@@ -1,6 +1,15 @@
 # Proposal: theorems about the extractor's rendering
 
-Status: proposal (issue #76). Companion to `docs/verified-splicer.md`.
+Status: done, phases 0–5 (issue #76). Companion to `docs/verified-splicer.md`.
+What was built differs from the plan below in names only: `ProseData` is
+`Imprimatur.Layout.Prose`, `FigureData` is a list of `Imprimatur.Layout.Item`
+(a rule, or a name that is no constructor), the figure parser is
+`Imprimatur.Layout.figure`, and the theorems are
+`SpliceModel.proseSentence_proseLayout`, `SpliceModel.figure_figureLayout`,
+`SpliceModel.Anatomy.Sound.proseShows` and `SpliceModel.Anatomy.Sound.rulesShow`
+(the paper's Theorems 6.2–6.5). The `Doc` tree and its emitter moved into the
+module, made total; `SpliceModel.Formulas` states its parenthesisation and
+the hole policy's bounds.
 
 ## Goal
 
