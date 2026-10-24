@@ -11,7 +11,9 @@
 #      imprimatur.toml, the notation is in notation/.
 #   3. imprimatur check: must report nothing at all, warnings included, as CI
 #      requires (every formula reads back, no \leancheck has drifted).
-#   4. latexmk: typeset it, with BibTeX (ACM-Reference-Format.bst is here).
+#   4. analytics/chart.py: redraw development-chart.png, the appendix's chart
+#      of imprimatur's Lean (with uv; skipped, with a warning, without it).
+#   5. latexmk: typeset it, with BibTeX (ACM-Reference-Format.bst is here).
 #
 # Set IMPRIMATUR to the imprimatur command if it is not on PATH; otherwise
 # the splicer's own build, ../splice/.lake/build/bin/imprimatur, is used, and
@@ -26,6 +28,7 @@
 #   ./refresh.sh              # refresh all generated blocks, check, rebuild PDF
 #   ./refresh.sh --dry-run    # show what build would change; write nothing
 #   ./refresh.sh --no-lean    # skip lake build (the Lean is already built)
+#   ./refresh.sh --no-chart   # keep the committed chart; do not redraw it
 #
 set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -33,10 +36,12 @@ ROOT="$(cd "$HERE/.." && pwd)"
 
 is_dry=0
 no_lean=0
+no_chart=0
 for a in "$@"; do
   case "$a" in
     --dry-run) is_dry=1 ;;
     --no-lean) no_lean=1 ;;
+    --no-chart) no_chart=1 ;;
     -h|--help) sed -n '2,/^set -uo/p' "$0" | sed '$d; s/^# \{0,1\}//'; exit 0 ;;
     *) echo "!! unknown option: $a (try --help)"; exit 2 ;;
   esac
@@ -99,7 +104,20 @@ if [ $check_rc -ne 0 ] || ! grep -q "check: 0 stale, 0 errors, 0 warnings" "$CHE
 fi
 rm -f "$CHECKLOG"
 
-# --- 4. the PDF -----------------------------------------------------------------
+# --- 4. the chart ---------------------------------------------------------------
+if [ $no_chart -eq 0 ]; then
+  if command -v uv > /dev/null; then
+    echo "== analytics/chart.py: the chart of imprimatur's Lean =="
+    if ! (cd "$HERE/analytics" && uv run --quiet chart.py); then
+      echo "!! the chart failed; see the messages above"
+      exit 1
+    fi
+  else
+    echo "~~ uv not found: keeping the committed development-chart.png"
+  fi
+fi
+
+# --- 5. the PDF -----------------------------------------------------------------
 echo "== latexmk (pdflatex + bibtex) =="
 cd "$HERE"
 # imprimatur build may have rewritten the .tex within the same second as the
