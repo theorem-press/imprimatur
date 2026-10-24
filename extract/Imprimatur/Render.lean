@@ -300,10 +300,13 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       ctx.listLiterals)
   let g := base.extend leaves
   let (rs, flags) := Validate.readBack g ts (← sortOf e)
-  if flags.over then
+  -- Two readings are two readings, whatever else was dropped.
+  if rs.size ≥ 2 then
+    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!.text} and as {rs[1]!.text}")
+  else if flags.over then
     problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
   else if flags.pruned then
-    problems.modify (·.push s!"not validated, as a reading has too many variants: ${tex}$")
+    problems.modify (·.push s!"not validated, as a reading was dropped: ${tex}$")
   else if rs.isEmpty then
     -- IMPRIMATUR_VALIDATE_DEBUG=1 shows the tokens and the grammar.
     if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
@@ -311,8 +314,6 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
       for (p, b) in g.prods do IO.eprintln s!"  {p.name} : {p.sort} @{p.prec} := {repr b}"
     problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
-  else if rs.size ≥ 2 then
-    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!.text} and as {rs[1]!.text}")
   else if !expected.matches rs[0]! then
     -- The one reading is not what was rendered: the grammar does not follow
     -- the renderer here, or the emitter left out parentheses a reader needs.

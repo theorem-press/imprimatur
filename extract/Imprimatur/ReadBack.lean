@@ -327,8 +327,11 @@ structure CState where
   steps : Nat := 0
   /-- The budget, or the fuel, ran out. -/
   over : Bool := false
-  /-- A variant of a reading was dropped past the cap. -/
+  /-- A reading was dropped: a third one, or a variant past the cap. -/
   pruned : Bool := false
+  /-- A question was cut, being already asked: only a cycle of coercions
+  brings it about, and the theorems assume none did. -/
+  cut : Bool := false
   /-- Whether to log what is read (`IMPRIMATUR_VALIDATE_DEBUG`). -/
   trace : Bool := false
   /-- The log. -/
@@ -349,7 +352,7 @@ def keep2Go {α : Type} (key : α → String) (variant : α → String) (top : S
   | [], out, _, pruned => (out, pruned)
   | x :: xs, out, keys, pruned =>
     let k := key x
-    if !keys.contains k && keys.size ≥ 2 then keep2Go key variant top xs out keys pruned
+    if !keys.contains k && keys.size ≥ 2 then keep2Go key variant top xs out keys true
     else
       let keys := if keys.contains k then keys else keys.push k
       if out.any (fun y => key y == k && variant y == top) then keep2Go key variant top xs out keys pruned
@@ -360,11 +363,12 @@ def keep2Go {α : Type} (key : α → String) (variant : α → String) (top : S
 
 /-- The readings to keep of a list: at most two different readings (by
 `key`; two readings that are written the same are the same reading), each
-with up to `variantCap` different sorts or bindings (by `variant`), since a reading
-can be of several sorts (an atom, or the same atom through a coercion). A
-variant that is `top` (an unknown sort, no bindings) is as good as any other
-for what follows, so it stands alone. Whether a variant was dropped past
-the cap is returned with them. -/
+with up to `variantCap` different sorts or bindings (by `variant`), since a
+reading can be of several sorts (an atom, or the same atom through a
+coercion). A variant that is `top` (an unknown sort, no bindings) is as good
+as any other for what follows, so it stands alone. A third reading, or a
+variant past the cap, is dropped and noted: what remains may then be short
+of what a question above needs. -/
 def keep2 {α : Type} (key : α → String) (variant : α → String) (xs : Array α)
     (top : String := "*") : Array α × Bool :=
   keep2Go key variant top xs.toList #[] #[] false
@@ -494,7 +498,7 @@ mutual
     | fuel + 1, s, p, excl, i, j => do
       let key := (s, p, excl, i, j)
       if (← get).active.contains key then
-        modify fun st => { st with cuts := st.cuts.push key }
+        modify fun st => { st with cuts := st.cuts.push key, cut := true }
         return #[]
       let cutsBefore := (← get).cuts.size
       modify fun st => { st with active := st.active.insert key (), steps := st.steps + 1 }
@@ -699,15 +703,18 @@ def readings (A : SortAlgebra) (g : Grammar) (ts : Array String) (s : String) : 
 structure Flags where
   /-- The work budget, or the fuel, ran out. -/
   over : Bool
-  /-- A variant of a reading was dropped past the cap. -/
+  /-- A reading was dropped: a third one, or a variant past the cap. -/
   pruned : Bool
+  /-- A question was cut, being already asked. -/
+  cut : Bool
   deriving Inhabited, Repr
 
 /-- The flags of a state after reading. -/
 def CState.flags (st : CState) : Flags :=
-  { over := st.over || st.steps > budget, pruned := st.pruned }
+  { over := st.over || st.steps > budget, pruned := st.pruned, cut := st.cut }
 
-/-- Whether any flag is set: the reading is not to be trusted. -/
+/-- Whether the reading is not to be trusted: it gave up, or dropped a
+reading. A cut is not that: it loses nothing of the question it cuts. -/
 def Flags.any (f : Flags) : Bool := f.over || f.pruned
 
 /-- The readings (at most two) of a token sequence as an expression of sort

@@ -359,6 +359,19 @@ latex_group "Reading back" := [Anatomy.ReadsAll.nil, Anatomy.ReadsAll.cons, Anat
   Anatomy.ReadsRule.mk, Anatomy.ReadsRules.nil, Anatomy.ReadsRules.cons]
 latex_display "Reading two views" := [Anatomy.Prose, Anatomy.Rules]
 
+-- Reading formulas back (Imprimatur.ReadBack), and what is proved of it.
+latex_notation Imprimatur.Validate.SortAlgebra => r"\texttt{Sorts}"
+latex_notation Imprimatur.Validate.Grammar => r"\texttt{Grammar}"
+latex_notation Imprimatur.Validate.Reading => r"\texttt{Reading}"
+latex_notation Imprimatur.Validate.Reading.matches e r => r"\mathsf{matches}(#e, #r)"
+latex_notation Matches e r => r"#e \succcurlyeq #r" prec := 50
+latex_notation Array.size xs => r"|#xs|"
+latex_notation Imprimatur.Validate.readBackWith A g ts s => r"\mathsf{readBack}_{#A}(#g, #ts, #s)"
+latex_notation Prod.fst (Imprimatur.Validate.readBackWith A g ts s) => r"\mathsf{readings}_{#A}(#g, #ts, #s)"
+latex_notation Exp A g ts s p excl i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g}_{#A}(#s, #p, #excl)\ #r : #σ" prec := 50
+latex_category Imprimatur.Validate.SortAlgebra => r"\mathcal{S}"
+latex_category Imprimatur.Validate.Grammar => "G"
+
 -- The names a bundle uses, all strings.
 latex_display "Names" := [Imprimatur.Key, Imprimatur.View, Imprimatur.TeX, Imprimatur.Hash]
 
@@ -376,6 +389,8 @@ latex_entry "The hash names the statement" => Imprimatur.Image.Of.stmt_eq
 latex_entry "A view shows the statement" => Imprimatur.Bundle.True.view
 latex_entry "The prose parser undoes the layout" => SpliceModel.proseSentence_proseLayout
 latex_entry "The figure parser undoes the layout" => SpliceModel.figure_figureLayout
+latex_entry "The parser is sound" => SpliceModel.readBack_sound
+latex_entry "A validated formula reads as what it was rendered from" => SpliceModel.validated_sound
 latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound.proseShows
 latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound.rulesShow
 latex_entry "Prose shows the statement" => SpliceModel.prose_true

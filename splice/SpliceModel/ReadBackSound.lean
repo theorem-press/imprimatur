@@ -131,29 +131,29 @@ theorem keep2Go_subset {α : Type} (key variant : α → String) (top : String) 
     intro x hx
     simp only [keep2Go] at hx
     split at hx
-    · rcases keep2Go_subset key variant top ys out _ pruned x hx with h | h
+    · rcases keep2Go_subset key variant top ys _ _ _ x hx with h | h
       · exact Or.inl (List.mem_cons_of_mem _ h)
       · exact Or.inr h
     · split at hx
-      · rcases keep2Go_subset key variant top ys out _ pruned x hx with h | h
+      · rcases keep2Go_subset key variant top ys _ _ _ x hx with h | h
         · exact Or.inl (List.mem_cons_of_mem _ h)
         · exact Or.inr h
       · split at hx
-        · rcases keep2Go_subset key variant top ys _ _ pruned x hx with h | h
+        · rcases keep2Go_subset key variant top ys _ _ _ x hx with h | h
           · exact Or.inl (List.mem_cons_of_mem _ h)
           · rw [Array.mem_push] at h
             rcases h with h | rfl
             · exact Or.inr (Array.mem_of_mem_filter h)
             · exact Or.inl (List.mem_cons_self ..)
         · split at hx
-          · rcases keep2Go_subset key variant top ys out _ true x hx with h | h
+          · rcases keep2Go_subset key variant top ys _ _ _ x hx with h | h
             · exact Or.inl (List.mem_cons_of_mem _ h)
             · exact Or.inr h
           · split at hx
-            · rcases keep2Go_subset key variant top ys out _ pruned x hx with h | h
+            · rcases keep2Go_subset key variant top ys _ _ _ x hx with h | h
               · exact Or.inl (List.mem_cons_of_mem _ h)
               · exact Or.inr h
-            · rcases keep2Go_subset key variant top ys _ _ pruned x hx with h | h
+            · rcases keep2Go_subset key variant top ys _ _ _ x hx with h | h
               · exact Or.inl (List.mem_cons_of_mem _ h)
               · rw [Array.mem_push] at h
                 rcases h with h | rfl
@@ -763,11 +763,9 @@ theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (i j cutsBefore
   refine triple_bind triple_get fun st₃ _ => ?_
   refine triple_bind (triple_modify fun st h => h.insertExp _ (fun x hx => ⟨hij, hout₄ x hx⟩)) fun _ _ => ?_
   refine triple_bind triple_get fun st₄ _ => ?_
-  refine triple_bind (Q := fun _ => True) ?_ fun _ _ =>
-    triple_pure (Q := fun (res : Array (Reading × String)) => ∀ x ∈ res, Exp A g ts s p excl i j x.1 x.2) hout₄
   split
-  · exact triple_modify fun st h => h.congr rfl rfl rfl
-  · exact triple_pure trivial
+  · exact triple_bind (triple_modify fun st h => h.congr rfl rfl rfl) fun _ _ => triple_pure hout₄
+  · exact triple_pure hout₄
 
 theorem parens_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (out : Array (Reading × String))
     (_hij : i < j) (hout : ∀ x ∈ out, Exp A g ts s p excl i j x.1 x.2) :
@@ -843,11 +841,19 @@ theorem mem_readings {s : String} {st : CState} {r : Reading}
 
 /-- **Soundness.** Every reading the parser returns is a reading in the
 grammar, as an expression of the sort asked for, over the whole text. -/
-theorem readBack_sound (s : String) {r : Reading} (h : r ∈ (readBackWith A g ts s).1) :
-    ∃ σ, Exp A g ts s 0 none 0 ts.size r σ := by
+theorem readBack_sound (s : String) {rd : Reading} (h : rd ∈ (readBackWith A g ts s).1) :
+    ∃ σ, Exp A g ts s 0 none 0 ts.size rd σ := by
   obtain ⟨σ, hmem⟩ := mem_readings (st := {}) h
   have hT := (soundAll (A := A) (g := g) (ts := ts) (fuelFor g ts)).1 s 0 none 0 ts.size {} Inv.empty
   exact ⟨σ, (hT.2 _ hmem).2⟩
+
+/-- **A validated formula reads as what it was rendered from.** When the
+parser returns one reading, and it matches the expected reading, that
+reading is a reading in the grammar, and it is the expected reading
+wherever the expected one is definite. -/
+theorem validated_sound (s : String) (ex rd : Reading) (h : (readBackWith A g ts s).1 = #[rd])
+    (hm : ex.matches rd = true) : (∃ σ, Exp A g ts s 0 none 0 ts.size rd σ) ∧ Matches ex rd :=
+  ⟨readBack_sound s (by simp [h]), (matches_iff ex rd).mp hm⟩
 end
 
 end SpliceModel

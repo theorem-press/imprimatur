@@ -1,7 +1,17 @@
 # Proposal: the validator, proved
 
-Status: in progress (branch `verified-validator`); decisions 1–4 taken as
-recommended. Supersedes the plan in #22 (a model with property tests)
+Status: phases 0–3 done, phase 4 not attempted beyond its specification
+(branch `verified-validator`); decisions 1–4 taken as recommended. What
+is proved: the parser is sound (`SpliceModel.readBack_sound`), the matcher
+decides structural matching (`matches_iff`), and so a validated formula
+reads as what it was rendered from (`validated_sound`). What is not:
+completeness up to two readings. Writing its specification showed the
+parser as it was to be incomplete in principle, in three places, each now
+either fixed or made explicit (below, "Phase 4"); a proof would then need
+the sort algebra axiomatised, since the parser prunes sort variants by the
+rule that an unknown sort stands for any, and that rule is only sound when
+`compat`, `bind` and `expected` are monotone in the sorts' generality. That
+is the next design, not this one. Supersedes the plan in #22 (a model with property tests)
 with the pattern of docs/verified-extractor.md: the code that runs is the
 code that is proved. Companion to `docs/verified-splicer.md` and
 `docs/verified-extractor.md`. The module is `bundle/ReadBack.lean`
@@ -20,8 +30,31 @@ from the plan below in three points, each recorded in the module:
 - **The variant cap is 256**, not 32: two of the paper's own formulas
   (`'$' :: l ++ ['$']`) exceeded 32, and the cap at 32 was silently
   incomplete there. `pruned` is reported as "not validated".
-- **The fuel bounds depth** (`8 · tokens + 256` calls), the budget bounds
-  work; either exhausted is `over`.
+- **The fuel bounds depth**, each call and each step of a loop taking one,
+  the budget bounds work; either exhausted is `over`.
+
+**Phase 4, what the specification found.** The parser keeps at most two
+distinct readings of a question (`keep2`), silently dropping a third. A
+question above, which filters its hole's readings by sort, may accept the
+dropped one and reject the two kept, and so report one reading of a
+formula that has two. The same shortcut skips reading inside parentheses
+once two readings are known, and a coercion of the sort asked for reads a
+snapshot of the question's own readings, not those a later coercion adds.
+The first is now noted (`pruned`), and the extractor reports an ambiguity
+before any flag, so a formula with two readings is still "ambiguous" and
+one whose parser dropped a reading below is "not validated"; the goldens
+and the paper are unchanged by it. The other two are documented in the
+module; removing the parentheses guard is harmless, and closing coercions
+under a fixpoint is not, because without the rule that an unknown sort
+stands alone, coercions with type variables make ever new sort variants
+(`Option(Option(…))`) up to the cap. A completeness theorem therefore
+needs laws of the sort algebra: `compat`, `bind` and `expected` monotone
+under "unknown stands for any". With them, the proof is the memo
+invariant of the plan (every remembered answer complete whenever used,
+which the cut bookkeeping gives), fuel sufficiency (a derivation's depth
+bounded by its span and the coercions' acyclicity), and the three
+shortcuts above. Cuts are recorded in the flags (`cut`), not reported,
+for that theorem's hypothesis.
 
 ## Goal
 
@@ -214,9 +247,9 @@ paper byte-identical unless it says otherwise.
 | 0 | **Gate.** Fixtures cover each production form: mixfix, coercion, chain, folded binder, lists, type variables, application in all three styles, a misread, an ambiguity, a budget overrun, parentheses and TeX groups; the validation messages are in the goldens. | Goldens cover every form of reading. |
 | 1 | **Readings as trees**, in the extractor: `Reading`, `Expected`, `Matches`; `Validate.reading` and `readingMatches` become the tree functions with the same printed strings; `Render.Expect` builds trees. | Goldens byte-identical. |
 | 2 | **The module.** Tokens, productions, grammars, the parser and the matcher move to the shared module, total, with the algebra as a parameter and the `pruned` flag; the extractor's `Validate` keeps the algebra, `ofRule` and the messages. `lint/verified` covers it. | Goldens byte-identical; builds on the toolchain matrix; read-back time on projects A and B within 10 %. |
-| 3 | **Specification and soundness.** `Parses`, `Matches`; Theorems 1, 3, 5. | Proved. |
-| 4 | **Completeness up to two.** Theorem 2, with the memo invariant. | Proved. |
-| 5 | **Validation, model, paper.** Theorem 4; `Anatomy.Sound` restated; §9 and the trusted base restated; DESIGN §18.4; #22 closed. | `check` clean; lint passes. |
+| 3 | **Specification and soundness.** `Parses`, `Matches`; Theorems 1, 3, 5. | Done: `Exp`/`Seq`/`Tail`, `readBack_sound`, `matches_iff`; Theorem 5 (tokens) not stated. |
+| 4 | **Completeness up to two.** Theorem 2, with the memo invariant. | Not done: see above. The parser's own incompleteness is flagged. |
+| 5 | **Validation, model, paper.** Theorem 4; `Anatomy.Sound` restated; §9 and the trusted base restated; DESIGN §18.4; #22 closed. | Done for the sound half: `validated_sound`; §9 and the trusted base say what is proved and what completeness would need. `Anatomy.Sound` unchanged, since its `formulas` is the validator's check and the check's uniqueness is the unproved half. |
 
 ## Risks
 
