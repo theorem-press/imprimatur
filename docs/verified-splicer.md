@@ -318,7 +318,8 @@ should say so.
   tricks, and that normalisation doesn't change the typeset result.
   Proofs make the scanner the *specification* of reading a paper. They can't
   make it agree with TeX.
-- **The extractor and the notation,** as in §18.5.
+- **The extractor and the notation,** as in §18.5. Proving the extractor's
+  rendering is a separate project, tracked in #76.
 
 ### Coding rules for `Splice.Core`, enforced by the lint
 
