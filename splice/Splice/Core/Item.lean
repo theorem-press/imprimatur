@@ -31,7 +31,7 @@ inductive ItemKind where
   /-- `\leanhypref{key}{h}`: a reference to hypothesis `h` of a result, so its
   prose view labels `h` (it labels no hypothesis the paper doesn't refer to). -/
   | hypref
-  deriving Repr, BEq, Inhabited
+  deriving Repr, DecidableEq, Inhabited
 
 /-- One `key=value` option, with the position of its value. -/
 structure Opt where

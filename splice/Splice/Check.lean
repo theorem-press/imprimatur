@@ -32,109 +32,153 @@ def Item.allKeys (it : Item) : Array String :=
   | .index | .leanok => #[]
   | _ => #[it.key]
 
+/-- One of the hashes of each key's statement, picked by `pick`, in order;
+`none` if a key is missing or has no such hash. -/
+def hashesOf (bundle : Bundle (Image TeX) Verdict) (pick : Image TeX → Option Hash) :
+    List String → Option (List String)
+  | [] => some []
+  | k :: ks => do
+    let e ← bundle.find? k
+    let h ← pick e.statement
+    let hs ← hashesOf bundle pick ks
+    return h :: hs
+
+/-- What a `\leancheck` records of hashes: the first 12 hexadecimal digits
+of the one hash, or, for several, of the hash of them joined by commas. -/
+def shortOf (hs : List String) : String :=
+  let h := match hs with
+    | [h] => h
+    | _ => Sha256.hexOf (",".intercalate hs)
+  String.ofList (h.toList.take 12)
+
 /-- The `stmt=` and `sig=` values for a `\leancheck` of `keys`: the first 12
 hexadecimal digits of the key's hashes, or, for several keys, of the hash of
 their hashes joined by commas. `none` if a key is missing or has no hash. -/
 def checkHashes (bundle : Bundle (Image TeX) Verdict) (keys : Array String) :
     Option (String × String) := do
-  let es ← keys.mapM bundle.find?
-  let stmts ← es.mapM (·.statement.stmtHash)
-  let sigs ← es.mapM (·.statement.sigHash)
-  let short (hs : Array String) : String :=
-    let h := if hs.size == 1 then hs[0]! else Sha256.hexOf (",".intercalate hs.toList)
-    String.ofList (h.toList.take 12)
-  return (short stmts, short sigs)
+  let stmts ← hashesOf bundle (·.stmtHash) keys.toList
+  let sigs ← hashesOf bundle (·.sigHash) keys.toList
+  return (shortOf stmts, shortOf sigs)
 
 /-- Problems with an entry's trust, checked against `allowed` axioms: none
 exactly when `Verdict.trusted allowed` holds of its verdict. -/
 def trustProblems (allowed : Array String) (key : String) (e : Entry (Image TeX) Verdict) :
-    Array String := Id.run do
+    Array String :=
   let v := e.verdict
-  let mut out := #[]
-  if v.usesSorry then out := out.push s!"{key} depends on sorry"
+  let sorry_ := if v.usesSorry then #[s!"{key} depends on sorry"] else #[]
   -- `sorryAx` is reported above, as `sorry`.
   let bad := v.axioms.filter (fun a => a != "sorryAx" && !allowed.contains a)
-  unless bad.isEmpty do
-    out := out.push s!"{key} uses axioms outside the allowed ones: {", ".intercalate bad.toList}"
-  if let some c := v.cone then
-    let cone := (c.problems allowed).map fun n =>
-      let why := ((c.reasons.find? (·.1 == n)).map (·.2)).getD #[]
-      -- An axiom in the cone is fine if it is allowed.
-      let why := why.filter (fun w => !(w == "axiom" && allowed.contains n))
-      if why.isEmpty then n else s!"{n} ({", ".intercalate why.toList})"
-    unless cone.isEmpty do
-      out := out.push s!"{key} has untrusted constants in its dependency cone: {", ".intercalate cone.toList}"
-  return out
+  let axioms := if bad.isEmpty then #[] else
+    #[s!"{key} uses axioms outside the allowed ones: {", ".intercalate bad.toList}"]
+  let cone := match v.cone with
+    | none => #[]
+    | some c =>
+      let cone := (c.problems allowed).map fun n =>
+        let why := ((c.reasons.find? (·.1 == n)).map (·.2)).getD #[]
+        -- An axiom in the cone is fine if it is allowed.
+        let why := why.filter (fun w => !(w == "axiom" && allowed.contains n))
+        if why.isEmpty then n else s!"{n} ({", ".intercalate why.toList})"
+      if cone.isEmpty then #[] else
+        #[s!"{key} has untrusted constants in its dependency cone: {", ".intercalate cone.toList}"]
+  sorry_ ++ axioms ++ cone
+
+/-- What auditing one key of an item finds: a broken reference (for a
+check), trust problems (unless a blueprint `\lean`), and, for a typeset block
+or inline item, formulas of its rendering that do not read back. -/
+def auditKey (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (it : Item) (loc key : String) :
+    Array Diag :=
+  match bundle.find? key with
+  | none =>
+    -- Blocks, inline and refs already report missing keys through `plan`.
+    if it.kind == .check then #[Diag.err "broken-ref" loc s!"{key} has no entry in the bundle"] else #[]
+  | some e =>
+    -- A blueprint `\lean{…}` without `\leanok` is work in progress, so only
+    -- `\leanok` nodes are checked for trust (`auditLeanok`).
+    (if it.kind == .check && it.name == "lean" then #[] else
+      (trustProblems cfg.allowedAxioms key e).map (Diag.err "untrusted" loc ·)) ++
+    -- Faithfulness (DESIGN §18.4): a typeset rendering that does not read
+    -- back as its statement.
+    (if (it.kind == .block || it.kind == .inline) && it.live then
+      let view := itemView cfg it
+      (e.statement.problems view).map fun p =>
+        -- A metavariable that does not tell the reader a variable's type
+        -- (`latex_style categories := unique` or `strict`) is an error.
+        if p.startsWith "category: " then Diag.err "category" loc s!"{key} ({view}): {(p.drop 10).toString}"
+        else Diag.warn "unfaithful-rendering" loc s!"{key} ({view}): {p}"
+    else #[])
+
+/-- Drift (DESIGN §10.3): the hashes a `\leancheck` recorded when its prose
+was checked, against the bundle's. -/
+def driftDiags (bundle : Bundle (Image TeX) Verdict) (it : Item) (loc : String) : Array Diag :=
+  if it.kind == .check && it.name == "leancheck" then
+    match it.opt? "stmt", checkHashes bundle it.keys with
+    | some recorded, some (stmt, sig) =>
+      let keys := ", ".intercalate it.keys.toList
+      if recorded != stmt then
+        #[Diag.err "drift" loc
+          s!"the statement of {keys}, or something it depends on, has changed since the prose \
+            was last checked against it (stmt={recorded}, now {stmt}).\n\
+            Re-read the prose, then run: imprimatur accept {" ".intercalate it.keys.toList}"]
+      else if (it.opt? "sig").any (· != sig) then
+        #[Diag.warn "sig-changed" loc
+          s!"the signature of {keys} reads differently (binder names or notation), \
+            but its meaning is unchanged; run imprimatur accept to record it"]
+      else #[]
+    | some _, none =>
+      if it.keys.all (bundle.find? · |>.isSome) then
+        #[Diag.err "no-hash" loc
+          s!"the bundle has no statement hash for {", ".intercalate it.keys.toList}; \
+            rebuild it with imprimatur-export 0.2 or later"]
+      else #[]
+    | none, _ => #[]
+  else #[]
+
+/-- What auditing one item finds: its keys', then its drift. -/
+def auditItem (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (f : SourceFile) (it : Item) :
+    Array Diag :=
+  let loc := f.src.locString it.start
+  it.allKeys.foldl (fun ds key => ds ++ auditKey cfg bundle it loc key) #[] ++ driftDiags bundle it loc
+
+/-- What auditing one key of a blueprint `\lean` under a `\leanok` finds:
+that its proof is untrusted. -/
+def leanokKeyDiags (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (loc key : String) : Array Diag :=
+  match bundle.find? key with
+  | some e =>
+    if (trustProblems cfg.allowedAxioms key e).isEmpty then #[]
+    else #[Diag.err "leanok-untrusted" loc
+      s!"this node is marked \\leanok, but {key} is not trusted: \
+        {"; ".intercalate (trustProblems cfg.allowedAxioms key e).toList}"]
+  | none => #[]
+
+/-- What auditing one `\leanok` finds: the blueprint `\lean`s in its
+environment whose keys are untrusted. -/
+def leanokDiags (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (f : SourceFile) (ok : Item) :
+    Array Diag :=
+  if ok.env == 0 then #[]
+  else (f.scan.items.filter (fun i => i.name == "lean" && i.env == ok.env)).foldl (init := #[]) fun ds it =>
+    ds ++ it.keys.foldl (init := #[]) fun ds key => ds ++ leanokKeyDiags cfg bundle (f.src.locString ok.start) key
+
+/-- Blueprint (DESIGN §9.3): a node marked `\leanok` must not depend on an
+untrusted declaration. -/
+def auditLeanok (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (f : SourceFile) : Array Diag :=
+  (f.scan.items.filter (·.kind == .leanok)).foldl (init := #[]) fun ds ok => ds ++ leanokDiags cfg bundle f ok
+
+/-- Comparator manifests (DESIGN §10.5): each theorem they name is in the
+bundle and trusted. -/
+def auditManifests (doc : Doc) (bundle : Bundle (Image TeX) Verdict) : Array Diag :=
+  doc.manifests.foldl (init := #[]) fun ds m =>
+    let allowed := m.permittedAxioms.getD doc.cfg.allowedAxioms
+    m.theorems.foldl (init := ds) fun ds key =>
+      match bundle.find? key with
+      | none => ds.push (Diag.err "broken-ref" m.path s!"{key} has no entry in the bundle")
+      | some e => ds ++ (trustProblems allowed key e).map (Diag.err "untrusted" m.path ·)
 
 /-- Broken references, trust problems, drift and blueprint `\leanok`s. -/
-def audit (doc : Doc) (bundle : Bundle (Image TeX) Verdict) : Array Diag := Id.run do
-  let mut ds := #[]
-  for f in doc.files do
-    for it in f.scan.items do
-      let loc := f.src.locString it.start
-      for key in it.allKeys do
-        match bundle.find? key with
-        | none =>
-          -- Blocks, inline and refs already report missing keys through `plan`.
-          if it.kind == .check then
-            ds := ds.push (Diag.err "broken-ref" loc s!"{key} has no entry in the bundle")
-        | some e =>
-          -- A blueprint `\lean{…}` without `\leanok` is work in progress, so
-          -- only `\leanok` nodes are checked for trust (below).
-          unless it.name == "lean" do
-            for p in trustProblems doc.cfg.allowedAxioms key e do
-              ds := ds.push (Diag.err "untrusted" loc p)
-          -- Faithfulness (DESIGN §18.4): a typeset rendering that does not
-          -- read back as its statement.
-          if (it.kind == .block || it.kind == .inline) && it.live then
-            let view := itemView doc.cfg it
-            for p in e.statement.problems view do
-              -- A metavariable that does not tell the reader a variable's type
-              -- (`latex_style categories := unique` or `strict`) is an error.
-              if p.startsWith "category: " then
-                ds := ds.push (Diag.err "category" loc s!"{key} ({view}): {(p.drop 10).toString}")
-              else
-                ds := ds.push (Diag.warn "unfaithful-rendering" loc s!"{key} ({view}): {p}")
-      -- Drift (DESIGN §10.3): the hashes recorded when the prose was checked.
-      if it.kind == .check && it.name == "leancheck" then
-        match it.opt? "stmt", checkHashes bundle it.keys with
-        | some recorded, some (stmt, sig) =>
-          let keys := ", ".intercalate it.keys.toList
-          if recorded != stmt then
-            ds := ds.push (Diag.err "drift" loc
-              s!"the statement of {keys}, or something it depends on, has changed since the prose \
-                was last checked against it (stmt={recorded}, now {stmt}).\n\
-                Re-read the prose, then run: imprimatur accept {" ".intercalate it.keys.toList}")
-          else if (it.opt? "sig").any (· != sig) then
-            ds := ds.push (Diag.warn "sig-changed" loc
-              s!"the signature of {keys} reads differently (binder names or notation), \
-                but its meaning is unchanged; run imprimatur accept to record it")
-        | some _, none =>
-          if it.keys.all (bundle.find? · |>.isSome) then
-            ds := ds.push (Diag.err "no-hash" loc
-              s!"the bundle has no statement hash for {", ".intercalate it.keys.toList}; \
-                rebuild it with imprimatur-export 0.2 or later")
-        | none, _ => pure ()
-    -- Blueprint (DESIGN §9.3): a node marked \leanok must not depend on sorry.
-    for ok in f.scan.items.filter (·.kind == .leanok) do
-      if ok.env == 0 then continue
-      for it in f.scan.items.filter (fun i => i.name == "lean" && i.env == ok.env) do
-        for key in it.keys do
-          if let some e := bundle.find? key then
-            unless (trustProblems doc.cfg.allowedAxioms key e).isEmpty do
-              ds := ds.push (Diag.err "leanok-untrusted" (f.src.locString ok.start)
-                s!"this node is marked \\leanok, but {key} is not trusted: \
-                  {"; ".intercalate (trustProblems doc.cfg.allowedAxioms key e).toList}")
-  -- Comparator manifests (DESIGN §10.5).
-  for m in doc.manifests do
-    let allowed := m.permittedAxioms.getD doc.cfg.allowedAxioms
-    for key in m.theorems do
-      match bundle.find? key with
-      | none => ds := ds.push (Diag.err "broken-ref" m.path s!"{key} has no entry in the bundle")
-      | some e =>
-        for p in trustProblems allowed key e do
-          ds := ds.push (Diag.err "untrusted" m.path p)
-  return ds
+def audit (doc : Doc) (bundle : Bundle (Image TeX) Verdict) : Array Diag :=
+  doc.files.foldl (init := #[]) (fun ds f =>
+    f.scan.items.foldl (init := ds) (fun ds it => ds ++ auditItem doc.cfg bundle f it) ++
+      auditLeanok doc.cfg bundle f) ++
+  auditManifests doc bundle
 
 /-- Commands whose argument names a macro they define. -/
 def macroDefiners : List String :=
@@ -278,5 +322,16 @@ def sortDiags (doc : Doc) (ds : Array Diag) : Array Diag :=
     x1 < x2 || (x1 == x2 && (y1 < y2 || (y1 == y2 && z1 ≤ z2)))
   -- A stable sort, so diagnostics at one place keep their order.
   (ds.toList.mergeSort le).toArray
+
+/-- **What `imprimatur check` reports** about a document, against a bundle
+(DESIGN §10.3), in document order: what `plan` finds (errors, warnings and
+the checks of what `apply` would write), the audit (references, trust,
+faithfulness, drift, blueprint, manifests), undefined macros, and stale
+items. `extra` are the macros the paper's own packages define. Theorem 1 is
+about this function (`SpliceModel.Splicer.checkDoc_sound`). -/
+def checkDoc (doc : Doc) (bundle : Bundle (Image TeX) Verdict) (opts : ApplyOpts)
+    (extra : Array String) (diff : Bool) : Array Diag :=
+  let o := plan doc bundle opts
+  sortDiags doc (o.diags ++ audit doc bundle ++ macroDiags doc bundle extra ++ staleDiags o.changes diff)
 
 end Splice

@@ -3,3 +3,4 @@ import SpliceModel.Laws
 import SpliceModel.Prose
 import SpliceModel.Views
 import SpliceModel.Splicer
+import SpliceModel.Theorem1
