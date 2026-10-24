@@ -18,23 +18,50 @@ premises and a conclusion.
 
 How a statement comes apart, how each part is printed as a formula, and
 when a formula reads back as a part, are an anatomy of the world. For the
-prose view, the anatomy's printed formulas are set out as a sentence by the
-prose layout, which the prose parser undoes (`SpliceModel.Prose`). Printing
-is then
+prose view, the anatomy gathers what the sentence says (`Imprimatur.Layout.Prose`,
+the extractor's own data), the notation prints each part, and the
+extractor's own layout sets the formulas out as the sentence; the
+extractor's parser takes it apart again (`SpliceModel.Prose`). Printing is
+then
 
-  render "prose" S = proseLayout (map print (telescope S)),
+  render "prose" S = proseLayout (map print (gather S)),
 
 and what is assumed (`Anatomy.Sound`) is that the world prints prose so,
-that no printed formula has a dollar in it, and, for each formula, that it
+that what the notation prints is plain, and, for each formula, that it
 reads back as its part, which is what the validator checks. That a prose
-rendering reads back part by part is then a theorem. The rules view is still assumed to read back part by part. Under
-these assumptions, Theorem 1 says, of a prose or a rules block, what the
-block shows, part by part.
+rendering reads back part by part is then a theorem. The rules view is
+still assumed to read back part by part. Under these assumptions, Theorem 1
+says, of a prose or a rules block, what the block shows, part by part.
 -/
+
+namespace Imprimatur.Layout
+
+/-- The formula a group's kind shows: its type, if it has one. -/
+def kindParts {α : Type} : VarKind α → List α
+  | .ofType t => [t]
+  | .type => []
+  | .prop => []
+
+/-- The formulas a group shows: its names, then its type. -/
+def groupParts {α : Type} (g : VarGroup α) : List α := g.names ++ kindParts g.kind
+
+/-- The formulas a conclusion shows, in order. -/
+def Concl.parts {α : Type} : Concl α → List α
+  | .formula f => [f]
+  | .conjuncts fs => fs
+  | .iff a b => [a, b]
+  | .exists_ w c => w :: c.parts
+
+/-- The formulas the prose view shows, in order. -/
+def Prose.parts {α : Type} : Prose α → List α
+  | .define f => [f]
+  | .statement s => (s.vars.map groupParts).flatten ++ s.hyps.map (·.formula) ++ s.concl.parts
+
+end Imprimatur.Layout
 
 namespace SpliceModel
 
-open Imprimatur
+open Imprimatur Imprimatur.Layout
 
 /-- A rule, as the rules view shows it. -/
 structure Rule (α : Type) where
@@ -51,60 +78,119 @@ structure Anatomy (W : World) where
   /-- a part of a statement, as the notation shows it -/
   Part : Type
   /-- when a formula reads back as a part -/
-  ReadsPart : TeX → Part → Prop
+  ReadsPart : List Char → Part → Prop
   /-- a part printed as a formula, by the notation -/
-  print : Part → TeX
-  /-- a proposition, taken apart -/
-  telescope : W.Stmt → Option (Telescope Part)
+  print : Part → List Char
+  /-- what the prose view says of a statement: its parts, in their places -/
+  gather : W.Stmt → Option (Layout.Prose Part)
   /-- an inductive predicate's constructors, as rules -/
   ctors : W.Stmt → Option (List (Rule Part))
   /-- a rules figure, taken apart -/
-  figure : Body → Option (List (Rule TeX))
+  figure : Body → Option (List (Rule (List Char)))
 
 section
 variable {W : World} (A : Anatomy W)
 
 /-- Formulas read back as parts, one by one. -/
-def Anatomy.ReadsAll : List TeX → List A.Part → Prop
-  | [], [] => _root_.True
-  | f :: fs, q :: qs => A.ReadsPart f q ∧ Anatomy.ReadsAll fs qs
-  | [], _ :: _ => False
-  | _ :: _, [] => False
+inductive Anatomy.ReadsAll : List (List Char) → List A.Part → Prop
+  /-- none -/
+  | nil : ReadsAll [] []
+  /-- the first, then the rest -/
+  | cons {f : List Char} {q : A.Part} {fs : List (List Char)} {qs : List A.Part} :
+    A.ReadsPart f q → ReadsAll fs qs → ReadsAll (f :: fs) (q :: qs)
 
-/-- A sentence reads back as a proposition: Let as its variables, Assume as
-its hypotheses, Then as its conclusion. -/
-def Anatomy.ReadsTelescope (t : Telescope TeX) (u : Telescope A.Part) : Prop :=
-  A.ReadsAll t.vars u.vars ∧ A.ReadsAll t.hyps u.hyps ∧ A.ReadsPart t.concl u.concl
+/-- What a group ranges over reads back. -/
+inductive Anatomy.ReadsKind : VarKind (List Char) → VarKind A.Part → Prop
+  /-- a type, read back -/
+  | ofType {t : List Char} {q : A.Part} : A.ReadsPart t q → ReadsKind (.ofType t) (.ofType q)
+  /-- *a type* -/
+  | type : ReadsKind .type .type
+  /-- *a proposition* -/
+  | prop : ReadsKind .prop .prop
+
+/-- A group of variables reads back: name by name, and what it ranges over. -/
+inductive Anatomy.ReadsGroup : VarGroup (List Char) → VarGroup A.Part → Prop
+  /-- names, and kind -/
+  | mk {g : VarGroup (List Char)} {u : VarGroup A.Part} :
+    A.ReadsAll g.names u.names → A.ReadsKind g.kind u.kind → ReadsGroup g u
+
+/-- Groups read back, one by one. -/
+inductive Anatomy.ReadsGroups : List (VarGroup (List Char)) → List (VarGroup A.Part) → Prop
+  /-- none -/
+  | nil : ReadsGroups [] []
+  /-- the first, then the rest -/
+  | cons {g : VarGroup (List Char)} {u : VarGroup A.Part} {gs : List (VarGroup (List Char))}
+    {us : List (VarGroup A.Part)} : A.ReadsGroup g u → ReadsGroups gs us → ReadsGroups (g :: gs) (u :: us)
+
+/-- A hypothesis reads back: the same label, and its formula. -/
+inductive Anatomy.ReadsHyp : Hyp (List Char) → Hyp A.Part → Prop
+  /-- label, and formula -/
+  | mk {hy : Hyp (List Char)} {u : Hyp A.Part} :
+    hy.label = u.label → A.ReadsPart hy.formula u.formula → ReadsHyp hy u
+
+/-- Hypotheses read back, one by one. -/
+inductive Anatomy.ReadsHyps : List (Hyp (List Char)) → List (Hyp A.Part) → Prop
+  /-- none -/
+  | nil : ReadsHyps [] []
+  /-- the first, then the rest -/
+  | cons {hy : Hyp (List Char)} {u : Hyp A.Part} {hs : List (Hyp (List Char))} {us : List (Hyp A.Part)} :
+    A.ReadsHyp hy u → ReadsHyps hs us → ReadsHyps (hy :: hs) (u :: us)
+
+/-- A conclusion reads back, in its shape. -/
+inductive Anatomy.ReadsConcl : Concl (List Char) → Concl A.Part → Prop
+  /-- a formula -/
+  | formula {f : List Char} {q : A.Part} : A.ReadsPart f q → ReadsConcl (.formula f) (.formula q)
+  /-- conjuncts, one by one -/
+  | conjuncts {fs : List (List Char)} {qs : List A.Part} :
+    A.ReadsAll fs qs → ReadsConcl (.conjuncts fs) (.conjuncts qs)
+  /-- *if and only if*, both sides -/
+  | iff {lhs rhs : List Char} {lhs' rhs' : A.Part} :
+    A.ReadsPart lhs lhs' → A.ReadsPart rhs rhs' → ReadsConcl (.iff lhs rhs) (.iff lhs' rhs')
+  /-- *there is*, the witness and the rest -/
+  | exists_ {w : List Char} {w' : A.Part} {c : Concl (List Char)} {c' : Concl A.Part} :
+    A.ReadsPart w w' → ReadsConcl c c' → ReadsConcl (.exists_ w c) (.exists_ w' c')
+
+/-- A sentence reads back as what the view says: Let as its variables,
+Assume as its hypotheses, Then as its conclusion. -/
+inductive Anatomy.ReadsProse : Layout.Prose (List Char) → Layout.Prose A.Part → Prop
+  /-- *We define* -/
+  | define {f : List Char} {q : A.Part} : A.ReadsPart f q → ReadsProse (.define f) (.define q)
+  /-- a sentence -/
+  | statement {s : Statement (List Char)} {u : Statement A.Part} :
+    A.ReadsGroups s.vars u.vars → A.ReadsHyps s.hyps u.hyps → A.ReadsConcl s.concl u.concl →
+    ReadsProse (.statement s) (.statement u)
 
 /-- A rule reads back as a constructor: the same name, premises as its
 hypotheses, conclusion as its conclusion. -/
-def Anatomy.ReadsRule (f : Rule TeX) (q : Rule A.Part) : Prop :=
-  f.name = q.name ∧ A.ReadsAll f.premises q.premises ∧ A.ReadsPart f.concl q.concl
+inductive Anatomy.ReadsRule : Rule (List Char) → Rule A.Part → Prop
+  /-- name, premises and conclusion -/
+  | mk {f : Rule (List Char)} {q : Rule A.Part} :
+    f.name = q.name → A.ReadsAll f.premises q.premises → A.ReadsPart f.concl q.concl → ReadsRule f q
 
 /-- Rules read back as constructors, one by one. -/
-def Anatomy.ReadsRules : List (Rule TeX) → List (Rule A.Part) → Prop
-  | [], [] => _root_.True
-  | f :: fs, q :: qs => A.ReadsRule f q ∧ Anatomy.ReadsRules fs qs
-  | [], _ :: _ => False
-  | _ :: _, [] => False
+inductive Anatomy.ReadsRules : List (Rule (List Char)) → List (Rule A.Part) → Prop
+  /-- none -/
+  | nil : ReadsRules [] []
+  /-- the first, then the rest -/
+  | cons {f : Rule (List Char)} {q : Rule A.Part} {fs : List (Rule (List Char))} {qs : List (Rule A.Part)} :
+    A.ReadsRule f q → ReadsRules fs qs → ReadsRules (f :: fs) (q :: qs)
 
-/-- A body is a statement printed in the prose view: the statement taken
-apart, each part printed by the notation, and the formulas set out as a
-sentence. -/
+/-- A body is a statement printed in the prose view: what the view says of
+the statement, each part printed by the notation, and the formulas set out
+as the sentence by the extractor's layout. -/
 def Anatomy.PrintsProse (S : W.Stmt) (r : Body) : Prop :=
-  ∃ u, A.telescope S = some u ∧ r = proseLayout (u.map A.print)
+  ∃ u, A.gather S = some u ∧ r = [.gen (proseLayout (u.map A.print))]
 
-/-- The notation is faithful on a statement: each of its parts, printed,
-reads back as itself. -/
+/-- The notation is faithful on a statement: each part the prose view shows,
+printed, reads back as itself. -/
 def Anatomy.Faithful (S : W.Stmt) : Prop :=
-  ∀ u, A.telescope S = some u →
-    (∀ q ∈ u.vars, A.ReadsPart (A.print q) q) ∧ (∀ q ∈ u.hyps, A.ReadsPart (A.print q) q) ∧
-      A.ReadsPart (A.print u.concl) u.concl
+  ∀ u, A.gather S = some u → ∀ q ∈ u.parts, A.ReadsPart (A.print q) q
 
-/-- A prose rendering shows a statement: the sentence and the proposition
-come apart, and the one reads back as the other. -/
+/-- A prose rendering shows a statement: the parser takes the sentence
+apart, the view says what the statement's parts are, and the one reads back
+as the other. -/
 def Anatomy.Prose (r : Body) (S : W.Stmt) : Prop :=
-  ∃ t u, proseSentence r = some t ∧ A.telescope S = some u ∧ A.ReadsTelescope t u
+  ∃ t u, proseSentence (Body.text r).toList = some t ∧ A.gather S = some u ∧ A.ReadsProse t u
 
 /-- A rules rendering shows a statement: the figure and the predicate come
 apart, and each rule reads back as a constructor, in order. -/
@@ -117,8 +203,9 @@ rendering that reads back reads back formula by formula, which is what the
 validator checks. Rules renderings have no slots, and one that reads back
 reads back part by part. -/
 structure Anatomy.Sound : Prop where
-  /-- a printed formula has no dollar in it -/
-  plain : ∀ q, Plain (A.print q)
+  /-- what the notation prints of a statement is plain: no dollar in a
+  formula, and a group's names come apart from each other and their type -/
+  plain : ∀ S u, A.gather S = some u → (u.map A.print).Plain
   /-- the world prints prose as the anatomy does -/
   prose : ∀ S r, W.render "prose" S = some r → A.PrintsProse S r
   /-- a prose rendering that reads back reads back formula by formula -/
@@ -140,14 +227,60 @@ theorem fill_of_ids_nil {old : List (SlotId × String)} : ∀ {r : Body}, ids r 
 the parts. -/
 theorem Anatomy.readsAll_map {W : World} (A : Anatomy W) :
     ∀ {qs : List A.Part}, (∀ q ∈ qs, A.ReadsPart (A.print q) q) → A.ReadsAll (qs.map A.print) qs
-  | [], _ => trivial
-  | q :: _, h => ⟨h q (List.mem_cons_self ..), A.readsAll_map fun q' hq => h q' (List.mem_cons_of_mem _ hq)⟩
+  | [], _ => .nil
+  | q :: _, h => .cons (h q (List.mem_cons_self ..)) (A.readsAll_map fun q' hq => h q' (List.mem_cons_of_mem _ hq))
+
+theorem Anatomy.readsKind_map {W : World} (A : Anatomy W) {k : VarKind A.Part}
+    (h : ∀ q ∈ kindParts k, A.ReadsPart (A.print q) q) : A.ReadsKind (k.map A.print) k := by
+  cases k with
+  | ofType t => exact .ofType (h t (by simp [kindParts]))
+  | type => exact .type
+  | prop => exact .prop
+
+theorem Anatomy.readsGroups_map {W : World} (A : Anatomy W) :
+    ∀ {us : List (VarGroup A.Part)}, (∀ q ∈ (us.map groupParts).flatten, A.ReadsPart (A.print q) q) →
+      A.ReadsGroups (us.map (VarGroup.map A.print)) us
+  | [], _ => .nil
+  | u :: us, h => by
+    simp only [List.map_cons, List.flatten_cons, List.mem_append, groupParts] at h
+    exact .cons (.mk (A.readsAll_map fun q hq => h q (Or.inl (Or.inl hq)))
+        (A.readsKind_map fun q hq => h q (Or.inl (Or.inr hq))))
+      (A.readsGroups_map fun q hq => h q (Or.inr hq))
+
+theorem Anatomy.readsHyps_map {W : World} (A : Anatomy W) :
+    ∀ {us : List (Hyp A.Part)}, (∀ q ∈ us.map (·.formula), A.ReadsPart (A.print q) q) →
+      A.ReadsHyps (us.map (Hyp.map A.print)) us
+  | [], _ => .nil
+  | u :: us, h => by
+    simp only [List.map_cons, List.mem_cons] at h
+    exact .cons (.mk rfl (h _ (Or.inl rfl))) (A.readsHyps_map fun q hq => h q (Or.inr hq))
+
+theorem Anatomy.readsConcl_map {W : World} (A : Anatomy W) :
+    ∀ {c : Concl A.Part}, (∀ q ∈ c.parts, A.ReadsPart (A.print q) q) → A.ReadsConcl (c.map A.print) c
+  | .formula f, h => .formula (h f (by simp [Concl.parts]))
+  | .conjuncts fs, h => .conjuncts (A.readsAll_map h)
+  | .iff lhs rhs, h => .iff (h lhs (by simp [Concl.parts])) (h rhs (by simp [Concl.parts]))
+  | .exists_ w c, h => .exists_ (h w (by simp [Concl.parts])) (A.readsConcl_map fun q hq => h q (by
+      simp only [Concl.parts, List.mem_cons]; exact Or.inr hq))
+
+/-- What the view says, each part printed, reads back as what it says. -/
+theorem Anatomy.readsProse_map {W : World} (A : Anatomy W) :
+    ∀ {u : Layout.Prose A.Part}, (∀ q ∈ u.parts, A.ReadsPart (A.print q) q) → A.ReadsProse (u.map A.print) u
+  | .define f, h => .define (h f (by simp [Prose.parts]))
+  | .statement s, h => by
+    simp only [Prose.parts, List.mem_append] at h
+    exact .statement (A.readsGroups_map fun q hq => h q (Or.inl (Or.inl hq)))
+      (A.readsHyps_map fun q hq => h q (Or.inl (Or.inr hq)))
+      (A.readsConcl_map fun q hq => h q (Or.inr hq))
 
 /-- A prose rendering has no slots. -/
 theorem Anatomy.Sound.proseIds {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
     (hr : W.render "prose" S = some r) : ids r = [] := by
   obtain ⟨u, _, rfl⟩ := hA.prose S r hr
-  exact ids_proseLayout _
+  rfl
+
+theorem Body.text_gen (s : String) : Body.text [.gen s] = s := by
+  simp [Body.text, Seg.text, String.join]
 
 /-- **A prose rendering shows its statement.** When it reads back, the
 sentence comes apart into the formulas printed from the statement's parts,
@@ -156,13 +289,9 @@ theorem Anatomy.Sound.proseShows {W : World} {A : Anatomy W} (hA : A.Sound) {S :
     (hr : W.render "prose" S = some r) (hR : W.Reads r S) : A.Prose r S := by
   have hF := hA.formulas S r hr hR
   obtain ⟨u, hu, rfl⟩ := hA.prose S r hr
-  obtain ⟨hv, hh, hc⟩ := hF u hu
-  have hl : proseSentence (proseLayout (u.map A.print)) = some (u.map A.print) := by
-    apply proseSentence_proseLayout
-    intro f hf
-    simp only [Telescope.map, List.mem_map] at hf
-    rcases hf with ⟨q, _, rfl⟩ | ⟨q, _, rfl⟩ | rfl <;> exact hA.plain _
-  exact ⟨u.map A.print, u, hl, hu, A.readsAll_map hv, A.readsAll_map hh, hc⟩
+  refine ⟨u.map A.print, u, ?_, hu, A.readsProse_map (hF u hu)⟩
+  rw [Body.text_gen, proseLayout, String.toList_ofList]
+  exact proseSentence_proseChars (hA.plain S u hu)
 
 section
 variable {W : World} {A : Anatomy W} {b : Bundle} {d : Doc}

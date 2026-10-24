@@ -70,10 +70,10 @@ inductive Concl (α : Type) where
   | formula (f : α)
   /-- Conjuncts, numbered `(1)`, `(2)`, …. -/
   | conjuncts (fs : List α)
-  /-- *a if and only if b*. -/
-  | iff (a b : α)
+  /-- *lhs if and only if rhs*. -/
+  | iff (lhs rhs : α)
   /-- *there is v such that …*. -/
-  | exists_ (v : α) (body : Concl α)
+  | exists_ (w : α) (body : Concl α)
   deriving Repr, BEq, Inhabited, DecidableEq
 
 /-- What a theorem's sentence says. -/
@@ -108,15 +108,15 @@ def VarGroup.map {α β : Type} (f : α → β) (g : VarGroup α) : VarGroup β 
   { names := g.names.map f, kind := g.kind.map f }
 
 /-- Apply `f` to the formula of a hypothesis. -/
-def Hyp.map {α β : Type} (f : α → β) (h : Hyp α) : Hyp β :=
-  { label := h.label, formula := f h.formula }
+def Hyp.map {α β : Type} (f : α → β) (hy : Hyp α) : Hyp β :=
+  { label := hy.label, formula := f hy.formula }
 
 /-- Apply `f` to the formulas of a conclusion. -/
 def Concl.map {α β : Type} (f : α → β) : Concl α → Concl β
   | .formula x => .formula (f x)
   | .conjuncts xs => .conjuncts (xs.map f)
-  | .iff a b => .iff (f a) (f b)
-  | .exists_ v body => .exists_ (f v) (body.map f)
+  | .iff lhs rhs => .iff (f lhs) (f rhs)
+  | .exists_ w body => .exists_ (f w) (body.map f)
 
 /-- Apply `f` to the formulas of a sentence. -/
 def Statement.map {α β : Type} (f : α → β) (s : Statement α) : Statement β :=
@@ -193,7 +193,7 @@ def kws : List Kw :=
 /-- A token of a sentence. -/
 inductive Tok where
   /-- A keyword. -/
-  | kw (k : Kw)
+  | kw (word : Kw)
   /-- A formula, in dollars. -/
   | formula (f : List Char)
   /-- A hypothesis label, `\LeanHyp{name} `. -/
@@ -207,7 +207,7 @@ def labelOpen : List Char := "\\LeanHyp{".toList
 
 /-- The text of a token. -/
 def tokChars : Tok → List Char
-  | .kw k => kwText k
+  | .kw word => kwText word
   | .formula f => '$' :: f ++ ['$']
   | .label n => labelOpen ++ n ++ ['}', ' ']
   | .item ds => '(' :: ds ++ [')', '~']
@@ -222,8 +222,8 @@ the recursion. -/
 def decimalGo : Nat → Nat → List Char → List Char
   | 0, _, acc => acc
   | fuel + 1, n, acc =>
-    let d := Nat.digitChar (n % 10)
-    if n < 10 then d :: acc else decimalGo fuel (n / 10) (d :: acc)
+    let dg := Nat.digitChar (n % 10)
+    if n < 10 then dg :: acc else decimalGo fuel (n / 10) (dg :: acc)
 
 /-- The decimal digits of a number. -/
 def decimal (n : Nat) : List Char := decimalGo (n + 1) n []
@@ -238,43 +238,47 @@ def andRestToks : List (List Tok) → List Tok
 /-- `x`, `x and y`, `x, y and z`. -/
 def andToks : List (List Tok) → List Tok
   | [] => []
-  | x :: xs => x ++ andRestToks xs
+  | y :: ys => y ++ andRestToks ys
+
+/-- `, ` -/
+def commaSep : List Char := ", ".toList
 
 /-- The names of a group, `x, y`. -/
 def joinComma : List (List Char) → List Char
   | [] => []
   | [n] => n
-  | n :: ns => n ++ ", ".toList ++ joinComma ns
+  | n :: ns => n ++ commaSep ++ joinComma ns
 
 /-- ` \in ` -/
 def inSep : List Char := " \\in ".toList
 
-/-- A group of variables: `$x, y \in T$`, `$x$ be a type`, …. -/
-def groupToks (g : VarGroup (List Char)) : List Tok :=
-  let names := joinComma g.names
-  let one := match g.names with | [_] => true | _ => false
-  match g.kind with
-  | .ofType ty => [.formula (names ++ inSep ++ ty)]
-  | .type => [.formula names, .kw (if one then .beAType else .beTypes)]
-  | .prop => [.formula names, .kw (if one then .beAProp else .beProps)]
+/-- A group of variables: `$x, y \in T$`, `$x$ be a type`, `$x, y$ be
+types`, …. -/
+def groupToks : VarGroup (List Char) → List Tok
+  | ⟨names, .ofType ty⟩ => [.formula (joinComma names ++ inSep ++ ty)]
+  | ⟨[], .type⟩ => [.formula [], .kw .beTypes]
+  | ⟨[n], .type⟩ => [.formula n, .kw .beAType]
+  | ⟨n :: n' :: ns, .type⟩ => [.formula (joinComma (n :: n' :: ns)), .kw .beTypes]
+  | ⟨[], .prop⟩ => [.formula [], .kw .beProps]
+  | ⟨[n], .prop⟩ => [.formula n, .kw .beAProp]
+  | ⟨n :: n' :: ns, .prop⟩ => [.formula (joinComma (n :: n' :: ns)), .kw .beProps]
 
 /-- A hypothesis: its label, if any, and its formula. -/
-def hypToks (h : Hyp (List Char)) : List Tok :=
-  match h.label with
-  | some n => [.label n, .formula h.formula]
-  | none => [.formula h.formula]
+def hypToks : Hyp (List Char) → List Tok
+  | ⟨some n, f⟩ => [.label n, .formula f]
+  | ⟨none, f⟩ => [.formula f]
 
 /-- Conjuncts numbered from `i`: `(i)~$f$`, …. -/
-def numbered : List (List Char) → Nat → List (List Tok)
-  | [], _ => []
-  | f :: fs, i => [.item (decimal i), .formula f] :: numbered fs (i + 1)
+def numbered (i : Nat) : List (List Char) → List (List Tok)
+  | [] => []
+  | f :: fs => [.item (decimal i), .formula f] :: numbered (i + 1) fs
 
 /-- A conclusion, in words. -/
 def conclToks : Concl (List Char) → List Tok
   | .formula f => [.formula f]
-  | .conjuncts fs => andToks (numbered fs 1)
-  | .iff a b => [.formula a, .kw .iffK, .formula b]
-  | .exists_ v body => .kw .thereIs :: .formula v :: .kw .suchThat :: conclToks body
+  | .conjuncts fs => andToks (numbered 1 fs)
+  | .iff lhs rhs => [.formula lhs, .kw .iffK, .formula rhs]
+  | .exists_ w body => .kw .thereIs :: .formula w :: .kw .suchThat :: conclToks body
 
 /-- Sentences, each ending with a full stop, separated by a space. -/
 def sentencesToks : List (List Tok) → List Tok
@@ -282,33 +286,46 @@ def sentencesToks : List (List Tok) → List Tok
   | [s] => s
   | s :: t :: ts => s ++ .kw .dotSpace :: sentencesToks (t :: ts)
 
-/-- The tokens of a theorem's sentence. -/
+/-- The *Let* sentence, if there are variables. -/
+def letToks : List (VarGroup (List Char)) → List (List Tok)
+  | [] => []
+  | g :: gs => [.kw .letK :: andToks ((g :: gs).map groupToks)]
+
+/-- The *Assume* sentence, if there are hypotheses. -/
+def assumeToks : List (Hyp (List Char)) → List (List Tok)
+  | [] => []
+  | hy :: hs => [.kw .assumeK :: andToks ((hy :: hs).map hypToks)]
+
+/-- *Then*, after another sentence. -/
+def thenKw : List (List Tok) → List Tok
+  | [] => []
+  | _ :: _ => [.kw .thenK]
+
+/-- The *Then* sentence. -/
+def thenToks (before : List (List Tok)) (c : Concl (List Char)) : List Tok :=
+  thenKw before ++ conclToks c
+
+/-- The tokens of a theorem's sentence, after `\LeanProse{`: its sentences,
+and the end. -/
 def statementToks (s : Statement (List Char)) : List Tok :=
-  let letS := match s.vars with
-    | [] => []
-    | gs => [.kw .letK :: andToks (gs.map groupToks)]
-  let assumeS := match s.hyps with
-    | [] => []
-    | hs => [.kw .assumeK :: andToks (hs.map hypToks)]
-  let before := letS ++ assumeS
-  let thenS := (match before with | [] => [] | _ => [.kw .thenK]) ++ conclToks s.concl
-  .kw .prose :: sentencesToks (before ++ [thenS]) ++ [.kw .endK]
+  sentencesToks (letToks s.vars ++ assumeToks s.hyps ++
+    [thenToks (letToks s.vars ++ assumeToks s.hyps) s.concl]) ++ [.kw .endK]
 
 /-- The tokens of the prose view. -/
 def proseToks : Prose (List Char) → List Tok
   | .define f => [.kw .prose, .kw .weDefine, .formula f, .kw .endK]
-  | .statement s => statementToks s
+  | .statement s => .kw .prose :: statementToks s
 
 /-- **The prose layout:** the text of the prose view. -/
-def proseChars (p : Prose (List Char)) : List Char := printToks (proseToks p)
+def proseChars (pr : Prose (List Char)) : List Char := printToks (proseToks pr)
 
 /-- The prose layout, as a string. -/
-def proseLayout (p : Prose (List Char)) : String := String.ofList (proseChars p)
+def proseLayout (pr : Prose (List Char)) : String := String.ofList (proseChars pr)
 
 /-! ## The lexer -/
 
 /-- The keyword at the front of the text, if any. -/
-def kwAt (cs : List Char) : Option Kw := kws.find? fun k => (kwText k).isPrefixOf cs
+def kwAt (cs : List Char) : Option Kw := kws.find? fun word => (kwText word).isPrefixOf cs
 
 /-- Lex the text into tokens, onto `acc` (held reversed): a formula at a
 dollar, an item at a parenthesis, a label at `\LeanHyp{`, else a keyword. -/
@@ -318,21 +335,21 @@ def lexGo : List Char → List Tok → Option (List Tok)
     if c = '$' then
       let f := cs.takeWhile (· ≠ '$')
       match _h : cs.drop f.length with
-      | d :: rest => if d = '$' then lexGo rest (.formula f :: acc) else none
+      | ch :: rest => if ch = '$' then lexGo rest (.formula f :: acc) else none
       | [] => none
     else if c = '(' then
       let ds := cs.takeWhile (· ≠ ')')
       match _h : cs.drop ds.length with
-      | d :: e :: rest => if d = ')' ∧ e = '~' ∧ !ds.isEmpty then lexGo rest (.item ds :: acc) else none
+      | ch :: ch' :: rest => if ch = ')' ∧ ch' = '~' ∧ !ds.isEmpty then lexGo rest (.item ds :: acc) else none
       | _ => none
     else if labelOpen.isPrefixOf (c :: cs) then
       -- `labelOpen` is nine characters, the first of which is `c`.
       let n := (cs.drop 8).takeWhile (· ≠ '}')
       match _h : (cs.drop 8).drop n.length with
-      | d :: e :: rest => if d = '}' ∧ e = ' ' then lexGo rest (.label n :: acc) else none
+      | ch :: ch' :: rest => if ch = '}' ∧ ch' = ' ' then lexGo rest (.label n :: acc) else none
       | _ => none
     else match kwAt (c :: cs) with
-      | some k => lexGo (cs.drop ((kwText k).length - 1)) (.kw k :: acc)
+      | some word => lexGo (cs.drop ((kwText word).length - 1)) (.kw word :: acc)
       | none => none
 termination_by cs _ => cs.length
 decreasing_by
@@ -371,80 +388,91 @@ decreasing_by all_goals simp_wf; all_goals (try simp only [List.length_drop, Lis
 /-- Split at every occurrence of `sep`. -/
 def splitAll (sep : List Char) (cs : List Char) : List (List Char) := splitAllGo sep cs [] []
 
-/-- `, ` -/
-def commaSep : List Char := ", ".toList
-
 mutual
 /-- The groups of a *Let* sentence, onto `acc` (held reversed): a formula,
 then its kind, then what follows it. -/
-def parseGroups : List Tok → List (VarGroup (List Char)) → Option (List (VarGroup (List Char)) × List Tok)
-  | .formula f :: .kw .beAType :: ts, acc => afterGroup ⟨splitAll commaSep f, .type⟩ ts acc
-  | .formula f :: .kw .beTypes :: ts, acc => afterGroup ⟨splitAll commaSep f, .type⟩ ts acc
-  | .formula f :: .kw .beAProp :: ts, acc => afterGroup ⟨splitAll commaSep f, .prop⟩ ts acc
-  | .formula f :: .kw .beProps :: ts, acc => afterGroup ⟨splitAll commaSep f, .prop⟩ ts acc
-  | .formula f :: ts, acc =>
-    match splitFirst inSep f with
-    | some (ns, ty) => afterGroup ⟨splitAll commaSep ns, .ofType ty⟩ ts acc
-    | none => none
-  | _, _ => none
-/-- After a group: another, or the end of the sentence. -/
-def afterGroup (g : VarGroup (List Char)) : List Tok → List (VarGroup (List Char)) →
+def parseGroups (acc : List (VarGroup (List Char))) : List Tok →
     Option (List (VarGroup (List Char)) × List Tok)
-  | .kw .comma :: ts, acc => parseGroups ts (g :: acc)
-  | .kw .andK :: ts, acc => parseGroups ts (g :: acc)
-  | .kw .dotSpace :: ts, acc => some ((g :: acc).reverse, ts)
-  | _, _ => none
+  | .formula f :: .kw .beAType :: ts => afterGroup ⟨splitAll commaSep f, .type⟩ acc ts
+  | .formula f :: .kw .beTypes :: ts => afterGroup ⟨splitAll commaSep f, .type⟩ acc ts
+  | .formula f :: .kw .beAProp :: ts => afterGroup ⟨splitAll commaSep f, .prop⟩ acc ts
+  | .formula f :: .kw .beProps :: ts => afterGroup ⟨splitAll commaSep f, .prop⟩ acc ts
+  | .formula f :: ts => ofTypeGroup acc ts (splitFirst inSep f)
+  | _ => none
+/-- A group of a type: its names and its type, if they come apart. -/
+def ofTypeGroup (acc : List (VarGroup (List Char))) (ts : List Tok) :
+    Option (List Char × List Char) → Option (List (VarGroup (List Char)) × List Tok)
+  | some (ns, ty) => afterGroup ⟨splitAll commaSep ns, .ofType ty⟩ acc ts
+  | none => none
+/-- After a group: another, or the end of the sentence. -/
+def afterGroup (g : VarGroup (List Char)) (acc : List (VarGroup (List Char))) : List Tok →
+    Option (List (VarGroup (List Char)) × List Tok)
+  | .kw .comma :: ts => parseGroups (g :: acc) ts
+  | .kw .andK :: ts => parseGroups (g :: acc) ts
+  | .kw .dotSpace :: ts => some ((g :: acc).reverse, ts)
+  | _ => none
 end
 
 /-- The hypotheses of an *Assume* sentence, onto `acc` (held reversed):
 each labelled or not, then what follows it; the sentence ends before
 *Then*. -/
-def parseHyps : List Tok → List (Hyp (List Char)) → Option (List (Hyp (List Char)) × List Tok)
-  | .label n :: .formula f :: .kw .comma :: ts, acc => parseHyps ts (⟨some n, f⟩ :: acc)
-  | .label n :: .formula f :: .kw .andK :: ts, acc => parseHyps ts (⟨some n, f⟩ :: acc)
-  | .label n :: .formula f :: .kw .dotSpace :: .kw .thenK :: ts, acc =>
+def parseHyps (acc : List (Hyp (List Char))) : List Tok → Option (List (Hyp (List Char)) × List Tok)
+  | .label n :: .formula f :: .kw .comma :: ts => parseHyps (⟨some n, f⟩ :: acc) ts
+  | .label n :: .formula f :: .kw .andK :: ts => parseHyps (⟨some n, f⟩ :: acc) ts
+  | .label n :: .formula f :: .kw .dotSpace :: .kw .thenK :: ts =>
     some ((⟨some n, f⟩ :: acc).reverse, ts)
-  | .formula f :: .kw .comma :: ts, acc => parseHyps ts (⟨none, f⟩ :: acc)
-  | .formula f :: .kw .andK :: ts, acc => parseHyps ts (⟨none, f⟩ :: acc)
-  | .formula f :: .kw .dotSpace :: .kw .thenK :: ts, acc => some ((⟨none, f⟩ :: acc).reverse, ts)
-  | _, _ => none
+  | .formula f :: .kw .comma :: ts => parseHyps (⟨none, f⟩ :: acc) ts
+  | .formula f :: .kw .andK :: ts => parseHyps (⟨none, f⟩ :: acc) ts
+  | .formula f :: .kw .dotSpace :: .kw .thenK :: ts => some ((⟨none, f⟩ :: acc).reverse, ts)
+  | _ => none
 
 /-- The conjuncts after the first, onto `acc` (held reversed). -/
-def parseItems : List Tok → List (List Char) → Concl (List Char) × List Tok
-  | .kw .comma :: .item _ :: .formula f :: ts, acc => parseItems ts (f :: acc)
-  | .kw .andK :: .item _ :: .formula f :: ts, acc => parseItems ts (f :: acc)
-  | ts, acc => (.conjuncts acc.reverse, ts)
+def parseItems (acc : List (List Char)) : List Tok → Concl (List Char) × List Tok
+  | .kw .comma :: .item _ :: .formula f :: ts => parseItems (f :: acc) ts
+  | .kw .andK :: .item _ :: .formula f :: ts => parseItems (f :: acc) ts
+  | ts => (.conjuncts acc.reverse, ts)
+
+/-- The conclusion after *there is w such that*, once the rest is read. -/
+def afterSuch (w : List Char) :
+    Option (Concl (List Char) × List Tok) → Option (Concl (List Char) × List Tok)
+  | some (c, rest) => some (.exists_ w c, rest)
+  | none => none
 
 /-- A conclusion. -/
 def parseConcl : List Tok → Option (Concl (List Char) × List Tok)
-  | .kw .thereIs :: .formula v :: .kw .suchThat :: ts =>
-    (parseConcl ts).map fun (c, rest) => (.exists_ v c, rest)
-  | .item _ :: .formula f :: ts => some (parseItems ts [f])
-  | .formula a :: .kw .iffK :: .formula b :: ts => some (.iff a b, ts)
+  | .kw .thereIs :: .formula w :: .kw .suchThat :: ts => afterSuch w (parseConcl ts)
+  | .item _ :: .formula f :: ts => some (parseItems [f] ts)
+  | .formula lhs :: .kw .iffK :: .formula rhs :: ts => some (.iff lhs rhs, ts)
   | .formula f :: ts => some (.formula f, ts)
+  | _ => none
+
+/-- The sentence, once its conclusion ends the text. -/
+def finishWith (gs : List (VarGroup (List Char))) (hs : List (Hyp (List Char))) :
+    Option (Concl (List Char) × List Tok) → Option (Statement (List Char))
+  | some (c, [.kw .endK]) => some ⟨gs, hs, c⟩
   | _ => none
 
 /-- The conclusion, which ends the sentence. -/
 def finish (gs : List (VarGroup (List Char))) (hs : List (Hyp (List Char))) (ts : List Tok) :
     Option (Statement (List Char)) :=
-  match parseConcl ts with
-  | some (c, [.kw .endK]) => some ⟨gs, hs, c⟩
+  finishWith gs hs (parseConcl ts)
+
+/-- After the hypotheses: the conclusion. -/
+def afterAssume (gs : List (VarGroup (List Char))) :
+    Option (List (Hyp (List Char)) × List Tok) → Option (Statement (List Char))
+  | some (hs, ts) => finish gs hs ts
+  | none => none
+
+/-- After the groups: the hypotheses, or the conclusion. -/
+def afterLet : Option (List (VarGroup (List Char)) × List Tok) → Option (Statement (List Char))
+  | some (gs, .kw .assumeK :: ts) => afterAssume gs (parseHyps [] ts)
+  | some (gs, .kw .thenK :: ts) => finish gs [] ts
   | _ => none
 
 /-- A theorem's sentence, after `\LeanProse{`. -/
 def parseStatement : List Tok → Option (Statement (List Char))
-  | .kw .letK :: ts =>
-    match parseGroups ts [] with
-    | some (gs, .kw .assumeK :: ts) =>
-      match parseHyps ts [] with
-      | some (hs, ts) => finish gs hs ts
-      | none => none
-    | some (gs, .kw .thenK :: ts) => finish gs [] ts
-    | _ => none
-  | .kw .assumeK :: ts =>
-    match parseHyps ts [] with
-    | some (hs, ts) => finish [] hs ts
-    | none => none
+  | .kw .letK :: ts => afterLet (parseGroups [] ts)
+  | .kw .assumeK :: ts => afterAssume [] (parseHyps [] ts)
   | ts => finish [] [] ts
 
 /-- The prose view, from its tokens. -/
@@ -477,8 +505,8 @@ def inWord : List Char := "\\in".toList
 def Concl.Plain : Concl (List Char) → Prop
   | .formula f => Layout.Plain f
   | .conjuncts fs => fs ≠ [] ∧ ∀ f ∈ fs, Layout.Plain f
-  | .iff a b => Layout.Plain a ∧ Layout.Plain b
-  | .exists_ v body => Layout.Plain v ∧ body.Plain
+  | .iff lhs rhs => Layout.Plain lhs ∧ Layout.Plain rhs
+  | .exists_ w body => Layout.Plain w ∧ body.Plain
 
 /-- A group whose names are plain, and whose type is, if it has one. -/
 def VarGroup.Plain (g : VarGroup (List Char)) : Prop :=
@@ -489,14 +517,14 @@ def VarGroup.Plain (g : VarGroup (List Char)) : Prop :=
 
 /-- A hypothesis whose formula is plain, and whose label has no closing
 brace. -/
-def Hyp.Plain (h : Hyp (List Char)) : Prop :=
-  Layout.Plain h.formula ∧ match h.label with
+def Hyp.Plain (hy : Hyp (List Char)) : Prop :=
+  Layout.Plain hy.formula ∧ match hy.label with
     | some n => '}' ∉ n
     | none => True
 
 /-- A sentence whose parts are plain. -/
 def Prose.Plain : Prose (List Char) → Prop
   | .define f => Layout.Plain f
-  | .statement s => (∀ g ∈ s.vars, g.Plain) ∧ (∀ h ∈ s.hyps, h.Plain) ∧ s.concl.Plain
+  | .statement s => (∀ g ∈ s.vars, g.Plain) ∧ (∀ hy ∈ s.hyps, hy.Plain) ∧ s.concl.Plain
 
 end Imprimatur.Layout
