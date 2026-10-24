@@ -19,6 +19,11 @@
 # the splicer's own build, ../splice/.lake/build/bin/imprimatur, is used, and
 # built if it is missing. The extractor is installed once with
 #   imprimatur toolchain install v4.35.0
+# and again after any change to extract/ or to the shared modules in bundle/
+# (Imprimatur.Bundle, Imprimatur.Layout): the paper is built with the
+# installed copy. Step 1 also rebuilds the splice package, which the paper's
+# Lean reads those modules from; with --no-lean, rebuild it yourself first,
+# or imprimatur build will read stale .olean files without complaint.
 #
 # A drift error from check means a statement that hand-written prose attests
 # has changed: re-read the prose against the Lean, then
