@@ -28,3 +28,4 @@ _site/
 /Papers/
 /about/.refresh-*.log
 /about/analytics/.venv/
+/about/analytics/__pycache__/
