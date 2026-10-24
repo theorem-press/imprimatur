@@ -198,10 +198,36 @@ def blockLabels (doc : Doc) : Array (Nat × Nat × String) := Id.run do
       if let some l := a.labelFor it.key occ then out := out.push (fi, ii, l)
   return out
 
-/-- An item's characters, rewritten by edits at positions in the file. -/
-def rewriteItem (it : Item) (raw : List Char) (edits : Array Edit) : List Char :=
-  Core.Rewrite.splice raw 0 (Core.Rewrite.sortEdits (edits.toList.map fun e =>
-    { start := e.start - it.start, stop := e.stop - it.start, text := e.text.toList }))
+/-- How an item changes: its region's new content, if that changes, and the
+edits of its options (at positions in the file), which lie in its option
+list, or at the place one is inserted. -/
+structure ItemRewrite where
+  /-- The region's new content, if it changes. -/
+  region : Option String := none
+  /-- The edits of the options. -/
+  optEdits : Array Edit := #[]
+
+/-- Where an item's options are, relative to its start: the span of its
+`[…]`, or the empty span where one is inserted. -/
+def optsBounds (it : Item) : Nat × Nat :=
+  match it.optsSpan with
+  | some (a, b) => (a - it.start, b - it.start)
+  | none => (it.insertAt - it.start, it.insertAt - it.start)
+
+/-- **An item's characters, rewritten:** the characters before its options,
+its options with their edits, the characters between its options and its
+region, its region (new, or as it was), and the characters after it. So
+nothing but the options and the region changes. -/
+def rewriteItem (it : Item) (raw : List Char) (rw : ItemRewrite) : List Char :=
+  let (o1, o2) := optsBounds it
+  let rs := it.regionStart - it.start
+  let re := it.regionEnd - it.start
+  let opts := Core.Rewrite.splice (Core.Scan.slice raw o1 o2) o1 (Core.Rewrite.sortEdits
+    (rw.optEdits.toList.map fun e => { start := e.start - it.start, stop := e.stop - it.start, text := e.text.toList }))
+  let region := match rw.region with
+    | some t => t.toList
+    | none => Core.Scan.slice raw rs re
+  raw.take o1 ++ opts ++ Core.Scan.slice raw o2 rs ++ region ++ raw.drop re
 
 /-- What planning one item gives: its diagnostics, in order, and, if it
 changes, the change and its edits (at positions in the file). -/
@@ -210,8 +236,8 @@ structure ItemResult where
   diags : Array Diag := #[]
   /-- The change, if the item changes. -/
   change : Option Change := none
-  /-- Its edits. -/
-  edits : Array Edit := #[]
+  /-- How it changes. -/
+  rewrite : ItemRewrite := {}
 
 /-- The generated text of an item, from its bundle entry: its view's
 rendering, or, for `\leanref`, its source location. -/
@@ -319,16 +345,14 @@ def handEdited? (o : ApplyOpts) (spec : Option SlotSpec) (loc : String) (it : It
     | none => none
   else none
 
-/-- The edits that write an item's content and options. -/
-def itemEdits (s : Src) (it : Item) (rc : RegionContent) (same : Bool) (sum : String) : Array Edit :=
-  let region : Array Edit :=
-    if !same then #[{ start := it.regionStart, stop := it.regionEnd, text := rc.content }] else #[]
+/-- How an item's content and options change. -/
+def itemRewrite (s : Src) (it : Item) (rc : RegionContent) (same : Bool) (sum : String) : ItemRewrite :=
   let opts : Array (String × String) :=
     (if it.kind != .ref && it.opt? "sum" != some sum then #[("sum", sum)] else #[]) ++
     (match rc.defaults with
      | some d => if it.opt? "dflt" != some d then #[("dflt", d)] else #[]
      | none => #[])
-  region ++ optEdits s it opts
+  { region := if !same then some rc.content else none, optEdits := optEdits s it opts }
 
 /-- Plan one item: the `i`th of file `fi`, whose line endings are mostly
 `eol`. -/
@@ -360,14 +384,14 @@ def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bu
           match handEdited? o (itemSlots cfg it) loc it old same with
           | some d => { diags := rc.warnings.push d }
           | none =>
-            let edits := itemEdits s it rc same (checksum (itemSlots cfg it) rc.content)
-            if edits.isEmpty then { diags := rc.warnings }
-            else { diags := rc.warnings, edits,
+            let rw := itemRewrite s it rc same (checksum (itemSlots cfg it) rc.content)
+            if rw.region.isNone && rw.optEdits.isEmpty then { diags := rc.warnings }
+            else { diags := rc.warnings, rewrite := rw,
                    change := some { loc, key := it.key, old, new := rc.content, contentChanged := !same } }
 
-/-- Rewrite a file's chunks: each item with edits, within its own
+/-- Rewrite a file's chunks: each item that changes, within its own
 characters. Text is left as it is. -/
-def rewriteChunks (edits : List (Nat × Array Edit)) (chunks : List Core.Scan.Chunk) :
+def rewriteChunks (edits : List (Nat × ItemRewrite)) (chunks : List Core.Scan.Chunk) :
     List Core.Scan.Chunk :=
   chunks.map fun
     | .item it raw =>
@@ -392,7 +416,7 @@ def planFile (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bu
   let eol := dominantEol f.src.chars
   let rs := f.scan.items.toList.zipIdx.map fun (it, ii) =>
     (it, planItem cfg labels bundle o f.src fi eol it ii)
-  let edits := rs.filterMap fun (it, r) => if r.change.isSome then some (it.start, r.edits) else none
+  let edits := rs.filterMap fun (it, r) => if r.change.isSome then some (it.start, r.rewrite) else none
   { diags := (rs.map (·.2.diags)).foldl (· ++ ·) #[],
     changes := (rs.filterMap (·.2.change)).toArray,
     rewritten := if edits.isEmpty then none else some (rewriteChunks edits f.chunks) }

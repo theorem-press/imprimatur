@@ -201,7 +201,7 @@ theorem planItem_clean {cfg : Config} {labels : Array (Nat × Nat × String)} {b
             · rename_i hedits
               cases same with
               | true => simpa using hsame
-              | false => simp [itemEdits, Array.isEmpty_iff] at hedits
+              | false => simp [itemRewrite] at hedits
             · cases hc
 
 /-- A clean plan: every item of every file plans with no diagnostics and no
@@ -433,5 +433,131 @@ theorem checkDoc_check {W : Imprimatur.World Imprimatur.TeX} {doc : Splice.Doc} 
   apply trusted_of_trustProblems
   apply (hclean.2 e he).1
   rintro ⟨_, hl⟩; rw [hn] at hl; exact absurd hl (by decide)
+
+/-! ## Blueprint `\leanok`, and the recorded hashes -/
+
+/-- A clean audit, file by file: every item audits clean, and so do its
+`\leanok`s. -/
+theorem file_clean {doc : Splice.Doc} {b : B} (h : audit doc b = #[]) {f : SourceFile} (hf : f ∈ doc.files) :
+    (∀ it ∈ f.scan.items, auditItem doc.cfg b f it = #[]) ∧ auditLeanok doc.cfg b f = #[] := by
+  unfold audit at h
+  rw [Array.append_eq_empty_iff] at h
+  have hF : (fun (ds : Array Splice.Diag) (f : SourceFile) =>
+      f.scan.items.foldl (init := ds) (fun ds it => ds ++ auditItem doc.cfg b f it) ++ auditLeanok doc.cfg b f) =
+      (fun ds f => ds ++ (f.scan.items.foldl (init := #[]) (fun ds it => ds ++ auditItem doc.cfg b f it) ++
+        auditLeanok doc.cfg b f)) := by
+    funext ds f
+    rw [foldl_array_append, Array.append_assoc]
+  have h1 := h.1
+  rw [hF, foldl_array_empty] at h1
+  have h2 := Array.append_eq_empty_iff.mp (h1 f hf)
+  rw [foldl_array_empty] at h2
+  exact h2
+
+/-- **Theorem 1, blueprint.** If the bundle is true and `check` reports
+nothing, every key of a blueprint `\lean` in an environment marked
+`\leanok` names a declared, trusted statement. -/
+theorem checkDoc_leanok {W : Imprimatur.World Imprimatur.TeX} {doc : Splice.Doc} {b : B} {opts : ApplyOpts}
+    {extra : Array String} {diff : Bool}
+    (hb : b.True W (Verdict.trusted doc.cfg.allowedAxioms))
+    (hc : checkDoc doc b opts extra diff = #[])
+    {f : SourceFile} (hf : f ∈ doc.files) {ok : Item} (hok : ok ∈ f.scan.items) (hko : ok.kind = .leanok)
+    (henv : ok.env ≠ 0) {it : Item} (hi : it ∈ f.scan.items) (hk : it.kind = .check) (hn : it.name = "lean")
+    (he : it.env = ok.env) {key : String} (hkey : key ∈ it.keys) :
+    ∃ S, W.stmt key = some S ∧ W.trusted key = true := by
+  obtain ⟨_, _, ha⟩ := checkDoc_parts hc
+  have hkey' : key ∈ it.allKeys := by unfold Item.allKeys; simp [hk, hkey]
+  obtain ⟨e, hfe⟩ := Option.isSome_iff_exists.mp
+    ((auditKey_clean (keys_clean ha hf hi hkey')).1 hk)
+  obtain ⟨S, hS, _⟩ := (hb key e hfe).statement
+  refine ⟨S, hS, ?_⟩
+  rw [← (hb key e hfe).verdict]
+  apply trusted_of_trustProblems
+  -- The `\leanok`'s audit found nothing for this key.
+  have hl := (file_clean ha hf).2
+  unfold auditLeanok at hl
+  rw [foldl_array_empty] at hl
+  have hlo := hl ok (Array.mem_filter.mpr ⟨hok, by simp [hko]⟩)
+  unfold leanokDiags at hlo
+  have h0 : (ok.env == 0) = false := by simpa using henv
+  simp only [h0, Bool.false_eq_true, ↓reduceIte] at hlo
+  rw [foldl_array_empty] at hlo
+  have hit := hlo it (Array.mem_filter.mpr ⟨hi, by simp [hn, he]⟩)
+  rw [foldl_array_empty] at hit
+  have hkd := hit key hkey
+  unfold leanokKeyDiags at hkd
+  rw [hfe] at hkd
+  simp only at hkd
+  split at hkd
+  · rename_i hemp; exact Array.isEmpty_iff.mp hemp
+  · simp at hkd
+
+/-- What `hashesOf` gives, of a true bundle: one hash for each key, the
+statement hash of the key's statement. -/
+theorem hashesOf_true {W : Imprimatur.World Imprimatur.TeX} {tr : Verdict → Bool} {b : B} (hb : b.True W tr) :
+    ∀ {ks : List String} {hs : List String}, hashesOf b (·.stmtHash) ks = some hs →
+      hs.length = ks.length ∧ ∀ p ∈ ks.zip hs, ∃ S, W.stmt p.1 = some S ∧ p.2 = W.hash S
+  | [], hs, h => by simp [hashesOf] at h; subst h; simp
+  | k :: ks, hs, h => by
+    simp only [hashesOf, Option.bind_eq_bind, Option.bind_eq_some_iff] at h
+    obtain ⟨e, he, h', hh, hs', hrest, hcons⟩ := h
+    simp only [Option.pure_def, Option.some.injEq] at hcons
+    subst hcons
+    obtain ⟨hlen, hall⟩ := hashesOf_true hb hrest
+    obtain ⟨S, hS, hio⟩ := (hb k e he).statement
+    refine ⟨by simp [hlen], ?_⟩
+    intro p hp
+    simp only [List.zip_cons_cons, List.mem_cons] at hp
+    rcases hp with rfl | hp
+    · exact ⟨S, hS, hio.stmtHash h' hh⟩
+    · exact hall p hp
+
+/-- **Theorem 1, the recorded hash.** If the bundle is true and `check`
+reports nothing, a `\leancheck` that records `stmt=r` records the statement
+hashes of its keys' statements, as `shortOf` writes them: the first 12
+digits of the one hash, or of the hash of all of them. -/
+theorem checkDoc_stmt {W : Imprimatur.World Imprimatur.TeX} {doc : Splice.Doc} {b : B} {opts : ApplyOpts}
+    {extra : Array String} {diff : Bool}
+    (hb : b.True W (Verdict.trusted doc.cfg.allowedAxioms))
+    (hc : checkDoc doc b opts extra diff = #[])
+    {f : SourceFile} (hf : f ∈ doc.files) {it : Item} (hi : it ∈ f.scan.items)
+    (hk : it.kind = .check) (hn : it.name = "leancheck") {r : String} (hr : it.opt? "stmt" = some r) :
+    ∃ hs, r = shortOf hs ∧ hs.length = it.keys.size ∧
+      ∀ p ∈ it.keys.toList.zip hs, ∃ S, W.stmt p.1 = some S ∧ p.2 = W.hash S := by
+  obtain ⟨_, _, ha⟩ := checkDoc_parts hc
+  have hitem := (file_clean ha hf).1 it hi
+  unfold auditItem at hitem
+  rw [Array.append_eq_empty_iff] at hitem
+  obtain ⟨hkeys, hdrift⟩ := hitem
+  rw [foldl_array_empty] at hkeys
+  have hfound : ∀ k ∈ it.keys, (b.find? k).isSome := by
+    intro k hkm
+    exact (auditKey_clean (hkeys k (by unfold Item.allKeys; simp [hk, hkm]))).1 hk
+  unfold driftDiags at hdrift
+  have hck : (it.kind == .check && it.name == "leancheck") = true := by simp [hk, hn]
+  simp only [hck, ↓reduceIte] at hdrift
+  rw [hr] at hdrift
+  cases hch : checkHashes b it.keys with
+  | none =>
+    rw [hch] at hdrift
+    simp only at hdrift
+    have hallk : (it.keys.all fun k => (b.find? k).isSome) = true := by
+      simpa [Array.all_eq_true] using fun i hi' => hfound _ (Array.getElem_mem hi')
+    simp only [hallk, ↓reduceIte] at hdrift
+    simp at hdrift
+  | some p =>
+    rw [hch] at hdrift
+    obtain ⟨stmt, sig⟩ := p
+    simp only at hdrift
+    have hrs : r = stmt := by
+      cases hne : (r != stmt) with
+      | true => rw [hne] at hdrift; simp at hdrift
+      | false => simpa using hne
+    unfold checkHashes at hch
+    simp only [Option.bind_eq_bind, Option.bind_eq_some_iff] at hch
+    obtain ⟨stmts, hstmts, sigs, _, hpair⟩ := hch
+    simp only [Option.pure_def, Option.some.injEq, Prod.mk.injEq] at hpair
+    obtain ⟨hlen, hall⟩ := hashesOf_true hb hstmts
+    refine ⟨stmts, by rw [hrs, ← hpair.1], by simpa using hlen, hall⟩
 
 end SpliceModel.Theorem1

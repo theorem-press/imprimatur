@@ -41,7 +41,7 @@ def itemOf : Core.Scan.Chunk → Option Item
   | .text _ => none
   | .item it _ => some it
 
-theorem rewriteChunks_text (edits : List (Nat × Array Edit)) (cs : List Core.Scan.Chunk) :
+theorem rewriteChunks_text (edits : List (Nat × ItemRewrite)) (cs : List Core.Scan.Chunk) :
     (rewriteChunks edits cs).map textOf = cs.map textOf := by
   induction cs with
   | nil => rfl
@@ -52,7 +52,7 @@ theorem rewriteChunks_text (edits : List (Nat × Array Edit)) (cs : List Core.Sc
     | text r => rfl
     | item it raw => dsimp only; split <;> rfl
 
-theorem rewriteChunks_items (edits : List (Nat × Array Edit)) (cs : List Core.Scan.Chunk) :
+theorem rewriteChunks_items (edits : List (Nat × ItemRewrite)) (cs : List Core.Scan.Chunk) :
     (rewriteChunks edits cs).map itemOf = cs.map itemOf := by
   induction cs with
   | nil => rfl
@@ -95,6 +95,56 @@ theorem planOnce_items {doc : Splice.Doc} {b : Imprimatur.Bundle (Imprimatur.Ima
     ∃ f, doc.files.toList[fi]? = some f ∧ cs.map itemOf = f.chunks.map itemOf := by
   obtain ⟨f, edits, hf, rfl⟩ := planOnce_rewritten h
   exact ⟨f, hf, rewriteChunks_items _ _⟩
+
+/-! ## Within an item, only the options and the region change -/
+
+/-- How a chunk `apply` writes is related to the chunk it was: the same, or
+the same item with its characters rewritten by `rewriteItem`. -/
+def Rewritten (c c' : Core.Scan.Chunk) : Prop :=
+  c' = c ∨ ∃ it raw rw, c = .item it raw ∧ c' = .item it (rewriteItem it raw rw)
+
+/-- **Only the options and the region change:** an item rewritten is the
+characters before its options, then its options, then the characters
+between its options and its region, then its region, then the characters
+after it; the first, third and fifth are the item's own, and the region is
+its own unless the rewrite gives a new one. -/
+theorem rewriteItem_shape (it : Item) (raw : List Char) (rw : ItemRewrite) :
+    ∃ opts region,
+      rewriteItem it raw rw = raw.take (optsBounds it).1 ++ opts ++
+        Core.Scan.slice raw (optsBounds it).2 (it.regionStart - it.start) ++ region ++
+        raw.drop (it.regionEnd - it.start) ∧
+      (rw.region = none → region = Core.Scan.slice raw (it.regionStart - it.start) (it.regionEnd - it.start)) := by
+  unfold rewriteItem
+  cases hr : rw.region with
+  | none => exact ⟨_, _, rfl, fun _ => rfl⟩
+  | some t => exact ⟨_, _, rfl, fun h => by cases h⟩
+
+/-- An item's characters are the same five parts, as they were, when its
+options come before its region (as the scanner finds them). -/
+theorem raw_parts (raw : List Char) {o1 o2 rs re : Nat} (h1 : o1 ≤ o2) (h2 : o2 ≤ rs) (h3 : rs ≤ re) :
+    raw = raw.take o1 ++ Core.Scan.slice raw o1 o2 ++ Core.Scan.slice raw o2 rs ++
+      Core.Scan.slice raw rs re ++ raw.drop re := by
+  simp only [Core.Scan.slice, List.append_assoc]
+  have key : ∀ (l : List Char) (a b : Nat), a ≤ b → (l.drop a).take (b - a) ++ l.drop b = l.drop a := by
+    intro l a b hab
+    have : l.drop b = (l.drop a).drop (b - a) := by rw [List.drop_drop]; congr 1; omega
+    rw [this, List.take_append_drop]
+  rw [key raw rs re h3, key raw o2 rs h2, key raw o1 o2 h1, List.take_append_drop]
+
+/-- **Within a file `apply` would write, only items' options and regions
+change:** each chunk is the file's chunk, or that item rewritten. -/
+theorem planOnce_local {doc : Splice.Doc} {b : Imprimatur.Bundle (Imprimatur.Image Imprimatur.TeX) Imprimatur.Verdict} {o : ApplyOpts}
+    {fi : Nat} {cs : List Core.Scan.Chunk} (h : (fi, cs) ∈ (planOnce doc b o).rewritten) :
+    ∃ f g, doc.files.toList[fi]? = some f ∧ cs = f.chunks.map g ∧ ∀ c, Rewritten c (g c) := by
+  obtain ⟨f, edits, hf, rfl⟩ := planOnce_rewritten h
+  refine ⟨f, _, hf, rfl, fun c => ?_⟩
+  cases c with
+  | text r => exact Or.inl rfl
+  | item it raw =>
+    dsimp only
+    split
+    · rename_i rw _; exact Or.inr ⟨it, raw, rw, rfl, rfl⟩
+    · exact Or.inl rfl
 
 /-! ## Idempotence and the fixed point -/
 

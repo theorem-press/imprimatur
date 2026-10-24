@@ -916,12 +916,14 @@ and slots, and that too prints back to the text\leancheck[stmt=bf780e74e4a6, sig
 rendering with the model's own \textsf{fill}, so slot preservation is the
 model's law, applied to the code's merge\leancheck[stmt=25043dd534fd, sig=f9b42f80e465]{Splice.Core.Slots.mergeBody_keeps}.
 It rewrites each item that changes within the item's own characters, so the
-text outside items, and the items' places, never change\leancheck[stmt=cfc500ff9f4f, sig=efde6593121b]{SpliceModel.Splicer.planOnce_text, SpliceModel.Splicer.planOnce_items}.
+text outside items, and the items' places, never change\leancheck[stmt=f9b2b1703808, sig=efde6593121b]{SpliceModel.Splicer.planOnce_text, SpliceModel.Splicer.planOnce_items};
+and within an item it rebuilds only the options and the region, keeping the
+characters before, between and after them\leancheck[stmt=18c1a13c5f40, sig=0ecc5be5c714]{SpliceModel.Splicer.planOnce_local, SpliceModel.Splicer.rewriteItem_shape}.
 Before writing anything it checks its own output: the files must scan again
 to what it built, and applying the bundle again must find nothing to do.
 So when \verb|apply| reports no error, applying it again writes nothing,
 changes nothing and reports nothing, and \verb|check| finds nothing
-stale\leancheck[stmt=ab9574e55845, sig=91286a6f0c61]{SpliceModel.Splicer.plan_fixed_point}.
+stale\leancheck[stmt=2b2c4fa36a8a, sig=91286a6f0c61]{SpliceModel.Splicer.plan_fixed_point}.
 
 \begin{leansource}[sum=kShqbwxh39]{SpliceModel.Splicer.plan_fixed_point}{Idempotence and the fixed point}
 \LeanCode{%
@@ -944,9 +946,13 @@ paper names a declared, trusted statement; its view is the world's
 rendering; its region is, after normalisation, that rendering as the
 splicer sets it, with the alias's template and the authors' slot text; and,
 if it is typeset, the rendering reads back as the
-statement\leancheck[stmt=51b426ded33d, sig=f833f0be8abd]{SpliceModel.Theorem1.checkDoc_block}. Every
+statement\leancheck[stmt=626b8bfb0eb8, sig=f833f0be8abd]{SpliceModel.Theorem1.checkDoc_block}. Every
 \verb|\leanref| and \verb|\leancheck| key is declared and trusted, and the
-bundle's statement hash is the statement's\leancheck[stmt=292ba1f382bd, sig=1589fbd3468e]{SpliceModel.Theorem1.checkDoc_ref, SpliceModel.Theorem1.checkDoc_check}.
+bundle's statement hash is the statement's\leancheck[stmt=bae4e8ed159d, sig=1589fbd3468e]{SpliceModel.Theorem1.checkDoc_ref, SpliceModel.Theorem1.checkDoc_check};
+the \verb|stmt=| a \verb|\leancheck| records is the first 12 digits of
+those hashes, or of their hash\leancheck[stmt=7df8e0b0b0b2, sig=626a81640f4a]{SpliceModel.Theorem1.checkDoc_stmt};
+and every key of a blueprint \verb|\lean| in a node marked
+\verb|\leanok| is declared and trusted\leancheck[stmt=95ad4174ec30, sig=09378a67ae8b]{SpliceModel.Theorem1.checkDoc_leanok}.
 
 \begin{leansource}[sum=-DPwvoq9A0]{SpliceModel.Theorem1.checkDoc_block}{Theorem 1, of the code}
 \LeanCode{%
