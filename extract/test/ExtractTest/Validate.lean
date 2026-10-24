@@ -23,7 +23,12 @@ def mk (c : Name) (vars : Array (Name × String)) (template : String) (sort : St
 
 /-- An atom of a sort. -/
 def atom (tex sort : String) : Prod :=
-  { name := tex, sort, prec := Doc.maxPrec, syms := (tokenize tex).map .tok }
+  { name := tex, sort, prec := Doc.maxPrec, syms := (tokenize tex).toList.map .tok }
+
+/-- A reading: a leaf, or a node with children. -/
+def l (n : String) : Reading := .node n []
+/-- See `l`. -/
+def n (name : String) (kids : List Reading) : Reading := .node name kids
 
 /-- The readings of `tex` as sort `s`, in the grammar of `rules` and `atoms`. -/
 def readings (rules : Array NotationRule) (atoms : Array Prod) (tex s : String) : Nat :=
@@ -43,7 +48,7 @@ def atoms : Array Prod :=
 /-- The one reading of `tex` as sort `s`, if it has exactly one. -/
 def theReading (rules : Array NotationRule) (atoms : Array Prod) (tex s : String) : Option String :=
   match readBack (Grammar.of (rules.filterMap ofRule ++ builtins ++ atoms)) (tokenize tex) s with
-  | (#[r], false) => some r
+  | (#[r], flags) => if flags.any then none else some r.text
   | _ => none
 
 /-- All the validation tests. -/
@@ -51,17 +56,23 @@ def tests : TestM Unit := group "validate" do
   -- The one reading is compared with the reading the renderer expected
   -- (`Render.Expect`); `⁇` stands for a subterm it does not say how to read.
   checkEq "extract/validate/matches"
-    (#[("app[a; b]", "app[a; b]"), ("app[⁇; b]", "app[f[x; y]; b]"), ("⁇", "anything[at; all]"),
-      ("app[⁇; ⁇]", "app[a; b]"), ("app[a; b]", "app[b; a]"), ("app[⁇]", "app[a; b]"),
-      ("app[⁇; c]", "app[a; b]")].map fun (e, g) => readingMatches e g)
+    (#[(n "app" [l "a", l "b"], n "app" [l "a", l "b"]),
+      (n "app" [.any, l "b"], n "app" [n "f" [l "x", l "y"], l "b"]),
+      (.any, n "anything" [l "at", l "all"]),
+      (n "app" [.any, .any], n "app" [l "a", l "b"]),
+      (n "app" [l "a", l "b"], n "app" [l "b", l "a"]),
+      (n "app" [.any], n "app" [l "a", l "b"]),
+      (n "app" [.any, l "c"], n "app" [l "a", l "b"])].map fun (e, g) => e.matches g)
     #[true, true, true, true, false, false, false]
+  -- Readings print as the bundle records them.
+  checkEq "extract/validate/text" (n "app" [n "f" [l "x", .any], l "b"]).text "app[f[x; ⁇]; b]"
   -- Left-associated application reads `e\; f\; e` as `(e f) e`. Had the
   -- renderer rendered `e (f e)` without its parentheses, the one reading
   -- would not be what it expected, and the check reports it.
   let r := theReading #[app 100] atoms "e\\; f\\; e" "Tm"
   checkEq "extract/validate/reading-left" r (some "app[app[e; f]; e]")
   check "extract/validate/misread-caught"
-    (r.any fun r => !readingMatches "app[e; app[f; e]]" r && readingMatches "app[app[e; f]; ⁇]" r)
+    (r.any fun r => r != (n "app" [l "e", n "app" [l "f", l "e"]]).text && r == (n "app" [n "app" [l "e", l "f"], l "e"]).text)
   -- Tokens: control words and symbols, characters; spaces and breaks dropped.
   checkEq "extract/validate/tokens" (tokenize "\\Gamma \\vdash e_{1}\\; x\\,y \\LeanBreak z")
     #["\\Gamma", "\\vdash", "e", "_", "{", "1", "}", "\\;", "x", "\\,", "y", "z"]
@@ -70,10 +81,10 @@ def tests : TestM Unit := group "validate" do
   -- A rule's production: its holes at the precedence the emitter needs.
   let p := (ofRule (app 100 "none")).get!
   checkEq "extract/validate/production" (repr p.syms).pretty
-    (repr #[Sym.hole "Tm" 101, .tok "\\;", .hole "Tm" 101]).pretty
+    (repr [Sym.hole "Tm" 101, .tok "\\;", .hole "Tm" 101]).pretty
   let p := (ofRule (mk `subst #[(`x, "Nat"), (`u, "Tm"), (`e, "Tm")] "#e[#u/#x]" "Tm")).get!
   checkEq "extract/validate/production-atomic" (repr p.syms).pretty
-    (repr #[Sym.hole "Tm" Doc.maxPrec, .tok "[", .hole "Tm" 0, .tok "/", .hole "Nat" 0, .tok "]"]).pretty
+    (repr [Sym.hole "Tm" Doc.maxPrec, .tok "[", .hole "Tm" 0, .tok "/", .hole "Nat" 0, .tok "]"]).pretty
   check "extract/validate/production-coercion"
     (ofRule (mk `Tm.var #[(`x, "Nat")] "#x" "Tm")).get!.coercion
   -- `latex_style lists := literal`: a list literal is a list, and a type of
@@ -91,8 +102,9 @@ def tests : TestM Unit := group "validate" do
   check "extract/validate/sort-star-not-value" (!compat "List(Nat)" "Sort*")
   -- A constant applied, however the rules write it, is one reading.
   checkEq "extract/validate/app-constant"
-    (reading { name := "application", sort := "*", prec := 0, syms := #[] } #["Sum.inr", "y"])
-    "Sum.inr[y]"
+    (mkReading "application" none #[l "Sum.inr", l "y"]).text "Sum.inr[y]"
+  checkEq "extract/validate/app-curried-reading"
+    (mkReading "application" none #[n "app" [l "f", l "a"], l "b"]).text "app[f; a; b]"
   -- Swapping next to application: ambiguous unless precedences separate them.
   checkEq "extract/validate/ambiguous" (readings #[app 1024, swap 1024] atoms "(a\\ b) \\cdot e\\; f" "Tm") 2
   -- With them, the formula needs parentheses, and has one reading with them.

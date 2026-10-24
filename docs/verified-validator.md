@@ -1,9 +1,27 @@
 # Proposal: the validator, proved
 
-Status: proposal. Supersedes the plan in #22 (a model with property tests)
+Status: in progress (branch `verified-validator`); decisions 1–4 taken as
+recommended. Supersedes the plan in #22 (a model with property tests)
 with the pattern of docs/verified-extractor.md: the code that runs is the
 code that is proved. Companion to `docs/verified-splicer.md` and
-`docs/verified-extractor.md`.
+`docs/verified-extractor.md`. The module is `bundle/ReadBack.lean`
+(`Imprimatur.ReadBack`, namespace `Imprimatur.Validate`), since
+`Imprimatur.Validate` is the extractor's own file. What was built differs
+from the plan below in three points, each recorded in the module:
+
+- **Cuts are not a flag.** A question cut on an active key happens on
+  ordinary formulas (any coercion chain that returns to sort `*`), so it
+  cannot mean "not validated". Instead an answer computed under a cut is
+  remembered with the keys it was cut on, and used only while those keys
+  are still active (when asking again would be cut the same way); once the
+  cycle is gone it is recomputed in full. Cuts of a question's own key lose
+  only looping derivations. What is remembered is therefore complete
+  whenever it is used, which is what the completeness proof needs.
+- **The variant cap is 256**, not 32: two of the paper's own formulas
+  (`'$' :: l ++ ['$']`) exceeded 32, and the cap at 32 was silently
+  incomplete there. `pruned` is reported as "not validated".
+- **The fuel bounds depth** (`8 · tokens + 256` calls), the budget bounds
+  work; either exhausted is `over`.
 
 ## Goal
 
@@ -59,8 +77,8 @@ not prove the renderer.
 
 ### One parser, total, in the shared module
 
-`bundle/Layout.lean` gains (or a sibling `bundle/Validate.lean` holds; see
-decisions) the whole of reading back: tokens, symbols, productions,
+A sibling of `bundle/Layout.lean`, `bundle/ReadBack.lean`, holds the whole
+of reading back: tokens, symbols, productions,
 compilation, readings as trees, the parser, the matcher. As with the
 layouts: definitions only, total, core-only (`Std.HashMap` is part of the
 toolchain, not a Lake dependency, and the extractor uses it today), copied
@@ -134,10 +152,10 @@ The same chart parser, total:
   Lean's `Std.HashMap` lemmas (`getElem?_insert`, …) suffice for this.
 - **Loops** (`tokenize`, `compile`, `keep2`, `split`'s scan over split
   points) become structural recursion, as `texWidth` did.
-- **Exhaustion** is explicit. Two flags, `over` (the budget) and `pruned`
-  (the variant cap), are returned with the readings; the extractor reports
-  either as "not validated", where today only the budget is. The theorems
-  assume both clear. Whether to keep the cap at all is a decision below.
+- **Exhaustion** is explicit. Two flags, `over` (the budget, or the fuel)
+  and `pruned` (the variant cap), are returned with the readings; the
+  extractor reports either as "not validated", where today only the budget
+  is. The theorems assume both clear.
 
 ### The theorems
 

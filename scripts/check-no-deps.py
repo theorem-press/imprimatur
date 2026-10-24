@@ -6,7 +6,8 @@
 lint/no-deps: the shipped packages have no Lake dependencies (DESIGN §4,
 constraint 6), so they can't shift a host project's pins.
 
-lint/splice-imports: the splicer uses nothing from Lean but its JSON library
+lint/splice-imports: the splicer uses nothing from Lean but its JSON library and
+  Std.HashMap (both part of the toolchain)
 (DESIGN §4, constraint 2), so it stays independent of Lean's internals. It
 imports only its own libraries: Splice, the bundle's type (Imprimatur.Bundle)
 and its model (SpliceModel).
@@ -35,11 +36,12 @@ def main():
             m = re.match(r"^(?:public )?import (?:all )?(\S+)", line)
             own = ("Splice", "SpliceModel")
             if m and not (m.group(1) in own or m.group(1).startswith(tuple(o + "." for o in own))
-                          or m.group(1) in ("Imprimatur.Bundle", "Imprimatur.Layout")
-                          or m.group(1).startswith("Lean.Data.Json")):
+                          or m.group(1) in ("Imprimatur.Bundle", "Imprimatur.Layout", "Imprimatur.ReadBack")
+                          or m.group(1).startswith("Lean.Data.Json")
+                          or m.group(1) == "Std.Data.HashMap"):
                 errors.append(f"lint/splice-imports: {path.relative_to(ROOT)}:{lineno}: "
                               f"the splicer may import only its own libraries (Splice, SpliceModel, "
-                              f"Imprimatur.Bundle) and Lean.Data.Json, not {m.group(1)}")
+                              f"Imprimatur.Bundle), Lean.Data.Json and Std.Data.HashMap, not {m.group(1)}")
     for e in errors:
         print(e if e.startswith("lint/") else f"lint/no-deps: {e}", file=sys.stderr)
     return 1 if errors else 0

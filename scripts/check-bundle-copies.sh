@@ -9,7 +9,7 @@
 # built. The copies must be the source, byte for byte.
 cd "$(dirname "$0")/.."
 status=0
-for src in Bundle Layout; do
+for src in Bundle Layout ReadBack; do
   for copy in extract/Imprimatur/$src.lean splice/Imprimatur/$src.lean; do
     if ! cmp -s bundle/$src.lean "$copy"; then
       echo "lint/bundle-copies: $copy differs from bundle/$src.lean; run: cp bundle/$src.lean $copy" >&2
