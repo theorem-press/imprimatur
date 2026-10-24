@@ -35,7 +35,7 @@ def main():
             m = re.match(r"^(?:public )?import (?:all )?(\S+)", line)
             own = ("Splice", "SpliceModel")
             if m and not (m.group(1) in own or m.group(1).startswith(tuple(o + "." for o in own))
-                          or m.group(1) == "Imprimatur.Bundle"
+                          or m.group(1) in ("Imprimatur.Bundle", "Imprimatur.Layout")
                           or m.group(1).startswith("Lean.Data.Json")):
                 errors.append(f"lint/splice-imports: {path.relative_to(ROOT)}:{lineno}: "
                               f"the splicer may import only its own libraries (Splice, SpliceModel, "

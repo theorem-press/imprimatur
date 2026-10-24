@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Imprimatur.Version
 import Imprimatur.Bundle
+import Imprimatur.Layout
 import Imprimatur.Doc
 import Imprimatur.TeX
 import Imprimatur.Compat

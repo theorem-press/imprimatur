@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Imprimatur.Render
+import Imprimatur.Layout
 
 /-!
 # The `math` and `prose` views
@@ -298,13 +299,32 @@ def mathViewWith (c : ConstantInfo) (width : Nat) (opts : Array (String × Strin
       | none => mathView c width
     else mathView c width
 
-/-- The `prose` view of a constant. -/
-partial def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
+/-- A formula on one line, as the prose view sets it in `$…$`. -/
+def formulaChars (e : Expr) : RenderM (List Char) := do
+  return ((← render e).render 100000).toList
+
+/-- A conclusion in words (`Layout.Concl`): conjuncts are numbered, `↔`
+reads "if and only if", and `∃ x, p` reads "there is x such that p". -/
+partial def gatherConcl (concl : Expr) : RenderM (Layout.Concl (List Char)) := do
+  if concl.isAppOfArity ``Exists 2 then
+    if let .lam n t b bi := concl.appArg! then
+      return ← withLocalDecl n bi t fun x => do
+        let body := b.instantiate1 x
+        return .exists_ (← varNameT n t).toList (← gatherConcl body)
+  let cs := conjuncts concl
+  if cs.size > 1 then
+    return .conjuncts (← cs.toList.mapM formulaChars)
+  if concl.isAppOfArity ``Iff 2 then
+    return .iff (← formulaChars concl.appFn!.appArg!) (← formulaChars concl.appArg!)
+  return .formula (← formulaChars concl)
+
+/-- What the `prose` view of a constant says (`Layout.Prose`): the formulas
+of its sentence, each rendered, and which part each plays. The layout,
+`Layout.proseLayout`, sets them out; `proseView` is the two together. -/
+def gatherProse (c : ConstantInfo) : RenderM (Layout.Prose (List Char)) := do
   unless c matches .thmInfo _ | .axiomInfo _ do
-    let formula := (← mathDoc c).render 100000
-    return s!"\\LeanProse\{We define ${formula}$.}"
+    return .define ((← mathDoc c).render 100000).toList
   statementParts c.type fun vars hyps concl => withConventions hyps fun hyps => do
-    let mut sentences : Array String := #[]
     -- Variables, grouped by type. Each is rendered as a variable, so a
     -- metavariable convention (`\val`) applies to it here too.
     let mut groups : Array (Array Expr × Expr) := #[]
@@ -313,55 +333,28 @@ partial def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
       | some (xs, t') =>
         if t' == t then groups := groups.pop.push (xs.push x, t) else groups := groups.push (#[x], t)
       | none => groups := groups.push (#[x], t)
-    let mut phrases : Array String := #[]
+    let mut gs : Array (Layout.VarGroup (List Char)) := #[]
     for (xs, t) in groups do
-      let ns := xs
-      let names := ", ".intercalate (← xs.toList.mapM fun x => do return (← render x).render 100000)
-      if t.isProp then
-        phrases := phrases.push s!"${names}$ be {if ns.size == 1 then "a proposition" else "propositions"}"
-      else if t.isSort then
-        phrases := phrases.push s!"${names}$ be {if ns.size == 1 then "a type" else "types"}"
-      else
-        phrases := phrases.push s!"${names} \\in {(← render t).render 100000}$"
-    unless phrases.isEmpty do sentences := sentences.push s!"Let {andList phrases}."
+      let names ← xs.toList.mapM formulaChars
+      let kind ← if t.isProp then pure .prop
+        else if t.isSort then pure .type
+        else pure (.ofType (← formulaChars t))
+      gs := gs.push { names, kind }
     -- Hypotheses, labelled with their names where the paper refers to them
     -- (`\leanhypref{key}{h}`).
     let ctx ← read
-    let mut hs : Array String := #[]
+    let mut hs : Array (Layout.Hyp (List Char)) := #[]
     for (n, h) in hyps do
       let name := n.eraseMacroScopes.toString
       let referred := ctx.document.hypRefs.contains (ctx.key, name)
-      let label := if n.hasMacroScopes || n.isAnonymous || !referred then "" else
-        s!"\\LeanHyp\{{TeX.escape name}} "
-      hs := hs.push s!"{label}{← inline h}"
-    unless hs.isEmpty do sentences := sentences.push s!"Assume {andList hs}."
-    -- The conclusion.
-    let thenPart ← conclusion concl
-    sentences := sentences.push ((if sentences.isEmpty then "" else "Then ") ++ thenPart ++ ".")
-    let _ := width
-    return s!"\\LeanProse\{{" ".intercalate sentences.toList}}"
-where
-  /-- A conclusion in words: conjuncts are numbered, `↔` reads "if and only
-  if", and `∃ x, p` reads "there is x such that p". -/
-  conclusion (concl : Expr) : RenderM String := do
-    if concl.isAppOfArity ``Exists 2 then
-      if let .lam n t b bi := concl.appArg! then
-        return ← withLocalDecl n bi t fun x => do
-          let body := b.instantiate1 x
-          return s!"there is ${← varNameT n t}$ such that {← conclusion body}"
-    let cs := conjuncts concl
-    if cs.size > 1 then
-      let items ← (cs.toList.zip (List.range cs.size)).mapM fun (x, i) => do
-        return s!"({i + 1})~{← inline x}"
-      return andList items.toArray
-    if concl.isAppOfArity ``Iff 2 then
-      return s!"{← inline concl.appFn!.appArg!} if and only if {← inline concl.appArg!}"
-    inline concl
-  /-- `a`, `a and b`, `a, b and c`. -/
-  andList (xs : Array String) : String :=
-    match xs.size with
-    | 0 => ""
-    | 1 => xs[0]!
-    | n => ", ".intercalate (xs.extract 0 (n - 1)).toList ++ " and " ++ xs[n - 1]!
+      let label := if n.hasMacroScopes || n.isAnonymous || !referred then none else
+        some (TeX.escape name).toList
+      hs := hs.push { label, formula := ← formulaChars h }
+    return .statement { vars := gs.toList, hyps := hs.toList, concl := ← gatherConcl concl }
+
+/-- The `prose` view of a constant: what it says, laid out. -/
+def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
+  let _ := width
+  return Layout.proseLayout (← gatherProse c)
 
 end Imprimatur.Views
