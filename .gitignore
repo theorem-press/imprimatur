@@ -22,3 +22,7 @@ _site/
 /about/*.pdf
 /about/*.synctex.gz
 /about/*.out
+/about/*.bbl
+/about/*.blg
+# PDFs fetched by the add-citation skill (third-party; not redistributed)
+/Papers/

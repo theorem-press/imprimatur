@@ -560,4 +560,79 @@ theorem checkDoc_stmt {W : Imprimatur.World Imprimatur.TeX} {doc : Splice.Doc} {
     obtain ⟨hlen, hall⟩ := hashesOf_true hb hstmts
     refine ⟨stmts, by rw [hrs, ← hpair.1], by simpa using hlen, hall⟩
 
+/-! ## Theorem 1, as one statement -/
+
+/-- An item that plans cleanly, and is regenerated (not a check, index,
+`\leanok` or hypothesis reference), has an entry in the bundle. -/
+theorem planItem_found {cfg : Config} {labels : Array (Nat × Nat × String)} {b : B} {o : ApplyOpts}
+    {s : Src} {fi : Nat} {eol : String} {it : Item} {ii : Nat}
+    (hk : (it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref) = false)
+    (hd : (planItem cfg labels b o s fi eol it ii).diags = #[]) : (b.find? it.key).isSome := by
+  unfold planItem at hd
+  rw [hk] at hd
+  simp only [Bool.false_eq_true, ↓reduceIte] at hd
+  cases he : b.find? it.key with
+  | none => rw [he] at hd; simp at hd
+  | some _ => rfl
+
+/-- **The claim an item of the \TeX{} source makes of a world**, by its kind
+(docs/verified-splicer.md, "Theorem 1, precisely"):
+- a block or `\leaninline`: its key names a declared, trusted statement; its
+  view of the statement is the world's rendering `t`; its region is, after
+  normalisation, `t` as the splicer sets it; and, if it is typeset, `t`
+  reads back as the statement;
+- a `\leanref`: its key names a declared, trusted statement;
+- a `\leancheck`: each key names a declared, trusted statement, and a
+  recorded `stmt=` is the statement hashes of its keys, as `shortOf` writes
+  them;
+- a blueprint `\lean` in an environment marked `\leanok`: each key names a
+  declared, trusted statement. -/
+def ItemClaim (W : Imprimatur.World Imprimatur.TeX) (doc : Splice.Doc) (b : B) (opts : ApplyOpts)
+    (f : SourceFile) (fi : Nat) (it : Item) (ii : Nat) : Prop :=
+  ((it.kind = .block ∨ it.kind = .inline) →
+    ∃ e S t new, b.find? it.key = some e ∧ W.stmt it.key = some S ∧ W.trusted it.key = true ∧
+      W.render (itemView doc.cfg it) S = some t ∧
+      renderItem doc.cfg (blockLabels doc) opts (f.src.locString it.start) fi ii it e t = .ok new ∧
+      normalize (f.src.slice it.regionStart it.regionEnd) =
+        normalize (regionContent doc.cfg opts (f.src.locString it.start) (dominantEol f.src.chars) it new
+          (f.src.slice it.regionStart it.regionEnd)).content ∧
+      (it.live = true → W.Reads t S)) ∧
+  (it.kind = .ref → ∃ S, W.stmt it.key = some S ∧ W.trusted it.key = true) ∧
+  ((it.kind = .check ∧ it.name = "leancheck") →
+    (∀ key ∈ it.keys, ∃ e S, b.find? key = some e ∧ W.stmt key = some S ∧ W.trusted key = true ∧
+      ∀ h, e.statement.stmtHash = some h → h = W.hash S) ∧
+    (∀ r, it.opt? "stmt" = some r → ∃ hs, r = shortOf hs ∧ hs.length = it.keys.size ∧
+      ∀ p ∈ it.keys.toList.zip hs, ∃ S, W.stmt p.1 = some S ∧ p.2 = W.hash S)) ∧
+  ((it.kind = .check ∧ it.name = "lean") →
+    ∀ ok ∈ f.scan.items, ok.kind = .leanok → ok.env ≠ 0 → it.env = ok.env →
+      ∀ key ∈ it.keys, ∃ S, W.stmt key = some S ∧ W.trusted key = true)
+
+/-- **What the \TeX{} source of a document claims of a world:** each item of
+each file makes its claim. -/
+def Claims (W : Imprimatur.World Imprimatur.TeX) (doc : Splice.Doc) (b : B) (opts : ApplyOpts) : Prop :=
+  ∀ f fi, (f, fi) ∈ doc.files.toList.zipIdx →
+    ∀ it ii, (it, ii) ∈ f.scan.items.toList.zipIdx → ItemClaim W doc b opts f fi it ii
+
+/-- **Theorem 1, of the code that runs.** If the bundle is true of a world,
+under the configuration's rule for trusted proofs, and `imprimatur check`
+reports nothing, warnings included, then every claim the \TeX{} source of
+the document makes is true of the world. -/
+theorem checkDoc_sound {W : Imprimatur.World Imprimatur.TeX} {doc : Splice.Doc} {b : B} {opts : ApplyOpts}
+    {extra : Array String} {diff : Bool}
+    (hb : b.True W (Verdict.trusted doc.cfg.allowedAxioms))
+    (hc : checkDoc doc b opts extra diff = #[]) : Claims W doc b opts := by
+  intro f fi hf it ii hi
+  have hfm := mem_of_zipIdx hf
+  have him := mem_of_zipIdx hi
+  refine ⟨fun hk => checkDoc_block hb hc hf hi hk, fun hk => ?_, fun ⟨hk, hn⟩ => ⟨fun key hkey =>
+    checkDoc_check hb hc hfm him hk hn hkey, fun r hr => checkDoc_stmt hb hc hfm him hk hn hr⟩,
+    fun ⟨hk, _⟩ ok hok hko henv he key hkey => ?_⟩
+  · obtain ⟨hpd, hpc, _⟩ := checkDoc_parts hc
+    obtain ⟨hd, _⟩ := items_clean hpd hpc hf hi
+    have hskip : (it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref) = false := by
+      rw [hk]; rfl
+    exact checkDoc_ref hb hc hfm him hk (planItem_found hskip hd)
+  · rename_i hn
+    exact checkDoc_leanok hb hc hfm hok hko henv him hk hn he hkey
+
 end SpliceModel.Theorem1

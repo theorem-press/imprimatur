@@ -46,7 +46,9 @@ statement in the paper's notation, and the splicer writes it into the paper,
 keeping any text the authors wrote in its \emph{slots}. Hand-written prose
 about a constant is \emph{attested}: a \verb|\leancheck| beside it records
 the hash of the statement the prose was checked against, and the check
-fails if the statement changes.
+fails if the statement changes. Knuth's \textsc{web} generates a program and its
+documentation from the same source, so that the two are consistent with
+each other~\cite{Knuth84}.
 
 imprimatur is two programs. The extractor runs inside Lean, at the
 development's own toolchain, and reads its elaborated environment. The
@@ -74,7 +76,70 @@ say why. A second theorem, about the notation, says that a rendering can be
 read back as the statement it came from; imprimatur checks it for each
 formula it renders (Section~\ref{sec:faithful}).
 
-\paragraph{A running example.} The development is a simply typed
+\subsection{The trusted base}\label{sec:trusted}
+
+What we prove is this: if the bundle is true of the development, and the
+function \verb|imprimatur check| runs reports nothing, warnings included,
+then every claim the \TeX{} source of the paper makes is true of the
+development\leancheck[stmt=5d019f9d2388, sig=be0c5901b286]{SpliceModel.Theorem1.checkDoc_sound}. The proof is of the code that runs (Section~\ref{sec:code}), and rests on Lean's
+standard axioms only. What it does not cover is trusted, and falls into
+five parts.
+
+\paragraph{Lean.} Its kernel, which checks the proofs; and its compiler,
+which must compute what the definitions say. The splicer's verified code
+replaces none of its definitions by unverified code: where a loop runs
+tail-recursively, a theorem says it computes the same as the definition it
+replaces.
+
+\paragraph{The hypothesis.} That the bundle is true of the development is
+the extractor's claim. The model says what it means, and that an honest
+extractor's bundle is true (Theorem~\ref{thm:The-bundle-of-a-world-is-true});
+the extractor itself, which renders and hashes inside Lean, is
+metaprogramming and is not verified.
+
+\paragraph{Reading the paper.} The theorems are about what the splicer
+reads, so how it reads is trusted:
+\begin{itemize}
+\item The splicer's shell, which reads the files a document reaches, the
+  configuration and the bundle, and writes what \verb|apply| returns. The
+  theorems are about the functions it calls, given what it read.
+\item The scanner's reading of \TeX{}: what is a comment, \verb|\verb|, a
+  verbatim environment or a conditional branch that is off. The scanner is
+  proved lossless, and the theorems make it the specification of where a
+  paper's markup is; they cannot make it agree with \TeX{}'s category codes.
+\end{itemize}
+
+\paragraph{Between the check and the reader.} The theorems stop at \TeX{}
+source. What the reader sees depends further on:
+\begin{itemize}
+\item Normalisation. A region is the rendering after line endings,
+  trailing blanks and blank lines at its ends are normalised; that these
+  do not change what \TeX{} typesets is assumed.
+\item The parser that reads formulas back, and, where an expected reading
+  is incomplete, the grammar's mirroring of the renderer.
+\item The notation module, as the paper's dictionary. Lean checks its names,
+  not its choice of symbols: a rule that wrote addition as $a - b$ would read
+  back faithfully. Appendix~\ref{app:notation} puts the dictionary in the
+  paper, where a reader can check it.
+\item What the notation declares invisible. A hidden premise makes the
+  theorem shown stronger than the one proved, as in Theorem~\ref{thm:Values-are-final}, whose
+  binder does not say that $V$ is a value; a synonym is an equation the
+  notation asserts and nothing checks.
+\item The text of a block that is not a formula: the authors' text in
+  slots, and the sentences of the \verb|prose| view (\emph{Let \ldots\
+  Assume \ldots\ Then \ldots}), whose reading the view fixes.
+\item \TeX{} itself, in which two macros may print alike.
+\end{itemize}
+
+\paragraph{Attested prose.} A \verb|\leancheck| records the first 12
+hexadecimal digits of a statement hash. That the prose still faces the
+statement it was checked against therefore assumes that no two statements
+in question share those 48 bits: safe against accident, but not against a
+forger. And the prose is only as right as the person who checked it.
+
+\subsection{A running example}\label{sec:example}
+
+The development is a simply typed
 $\lambda$-calculus with de Bruijn variables, its values, and small-step
 reduction, whose substitution is a stand-in that we will replace. Figure~\ref{fig:example} shows its terms, its reduction relation and one
 theorem about it, as a reader of this paper sees them, and the Lean the
@@ -939,22 +1004,54 @@ stale\leancheck[stmt=2b2c4fa36a8a, sig=91286a6f0c61]{SpliceModel.Splicer.plan_fi
 \end{leansource}
 
 \paragraph{Checking.} What \verb|imprimatur check| reports is one function,
-\textsf{checkDoc}. If the bundle is true of a world, under the
-configuration's rule for trusted proofs, and \textsf{checkDoc} reports
-nothing, warnings included, then every block and \verb|\leaninline| of the
-paper names a declared, trusted statement; its view is the world's
-rendering; its region is, after normalisation, that rendering as the
-splicer sets it, with the alias's template and the authors' slot text; and,
-if it is typeset, the rendering reads back as the
-statement\leancheck[stmt=626b8bfb0eb8, sig=f833f0be8abd]{SpliceModel.Theorem1.checkDoc_block}. Every
-\verb|\leanref| and \verb|\leancheck| key is declared and trusted, and the
-bundle's statement hash is the statement's\leancheck[stmt=bae4e8ed159d, sig=1589fbd3468e]{SpliceModel.Theorem1.checkDoc_ref, SpliceModel.Theorem1.checkDoc_check};
-the \verb|stmt=| a \verb|\leancheck| records is the first 12 digits of
-those hashes, or of their hash\leancheck[stmt=7df8e0b0b0b2, sig=626a81640f4a]{SpliceModel.Theorem1.checkDoc_stmt};
-and every key of a blueprint \verb|\lean| in a node marked
-\verb|\leanok| is declared and trusted\leancheck[stmt=95ad4174ec30, sig=09378a67ae8b]{SpliceModel.Theorem1.checkDoc_leanok}.
+\textsf{checkDoc}, and Theorem~\ref{thm:Generated-mathematics}, of the code,
+is one theorem about it. \textsf{checkDoc} takes a document, a bundle, the
+options of \verb|apply|, the macros the paper's own packages define, and
+whether to show differences, and gives the diagnostics \verb|check| reports:
 
-\begin{leansource}[sum=-DPwvoq9A0]{SpliceModel.Theorem1.checkDoc_block}{Theorem 1, of the code}
+\begin{leansource}[sum=M2lTPsEZhX]{Splice.checkDoc}{The function check runs}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{Splice.checkDoc} (\LeanBound{doc} : \LeanConst{Splice.Doc})\LeanNewline
+\LeanIndent{2}(\LeanBound{bundle} :\LeanNewline
+\LeanIndent{4}\LeanConst{Imprimatur.Bundle} (\LeanConst{Imprimatur.Image} \LeanConst{Imprimatur.TeX}) \LeanConst{Imprimatur.Verdict})\LeanNewline
+\LeanIndent{2}(\LeanBound{opts} : \LeanConst{Splice.ApplyOpts}) (\LeanBound{extra} : \LeanConst{Array} \LeanConst{String}) (\LeanBound{diff} : \LeanConst{Bool}) :\LeanNewline
+\LeanIndent{2}\LeanConst{Array} \LeanConst{Splice.Diag}}
+\end{leansource}
+
+If the bundle is true of a world, under the
+configuration's rule for trusted proofs, and \textsf{checkDoc} reports
+nothing, warnings included, then each item of the paper's \TeX{} source
+makes a claim true of the world\leancheck[stmt=5d019f9d2388, sig=be0c5901b286]{SpliceModel.Theorem1.checkDoc_sound}.
+The claim depends on the item's kind\leancheck[stmt=886736ee90b0, sig=f3432f3e9a98]{SpliceModel.Theorem1.ItemClaim, SpliceModel.Theorem1.Claims}:
+\begin{itemize}
+\item a block or \verb|\leaninline| names a declared, trusted statement;
+  its view is the world's rendering; its region is, after normalisation,
+  that rendering as the splicer sets it, with the alias's template and the
+  authors' slot text; and, if it is typeset, the rendering reads back as
+  the statement;
+\item a \verb|\leanref| names a declared, trusted statement;
+\item each key of a \verb|\leancheck| names a declared, trusted statement,
+  whose hash in the bundle is the statement's, and the \verb|stmt=| it
+  records is the first 12 digits of those hashes, or of their hash;
+\item each key of a blueprint \verb|\lean| in a node marked
+  \verb|\leanok| names a declared, trusted statement.
+\end{itemize}
+
+\begin{leansource}[sum=vgxZAbKGRE]{SpliceModel.Theorem1.checkDoc_sound}{Theorem 1, of the code}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{Theorem1.checkDoc\_sound} \{\LeanBound{W} : \LeanConst{Imprimatur.World} \LeanConst{Imprimatur.TeX}\}\LeanNewline
+\LeanIndent{2}\{\LeanBound{doc} : \LeanConst{Splice.Doc}\} \{\LeanBound{b} : \LeanConst{Theorem1.B}\} \{\LeanBound{opts} : \LeanConst{Splice.ApplyOpts}\}\LeanNewline
+\LeanIndent{2}\{\LeanBound{extra} : \LeanConst{Array} \LeanConst{String}\} \{\LeanBound{diff} : \LeanConst{Bool}\}\LeanNewline
+\LeanIndent{2}(\LeanBound{hb} :\LeanNewline
+\LeanIndent{4}\LeanConst{Imprimatur.Bundle.True} \LeanBound{W} (\LeanConst{Imprimatur.Verdict.trusted} \LeanBound{doc}.cfg.allowedAxioms)\LeanNewline
+\LeanIndent{6}\LeanBound{b})\LeanNewline
+\LeanIndent{2}(\LeanBound{hc} : \LeanConst{Splice.checkDoc} \LeanBound{doc} \LeanBound{b} \LeanBound{opts} \LeanBound{extra} \LeanBound{diff} = \#[]) :\LeanNewline
+\LeanIndent{2}\LeanConst{Theorem1.Claims} \LeanBound{W} \LeanBound{doc} \LeanBound{b} \LeanBound{opts}}
+\end{leansource}
+
+For a block, the claim in full:
+
+\begin{leansource}[sum=-DPwvoq9A0]{SpliceModel.Theorem1.checkDoc_block}{What a block claims}
 \LeanCode{%
 \LeanKeyword{theorem} \LeanConst{Theorem1.checkDoc\_block} \{\LeanBound{W} : \LeanConst{Imprimatur.World} \LeanConst{Imprimatur.TeX}\}\LeanNewline
 \LeanIndent{2}\{\LeanBound{doc} : \LeanConst{Splice.Doc}\} \{\LeanBound{b} : \LeanConst{Theorem1.B}\} \{\LeanBound{opts} : \LeanConst{Splice.ApplyOpts}\}\LeanNewline
@@ -1046,51 +1143,14 @@ print alike. Each exception is an error. Appendix~\ref{app:notation} lists
 the metavariables and the notation, both generated. A reader who knows
 them has the grammar the formulas were checked in.
 
-\section{The trusted base}\label{sec:trusted}
+\section{Related work}\label{sec:related}
 
-What the theorems and the check do not cover is trusted:
-\begin{itemize}
-\item Lean's kernel, and the extractor's reading of the environment: that
-  the bundle it writes is true of the development. The model says what
-  that means, and that an honest extractor's bundle is true; the
-  extractor itself is metaprogramming, and is not verified.
-\item The hash's resistance to collisions.
-\item The scanner's reading of \TeX{}: what is a comment, \verb|\verb|, a
-  verbatim environment or a conditional branch that is off. The theorems
-  make the scanner the specification of where a paper's markup is; they
-  cannot make it agree with \TeX{}'s category codes.
-\item The splicer's shell, which reads the files a document reaches, the
-  configuration and the bundle, and writes what \verb|apply| returns; the
-  theorems are about the functions it calls.
-\item The parser that reads formulas back, and, where an expected reading
-  is incomplete, the grammar's mirroring of the renderer.
-\item The notation module, as the paper's dictionary. Lean checks its names,
-  not its choice of symbols: a rule that wrote addition as $a - b$ would read
-  back faithfully. Appendix~\ref{app:notation} puts the dictionary in the
-  paper, where a reader can check it.
-\item What the notation declares invisible. A hidden premise makes the
-  theorem shown stronger than the one proved; a synonym is an equation the
-  notation asserts and nothing checks.
-\item The text of a block that is not a formula: the authors' text in
-  slots, and the sentences of the \verb|prose| view (\emph{Let \ldots\
-  Assume \ldots\ Then \ldots}), whose reading the view fixes.
-\item \TeX{}. The checks stop at \TeX{} source, and two macros may print
-  alike.
-\item For attested claims, the person who checked the prose.
-\end{itemize}
+Ringer et al.\ survey proof engineering for program correctness,
+including how proofs must change as the programs they are about
+change~\cite{Ringer19}.
 
-\begin{thebibliography}{1}
-\bibitem{Pollack98}
-R.~Pollack.
-\newblock How to believe a machine-checked proof.
-\newblock In \emph{Twenty-Five Years of Constructive Type Theory}. Oxford
-  University Press, 1998.
-\bibitem{Wiedijk12}
-F.~Wiedijk.
-\newblock Pollack-inconsistency.
-\newblock \emph{Electronic Notes in Theoretical Computer Science}, 285,
-  2012.
-\end{thebibliography}
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{imprimatur-paper}
 
 \clearpage
 \appendix
