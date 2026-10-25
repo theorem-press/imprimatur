@@ -289,14 +289,55 @@ coercion at most `D + 1` times, each projecting coercion at most `D + 1`
 times, and visits each sort at most as often as sorts of depth
 `≤ D + 1` over the grammar's constructors allow, which is finite.
 
-**The bound.** The parser's chain rule becomes: a chain may hold at most
-`N_g` coercions, where `N_g` is computed from the grammar as the number
-of distinct argument sorts reachable, each allowed `D + 1` times. A chain
-this long or shorter is what the normalised derivation uses, so
-`Reads∞ → Reads`, and the parser is complete for the unrestricted grammar.
-The bound is loose; phase B0 measures its cost and phase B3 tightens it
-where the proof allows (a forgetful cast under a forgetful cast reads as
-the inner cast alone, so casts need not chain at all).
+### The chain rule, as phase B0 settled it
+
+A plain count of coercions is not the bound to use. Phase B0 tried it:
+with the count alone, the Patterns fixture takes 1.2, 1.6, 7, 20 and 80
+seconds at bounds 1, 2, 3, 4 and 6, and from bound 3 a formula overflows
+the variant cap. The cost is the towers: every `some` on the chain makes a
+new sort, each sort a new question, each question a new body answer. Two
+changes make the bound affordable, and both are what the normalisation
+needs anyway:
+
+- **The depth cap, in the parser.** A reading whose sort is deeper than
+  `D + 1` is not kept (`Imprimatur.Validate.fits`, which the spec's
+  `prod` and `coe` rules demand too). With it the count bound costs
+  nothing: the fixture takes 1.3 seconds at every bound from 1 to 8. But
+  the paper's grammar has nine coercions and depth 5, so the count comes
+  to 54, and a question is asked again for every count that reaches it:
+  the paper took 286 seconds against 40.
+- **A chain rule in three parts** (`Imprimatur.Validate.Chain`): the sorts
+  asked above on the chain, visited once each but for growth; a growth
+  budget of `D + 1`, spent by coercions whose sort is deeper than their
+  hole's (`growing`); and no cast below a cast, a cast being a coercion
+  whose sort stands for any sort and whose hole does not mention it
+  (`forgetful`), so that what it yields does not depend on what it is
+  given. The parser and the spec use the same `Chain.allows` and
+  `Chain.push`, so no equivalence lemma stands between them.
+
+Under this rule every counterexample of this document reads correctly:
+`g(x)` is ambiguous, `n(y)` reads through its two projections, and
+`x = y` reads at every height of `y`. The goldens are byte-identical, the
+fixtures take what they took, and the paper extracts in 58 seconds
+against 40 before, with no formula flagged.
+
+**What B4 must prove** is then `Reads∞ → Reads` for this rule, in three
+redundancy lemmas on a normalised derivation, each a rewriting of a chain
+to a shorter one with the same reading and the same sort at the top:
+
+1. **Towers.** Truncation at depth `D + 1`, as above; a growing coercion
+   then applies at most `D + 1` times on a chain.
+2. **Revisits.** A chain segment that returns to a sort already asked,
+   through coercions that do not grow, can be cut: a round trip of a
+   projection and its growth (`unwrap (wrap x)`), or of two
+   size-preserving coercions (`toList (toArray l)`), yields the sort it
+   started from.
+3. **Casts.** A forgetful coercion below another yields what the inner one
+   alone does, since its sort does not depend on its argument's.
+
+The second is the one to watch: it holds when the segment's effect on the
+sort is the identity, and the proof must show that a non-growing revisit
+is always that, or find the shape that is not and add it to the rule.
 
 ### Where it can fail
 
@@ -311,9 +352,11 @@ the inner cast alone, so casts need not chain at all).
   down, and `φ_D σ` may have `*` there. Since hole sorts have depth at
   most `D`, the read stays above `D + 1` and the law holds; the proof
   must track that invariant, which is the delicate part.
-- **The bound may be too loose to run.** `N_g` multiplies the question
-  space. The chain-independent memo (`exprDirect`) keeps bodies shared,
-  so the cost is the coercion passes alone; B0 measures it on the paper.
+- **The rule may still lose a reading.** B0 measured the rule against the
+  count bound on the fixtures and the paper and on this document's
+  counterexamples, not on random grammars; B2's property tests compare
+  the two on random grammars, where a shape that the revisit lemma does
+  not cover would show.
 - **Towers through productions.** `Option` as a visible production
   (`some x` written) builds depth by tokens, not by chains; the depth
   bound counts them too, but they are bounded by the text's length, so
@@ -326,9 +369,9 @@ byte-identical unless it says otherwise.
 
 | Phase | Work | Exit |
 |---|---|---|
-| B0 | **A bounded chain, measured.** The chain rule becomes a count against `N_g`; `D` and `N_g` computed by `Grammar.of`. Readings compared with the present rule on the fixtures, the paper, the examples; extraction time of the paper; the counterexample grammar validated correctly (`g(x)` ambiguous). | A table of differences and times; the bound settled or the plan revised. |
+| B0 | **A bounded chain, measured.** Done: the count bound tried and rejected, the depth cap and the three-part chain rule adopted (above); the counterexamples read correctly; goldens byte-identical; the paper at 58 seconds. | Done. |
 | B1 | **Lean's algebra, total and in the module.** `STerm.parse`, `compat`, `expected`, `bind` move to `bundle/ReadBack.lean` as total functions (`partial` gone, by a size measure on the string or a fuel on the parser); the extractor's `algebra` is their instance; `lint/verified` covers them. | Goldens byte-identical. |
-| B2 | **The laws, tested.** Properties for the three facts and the two truncation laws, on random sorts over random constructors, 10,000 cases per CI run; every clause of the algebra that fails is listed with the formulas it affects. | The laws hold, or the theorem's hypotheses name the clauses. |
+| B2 | **The laws, tested.** Properties for the three facts and the two truncation laws, on random sorts over random constructors, 10,000 cases per CI run; and the chain rule against the plain count bound (chains of any length under the depth cap) on random grammars and texts, reading sets compared. Every clause of the algebra that fails is listed with the formulas it affects. | The laws hold, or the theorem's hypotheses name the clauses; the rule and the count agree. |
 | B3 | **The laws, proved**, for the total algebra: structural compatibility, structural binding, the two truncation laws. | Proved; `lint/axioms` clean. |
 | B4 | **Normalisation.** `Reads∞` in `SpliceModel`; `φ_D` on derivations; the small-model theorem; `Reads∞ → Reads` under the bound. | Proved. |
 | B5 | **Paper and docs.** `pollack∞`; §9 and the trusted base say the grammar is Lean's types with nothing narrowed; DESIGN §18.3 condition 2 and §18.4; this document's status. | `check` clean. |

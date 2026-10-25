@@ -1562,9 +1562,9 @@ coercions (in chains that visit each sort once, and cast no cast) and the
 emitter's parentheses invisible. Every reading the
 parser returns is a reading in that grammar, for any algebra of sorts:
 
-\begin{leantheorem}[sum=sJjChIK6gr]{The parser is sound}{The parser is sound}
+\begin{leantheorem}[sum=JkfwO6thsZ]{The parser is sound}{The parser is sound}
 \label{thm:The-parser-is-sound}
-\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{rd} \in \texttt{Reading}$. Assume $\mathit{rd} \in \mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s)$. Then there is $\sigma$ such that $\mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, [])\ \mathit{rd} : \sigma$.}
+\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{rd} \in \texttt{Reading}$. Assume $\mathit{rd} \in \mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s)$. Then there is $\sigma$ such that $\mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, \mathsf{top}_{G})\ \mathit{rd} : \sigma$.}
 \end{leantheorem}
 
 And every reading in the grammar is among those the parser returns, unless
@@ -1576,9 +1576,9 @@ validated. The proof is the soundness proof's induction, in triples that
 hold when the flags end clear, with the invariant that every answer the
 parser remembers holds every reading of its question:
 
-\begin{leantheorem}[sum=Ur6nMd7r4q]{The parser is complete}{The parser is complete}
+\begin{leantheorem}[sum=r9iGVIC4-b]{The parser is complete}{The parser is complete}
 \label{thm:The-parser-is-complete}
-\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$, $\mathit{rd} \in \texttt{Reading}$ and $\sigma \in \mathit{String}$. Assume $\mathsf{flagged}_{\mathcal{S}}(G, \mathit{ts}, s) = \mathsf{false}$ and $\mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, [])\ \mathit{rd} : \sigma$. Then $\mathit{rd} \in \mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s)$.}
+\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$, $\mathit{rd} \in \texttt{Reading}$ and $\sigma \in \mathit{String}$. Assume $\mathsf{flagged}_{\mathcal{S}}(G, \mathit{ts}, s) = \mathsf{false}$ and $\mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, \mathsf{top}_{G})\ \mathit{rd} : \sigma$. Then $\mathit{rd} \in \mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s)$.}
 \end{leantheorem}
 
 The comparison of the one reading with the expected one is structural:
@@ -1589,9 +1589,9 @@ the formula has a reading in the notation's grammar, and every reading it
 has there is the expected one, wherever that is definite. This is
 Wiedijk's property, of the formula:
 
-\begin{leantheorem}[sum=WpwouKzcr0]{A validated formula reads only as what it was rendered from}{A validated formula reads only as what it was rendered from}
+\begin{leantheorem}[sum=59pefHlXpg]{A validated formula reads only as what it was rendered from}{A validated formula reads only as what it was rendered from}
 \label{thm:A-validated-formula-reads-only-as-what-it-was-rendered-from}
-\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{ex}, \mathit{rd} \in \texttt{Reading}$. Assume $\mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s) = [\mathit{rd}]$, $\mathsf{flagged}_{\mathcal{S}}(G, \mathit{ts}, s) = \mathsf{false}$ and $\mathsf{matches}(\mathit{ex}, \mathit{rd}) = \mathsf{true}$. Then (1)~$\exists \sigma,\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, [])\ \mathit{rd} : \sigma$ and (2)~$\forall \mathit{rd}' : \texttt{Reading},\ \forall \sigma : \mathit{String},\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, [])\ \mathit{rd}' : \sigma \implies \mathit{ex} \succcurlyeq \mathit{rd}'$.}
+\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{ex}, \mathit{rd} \in \texttt{Reading}$. Assume $\mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s) = [\mathit{rd}]$, $\mathsf{flagged}_{\mathcal{S}}(G, \mathit{ts}, s) = \mathsf{false}$ and $\mathsf{matches}(\mathit{ex}, \mathit{rd}) = \mathsf{true}$. Then (1)~$\exists \sigma,\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, \mathsf{top}_{G})\ \mathit{rd} : \sigma$ and (2)~$\forall \mathit{rd}' : \texttt{Reading},\ \forall \sigma : \mathit{String},\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, \mathsf{top}_{G})\ \mathit{rd}' : \sigma \implies \mathit{ex} \succcurlyeq \mathit{rd}'$.}
 \end{leantheorem}
 
 Both halves hold for any algebra of sorts, since the algebra only filters:
@@ -1695,7 +1695,7 @@ A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=HU08Lz9o57, dflt=VHcs31w6pL]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=5fSOEa_diF, dflt=SwK3VaR3xv]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -1870,6 +1870,7 @@ $\mathsf{withPremises}(\mathit{mark}, \mathit{label}, o)$ & \texttt{withPremises
 $\mathit{TeX}$ & \texttt{Imprimatur.TeX} & \leanslot{Imprimatur.TeX/0}{TeX source}\\
 $\mathsf{flagged}_{A}(g, \mathit{ts}, s)$ & \texttt{Imprimatur.Validate.Flags.any} & \leanslot{Imprimatur.Validate.Flags.any/0}{Whether the reading is not to be trusted: it gave up, dropped a reading, cut a question, or the grammar has a list that takes no token}\\
 $\texttt{Grammar}$ & \texttt{Imprimatur.Validate.Grammar} & \leanslot{Imprimatur.Validate.Grammar/0}{A compiled grammar}\\
+$\mathsf{top}_{g}$ & \texttt{Imprimatur.Validate.Grammar.chain0} & \leanslot{Imprimatur.Validate.Grammar.chain0/0}{The chain at a hole, in parentheses, in a group, or at the top: nothing above, the grammar's growth}\\
 $\texttt{Reading}$ & \texttt{Imprimatur.Validate.Reading} & \leanslot{Imprimatur.Validate.Reading/0}{A reading: a tree named by what it reads as (a production's name, an atom's TeX, a bound variable's name), with its children in the order of the rule's pattern; or \LeanCodeInline{any}, which the renderer writes for a form it does not say how to read, and which matches any subterm}\\
 $\mathsf{matches}(e, r)$ & \texttt{Imprimatur.Validate.Reading.matches} & \leanslot{Imprimatur.Validate.Reading.matches/0}{A reading matches the expected one: \LeanCodeInline{any} matches any reading, and a node matches a node of the same name whose children match}\\
 $\texttt{Sorts}$ & \texttt{Imprimatur.Validate.SortAlgebra} & \leanslot{Imprimatur.Validate.SortAlgebra/0}{How sorts behave: the parser's parameter}\\
@@ -1942,7 +1943,7 @@ $\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{
 $\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.Diag.unfaithful/0}{the rendering does not read back as the statement}\\
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
 $W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
-$\mathit{ts}[i, j) \rightsquigarrow^{g}_{A}(s, p, \mathit{excl}, \mathit{used})\ r : \sigma$ & \texttt{Exp} & \leanslot{SpliceModel.Exp/0}{\LeanCodeInline{ts[i:j]} reads as \LeanCodeInline{r}, of sort \LeanCodeInline{σ}, as an expression of sort \LeanCodeInline{s} at precedence \LeanCodeInline{p} not made by production \LeanCodeInline{excl} (DESIGN §18.4)}\\
+$\mathit{ts}[i, j) \rightsquigarrow^{g}_{A}(s, p, \mathit{excl}, \mathit{ch})\ r : \sigma$ & \texttt{Exp} & \leanslot{SpliceModel.Exp/0}{\LeanCodeInline{ts[i:j]} reads as \LeanCodeInline{r}, of sort \LeanCodeInline{σ}, as an expression of sort \LeanCodeInline{s} at precedence \LeanCodeInline{p} not made by production \LeanCodeInline{excl} (DESIGN §18.4)}\\
 $e \succcurlyeq r$ & \texttt{Matches} & \leanslot{SpliceModel.Matches/0}{A reading matches the expected one: \LeanCodeInline{any} matches any reading, and a node matches a node of the same name whose children match, pairwise}\\
 $W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
 $\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\

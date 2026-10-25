@@ -369,7 +369,9 @@ latex_notation Array.size xs => r"|#xs|"
 latex_notation Imprimatur.Validate.readBackWith A g ts s => r"\mathsf{readBack}_{#A}(#g, #ts, #s)"
 latex_notation Prod.fst (Imprimatur.Validate.readBackWith A g ts s) => r"\mathsf{readings}_{#A}(#g, #ts, #s)"
 latex_notation Imprimatur.Validate.Flags.any (Prod.snd (Imprimatur.Validate.readBackWith A g ts s)) => r"\mathsf{flagged}_{#A}(#g, #ts, #s)"
-latex_notation Exp A g ts s p excl used i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g}_{#A}(#s, #p, #excl, #used)\ #r : #σ" prec := 50
+latex_notation Exp A g ts s p excl ch i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g}_{#A}(#s, #p, #excl, #ch)\ #r : #σ" prec := 50
+latex_notation Imprimatur.Validate.Chain => r"\texttt{Chain}"
+latex_notation Imprimatur.Validate.Grammar.chain0 g => r"\mathsf{top}_{#g}"
 latex_notation Validated => r"\texttt{Validated}"
 latex_category Validated => "X"
 latex_notation Validated.base X => r"W^{\circ}_{#X}"
