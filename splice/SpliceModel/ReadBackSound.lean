@@ -30,7 +30,9 @@ def Inv (st : CState) : Prop :=
     ∀ x ∈ out, i < j ∧ Exp A g ts s p excl used i j x.1 x.2) ∧
   (∀ body pos env i j n, st.memoSeq[(body, pos, env, i, j)]? = some n →
     ∀ x ∈ n, Seq A g ts body pos env i j x.1 x.2) ∧
-  (∀ s r, st.reach[s]? = some r → r = reachSplit A g s)
+  (∀ s r, st.reach[s]? = some r → r = reachSplit A g s) ∧
+  (∀ s p excl i j out, st.memoD[(s, p, excl, i, j)]? = some out →
+    ∀ x ∈ out, i < j ∧ ∀ used, Exp A g ts s p excl used i j x.1 x.2)
 
 /-- From a sound state, the computation ends in a sound state with a result
 that satisfies `Q`. -/
@@ -40,7 +42,8 @@ def Triple {α : Type} (m : CountM α) (Q : α → Prop) : Prop :=
 variable {A g ts}
 
 theorem Inv.empty : Inv A g ts {} := by
-  refine ⟨fun s p excl used i j out h => ?_, fun body pos env i j n h => ?_, fun s r h => ?_⟩ <;> simp at h
+  refine ⟨fun s p excl used i j out h => ?_, fun body pos env i j n h => ?_, fun s r h => ?_,
+    fun s p excl i j out h => ?_⟩ <;> simp at h
 
 theorem triple_pure {α : Type} {a : α} {Q : α → Prop} (h : Q a) : Triple A g ts (pure a) Q :=
   fun _ hst => ⟨hst, h⟩
@@ -64,25 +67,27 @@ theorem triple_modify {f : CState → CState} (h : ∀ st, Inv A g ts st → Inv
 
 /-- Changing anything but the memo tables keeps the invariant. -/
 theorem Inv.congr {st st' : CState} (h : Inv A g ts st) (hm : st'.memo = st.memo)
-    (hs : st'.memoSeq = st.memoSeq) (hr : st'.reach = st.reach) : Inv A g ts st' := by
+    (hs : st'.memoSeq = st.memoSeq) (hr : st'.reach = st.reach) (hd : st'.memoD = st.memoD) : Inv A g ts st' := by
   refine ⟨fun s p excl used i j out e => h.1 s p excl used i j out ?_,
-    fun body pos env i j n e => h.2.1 body pos env i j n ?_, fun s r e => h.2.2 s r ?_⟩
+    fun body pos env i j n e => h.2.1 body pos env i j n ?_, fun s r e => h.2.2.1 s r ?_,
+    fun s p excl i j out e => h.2.2.2 s p excl i j out ?_⟩
   · rwa [hm] at e
   · rwa [hs] at e
   · rwa [hr] at e
+  · rwa [hd] at e
 
 /-- A triple whose program does not look at the state beyond the memo. -/
 theorem triple_of_run {α : Type} {m : CountM α} {Q : α → Prop}
     (h : ∀ st, (m.run st).2.memo = st.memo ∧ (m.run st).2.memoSeq = st.memoSeq ∧
-      (m.run st).2.reach = st.reach ∧ Q (m.run st).1) :
+      (m.run st).2.reach = st.reach ∧ (m.run st).2.memoD = st.memoD ∧ Q (m.run st).1) :
     Triple A g ts m Q :=
-  fun st hst => ⟨hst.congr (h st).1 (h st).2.1 (h st).2.2.1, (h st).2.2.2⟩
+  fun st hst => ⟨hst.congr (h st).1 (h st).2.1 (h st).2.2.1 (h st).2.2.2.1, (h st).2.2.2.2⟩
 
 /-- Remembering sound readings keeps the invariant. -/
 theorem Inv.insertExp {st : CState} (h : Inv A g ts st) {s p excl used i j out} (active : Std.HashMap _ Unit)
     (hout : ∀ x ∈ out, i < j ∧ Exp A g ts s p excl used i j x.1 x.2) :
     Inv A g ts { st with active := active, memo := st.memo.insert (s, p, excl, used, i, j) out } := by
-  refine ⟨fun s' p' excl' used' i' j' out' e => ?_, h.2.1, h.2.2⟩
+  refine ⟨fun s' p' excl' used' i' j' out' e => ?_, h.2.1, h.2.2.1, h.2.2.2⟩
   simp only [Std.HashMap.getElem?_insert] at e
   split at e
   · rename_i heq
@@ -97,7 +102,7 @@ theorem Inv.insertExp {st : CState} (h : Inv A g ts st) {s p excl used i j out} 
 theorem Inv.insertSeq {st : CState} (h : Inv A g ts st) {body pos env i j n}
     (hn : ∀ x ∈ n, Seq A g ts body pos env i j x.1 x.2) :
     Inv A g ts { st with memoSeq := st.memoSeq.insert (body, pos, env, i, j) n } := by
-  refine ⟨h.1, fun body' pos' env' i' j' n' e => ?_, h.2.2⟩
+  refine ⟨h.1, fun body' pos' env' i' j' n' e => ?_, h.2.2.1, h.2.2.2⟩
   simp only [Std.HashMap.getElem?_insert] at e
   split at e
   · rename_i heq
@@ -111,7 +116,7 @@ theorem Inv.insertSeq {st : CState} (h : Inv A g ts st) {body pos env i j n}
 /-- Remembering the reachable productions keeps the invariant. -/
 theorem Inv.insertReach {st : CState} (h : Inv A g ts st) (s : String) :
     Inv A g ts { st with reach := st.reach.insert s (reachSplit A g s) } := by
-  refine ⟨h.1, h.2.1, fun s' r e => ?_⟩
+  refine ⟨h.1, h.2.1, fun s' r e => ?_, h.2.2.2⟩
   simp only [Std.HashMap.getElem?_insert] at e
   split at e
   · rename_i heq
@@ -119,7 +124,22 @@ theorem Inv.insertReach {st : CState} (h : Inv A g ts st) (s : String) :
     subst heq
     simp only [Option.some.injEq] at e
     exact e.symm
-  · exact h.2.2 s' r e
+  · exact h.2.2.1 s' r e
+
+/-- Remembering sound readings not through a coercion keeps the invariant. -/
+theorem Inv.insertD {st : CState} (h : Inv A g ts st) {s p excl i j out}
+    (hout : ∀ x ∈ out, i < j ∧ ∀ used, Exp A g ts s p excl used i j x.1 x.2) :
+    Inv A g ts { st with memoD := st.memoD.insert (s, p, excl, i, j) out } := by
+  refine ⟨h.1, h.2.1, h.2.2.1, fun s' p' excl' i' j' out' e => ?_⟩
+  simp only [Std.HashMap.getElem?_insert] at e
+  split at e
+  · rename_i heq
+    simp only [beq_iff_eq] at heq
+    obtain ⟨rfl, rfl, rfl, rfl, rfl⟩ := heq
+    simp only [Option.some.injEq] at e
+    subst e
+    exact hout
+  · exact h.2.2.2 s' p' excl' i' j' out' e
 
 /-! ## Keeping readings -/
 
@@ -164,9 +184,9 @@ theorem triple_keepM {α : Type} [BEq α] (key : α → String) (xs : Array α)
   simp only [keepM]
   split
   · simp only [StateT.run_bind, StateT.run_modify, StateT.run_pure]
-    exact ⟨rfl, rfl, rfl, fun x hx => h x (keep_subset key xs x hx)⟩
+    exact ⟨rfl, rfl, rfl, rfl, fun x hx => h x (keep_subset key xs x hx)⟩
   · simp only [StateT.run_pure]
-    exact ⟨rfl, rfl, rfl, fun x hx => h x (keep_subset key xs x hx)⟩
+    exact ⟨rfl, rfl, rfl, rfl, fun x hx => h x (keep_subset key xs x hx)⟩
 
 
 /-! ## The accumulators -/
@@ -341,10 +361,10 @@ def SoundAll (fuel : Nat) : Prop :=
   (∀ s p excl used i j r, i < j → r = reachSplit A g s →
     Triple A g ts (exprRead A g ts fuel s p excl used i j r)
       (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2)) ∧
-  (∀ s p excl used i j ks out, i < j → Cands (A := A) (g := g) s ks →
-    (∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) →
+  (∀ s p excl i j ks out, i < j → Cands (A := A) (g := g) s ks →
+    (∀ x ∈ out, ∀ used, Exp A g ts s p excl used i j x.1 x.2) →
     Triple A g ts (prods A g ts fuel s p excl i j ks out)
-      (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2)) ∧
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2)) ∧
   (∀ s p excl used i j ks out, i < j → Cands (A := A) (g := g) s ks →
     (∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) →
     Triple A g ts (coes A g ts fuel s p excl used i j ks out)
@@ -369,12 +389,15 @@ def SoundAll (fuel : Nat) : Prop :=
     Triple A g ts (splitRests A g ts fuel body pos m j as out) (fun res => ∀ x ∈ res, P x)) ∧
   (∀ l r env i j, Triple A g ts (tail A g ts fuel l r env i j)
     (fun res => ∀ x ∈ res, i ≤ j ∧ Tail A g ts l r env i j x.1 x.2)) ∧
-  (∀ s p excl used i j out, i < j → (∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) →
+  (∀ s p excl i j out, i < j → (∀ x ∈ out, ∀ used, Exp A g ts s p excl used i j x.1 x.2) →
     Triple A g ts (parens A g ts fuel s p excl i j out)
-      (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2)) ∧
-  (∀ s p excl used i j out, i < j → (∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) →
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2)) ∧
+  (∀ s p excl i j out, i < j → (∀ x ∈ out, ∀ used, Exp A g ts s p excl used i j x.1 x.2) →
     Triple A g ts (groups A g ts fuel s p excl i j out)
-      (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2))
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2)) ∧
+  (∀ s p excl i j r, i < j → r = reachSplit A g s →
+    Triple A g ts (exprDirect A g ts fuel s p excl i j r)
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2))
 
 /-- The candidates of a question are reachable. -/
 theorem cands_reachable (s : String) (t : String) :
@@ -391,14 +414,14 @@ theorem triple_over {α : Type} {Q : Array α → Prop} (h : Q #[]) :
   apply triple_of_run
   intro st
   simp only [StateT.run_bind, StateT.run_modify, StateT.run_pure]
-  exact ⟨rfl, rfl, rfl, h⟩
+  exact ⟨rfl, rfl, rfl, rfl, h⟩
 
 theorem soundAll_zero : SoundAll (A := A) (g := g) (ts := ts) 0 := by
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro s p excl used i j; simp only [expr]; exact triple_over (by simp)
   · intro s p excl used i j _; simp only [exprFresh]; exact triple_over (by simp)
   · intro s p excl used i j r _ _; simp only [exprRead]; exact triple_over (by simp)
-  · intro s p excl used i j ks out _ _ _; simp only [prods]; exact triple_over (by simp)
+  · intro s p excl i j ks out _ _ _; simp only [prods]; exact triple_over (by simp)
   · intro s p excl used i j ks out _ _ _; simp only [coes]; exact triple_over (by simp)
   · intro body pos env i j; simp only [seq]; exact triple_over (by simp)
   · intro body pos env i j; simp only [seqFresh]; exact triple_over (by simp)
@@ -406,8 +429,9 @@ theorem soundAll_zero : SoundAll (A := A) (g := g) (ts := ts) 0 := by
   · intro nt N _ body pos env i j next ms out _ _; simp only [splitAt]; exact triple_over (by simp)
   · intro body pos m j as out P _ _; simp only [splitRests]; exact triple_over (by simp)
   · intro l r env i j; simp only [tail]; exact triple_over (by simp)
-  · intro s p excl used i j out _ _; simp only [parens]; exact triple_over (by simp)
-  · intro s p excl used i j out _ _; simp only [groups]; exact triple_over (by simp)
+  · intro s p excl i j out _ _; simp only [parens]; exact triple_over (by simp)
+  · intro s p excl i j out _ _; simp only [groups]; exact triple_over (by simp)
+  · intro s p excl i j r _ _; simp only [exprDirect]; exact triple_over (by simp)
 
 
 /-- A computation that changes the state, then returns, keeps the
@@ -481,7 +505,7 @@ theorem splitRests_step (body : Array ASym) (pos m j : Nat) :
       Triple A g ts (splitRests A g ts (fuel + 1) body pos m j as out) (fun res => ∀ x ∈ res, P x)
   | [], out, P, _, hout => by simp only [splitRests]; exact triple_pure hout
   | a :: more, out, P, has, hout => by
-    obtain ⟨_, _, _, _, _, ihS, _, _, _, ihSr, _, _, _⟩ := ih
+    obtain ⟨_, _, _, _, _, ihS, _, _, _, ihSr, _, _, _, _⟩ := ih
     simp only [splitRests]
     refine triple_bind (ihS body (pos + 1) a.2 m j) fun rests hrests => ?_
     refine triple_bind (triple_joinRests a (R := fun x => Seq A g ts body (pos + 1) a.2 m j x.1 x.2)
@@ -499,7 +523,7 @@ theorem splitAt_step (nt : Env → Nat → Nat → CountM (Array (Array Reading 
         (fun res => ∀ x ∈ res, SplitSpec (A := A) (g := g) (ts := ts) N body pos env i j x)
   | [], out, _, hout => by simp only [splitAt]; exact triple_pure hout
   | m :: ms, out, hms, hout => by
-    obtain ⟨_, _, _, _, _, _, _, _, ihSa, ihSr, _, _, _⟩ := ih
+    obtain ⟨_, _, _, _, _, _, _, _, ihSa, ihSr, _, _, _, _⟩ := ih
     rw [splitAt.eq_def]
     dsimp only
     split
@@ -525,7 +549,7 @@ theorem split_step (nt : Env → Nat → Nat → CountM (Array (Array Reading ×
     (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
     Triple A g ts (split A g ts (fuel + 1) nt body pos env i j)
       (fun res => ∀ x ∈ res, SplitSpec (A := A) (g := g) (ts := ts) N body pos env i j x) := by
-  obtain ⟨_, _, _, _, _, _, _, _, ihSa, _, _, _, _⟩ := ih
+  obtain ⟨_, _, _, _, _, _, _, _, ihSa, _, _, _, _, _⟩ := ih
   simp only [split]
   split
   · rename_i hend
@@ -539,11 +563,11 @@ theorem split_step (nt : Env → Nat → Nat → CountM (Array (Array Reading ×
 theorem seq_step (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
     Triple A g ts (seq A g ts (fuel + 1) body pos env i j)
       (fun res => ∀ x ∈ res, Seq A g ts body pos env i j x.1 x.2) := by
-  obtain ⟨_, _, _, _, _, _, ihSF, _, _, _, _, _, _⟩ := ih
+  obtain ⟨_, _, _, _, _, _, ihSF, _, _, _, _, _, _, _⟩ := ih
   simp only [seq]
   refine triple_bind triple_get fun st₀ _ => ?_
   split
-  · exact triple_modify_pure (fun st h => h.congr rfl rfl rfl) (by simp)
+  · exact triple_modify_pure (fun st h => h.congr rfl rfl rfl rfl) (by simp)
   · split
     · rename_i hend
       have hend' : pos = body.size := by revert hend; simp
@@ -566,9 +590,9 @@ theorem seq_step (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
 theorem seqFresh_step (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
     Triple A g ts (seqFresh A g ts (fuel + 1) body pos env i j)
       (fun res => ∀ x ∈ res, Seq A g ts body pos env i j x.1 x.2) := by
-  obtain ⟨ihE, _, _, _, _, ihS, _, ihSp, _, _, ihT, _, _⟩ := ih
+  obtain ⟨ihE, _, _, _, _, ihS, _, ihSp, _, _, ihT, _, _, _⟩ := ih
   simp only [seqFresh]
-  refine triple_bind (triple_modify fun st h => h.congr rfl rfl rfl) fun _ _ => ?_
+  refine triple_bind (triple_modify fun st h => h.congr rfl rfl rfl rfl) fun _ _ => ?_
   split
   · rename_i t hb
     split
@@ -620,18 +644,18 @@ theorem seqFresh_step (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
     exact Reads.tail hb hle hm ht hseq
   · exact triple_bind (triple_pure (by simp)) fun n hn => triple_remember hn
 
-theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) :
+theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) :
     ∀ (ks : List Nat) (out : Array (Reading × String)), i < j → Cands (A := A) (g := g) s ks →
-      (∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) →
+      (∀ x ∈ out, ∀ used, Exp A g ts s p excl used i j x.1 x.2) →
       Triple A g ts (prods A g ts (fuel + 1) s p excl i j ks out)
-        (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2)
+        (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2)
   | [], out, _, _, hout => by simp only [prods]; exact triple_pure hout
   | k :: ks, out, hij, hks, hout => by
-    obtain ⟨_, _, _, ihP, _, ihS, _, _, _, _, _, _, _⟩ := ih
+    obtain ⟨_, _, _, ihP, _, ihS, _, _, _, _, _, _, _, _⟩ := ih
     rw [prods.eq_def]
     dsimp only
     split
-    · exact ihP s p excl used i j ks out hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout
+    · exact ihP s p excl i j ks out hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout
     · rename_i htried
       have ht : tried g ts p excl i j k = true := by revert htried; simp
       obtain ⟨pr, body, hk, hex, hcoe, hprec⟩ := tried_spec ht
@@ -645,11 +669,11 @@ theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) 
         simp only [Option.some.injEq, Prod.mk.injEq] at hk''
         obtain ⟨rfl, rfl⟩ := hk''
         refine triple_bind (ihS body 0 #[] i j) fun rs hrs => ?_
-        refine triple_bind (triple_addProds s pr (P := fun x => Exp A g ts s p excl used i j x.1 x.2)
+        refine triple_bind (triple_addProds s pr (P := fun x => ∀ used, Exp A g ts s p excl used i j x.1 x.2)
           (R := fun x => Seq A g ts body 0 #[] i j x.1 x.2) ?_ rs.toList out
           (fun x hx => hrs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
-          ihP s p excl used i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'
-        intro cs env hseq hc
+          ihP s p excl i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'
+        intro cs env hseq hc used
         exact Reads.prod hk hvar hcompat hex hcoe hprec hij hseq hc
       · rename_i hnone
         exact absurd hk (hnone pr body)
@@ -678,8 +702,8 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (
         obtain ⟨rfl, rfl⟩ := hk'
         split
         · rename_i s' pc x hb
-          refine triple_bind (triple_mono (ihE (A.expected #[] s') p excl (k :: used) i j)
-            fun res hres x hx => (hres x hx).2) fun args hargs => ?_
+          refine triple_bind (triple_mono (ihE (A.expected #[] s') p excl (chainWith k used) i j)
+            fun res hres x hx => exp_usedEquiv (chainWith_contains k used) (hres x hx).2) fun args hargs => ?_
           refine triple_bind (triple_addCoes s pr s' (P := fun x => Exp A g ts s p excl used i j x.1 x.2)
             (R := fun x => Exp A g ts (A.expected #[] s') p excl (k :: used) i j x.1 x.2) ?_ args.toList out
             (fun x hx => hargs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
@@ -711,22 +735,44 @@ theorem exprFresh_step (s : String) (p : Nat) (excl : Option Nat) (used : List N
   simp only [exprFresh]
   refine triple_bind triple_get fun st hst => ?_
   split
-  · exact triple_modify_pure (fun st h => h.congr rfl rfl rfl) (by simp)
-  · refine triple_bind (triple_modify fun st h => h.congr rfl rfl rfl) fun _ _ => ?_
+  · exact triple_modify_pure (fun st h => h.congr rfl rfl rfl rfl) (by simp)
+  · refine triple_bind (triple_modify fun st h => h.congr rfl rfl rfl rfl) fun _ _ => ?_
     refine triple_bind triple_get fun st₂ hst₂ => ?_
     split
     · rename_i r' hr'
-      exact triple_bind (triple_pure (Q := fun r => r = reachSplit A g s) (hst₂.2.2 s r' hr')) fun r hr =>
+      exact triple_bind (triple_pure (Q := fun r => r = reachSplit A g s) (hst₂.2.2.1 s r' hr')) fun r hr =>
         ihER s p excl used i j r hij hr
     · exact triple_bind (triple_modify fun st h => h.insertReach s) fun _ _ =>
         triple_bind (triple_pure (Q := fun r => r = reachSplit A g s) rfl) fun r hr =>
           ihER s p excl used i j r hij hr
 
+theorem exprDirect_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
+    (r : Std.HashMap String (Array Nat) × Array Nat) (hij : i < j) (hr : r = reachSplit A g s) :
+    Triple A g ts (exprDirect A g ts (fuel + 1) s p excl i j r)
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2) := by
+  obtain ⟨_, _, _, ihP, _, _, _, _, _, _, _, ihPa, ihG, _⟩ := ih
+  obtain ⟨byTok, others⟩ := r
+  have hcands : Cands (A := A) (g := g) s (byTok.getD (ts.getD i "") #[] ++ others).toList := by
+    have h1 : byTok = (reachSplit A g s).1 := congrArg Prod.fst hr
+    have h2 : others = (reachSplit A g s).2 := congrArg Prod.snd hr
+    rw [h1, h2]
+    exact cands_reachable s _
+  simp only [exprDirect]
+  refine triple_bind triple_get fun st hst => ?_
+  split
+  · rename_i n hmemo
+    exact triple_pure fun x hx => (hst.2.2.2 s p excl i j n hmemo x hx).2
+  · refine triple_bind (ihP s p excl i j _ #[] hij hcands (by simp)) fun out₁ hout₁ => ?_
+    refine triple_bind (ihPa s p excl i j out₁ hij hout₁) fun out₂ hout₂ => ?_
+    refine triple_bind (ihG s p excl i j out₂ hij hout₂) fun out₃ hout₃ => ?_
+    exact triple_bind (triple_modify fun st h => h.insertD (fun x hx => ⟨hij, hout₃ x hx⟩)) fun _ _ =>
+      triple_pure hout₃
+
 theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
     (r : Std.HashMap String (Array Nat) × Array Nat) (hij : i < j) (hr : r = reachSplit A g s) :
     Triple A g ts (exprRead A g ts (fuel + 1) s p excl used i j r)
       (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2) := by
-  obtain ⟨_, _, _, ihP, ihC, _, _, _, _, _, _, ihPa, ihG⟩ := ih
+  obtain ⟨_, _, _, _, ihC, _, _, _, _, _, _, _, _, ihD⟩ := ih
   obtain ⟨byTok, others⟩ := r
   have hcands : Cands (A := A) (g := g) s (byTok.getD (ts.getD i "") #[] ++ others).toList := by
     have h1 : byTok = (reachSplit A g s).1 := congrArg Prod.fst hr
@@ -734,20 +780,18 @@ theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (used : List Na
     rw [h1, h2]
     exact cands_reachable s _
   simp only [exprRead]
-  refine triple_bind (ihP s p excl used i j _ #[] hij hcands (by simp)) fun out₁ hout₁ => ?_
-  refine triple_bind (ihC s p excl used i j _ out₁ hij hcands hout₁) fun out₂ hout₂ => ?_
-  refine triple_bind (ihPa s p excl used i j out₂ hij hout₂) fun out₃ hout₃ => ?_
-  refine triple_bind (ihG s p excl used i j out₃ hij hout₃) fun out₄ hout₄ => ?_
-  refine triple_bind (triple_modify fun st h => h.insertExp _ (fun x hx => ⟨hij, hout₄ x hx⟩)) fun _ _ => ?_
+  refine triple_bind (ihD s p excl i j _ hij hr) fun direct hdirect => ?_
+  refine triple_bind (ihC s p excl used i j _ direct hij hcands fun x hx => hdirect x hx used) fun out hout => ?_
+  refine triple_bind (triple_modify fun st h => h.insertExp _ (fun x hx => ⟨hij, hout x hx⟩)) fun _ _ => ?_
   refine triple_bind triple_get fun st₄ _ => ?_
   split
-  · exact triple_bind (triple_modify fun st h => h.congr rfl rfl rfl) fun _ _ => triple_pure hout₄
-  · exact triple_pure hout₄
+  · exact triple_bind (triple_modify fun st h => h.congr rfl rfl rfl rfl) fun _ _ => triple_pure hout
+  · exact triple_pure hout
 
-theorem parens_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
-    (out : Array (Reading × String)) (_hij : i < j) (hout : ∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) :
+theorem parens_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
+    (out : Array (Reading × String)) (_hij : i < j) (hout : ∀ x ∈ out, ∀ used, Exp A g ts s p excl used i j x.1 x.2) :
     Triple A g ts (parens A g ts (fuel + 1) s p excl i j out)
-      (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2) := by
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2) := by
   obtain ⟨ihE, _⟩ := ih
   simp only [parens]
   split
@@ -758,13 +802,13 @@ theorem parens_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat)
     rw [Array.mem_append] at hx
     rcases hx with hx | hx
     · exact hout x hx
-    · exact Reads.paren hc.1.1 hc.1.2 hc.2 (hrs x hx).2
+    · exact fun used => Reads.paren hc.1.1 hc.1.2 hc.2 (hrs x hx).2
   · exact triple_pure hout
 
-theorem groups_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
-    (out : Array (Reading × String)) (_hij : i < j) (hout : ∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) :
+theorem groups_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
+    (out : Array (Reading × String)) (_hij : i < j) (hout : ∀ x ∈ out, ∀ used, Exp A g ts s p excl used i j x.1 x.2) :
     Triple A g ts (groups A g ts (fuel + 1) s p excl i j out)
-      (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2) := by
+      (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2) := by
   obtain ⟨ihE, _⟩ := ih
   simp only [groups]
   split
@@ -775,7 +819,7 @@ theorem groups_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat)
     rw [Array.mem_append] at hx
     rcases hx with hx | hx
     · exact hout x hx
-    · exact Reads.group hc.1.1 hc.1.2 hc.2 (hrs x hx).2
+    · exact fun used => Reads.group hc.1.1 hc.1.2 hc.2 (hrs x hx).2
   · exact triple_pure hout
 
 end Step
@@ -785,7 +829,7 @@ theorem soundAll_succ {fuel : Nat} (ih : SoundAll (A := A) (g := g) (ts := ts) f
     SoundAll (A := A) (g := g) (ts := ts) (fuel + 1) :=
   ⟨expr_step ih, exprFresh_step ih, exprRead_step ih, prods_step ih, coes_step ih, seq_step ih,
     seqFresh_step ih, split_step ih, splitAt_step ih, splitRests_step ih, tail_step ih, parens_step ih,
-    groups_step ih⟩
+    groups_step ih, exprDirect_step ih⟩
 
 /-- The parser is sound, for any fuel. -/
 theorem soundAll : ∀ fuel, SoundAll (A := A) (g := g) (ts := ts) fuel

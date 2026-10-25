@@ -311,6 +311,10 @@ abbrev ExprKey := String × Nat × Option Nat × List Nat × Nat × Nat
 structure CState where
   /-- Readings of a nonterminal, with their sorts, by question. -/
   memo : Std.HashMap ExprKey (Array (Reading × String)) := {}
+  /-- Readings of a nonterminal not through a coercion of its own (by the
+  productions, in parentheses, in a group), by the question less its chain
+  of coercions, which they do not depend on. -/
+  memoD : Std.HashMap (String × Nat × Option Nat × Nat × Nat) (Array (Reading × String)) := {}
   /-- Readings of a suffix of a body: its children's readings, and the
   type variables bound, by body, position, bindings and span. -/
   memoSeq : Std.HashMap (Array ASym × Nat × Env × Nat × Nat) (Array (Array Reading × Env)) := {}
@@ -408,6 +412,12 @@ def reachSplit (A : SortAlgebra) (g : Grammar) (s : String) :
 /-- The text of readings, as a key. -/
 def readingsKey (cs : Array Reading) : String := Reading.text (.node "" cs.toList)
 
+/-- The chain of coercions with `k` added, kept sorted: a question is the
+same whatever order its chain was made in. -/
+def chainWith (k : Nat) : List Nat → List Nat
+  | [] => [k]
+  | k' :: ks => if k < k' then k :: k' :: ks else k' :: chainWith k ks
+
 /-- Whether production `k` is tried for sort `s` at precedence `p` on
 `ts[i:j]`: not the excluded one, not a coercion, at or above `p`, and, if
 its body starts or ends with a token, that token where it stands. -/
@@ -492,26 +502,42 @@ mutual
           pure r
       exprRead A g ts fuel s p excl used i j r
 
-  /-- `expr`, asked: by each candidate production (`r`: those that start
-  with a token, by the token, and the others), through each coercion, in
-  the emitter's parentheses and in a TeX group; then remembered. -/
+  /-- `expr`, asked: the readings not through a coercion of its own, and
+  through each coercion (`r`: the candidate productions, those that start
+  with a token by the token, and the others); then remembered. -/
   def exprRead (A : SortAlgebra) (g : Grammar) (ts : Array String) :
       Nat → String → Nat → Option Nat → List Nat → Nat → Nat →
       Std.HashMap String (Array Nat) × Array Nat → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, p, excl, used, i, j, (byTok, others) => do
       let key : ExprKey := (s, p, excl, used, i, j)
-      -- Every production is tried, even after two readings: a reading found
-      -- again can be of another sort, which a hole's binding may need.
+      let direct ← exprDirect A g ts fuel s p excl i j (byTok, others)
       let cands := (byTok.getD (ts.getD i "") #[] ++ others).toList
-      let out ← prods A g ts fuel s p excl i j cands #[]
-      let out ← coes A g ts fuel s p excl used i j cands out
-      let out ← parens A g ts fuel s p excl i j out
-      let out ← groups A g ts fuel s p excl i j out
+      let out ← coes A g ts fuel s p excl used i j cands direct
       modify fun st => { st with active := st.active.erase key, memo := st.memo.insert key out }
       if (← get).trace then
         let line := s!"{s} @{p} [{i},{j}) {ts.extract i j}: {out.map fun (r, so) => (r.text, so)}"
         modify fun st => { st with log := st.log.push line }
+      return out
+
+  /-- The readings not through a coercion of the question's own: by each
+  candidate production (every one is tried, even after two readings, since
+  a reading found again can be of another sort, which a hole's binding may
+  need), in the emitter's parentheses and in a TeX group. They do not
+  depend on the chain of coercions, so are remembered by the question less
+  it. -/
+  def exprDirect (A : SortAlgebra) (g : Grammar) (ts : Array String) :
+      Nat → String → Nat → Option Nat → Nat → Nat →
+      Std.HashMap String (Array Nat) × Array Nat → CountM (Array (Reading × String))
+    | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | fuel + 1, s, p, excl, i, j, (byTok, others) => do
+      let key := (s, p, excl, i, j)
+      if let some n := (← get).memoD[key]? then return n
+      let cands := (byTok.getD (ts.getD i "") #[] ++ others).toList
+      let out ← prods A g ts fuel s p excl i j cands #[]
+      let out ← parens A g ts fuel s p excl i j out
+      let out ← groups A g ts fuel s p excl i j out
+      modify fun st => { st with memoD := st.memoD.insert key out }
       return out
 
   /-- The readings in the emitter's parentheses, which do not print, onto
@@ -550,7 +576,7 @@ mutual
 
   /-- The readings through each coercion not on the chain already, onto
   `out`: its argument read, at the precedence asked for and under the same
-  exclusion, with the coercion on the chain. Coercions are invisible: a
+  exclusion, with the coercion on the chain (`chainWith`). Coercions are invisible: a
   reading through one is its argument's, and its sort is the coercion's,
   with the argument's sort bound (`Option.some` of a label is an
   `Option(Label)`). -/
@@ -564,7 +590,7 @@ mutual
       if !pr.coercion || used.contains k then coes A g ts fuel s p excl used i j ks out
       else
         let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl used i j ks out
-        let args ← expr A g ts fuel (A.expected #[] s') p excl (k :: used) i j
+        let args ← expr A g ts fuel (A.expected #[] s') p excl (chainWith k used) i j
         let out ← addCoes A s pr s' args.toList out
         coes A g ts fuel s p excl used i j ks out
 

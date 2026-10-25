@@ -29,6 +29,27 @@ def Clear (st : CState) : Prop := st.over = false ∧ st.pruned = false ∧ st.c
 section
 variable (A : SortAlgebra) (g : Grammar) (ts : Array String)
 
+/-- A reading by production `k`, as the `prod` rule gives it. -/
+def ExpProd (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (r : Reading) (σ : String) : Prop :=
+  ∃ pr body cs env, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
+    excl ≠ some k ∧ pr.coercion = false ∧ p ≤ pr.prec ∧ i < j ∧ Seq A g ts body 0 #[] i j cs env ∧
+    A.compat (A.expected env pr.sort) s = true ∧ r = mkReading pr.name pr.order cs ∧ σ = A.expected env pr.sort
+
+/-- A reading through coercion `k`, as the `coe` rule gives it. -/
+def ExpCoe (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) (r : Reading)
+    (σ : String) : Prop :=
+  ∃ pr body s' pc x so, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
+    pr.coercion = true ∧ used.contains k = false ∧ body[0]? = some (ASym.hole s' pc x) ∧
+    Exp A g ts (A.expected #[] s') p excl (k :: used) i j r so ∧
+    A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true ∧ σ = A.expected (A.bind #[] s' so) pr.sort
+
+/-- A reading not through a coercion of the question's own: by a
+production, in the emitter's parentheses, or in a TeX group. -/
+def Direct (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (r : Reading) (σ : String) : Prop :=
+  (∃ k, ExpProd A g ts k s p excl i j r σ) ∨
+  (3 ≤ j - i ∧ ts[i]? = some "(" ∧ ts[j - 1]? = some ")" ∧ Exp A g ts s 0 none [] (i + 1) (j - 1) r σ) ∨
+  (3 ≤ j - i ∧ ts[i]? = some "{" ∧ ts[j - 1]? = some "}" ∧ Exp A g ts s p none [] (i + 1) (j - 1) r σ)
+
 /-- What the parser remembers is complete: every memoised answer holds
 every reading of its question, and the productions remembered for a sort
 are the reachable ones. -/
@@ -37,7 +58,9 @@ def CInv (st : CState) : Prop :=
     ∀ r σ, Exp A g ts s p excl used i j r σ → (r, σ) ∈ out) ∧
   (∀ body pos env i j n, st.memoSeq[(body, pos, env, i, j)]? = some n →
     ∀ cs env', Seq A g ts body pos env i j cs env' → (cs, env') ∈ n) ∧
-  (∀ s r, st.reach[s]? = some r → r = reachSplit A g s)
+  (∀ s r, st.reach[s]? = some r → r = reachSplit A g s) ∧
+  (∀ s p excl i j out, st.memoD[(s, p, excl, i, j)]? = some out →
+    ∀ r σ, Direct A g ts s p excl i j r σ → (r, σ) ∈ out)
 
 /-- The flags only rise through the computation; and from a complete
 state, when the flags end clear and `P` holds, the computation ends in a
@@ -49,7 +72,8 @@ def CTriple {α : Type} (m : CountM α) (P : Prop) (Q : α → Prop) : Prop :=
 variable {A g ts}
 
 theorem CInv.empty : CInv A g ts {} := by
-  refine ⟨fun s p excl used i j out h => ?_, fun body pos env i j n h => ?_, fun s r h => ?_⟩ <;> simp at h
+  refine ⟨fun s p excl used i j out h => ?_, fun body pos env i j n h => ?_, fun s r h => ?_,
+    fun s p excl i j out h => ?_⟩ <;> simp at h
 
 theorem ctriple_pure {α : Type} {a : α} {P : Prop} {Q : α → Prop} (h : P → Q a) : CTriple A g ts (pure a) P Q :=
   fun _ => ⟨id, fun hP hinv _ => ⟨hinv, h hP⟩⟩
@@ -101,18 +125,20 @@ theorem ctriple_cut {α : Type} {P : Prop} {Q : Array α → Prop} :
 
 /-- Changing anything but the memo tables keeps the invariant. -/
 theorem CInv.congr {st st' : CState} (h : CInv A g ts st) (hm : st'.memo = st.memo)
-    (hs : st'.memoSeq = st.memoSeq) (hr : st'.reach = st.reach) : CInv A g ts st' := by
+    (hs : st'.memoSeq = st.memoSeq) (hr : st'.reach = st.reach) (hd : st'.memoD = st.memoD) : CInv A g ts st' := by
   refine ⟨fun s p excl used i j out e => h.1 s p excl used i j out ?_,
-    fun body pos env i j n e => h.2.1 body pos env i j n ?_, fun s r e => h.2.2 s r ?_⟩
+    fun body pos env i j n e => h.2.1 body pos env i j n ?_, fun s r e => h.2.2.1 s r ?_,
+    fun s p excl i j out e => h.2.2.2 s p excl i j out ?_⟩
   · rwa [hm] at e
   · rwa [hs] at e
   · rwa [hr] at e
+  · rwa [hd] at e
 
 /-- Remembering a complete answer keeps the invariant. -/
 theorem CInv.insertExp {st : CState} (h : CInv A g ts st) {s p excl used i j out} (active : Std.HashMap _ Unit)
     (hout : ∀ r σ, Exp A g ts s p excl used i j r σ → (r, σ) ∈ out) :
     CInv A g ts { st with active := active, memo := st.memo.insert (s, p, excl, used, i, j) out } := by
-  refine ⟨fun s' p' excl' used' i' j' out' e => ?_, h.2.1, h.2.2⟩
+  refine ⟨fun s' p' excl' used' i' j' out' e => ?_, h.2.1, h.2.2.1, h.2.2.2⟩
   simp only [Std.HashMap.getElem?_insert] at e
   split at e
   · rename_i heq
@@ -127,7 +153,7 @@ theorem CInv.insertExp {st : CState} (h : CInv A g ts st) {s p excl used i j out
 theorem CInv.insertSeq {st : CState} (h : CInv A g ts st) {body pos env i j n}
     (hn : ∀ cs env', Seq A g ts body pos env i j cs env' → (cs, env') ∈ n) :
     CInv A g ts { st with memoSeq := st.memoSeq.insert (body, pos, env, i, j) n } := by
-  refine ⟨h.1, fun body' pos' env' i' j' n' e => ?_, h.2.2⟩
+  refine ⟨h.1, fun body' pos' env' i' j' n' e => ?_, h.2.2.1, h.2.2.2⟩
   simp only [Std.HashMap.getElem?_insert] at e
   split at e
   · rename_i heq
@@ -141,7 +167,7 @@ theorem CInv.insertSeq {st : CState} (h : CInv A g ts st) {body pos env i j n}
 /-- Remembering the reachable productions keeps the invariant. -/
 theorem CInv.insertReach {st : CState} (h : CInv A g ts st) (s : String) :
     CInv A g ts { st with reach := st.reach.insert s (reachSplit A g s) } := by
-  refine ⟨h.1, h.2.1, fun s' r e => ?_⟩
+  refine ⟨h.1, h.2.1, fun s' r e => ?_, h.2.2.2⟩
   simp only [Std.HashMap.getElem?_insert] at e
   split at e
   · rename_i heq
@@ -149,7 +175,23 @@ theorem CInv.insertReach {st : CState} (h : CInv A g ts st) (s : String) :
     subst heq
     simp only [Option.some.injEq] at e
     exact e.symm
-  · exact h.2.2 s' r e
+  · exact h.2.2.1 s' r e
+
+/-- Remembering a complete answer not through a coercion keeps the
+invariant. -/
+theorem CInv.insertD {st : CState} (h : CInv A g ts st) {s p excl i j out}
+    (hout : ∀ r σ, Direct A g ts s p excl i j r σ → (r, σ) ∈ out) :
+    CInv A g ts { st with memoD := st.memoD.insert (s, p, excl, i, j) out } := by
+  refine ⟨h.1, h.2.1, h.2.2.1, fun s' p' excl' i' j' out' e => ?_⟩
+  simp only [Std.HashMap.getElem?_insert] at e
+  split at e
+  · rename_i heq
+    simp only [beq_iff_eq] at heq
+    obtain ⟨rfl, rfl, rfl, rfl, rfl⟩ := heq
+    simp only [Option.some.injEq] at e
+    subst e
+    exact hout
+  · exact h.2.2.2 s' p' excl' i' j' out' e
 
 /-! ## Keeping readings -/
 
@@ -392,24 +434,8 @@ theorem seq_last_tok {t : String} {body pos env i j cs env'} (h : Seq A g ts bod
     (hpos : pos < body.size) (hlast : body[body.size - 1]? = some (ASym.tok t)) : ts[j - 1]? = some t :=
   Reads.lastTok h hpos hlast
 
-/-! ## Readings by one production, or through one coercion -/
-
-/-- A reading by production `k`, as the `prod` rule gives it. -/
-def ExpProd (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (r : Reading) (σ : String) : Prop :=
-  ∃ pr body cs env, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
-    excl ≠ some k ∧ pr.coercion = false ∧ p ≤ pr.prec ∧ i < j ∧ Seq A g ts body 0 #[] i j cs env ∧
-    A.compat (A.expected env pr.sort) s = true ∧ r = mkReading pr.name pr.order cs ∧ σ = A.expected env pr.sort
-
-/-- A reading through coercion `k`, as the `coe` rule gives it. -/
-def ExpCoe (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) (r : Reading)
-    (σ : String) : Prop :=
-  ∃ pr body s' pc x so, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
-    pr.coercion = true ∧ used.contains k = false ∧ body[0]? = some (ASym.hole s' pc x) ∧
-    Exp A g ts (A.expected #[] s') p excl (k :: used) i j r so ∧
-    A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true ∧ σ = A.expected (A.bind #[] s' so) pr.sort
-
 /-- A reading by a production is by a production tried. -/
-theorem tried_complete {k s p excl i j r σ} (h : ExpProd (A := A) (g := g) (ts := ts) k s p excl i j r σ) :
+theorem tried_complete {k s p excl i j r σ} (h : ExpProd A g ts k s p excl i j r σ) :
     tried g ts p excl i j k = true := by
   obtain ⟨pr, body, cs, env, hk, hvar, hcompat, hex, hcoe, hprec, hij, hseq, hc, rfl, rfl⟩ := h
   unfold tried
@@ -594,10 +620,10 @@ def CompleteAll (fuel : Nat) : Prop :=
     (DomE A g ts s p excl used i j)) ∧
   (∀ s p excl i j ks out, CTriple A g ts (prods A g ts fuel s p excl i j ks out) True
     (fun res => (∀ x ∈ out, x ∈ res) ∧
-      ∀ k ∈ ks, ∀ r σ, ExpProd (A := A) (g := g) (ts := ts) k s p excl i j r σ → (r, σ) ∈ res)) ∧
+      ∀ k ∈ ks, ∀ r σ, ExpProd A g ts k s p excl i j r σ → (r, σ) ∈ res)) ∧
   (∀ s p excl used i j ks out, CTriple A g ts (coes A g ts fuel s p excl used i j ks out) True
     (fun res => (∀ x ∈ out, x ∈ res) ∧
-      ∀ k ∈ ks, ∀ r σ, ExpCoe (A := A) (g := g) (ts := ts) k s p excl used i j r σ → (r, σ) ∈ res)) ∧
+      ∀ k ∈ ks, ∀ r σ, ExpCoe A g ts k s p excl used i j r σ → (r, σ) ∈ res)) ∧
   (∀ body pos env i j, CTriple A g ts (seq A g ts fuel body pos env i j) True (DomS A g ts body pos env i j)) ∧
   (∀ body pos env i j, CTriple A g ts (seqFresh A g ts fuel body pos env i j) (pos ≠ body.size)
     (DomS A g ts body pos env i j)) ∧
@@ -619,12 +645,14 @@ def CompleteAll (fuel : Nat) : Prop :=
       Exp A g ts s 0 none [] (i + 1) (j - 1) r σ → (r, σ) ∈ res)) ∧
   (∀ s p excl i j out, CTriple A g ts (groups A g ts fuel s p excl i j out) True
     (fun res => (∀ x ∈ out, x ∈ res) ∧ ∀ r σ, 3 ≤ j - i → ts[i]? = some "{" → ts[j - 1]? = some "}" →
-      Exp A g ts s p none [] (i + 1) (j - 1) r σ → (r, σ) ∈ res))
+      Exp A g ts s p none [] (i + 1) (j - 1) r σ → (r, σ) ∈ res)) ∧
+  (∀ s p excl i j r, CTriple A g ts (exprDirect A g ts fuel s p excl i j r) (r = reachSplit A g s)
+    (fun res => ∀ r σ, Direct A g ts s p excl i j r σ → (r, σ) ∈ res))
 
 variable {A g ts}
 
 theorem completeAll_zero : CompleteAll A g ts 0 := by
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · intro s p excl used i j; simp only [expr]; exact ctriple_over
   · intro s p excl used i j; simp only [exprFresh]; exact ctriple_over
   · intro s p excl used i j r; simp only [exprRead]; exact ctriple_over
@@ -638,6 +666,7 @@ theorem completeAll_zero : CompleteAll A g ts 0 := by
   · intro l n env i j; simp only [tail]; exact ctriple_over
   · intro s p excl i j out; simp only [parens]; exact ctriple_over
   · intro s p excl i j out; simp only [groups]; exact ctriple_over
+  · intro s p excl i j r; simp only [exprDirect]; exact ctriple_over
 
 /-- Remembering the readings of a body, then returning them. -/
 theorem ctriple_remember {body pos env i j} {n : Array (Array Reading × Env)} {P : Prop}
@@ -824,9 +853,9 @@ theorem seq_step (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
 theorem seqFresh_step (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) :
     CTriple A g ts (seqFresh A g ts (fuel + 1) body pos env i j) (pos ≠ body.size)
       (DomS A g ts body pos env i j) := by
-  obtain ⟨ihE, _, _, _, _, ihS, _, ihSp, _, _, ihT, _, _⟩ := ih
+  obtain ⟨ihE, _, _, _, _, ihS, _, ihSp, _, _, ihT, _, _, _⟩ := ih
   simp only [seqFresh]
-  refine ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.congr rfl rfl rfl) fun _ => ?_
+  refine ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.congr rfl rfl rfl rfl) fun _ => ?_
   split
   · rename_i t hb
     split
@@ -910,7 +939,7 @@ theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) :
     ∀ (ks : List Nat) (out : Array (Reading × String)),
       CTriple A g ts (prods A g ts (fuel + 1) s p excl i j ks out) True
         (fun res => (∀ x ∈ out, x ∈ res) ∧
-          ∀ k ∈ ks, ∀ r σ, ExpProd (A := A) (g := g) (ts := ts) k s p excl i j r σ → (r, σ) ∈ res)
+          ∀ k ∈ ks, ∀ r σ, ExpProd A g ts k s p excl i j r σ → (r, σ) ∈ res)
   | [], out => by
     simp only [prods]
     exact ctriple_pure fun _ => ⟨fun x hx => hx, fun k hk => by simp at hk⟩
@@ -952,7 +981,7 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (
     ∀ (ks : List Nat) (out : Array (Reading × String)),
       CTriple A g ts (coes A g ts (fuel + 1) s p excl used i j ks out) True
         (fun res => (∀ x ∈ out, x ∈ res) ∧
-          ∀ k ∈ ks, ∀ r σ, ExpCoe (A := A) (g := g) (ts := ts) k s p excl used i j r σ → (r, σ) ∈ res)
+          ∀ k ∈ ks, ∀ r σ, ExpCoe A g ts k s p excl used i j r σ → (r, σ) ∈ res)
   | [], out => by
     simp only [coes]
     exact ctriple_pure fun _ => ⟨fun x hx => hx, fun k hk => by simp at hk⟩
@@ -976,7 +1005,7 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (
         · exact hks k' hk' r σ he
       · split
         · rename_i s' pc x hb
-          refine ctriple_bind (ihE (A.expected #[] s') p excl (k :: used) i j).ofTrue fun args => ?_
+          refine ctriple_bind (ihE (A.expected #[] s') p excl (chainWith k used) i j).ofTrue fun args => ?_
           refine ctriple_bind (ctriple_addCoes s pr s' args.toList out).ofTrue fun out' => ?_
           refine ctriple_mono (ihC s p excl used i j ks out').ofTrue fun ⟨⟨_, hargs⟩, hsub', hadd⟩ res ⟨hsub, hks⟩ => ?_
           refine ⟨fun x hx => hsub x (hsub' x hx), fun k' hk' r σ he => ?_⟩
@@ -988,7 +1017,8 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (
             obtain ⟨rfl, rfl⟩ := hk'
             rw [hb] at hb'
             cases hb'
-            exact hsub _ (hadd r so (Array.mem_def.mp (hargs r so hexp)) hc')
+            exact hsub _ (hadd r so (Array.mem_def.mp
+              (hargs r so (exp_usedEquiv (fun x => (chainWith_contains _ used x).symm) hexp))) hc')
           · exact hks k' hk' r σ he
         · rename_i hno
           refine ctriple_mono (ihC s p excl used i j ks out) fun _ res ⟨hsub, hks⟩ => ⟨hsub, fun k' hk' r σ he => ?_⟩
@@ -1038,47 +1068,73 @@ theorem groups_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (out 
     simp only [Bool.and_eq_true, decide_eq_true_eq, beq_iff_eq, not_and] at hc
     exact ctriple_pure fun _ => ⟨fun x hx => hx, fun r σ h3 hl hr _ => absurd hr (hc ⟨h3, hl⟩)⟩
 
+theorem exprDirect_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
+    (r : Std.HashMap String (Array Nat) × Array Nat) :
+    CTriple A g ts (exprDirect A g ts (fuel + 1) s p excl i j r) (r = reachSplit A g s)
+      (fun res => ∀ r σ, Direct A g ts s p excl i j r σ → (r, σ) ∈ res) := by
+  obtain ⟨_, _, _, ihP, _, _, _, _, _, _, _, ihPa, ihG, _⟩ := ih
+  obtain ⟨byTok, others⟩ := r
+  simp only [exprDirect]
+  refine ctriple_bind ctriple_get fun st => ?_
+  split
+  · rename_i n hmemo
+    exact ctriple_pure fun ⟨_, hinv, _⟩ => hinv.2.2.2 s p excl i j n hmemo
+  · refine ctriple_bind (ihP s p excl i j _ #[]).ofTrue fun out₁ => ?_
+    refine ctriple_bind (ihPa s p excl i j out₁).ofTrue fun out₂ => ?_
+    refine ctriple_bind (ihG s p excl i j out₂).ofTrue fun out₃ => ?_
+    have hdom : ((((byTok, others) = reachSplit A g s ∧ (CInv A g ts st ∧ Clear st)) ∧
+        ((∀ x ∈ (#[] : Array (Reading × String)), x ∈ out₁) ∧
+          ∀ k ∈ (byTok.getD (ts.getD i "") #[] ++ others).toList, ∀ r σ,
+            ExpProd A g ts k s p excl i j r σ → (r, σ) ∈ out₁)) ∧
+        ((∀ x ∈ out₁, x ∈ out₂) ∧ ∀ r σ, 3 ≤ j - i → ts[i]? = some "(" → ts[j - 1]? = some ")" →
+          Exp A g ts s 0 none [] (i + 1) (j - 1) r σ → (r, σ) ∈ out₂)) ∧
+        ((∀ x ∈ out₂, x ∈ out₃) ∧ ∀ r σ, 3 ≤ j - i → ts[i]? = some "{" → ts[j - 1]? = some "}" →
+          Exp A g ts s p none [] (i + 1) (j - 1) r σ → (r, σ) ∈ out₃) →
+        ∀ r σ, Direct A g ts s p excl i j r σ → (r, σ) ∈ out₃ := by
+      intro hP r σ hd
+      obtain ⟨⟨⟨⟨hr, _⟩, _, hP₁⟩, hsub₂, hPa⟩, hsub₃, hG⟩ := hP
+      have h1 : byTok = (reachSplit A g s).1 := congrArg Prod.fst hr
+      have h2 : others = (reachSplit A g s).2 := congrArg Prod.snd hr
+      subst h1 h2
+      rcases hd with ⟨k, he⟩ | ⟨h3, hl, hr', hin⟩ | ⟨h3, hl, hr', hin⟩
+      · have he' := he
+        obtain ⟨pr, body, cs, env, hk, hvar, hc, _, _, _, _, hseq, _⟩ := he'
+        exact hsub₃ _ (hsub₂ _ (hP₁ k (mem_cands_of hk hvar hc fun t hb => seq_tok_head hseq hb) r σ he))
+      · exact hsub₃ _ (hPa r σ h3 hl hr' hin)
+      · exact hG r σ h3 hl hr' hin
+    exact ctriple_bind (ctriple_modify (fun _ h => h) fun hP _ hinv _ => hinv.insertD (hdom hP)) fun _ =>
+      ctriple_pure fun ⟨hP, _⟩ => hdom hP
+
 theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
     (r : Std.HashMap String (Array Nat) × Array Nat) :
     CTriple A g ts (exprRead A g ts (fuel + 1) s p excl used i j r) (r = reachSplit A g s)
       (DomE A g ts s p excl used i j) := by
-  obtain ⟨_, _, _, ihP, ihC, _, _, _, _, _, _, ihPa, ihG⟩ := ih
+  obtain ⟨_, _, _, _, ihC, _, _, _, _, _, _, _, _, ihD⟩ := ih
   obtain ⟨byTok, others⟩ := r
   simp only [exprRead]
-  refine ctriple_bind (ihP s p excl i j _ #[]).ofTrue fun out₁ => ?_
-  refine ctriple_bind (ihC s p excl used i j _ out₁).ofTrue fun out₂ => ?_
-  refine ctriple_bind (ihPa s p excl i j out₂).ofTrue fun out₃ => ?_
-  refine ctriple_bind (ihG s p excl i j out₃).ofTrue fun out₄ => ?_
-  have hdom : ((((byTok, others) = reachSplit A g s ∧
-      ((∀ x ∈ (#[] : Array (Reading × String)), x ∈ out₁) ∧
-        ∀ k ∈ (byTok.getD (ts.getD i "") #[] ++ others).toList, ∀ r σ,
-          ExpProd (A := A) (g := g) (ts := ts) k s p excl i j r σ → (r, σ) ∈ out₁)) ∧
-      ((∀ x ∈ out₁, x ∈ out₂) ∧
-        ∀ k ∈ (byTok.getD (ts.getD i "") #[] ++ others).toList, ∀ r σ,
-          ExpCoe (A := A) (g := g) (ts := ts) k s p excl used i j r σ → (r, σ) ∈ out₂)) ∧
-      ((∀ x ∈ out₂, x ∈ out₃) ∧ ∀ r σ, 3 ≤ j - i → ts[i]? = some "(" → ts[j - 1]? = some ")" →
-        Exp A g ts s 0 none [] (i + 1) (j - 1) r σ → (r, σ) ∈ out₃)) ∧
-      ((∀ x ∈ out₃, x ∈ out₄) ∧ ∀ r σ, 3 ≤ j - i → ts[i]? = some "{" → ts[j - 1]? = some "}" →
-        Exp A g ts s p none [] (i + 1) (j - 1) r σ → (r, σ) ∈ out₄) →
-      DomE A g ts s p excl used i j out₄ := by
+  refine ctriple_bind (ihD s p excl i j (byTok, others)) fun direct => ?_
+  refine ctriple_bind (ihC s p excl used i j _ direct).ofTrue fun out => ?_
+  have hdom : (((byTok, others) = reachSplit A g s ∧ (∀ r σ, Direct A g ts s p excl i j r σ → (r, σ) ∈ direct)) ∧
+      ((∀ x ∈ direct, x ∈ out) ∧ ∀ k ∈ (byTok.getD (ts.getD i "") #[] ++ others).toList, ∀ r σ,
+        ExpCoe A g ts k s p excl used i j r σ → (r, σ) ∈ out)) →
+      DomE A g ts s p excl used i j out := by
     intro hP r σ hd
-    obtain ⟨⟨⟨⟨hr, _, hP₁⟩, hsub₂, hC⟩, hsub₃, hPa⟩, hsub₄, hG⟩ := hP
+    obtain ⟨⟨hr, hD⟩, hsub, hC⟩ := hP
     have h1 : byTok = (reachSplit A g s).1 := congrArg Prod.fst hr
     have h2 : others = (reachSplit A g s).2 := congrArg Prod.snd hr
     subst h1 h2
     cases hd with
     | prod hk hvar hcompat hex hcoe hprec hij hseq hc =>
-      refine hsub₄ _ (hsub₃ _ (hsub₂ _ (hP₁ _ (mem_cands_of hk hvar hcompat fun t hb => seq_tok_head hseq hb) _ _
-        ⟨_, _, _, _, hk, hvar, hcompat, hex, hcoe, hprec, hij, hseq, hc, rfl, rfl⟩)))
+      exact hsub _ (hD _ _ (Or.inl ⟨_, _, _, _, _, hk, hvar, hcompat, hex, hcoe, hprec, hij, hseq, hc, rfl, rfl⟩))
     | coe hk hvar hcompat hcoe hused hb hexp hc =>
-      refine hsub₄ _ (hsub₃ _ (hC _ (mem_cands_of hk hvar hcompat fun t hb' => by rw [hb] at hb'; cases hb') _ _
-        ⟨_, _, _, _, _, _, hk, hvar, hcompat, hcoe, hused, hb, hexp, hc, rfl⟩))
-    | paren h3 hl hr' hinner => exact hsub₄ _ (hPa _ _ h3 hl hr' hinner)
-    | group h3 hl hr' hinner => exact hG _ _ h3 hl hr' hinner
+      exact hC _ (mem_cands_of hk hvar hcompat fun t hb' => by rw [hb] at hb'; cases hb') _ _
+        ⟨_, _, _, _, _, _, hk, hvar, hcompat, hcoe, hused, hb, hexp, hc, rfl⟩
+    | paren h3 hl hr' hinner => exact hsub _ (hD _ _ (Or.inr (Or.inl ⟨h3, hl, hr', hinner⟩)))
+    | group h3 hl hr' hinner => exact hsub _ (hD _ _ (Or.inr (Or.inr ⟨h3, hl, hr', hinner⟩)))
   refine ctriple_bind (ctriple_modify (fun _ h => h) fun hP _ hinv _ => hinv.insertExp _ (hdom hP)) fun _ => ?_
   refine ctriple_bind ctriple_get fun _ => ?_
   split
-  · exact ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.congr rfl rfl rfl) fun _ =>
+  · exact ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.congr rfl rfl rfl rfl) fun _ =>
       ctriple_pure fun ⟨⟨⟨hP, _⟩, _⟩, _⟩ => hdom hP
   · exact ctriple_pure fun ⟨⟨hP, _⟩, _⟩ => hdom hP
 
@@ -1089,11 +1145,11 @@ theorem exprFresh_step (s : String) (p : Nat) (excl : Option Nat) (used : List N
   refine ctriple_bind ctriple_get fun _ => ?_
   split
   · exact ctriple_cut
-  · refine ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.congr rfl rfl rfl) fun _ => ?_
+  · refine ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.congr rfl rfl rfl rfl) fun _ => ?_
     refine ctriple_bind ctriple_get fun _ => ?_
     split
     · rename_i r' hr'
-      refine ctriple_bind (ctriple_pure (Q := fun r => r = reachSplit A g s) fun ⟨_, hinv, _⟩ => hinv.2.2 s r' hr')
+      refine ctriple_bind (ctriple_pure (Q := fun r => r = reachSplit A g s) fun ⟨_, hinv, _⟩ => hinv.2.2.1 s r' hr')
         fun r => ?_
       exact ctriple_weaken (fun hP => hP.2) (ihER s p excl used i j r)
     · refine ctriple_bind (ctriple_modify (fun _ h => h) fun _ _ hinv _ => hinv.insertReach s) fun _ => ?_
@@ -1123,7 +1179,7 @@ theorem completeAll_succ (hg : ListsWF g) {fuel : Nat} (ih : CompleteAll A g ts 
   ⟨Complete.expr_step ih hg, Complete.exprFresh_step ih, Complete.exprRead_step ih,
     Complete.prods_step ih, Complete.coes_step ih, Complete.seq_step ih, Complete.seqFresh_step ih,
     Complete.split_step ih hg, Complete.splitAt_step ih, Complete.splitRests_step ih,
-    Complete.tail_step ih, Complete.parens_step ih, Complete.groups_step ih⟩
+    Complete.tail_step ih, Complete.parens_step ih, Complete.groups_step ih, Complete.exprDirect_step ih⟩
 
 /-- The parser is complete, for any fuel. -/
 theorem completeAll (hg : ListsWF g) : ∀ fuel, CompleteAll A g ts fuel

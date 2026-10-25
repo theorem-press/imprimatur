@@ -261,4 +261,69 @@ abbrev Tail (l n : Nat) (env : Env) (i j : Nat) (cs : Array Reading) (env' : Env
 
 end
 
+/-! ## The chain of coercions is a set -/
+
+/-- Questions alike but for the order of their chain of coercions. -/
+inductive UsedEquiv : Question → Question → Prop
+  /-- the same chain in another order -/
+  | expr {s : String} {p : Nat} {excl : Option Nat} {used used' : List Nat} {i j : Nat} :
+    (∀ x, used.contains x = used'.contains x) → UsedEquiv (.expr s p excl used i j) (.expr s p excl used' i j)
+  /-- the same question -/
+  | refl (q : Question) : UsedEquiv q q
+
+section
+variable {A : SortAlgebra} {g : Grammar} {ts : Array String}
+
+/-- A reading is the same whatever order the chain was made in: only which
+coercions are on it matters. -/
+theorem Reads.usedEquiv {q : Question} {a : Answer} (h : Reads A g ts q a) :
+    ∀ q', UsedEquiv q q' → Reads A g ts q' a := by
+  induction h with
+  | prod hk hvar hc hex hcoe hprec hij _ hc' ih =>
+    intro q' hq
+    cases hq with
+    | expr _ => exact Reads.prod hk hvar hc hex hcoe hprec hij (ih _ (.refl _)) hc'
+    | refl => exact Reads.prod hk hvar hc hex hcoe hprec hij (ih _ (.refl _)) hc'
+  | @coe s p excl used i j k pr body s' pc x r so hk hvar hc hcoe hused hb _ hc' ih =>
+    intro q' hq
+    cases hq with
+    | expr hu =>
+      refine Reads.coe hk hvar hc hcoe (by rw [← hu]; exact hused) hb (ih _ (.expr fun y => ?_)) hc'
+      simp only [List.contains_cons, hu]
+    | refl => exact Reads.coe hk hvar hc hcoe hused hb (ih _ (.refl _)) hc'
+  | paren h3 hl hr _ ih =>
+    intro q' hq
+    cases hq with
+    | expr _ => exact Reads.paren h3 hl hr (ih _ (.refl _))
+    | refl => exact Reads.paren h3 hl hr (ih _ (.refl _))
+  | group h3 hl hr _ ih =>
+    intro q' hq
+    cases hq with
+    | expr _ => exact Reads.group h3 hl hr (ih _ (.refl _))
+    | refl => exact Reads.group h3 hl hr (ih _ (.refl _))
+  | done hend => intro q' hq; cases hq; exact Reads.done hend
+  | tok hb hij hts _ ih => intro q' hq; cases hq; exact Reads.tok hb hij hts (ih _ (.refl _))
+  | hole hb hlt hle _ _ ih₁ ih₂ => intro q' hq; cases hq; exact Reads.hole hb hlt hle (ih₁ _ (.refl _)) (ih₂ _ (.refl _))
+  | var hb hlt hle hv _ ih => intro q' hq; cases hq; exact Reads.var hb hlt hle hv (ih _ (.refl _))
+  | tail hb hle hle' _ _ ih₁ ih₂ => intro q' hq; cases hq; exact Reads.tail hb hle hle' (ih₁ _ (.refl _)) (ih₂ _ (.refl _))
+  | nil => intro q' hq; cases hq; exact Reads.nil
+  | more hl hij _ ih => intro q' hq; cases hq; exact Reads.more hl hij (ih _ (.refl _))
+
+/-- An expression reads the same under a chain in another order. -/
+theorem exp_usedEquiv {s p excl used used' i j r σ} (hu : ∀ x, used.contains x = used'.contains x)
+    (h : Exp A g ts s p excl used i j r σ) : Exp A g ts s p excl used' i j r σ :=
+  h.usedEquiv _ (.expr hu)
+
+end
+
+/-- `chainWith` adds the coercion to the chain, as a set. -/
+theorem chainWith_contains (k : Nat) : ∀ (l : List Nat) (x : Nat), (chainWith k l).contains x = (k :: l).contains x
+  | [], _ => rfl
+  | k' :: ks, x => by
+    simp only [chainWith]
+    split
+    · rfl
+    · simp only [List.contains_cons, chainWith_contains k ks x]
+      cases x == k <;> cases x == k' <;> simp
+
 end SpliceModel
