@@ -77,8 +77,11 @@ structure Settings where
   trustedPrefixes : Array Name := #[`Init, `Lean, `Std, `Batteries, `Mathlib]
   /-- For each comparator theorem, its challenge module (DESIGN §10.5). -/
   challenges : Array (String × Name) := #[]
-  /-- The heartbeat limit per entry, in thousands, as Lean's `maxHeartbeats`. -/
-  maxHeartbeats : Nat := 200000
+  /-- The heartbeat limit per entry, in thousands, as Lean's `maxHeartbeats`:
+  five times Lean's default, since heartbeats count allocations and the
+  parser that reads a view's formulas back does its work, bounded by its
+  own budget per formula, under this limit too. -/
+  maxHeartbeats : Nat := 1000000
   /-- Notation packs to use, in order (DESIGN §7.5). -/
   notationPacks : Array String := #["core", "logic", "sets", "order"]
   /-- Notation modules given as files, elaborated in-process (external mode). -/
@@ -137,7 +140,7 @@ def parseRequests (text : String) : Except String (Settings × Array Request) :=
         | .error _ => throw s!"config.challenges.{k} must be a module name"
       | .error _ => throw "config.challenges must be an object"
     | .error _ => pure #[]
-  let maxHeartbeats := (cfg.getObjValAs? Nat "max_heartbeats").toOption.getD 200000
+  let maxHeartbeats := (cfg.getObjValAs? Nat "max_heartbeats").toOption.getD 1000000
   let settings := { settings with challenges, maxHeartbeats }
   let settings := { settings with validate := (cfg.getObjValAs? Bool "validate").toOption.getD true }
   let settings := { settings with notationFiles := (get "notation").toOption.getD #[] }

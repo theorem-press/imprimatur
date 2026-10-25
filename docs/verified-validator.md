@@ -1,60 +1,64 @@
 # Proposal: the validator, proved
 
-Status: phases 0–3 done, phase 4 not attempted beyond its specification
-(branch `verified-validator`); decisions 1–4 taken as recommended. What
-is proved: the parser is sound (`SpliceModel.readBack_sound`), the matcher
-decides structural matching (`matches_iff`), and so a validated formula
-reads as what it was rendered from (`validated_sound`). What is not:
-completeness up to two readings. Writing its specification showed the
-parser as it was to be incomplete in principle, in three places, each now
-either fixed or made explicit (below, "Phase 4"); a proof would then need
-the sort algebra axiomatised, since the parser prunes sort variants by the
-rule that an unknown sort stands for any, and that rule is only sound when
-`compat`, `bind` and `expected` are monotone in the sorts' generality. That
-is the next design, not this one. Supersedes the plan in #22 (a model with property tests)
-with the pattern of docs/verified-extractor.md: the code that runs is the
-code that is proved. Companion to `docs/verified-splicer.md` and
-`docs/verified-extractor.md`. The module is `bundle/ReadBack.lean`
-(`Imprimatur.ReadBack`, namespace `Imprimatur.Validate`), since
-`Imprimatur.Validate` is the extractor's own file. What was built differs
-from the plan below in three points, each recorded in the module:
+Status: done (branches `verified-validator`, then `pollack-plan`);
+decisions 1–4 taken as recommended. What is proved, of the module that
+runs, for any algebra of sorts: the parser is sound
+(`SpliceModel.readBack_sound`) and complete (`readBack_complete`: when no
+flag is set, every reading in the grammar is among those returned), the
+matcher decides structural matching (`matches_iff`), and so a validated
+formula has in the grammar no reading but the one it was rendered from,
+wherever the expected reading is definite (`pollack`); and for the world
+as the validator sees it, whose `Reads` is that it accepts each formula
+printed of a statement, the two reading-back assumptions of a sound
+anatomy are theorems (`Validated.sound`), so each formula of a block that
+checks clean reads only as the part it was printed from
+(`document_pollack`, `document_pollack_rules`). Completeness was planned
+in docs/pollack-consistency.md, which records how the design changed on
+the way; the proofs are `splice/SpliceModel/ReadBack.lean` (the
+specification), `ReadBackSound.lean`, `Pruning.lean`,
+`ReadBackComplete.lean` and `Validator.lean`. Supersedes the plan in #22
+(a model with property tests) with the pattern of
+docs/verified-extractor.md: the code that runs is the code that is proved.
+Companion to `docs/verified-splicer.md` and `docs/verified-extractor.md`.
+The module is `bundle/ReadBack.lean` (`Imprimatur.ReadBack`, namespace
+`Imprimatur.Validate`), since `Imprimatur.Validate` is the extractor's own
+file. What was built differs from the plan below in these points, each
+recorded in the module:
 
-- **Cuts are not a flag.** A question cut on an active key happens on
-  ordinary formulas (any coercion chain that returns to sort `*`), so it
-  cannot mean "not validated". Instead an answer computed under a cut is
-  remembered with the keys it was cut on, and used only while those keys
-  are still active (when asking again would be cut the same way); once the
-  cycle is gone it is recomputed in full. Cuts of a question's own key lose
-  only looping derivations. What is remembered is therefore complete
-  whenever it is used, which is what the completeness proof needs.
+- **A question carries its chain of coercions.** The plan cut a question
+  asked again while being asked, to break coercion cycles, and bookkept
+  which answers a cut had left incomplete. Instead a question records the
+  sorts asked above it on the chain of coercions it is the argument of,
+  and a chain visits each sort once (so a coercion of the sort asked for
+  applies once) and has no cast below a cast (a coercion whose sort stands
+  for any sort; a cast of a cast is a cast): chains are finite, no cycle
+  is ever entered, and the search is complete without bookkeeping. A cut can now come only
+  from a production whose body is a bare hole and nothing else; it is a
+  flag, `cut`, reported as "not validated".
+- **Variants are kept by equality.** The parser keeps one of each variant
+  (the same reading, the same sort or bindings) of each of two readings,
+  not a most general one: no order on sorts, and so no law of the sort
+  algebra, is needed for completeness.
 - **The variant cap is 256**, not 32: two of the paper's own formulas
   (`'$' :: l ++ ['$']`) exceeded 32, and the cap at 32 was silently
   incomplete there. `pruned` is reported as "not validated".
 - **The fuel bounds depth**, each call and each step of a loop taking one,
   the budget bounds work; either exhausted is `over`.
+- **The grammar's lists are checked**: the parser looks for a list's rest
+  only where its elements fit, which is complete only when each element
+  takes a token (every notation's do); `lists` flags a grammar whose do
+  not.
 
-**Phase 4, what the specification found.** The parser keeps at most two
+**What the specification found.** The parser as it was kept at most two
 distinct readings of a question (`keep2`), silently dropping a third. A
 question above, which filters its hole's readings by sort, may accept the
 dropped one and reject the two kept, and so report one reading of a
-formula that has two. The same shortcut skips reading inside parentheses
-once two readings are known, and a coercion of the sort asked for reads a
-snapshot of the question's own readings, not those a later coercion adds.
-The first is now noted (`pruned`), and the extractor reports an ambiguity
-before any flag, so a formula with two readings is still "ambiguous" and
-one whose parser dropped a reading below is "not validated"; the goldens
-and the paper are unchanged by it. The other two are documented in the
-module; removing the parentheses guard is harmless, and closing coercions
-under a fixpoint is not, because without the rule that an unknown sort
-stands alone, coercions with type variables make ever new sort variants
-(`Option(Option(…))`) up to the cap. A completeness theorem therefore
-needs laws of the sort algebra: `compat`, `bind` and `expected` monotone
-under "unknown stands for any". With them, the proof is the memo
-invariant of the plan (every remembered answer complete whenever used,
-which the cut bookkeeping gives), fuel sufficiency (a derivation's depth
-bounded by its span and the coercions' acyclicity), and the three
-shortcuts above. Cuts are recorded in the flags (`cut`), not reported,
-for that theorem's hypothesis.
+formula that has two. The same shortcut skipped reading inside parentheses
+once two readings were known, and a coercion of the sort asked for read a
+snapshot of the question's own readings. The first is now noted
+(`pruned`), and the extractor reports an ambiguity before any flag; the
+guard on parentheses is gone; and coercions chain through the question's
+record of them. The goldens and the paper are unchanged by all of it.
 
 ## Goal
 
@@ -131,12 +135,17 @@ structure SortAlgebra where
   bind     : Env → String → String → Env   -- bind type variables to what fills a hole
 ```
 
-The extractor instantiates it with today's `STerm` functions, unchanged and
-still `partial`. Every theorem below holds for every algebra, so what is
-proved is the search; what the algebra says about Lean's types stays
-tested, as #22 proposed. (Totalising `STerm.parse` is cheap and could
-follow, but proving the algebra right would need a model of Lean's
-universes, which is out of scope.)
+The extractor instantiates it with Lean's `STerm` functions
+(`Imprimatur.Validate.leanSorts`), which since docs/coercion-chains.md
+phase B1 are total and in the shared module, so that theorems can be about
+them: `STerm.parse` reads with fuel (the text's length, since each part is
+shorter), and the structural functions recurse on the term. Every theorem
+of soundness and completeness holds for every algebra, so what is proved
+there is the search; what the algebra says about Lean's types is tested
+(phase B2: the laws of the cut and the order below a sort, in
+`extract/test/ExtractTest/SortLaws.lean`; the chain rule against chains of
+any length, in `ChainLaws.lean`) and, for the laws the chain rule rests
+on, to be proved (phase B3).
 
 ### Readings are trees
 
@@ -248,8 +257,8 @@ paper byte-identical unless it says otherwise.
 | 1 | **Readings as trees**, in the extractor: `Reading`, `Expected`, `Matches`; `Validate.reading` and `readingMatches` become the tree functions with the same printed strings; `Render.Expect` builds trees. | Goldens byte-identical. |
 | 2 | **The module.** Tokens, productions, grammars, the parser and the matcher move to the shared module, total, with the algebra as a parameter and the `pruned` flag; the extractor's `Validate` keeps the algebra, `ofRule` and the messages. `lint/verified` covers it. | Goldens byte-identical; builds on the toolchain matrix; read-back time on projects A and B within 10 %. |
 | 3 | **Specification and soundness.** `Parses`, `Matches`; Theorems 1, 3, 5. | Done: `Exp`/`Seq`/`Tail`, `readBack_sound`, `matches_iff`; Theorem 5 (tokens) not stated. |
-| 4 | **Completeness up to two.** Theorem 2, with the memo invariant. | Not done: see above. The parser's own incompleteness is flagged. |
-| 5 | **Validation, model, paper.** Theorem 4; `Anatomy.Sound` restated; §9 and the trusted base restated; DESIGN §18.4; #22 closed. | Done for the sound half: `validated_sound`; §9 and the trusted base say what is proved and what completeness would need. `Anatomy.Sound` unchanged, since its `formulas` is the validator's check and the check's uniqueness is the unproved half. |
+| 4 | **Completeness up to two.** Theorem 2, with the memo invariant. | Done (docs/pollack-consistency.md): `readBack_complete`, with the invariant that every remembered answer holds every reading of its question, in triples that hold when the flags end clear. |
+| 5 | **Validation, model, paper.** Theorem 4; `Anatomy.Sound` restated; §9 and the trusted base restated; DESIGN §18.4; #22 closed. | Done: `pollack`; `Anatomy.Sound` kept, and its two reading-back assumptions proved of the validator's world (`Validated.sound`, `document_pollack`); §9, the trusted base and DESIGN §18.4 say so. |
 
 ## Risks
 

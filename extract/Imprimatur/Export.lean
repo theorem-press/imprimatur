@@ -43,9 +43,9 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
     | none => IO.mkRef #[]
   let mut entries : Array (String × Entry (Image TeX) Verdict) := #[]
   let mut warnings : Array String := #[]
-  -- Lean's default limit of 200000 heartbeats per entry. Heartbeats count
-  -- allocations, so a view that would exhaust memory (the delaborator can
-  -- do unbounded work) fails with an error instead, recorded in `errors`.
+  -- The limit of heartbeats per entry (`Settings.maxHeartbeats`). Heartbeats
+  -- count allocations, so a view that would exhaust memory (the delaborator
+  -- can do unbounded work) fails with an error instead, recorded in `errors`.
   let maxHeartbeats := s.maxHeartbeats * 1000
   -- Also as an option: work Lean does in other contexts (such as generating
   -- equation lemmas) reads the limit from there.
