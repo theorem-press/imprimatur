@@ -422,9 +422,6 @@ def readingsKey (cs : Array Reading) : String := Reading.text (.node "" cs.toLis
 /-- A binding environment, as a key. -/
 def envKey (env : Env) : String := toString env
 
-/-- The sort a reading is given: the one asked for, if known, else its own. -/
-def variantOf (s so : String) : String := if s != "*" && !isTyVar s then s else so
-
 /-- Whether production `k` is tried for sort `s` at precedence `p` on
 `ts[i:j]`: not the excluded one, not a coercion, at or above `p`, and, if
 its body starts or ends with a token, that token where it stands. -/
@@ -445,7 +442,7 @@ def addProds (A : SortAlgebra) (s : String) (pr : Prod) :
   | (cs, env) :: rest, out => do
     let so := A.expected env pr.sort
     if !A.compat so s then addProds A s pr rest out
-    else addProds A s pr rest (← keep2M (·.1.text) (·.2) (out.push (mkReading pr.name pr.order cs, variantOf s so)))
+    else addProds A s pr rest (← keep2M (·.1.text) (·.2) (out.push (mkReading pr.name pr.order cs, so)))
 
 /-- The readings through coercion `pr` of hole sort `s'`, from its
 argument's readings, onto `out`: each at the coercion's sort with the
@@ -456,7 +453,7 @@ def addCoes (A : SortAlgebra) (s : String) (pr : Prod) (s' : String) :
   | (r, so) :: rest, out => do
     let sort := A.expected (A.bind #[] s' so) pr.sort
     if !A.compat sort s then addCoes A s pr s' rest out
-    else addCoes A s pr s' rest (← keep2M (·.1.text) (·.2) (out.push (r, variantOf s sort)))
+    else addCoes A s pr s' rest (← keep2M (·.1.text) (·.2) (out.push (r, sort)))
 
 /-- The readings of a nonterminal, each followed by the readings of the rest
 of the body, onto `out`. -/
@@ -585,7 +582,7 @@ mutual
       else
         let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl i j ks out
         let es' := A.expected #[] s'
-        let args ← if es' == s then pure out else expr A g ts fuel es' p none i j
+        let args ← if es' == s then pure out else expr A g ts fuel es' p excl i j
         let out ← addCoes A s pr s' args.toList out
         coes A g ts fuel s p excl i j ks out
 
