@@ -346,37 +346,34 @@ abbrev CountM := StateM CState
 /-- The variants of a reading kept: past them, the reading is not validated. -/
 def variantCap : Nat := 256
 
-/-- `keep2`, onto `out`, with the readings' keys seen so far. -/
-def keep2Go {α : Type} (key : α → String) (variant : α → String) (top : String) :
+/-- `keep`, onto `out`, with the readings' keys seen so far. -/
+def keepGo {α : Type} (key : α → String) (same : α → α → Bool) :
     List α → Array α → Array String → Bool → Array α × Bool
   | [], out, _, pruned => (out, pruned)
   | x :: xs, out, keys, pruned =>
     let k := key x
-    if !keys.contains k && keys.size ≥ 2 then keep2Go key variant top xs out keys true
+    if !keys.contains k && keys.size ≥ 2 then keepGo key same xs out keys true
     else
       let keys := if keys.contains k then keys else keys.push k
-      if out.any (fun y => key y == k && variant y == top) then keep2Go key variant top xs out keys pruned
-      else if variant x == top then keep2Go key variant top xs ((out.filter (key · != k)).push x) keys pruned
-      else if (out.filter (key · == k)).size ≥ variantCap then keep2Go key variant top xs out keys true
-      else if out.any (fun y => key y == k && variant y == variant x) then keep2Go key variant top xs out keys pruned
-      else keep2Go key variant top xs (out.push x) keys pruned
+      -- A variant of a reading kept: not needed.
+      if out.any (fun y => key y == k && same x y) then keepGo key same xs out keys pruned
+      else if (out.filter (key · == k)).size ≥ variantCap then keepGo key same xs out keys true
+      else keepGo key same xs (out.push x) keys pruned
 
 /-- The readings to keep of a list: at most two different readings (by
 `key`; two readings that are written the same are the same reading), each
-with up to `variantCap` different sorts or bindings (by `variant`), since a
-reading can be of several sorts (an atom, or the same atom through a
-coercion). A variant that is `top` (an unknown sort, no bindings) is as good
-as any other for what follows, so it stands alone. A third reading, or a
-variant past the cap, is dropped and noted: what remains may then be short
-of what a question above needs. -/
-def keep2 {α : Type} (key : α → String) (variant : α → String) (xs : Array α)
-    (top : String := "*") : Array α × Bool :=
-  keep2Go key variant top xs.toList #[] #[] false
+with up to `variantCap` different sorts or bindings, since a reading can be
+of several sorts (an atom, or the same atom through a coercion). A variant
+the same as one kept (`same`: of the same sort, or bindings) is not needed,
+since the one kept reads as it does. A third reading, or a variant past the
+cap, is dropped and noted: what remains may then be short of what a
+question above needs. -/
+def keep {α : Type} (key : α → String) (same : α → α → Bool) (xs : Array α) : Array α × Bool :=
+  keepGo key same xs.toList #[] #[] false
 
-/-- `keep2`, noting a dropped variant in the state. -/
-def keep2M {α : Type} (key : α → String) (variant : α → String) (xs : Array α)
-    (top : String := "*") : CountM (Array α) := do
-  let (out, pruned) := keep2 key variant xs top
+/-- `keep`, noting a dropped reading in the state. -/
+def keepM {α : Type} (key : α → String) (same : α → α → Bool) (xs : Array α) : CountM (Array α) := do
+  let (out, pruned) := keep key same xs
   if pruned then modify fun st => { st with pruned := true }
   return out
 
@@ -442,7 +439,7 @@ def addProds (A : SortAlgebra) (s : String) (pr : Prod) :
   | (cs, env) :: rest, out => do
     let so := A.expected env pr.sort
     if !A.compat so s then addProds A s pr rest out
-    else addProds A s pr rest (← keep2M (·.1.text) (·.2) (out.push (mkReading pr.name pr.order cs, so)))
+    else addProds A s pr rest (← keepM (·.1.text) (fun x y => x.2 == y.2) (out.push (mkReading pr.name pr.order cs, so)))
 
 /-- The readings through coercion `pr` of hole sort `s'`, from its
 argument's readings, onto `out`: each at the coercion's sort with the
@@ -453,16 +450,16 @@ def addCoes (A : SortAlgebra) (s : String) (pr : Prod) (s' : String) :
   | (r, so) :: rest, out => do
     let sort := A.expected (A.bind #[] s' so) pr.sort
     if !A.compat sort s then addCoes A s pr s' rest out
-    else addCoes A s pr s' rest (← keep2M (·.1.text) (·.2) (out.push (r, sort)))
+    else addCoes A s pr s' rest (← keepM (·.1.text) (fun x y => x.2 == y.2) (out.push (r, sort)))
 
 /-- The readings of a nonterminal, each followed by the readings of the rest
 of the body, onto `out`. -/
-def joinRests (as : Array Reading × Env) : List (Array Reading × Env) → Array (Array Reading × Env) →
-    CountM (Array (Array Reading × Env))
+def joinRests (as : Array Reading × Env) : List (Array Reading × Env) →
+    Array (Array Reading × Env) → CountM (Array (Array Reading × Env))
   | [], out => pure out
   | (rest, env₂) :: more, out => do
-    joinRests as more (← keep2M (fun (cs, _) => readingsKey cs) (fun (_, e) => envKey e)
-      (out.push (as.1 ++ rest, env₂)) (top := "#[]"))
+    joinRests as more (← keepM (fun (cs, _) => readingsKey cs) (fun x y => x.2 == y.2)
+      (out.push (as.1 ++ rest, env₂)))
 
 /-- The name of a bound variable that `ts[i:j]` is, if it is one: the first
 atom production of a variable whose tokens they are. -/
@@ -520,9 +517,12 @@ mutual
       -- again can be of another sort, which a hole's binding may need.
       let cands := (byTok.getD (ts.getD i "") #[] ++ others).toList
       let out ← prods A g ts fuel s p excl i j cands #[]
-      let out ← coes A g ts fuel s p excl i j cands out
+      let out ← coes A g ts fuel none s p excl i j cands out
       let out ← parens A g ts fuel s p excl i j out
       let out ← groups A g ts fuel s p excl i j out
+      -- The direct readings, and those through a coercion of the sort
+      -- asked for, which reads them: such coercions do not chain.
+      let out ← coes A g ts fuel (some out) s p excl i j cands out
       -- Remembered with the questions, other than this one, cut meanwhile.
       let cuts := (← get).cuts
       let on := (cuts.extract cutsBefore cuts.size).filter (· != key)
@@ -533,23 +533,23 @@ mutual
       return out
 
   /-- The readings in the emitter's parentheses, which do not print, onto
-  `out` when it holds fewer than two readings. -/
+  `out`. -/
   def parens (A : SortAlgebra) (g : Grammar) (ts : Array String) :
       Nat → String → Nat → Option Nat → Nat → Nat → Array (Reading × String) → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, _, _, i, j, out => do
-      if distinct (·.1.text) out < 2 && j - i ≥ 3 && ts[i]? == some "(" && ts[j - 1]? == some ")" then
-        keep2M (·.1.text) (·.2) (out ++ (← expr A g ts fuel s 0 none (i + 1) (j - 1)))
+      if j - i ≥ 3 && ts[i]? == some "(" && ts[j - 1]? == some ")" then
+        keepM (·.1.text) (fun x y => x.2 == y.2) (out ++ (← expr A g ts fuel s 0 none (i + 1) (j - 1)))
       else pure out
 
   /-- The readings in a TeX group (`{k_{1}}_{x}`), which does not print,
-  onto `out` when it holds fewer than two readings. -/
+  onto `out`. -/
   def groups (A : SortAlgebra) (g : Grammar) (ts : Array String) :
       Nat → String → Nat → Option Nat → Nat → Nat → Array (Reading × String) → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, p, _, i, j, out => do
-      if distinct (·.1.text) out < 2 && j - i ≥ 3 && ts[i]? == some "{" && ts[j - 1]? == some "}" then
-        keep2M (·.1.text) (·.2) (out ++ (← expr A g ts fuel s p none (i + 1) (j - 1)))
+      if j - i ≥ 3 && ts[i]? == some "{" && ts[j - 1]? == some "}" then
+        keepM (·.1.text) (fun x y => x.2 == y.2) (out ++ (← expr A g ts fuel s p none (i + 1) (j - 1)))
       else pure out
 
   /-- The readings by each production tried, onto `out`. -/
@@ -566,25 +566,35 @@ mutual
         let out ← addProds A s pr rs.toList out
         prods A g ts fuel s p excl i j ks out
 
-  /-- The readings through each coercion, onto `out`. Coercions are
+  /-- The readings through each coercion, onto `out`. With `same = none`,
+  those from other sorts, each argument read afresh; with `same = some
+  direct`, those of the sort asked for, reading `direct`. Coercions are
   invisible: a reading through one is its argument's, at the precedence
   asked for, and its sort is the coercion's, with the argument's sort bound
-  (`Option.some` of a label is an `Option(Label)`). An argument of the sort
-  asked for is among the readings so far, and others are read afresh. -/
+  (`Option.some` of a label is an `Option(Label)`). -/
   def coes (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → Nat → Nat → List Nat → Array (Reading × String) →
-      CountM (Array (Reading × String))
-    | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | _, _, _, _, _, _, [], out => pure out
-    | fuel + 1, s, p, excl, i, j, k :: ks, out => do
-      let some (pr, body) := g.prods[k]? | coes A g ts fuel s p excl i j ks out
-      if !pr.coercion then coes A g ts fuel s p excl i j ks out
+      Nat → Option (Array (Reading × String)) → String → Nat → Option Nat → Nat → Nat → List Nat →
+      Array (Reading × String) → CountM (Array (Reading × String))
+    | 0, _, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
+    | _, _, _, _, _, _, _, [], out => pure out
+    | fuel + 1, same, s, p, excl, i, j, k :: ks, out => do
+      let some (pr, body) := g.prods[k]? | coes A g ts fuel same s p excl i j ks out
+      if !pr.coercion then coes A g ts fuel same s p excl i j ks out
       else
-        let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl i j ks out
+        let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel same s p excl i j ks out
         let es' := A.expected #[] s'
-        let args ← if es' == s then pure out else expr A g ts fuel es' p excl i j
-        let out ← addCoes A s pr s' args.toList out
-        coes A g ts fuel s p excl i j ks out
+        match same with
+        | none =>
+          if es' == s then coes A g ts fuel same s p excl i j ks out
+          else
+            let args ← expr A g ts fuel es' p excl i j
+            let out ← addCoes A s pr s' args.toList out
+            coes A g ts fuel same s p excl i j ks out
+        | some direct =>
+          if es' != s then coes A g ts fuel same s p excl i j ks out
+          else
+            let out ← addCoes A s pr s' direct.toList out
+            coes A g ts fuel same s p excl i j ks out
 
   /-- Readings of `ts[i:j]` as `body[pos:]` under bindings `env`: the readings of its holes, variables and lists, and
   the bindings after them. -/
@@ -681,8 +691,8 @@ mutual
       let out : Array (Array Reading × Env) := if r == 0 && i == j then #[(#[], env)] else #[]
       if i < j then
         let more := sep ++ elem ++ #[ASym.tail l (r - 1)]
-        keep2M (fun (cs, _) => readingsKey cs) (fun (_, e) => envKey e)
-          (out ++ (← seq A g ts fuel more 0 env i j)) (top := "#[]")
+        keepM (fun (cs, _) => readingsKey cs) (fun x y => x.2 == y.2)
+          (out ++ (← seq A g ts fuel more 0 env i j))
       else pure out
 end
 

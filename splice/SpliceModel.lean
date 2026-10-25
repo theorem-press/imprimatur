@@ -5,7 +5,7 @@ import SpliceModel.Rules
 import SpliceModel.Formulas
 import SpliceModel.ReadBack
 import SpliceModel.ReadBackSound
-import SpliceModel.Generality
+import SpliceModel.Pruning
 import SpliceModel.Views
 import SpliceModel.Splicer
 import SpliceModel.Theorem1
