@@ -9,6 +9,8 @@ import ExtractTest.Fixtures
 import ExtractTest.HashProps
 import ExtractTest.Doc
 import ExtractTest.Validate
+import ExtractTest.ChainLaws
+import ExtractTest.SortLaws
 
 /-!
 # Extractor tests
@@ -32,6 +34,8 @@ unsafe def inProcess : TestM Unit := do
   ExtractTest.HashProps.tests
   ExtractTest.DocTests.tests
   ExtractTest.ValidateTests.tests
+  ExtractTest.ChainLaws.tests
+  ExtractTest.SortLaws.tests
 
 /-- Run one part of the fixture tests (`ExtractTest.Fixtures.parts`) in a
 process of its own, and add its results. Its output is passed on; its
@@ -60,12 +64,14 @@ def runPart (self : System.FilePath) (name : String) : TestM Unit := do
       failures := r.failures.push s!"fixtures/{name} (exit {out.exitCode}, no summary)" }
 
 /-- Entry point for `lake test`. With `--part NAME`, run that part of the
-fixture tests only. Otherwise run the tests that need no fixture here, and
+fixture tests only; with `--laws`, the properties of the chain rule and of
+Lean's sorts only (docs/coercion-chains.md, B2). Otherwise run the tests that need no fixture here, and
 each part of the fixture tests in a process of its own: each imports a Lean
 environment, and in one process they add up to more memory than a laptop
 has. -/
 unsafe def main (args : List String) : IO UInt32 := do
   match args with
+  | ["--laws"] => runSuite (do ExtractTest.ChainLaws.tests; ExtractTest.SortLaws.tests)
   | ["--part", name] =>
     match ExtractTest.Fixtures.parts.find? (·.1 == name) with
     | some (_, t) => runSuite (group s!"fixtures/{name}" t)

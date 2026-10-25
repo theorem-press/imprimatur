@@ -135,12 +135,17 @@ structure SortAlgebra where
   bind     : Env → String → String → Env   -- bind type variables to what fills a hole
 ```
 
-The extractor instantiates it with today's `STerm` functions, unchanged and
-still `partial`. Every theorem below holds for every algebra, so what is
-proved is the search; what the algebra says about Lean's types stays
-tested, as #22 proposed. (Totalising `STerm.parse` is cheap and could
-follow, but proving the algebra right would need a model of Lean's
-universes, which is out of scope.)
+The extractor instantiates it with Lean's `STerm` functions
+(`Imprimatur.Validate.leanSorts`), which since docs/coercion-chains.md
+phase B1 are total and in the shared module, so that theorems can be about
+them: `STerm.parse` reads with fuel (the text's length, since each part is
+shorter), and the structural functions recurse on the term. Every theorem
+of soundness and completeness holds for every algebra, so what is proved
+there is the search; what the algebra says about Lean's types is tested
+(phase B2: the laws of the cut and the order below a sort, in
+`extract/test/ExtractTest/SortLaws.lean`; the chain rule against chains of
+any length, in `ChainLaws.lean`) and, for the laws the chain rule rests
+on, to be proved (phase B3).
 
 ### Readings are trees
 

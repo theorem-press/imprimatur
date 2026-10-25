@@ -1695,7 +1695,7 @@ A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=5fSOEa_diF, dflt=SwK3VaR3xv]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=5fSOEa_diF, dflt=_m4A_WJfR-]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -1943,7 +1943,7 @@ $\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{
 $\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.Diag.unfaithful/0}{the rendering does not read back as the statement}\\
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
 $W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
-$\mathit{ts}[i, j) \rightsquigarrow^{g}_{A}(s, p, \mathit{excl}, \mathit{ch})\ r : \sigma$ & \texttt{Exp} & \leanslot{SpliceModel.Exp/0}{\LeanCodeInline{ts[i:j]} reads as \LeanCodeInline{r}, of sort \LeanCodeInline{σ}, as an expression of sort \LeanCodeInline{s} at precedence \LeanCodeInline{p} not made by production \LeanCodeInline{excl} (DESIGN §18.4)}\\
+$\mathit{ts}[i, j) \rightsquigarrow^{g}_{A}(s, p, \mathit{excl}, \mathit{ch})\ r : \sigma$ & \texttt{Exp} & \leanslot{SpliceModel.Exp/0}{\LeanCodeInline{ts[i:j]} reads as \LeanCodeInline{r}, of sort \LeanCodeInline{σ}, as an expression of sort \LeanCodeInline{s} at precedence \LeanCodeInline{p} not made by production \LeanCodeInline{excl}, through the coercions the chain \LeanCodeInline{ch} allows (DESIGN §18.4)}\\
 $e \succcurlyeq r$ & \texttt{Matches} & \leanslot{SpliceModel.Matches/0}{A reading matches the expected one: \LeanCodeInline{any} matches any reading, and a node matches a node of the same name whose children match, pairwise}\\
 $W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
 $\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\

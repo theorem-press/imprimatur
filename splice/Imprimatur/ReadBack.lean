@@ -297,6 +297,9 @@ structure Grammar where
   tell it from one truncated there, and a chain of coercions grows a sort
   at most that often (docs/coercion-chains.md). -/
   depth : Nat
+  /-- For the tests of the chain rule only: bound chains by this plain count
+  of coercions instead (`Chain.strict` off). -/
+  count : Option Nat := none
 
 /-- Add productions to a grammar. -/
 def Grammar.extend (g : Grammar) (ps : Array Prod) : Grammar :=
@@ -351,10 +354,14 @@ whatever a longer one would (docs/coercion-chains.md). -/
 structure Chain where
   /-- the sorts asked above, as a set -/
   visited : List String
-  /-- how many growing coercions may still be applied -/
+  /-- how many growing coercions may still be applied; or, when `strict` is
+  off, how many coercions of any kind -/
   growth : Nat
   /-- whether a cast is above -/
   cast : Bool
+  /-- the rule in full; off, a plain count of coercions (`growth`) bounds the
+  chain, which the tests of the rule compare it with -/
+  strict : Bool
   deriving DecidableEq, Hashable, Repr, Inhabited
 
 /-- A coercion grows its argument's sort: its sort is deeper than its hole's. -/
@@ -369,19 +376,25 @@ def forgetful (A : SortAlgebra) (pr : Prod) (s' : String) : Bool :=
 
 /-- Whether the chain lets coercion `pr`, of hole sort `s'`, be applied. -/
 def Chain.allows (A : SortAlgebra) (ch : Chain) (pr : Prod) (s' : String) : Bool :=
-  if growing pr s' then 0 < ch.growth
+  if !ch.strict then 0 < ch.growth
+  else if growing pr s' then 0 < ch.growth
   else !ch.visited.contains (A.expected #[] s') && !(forgetful A pr s' && ch.cast)
 
 /-- The chain below coercion `pr`, of hole sort `s'`, applied at a question
 of sort `s`. -/
 def Chain.push (A : SortAlgebra) (ch : Chain) (pr : Prod) (s' s : String) : Chain :=
-  { visited := chainWith s ch.visited,
-    growth := if growing pr s' then ch.growth - 1 else ch.growth,
-    cast := ch.cast || forgetful A pr s' }
+  if !ch.strict then { ch with growth := ch.growth - 1 }
+  else
+    let growth := if growing pr s' then ch.growth - 1 else ch.growth
+    { ch with visited := chainWith s ch.visited, growth, cast := ch.cast || forgetful A pr s' }
 
 /-- The chain at a hole, in parentheses, in a group, or at the top: nothing
-above, the grammar's growth. -/
-def Grammar.chain0 (g : Grammar) : Chain := { visited := [], growth := g.depth + 1, cast := false }
+above, the grammar's growth; or, for the tests of the rule (`Grammar.count`
+set), a plain count of coercions. -/
+def Grammar.chain0 (g : Grammar) : Chain :=
+  match g.count with
+  | none => { visited := [], growth := g.depth + 1, cast := false, strict := true }
+  | some n => { visited := [], growth := n, cast := false, strict := false }
 
 /-- The first symbol of production `k`. -/
 def headSym (g : Grammar) (k : Nat) : Option ASym := (g.prods[k]?.map (·.2)).bind (·[0]?)
@@ -819,6 +832,216 @@ def CState.flags (st : CState) (g : Grammar) : Flags :=
 /-- Whether the reading is not to be trusted: it gave up, dropped a
 reading, cut a question, or the grammar has a list that takes no token. -/
 def Flags.any (f : Flags) : Bool := f.over || f.pruned || f.cut || f.lists
+
+/-! ## Lean's sorts
+
+The algebra of sorts the extractor instantiates the parser with: Lean's
+types as the extractor writes them. A sort is an atom (`Nat`, `Prop`, the
+unknown sort `*`, a type variable `?α`, a type parameter `'x`), a function
+sort `(A → B)`, or a type applied to types (`Option(Label)`). The functions
+are total, so that theorems can be about them (docs/coercion-chains.md,
+phase B1). -/
+
+/-- A sort as a term: a function sort `(A → B)`, and a type applied to type
+arguments `Option(Label)`, have parts. -/
+inductive STerm where
+  /-- A sort without parts. -/
+  | atom (s : String)
+  /-- A function sort. -/
+  | arrow (a b : STerm)
+  /-- A type constant applied to types. -/
+  | app (head : String) (args : List STerm)
+  deriving Inhabited, BEq, Repr
+
+/-- Split at the commas that are not nested in parentheses. -/
+def splitTop (s : String) : List String :=
+  let step (acc : List String × String × Nat) (c : Char) : List String × String × Nat :=
+    let (out, cur, depth) := acc
+    if c == '(' then (out, cur.push c, depth + 1)
+    else if c == ')' then (out, cur.push c, depth - 1)
+    else if c == ',' && depth == 0 then (out ++ [cur.trimAscii.toString], "", depth)
+    else (out, cur.push c, depth)
+  let (out, cur, _) := s.toList.foldl step ([], "", 0)
+  out ++ [cur.trimAscii.toString]
+
+/-- The index of the first `→` at depth 0 in the characters of a sort's
+inside, after at least one character, if there is one. -/
+def arrowAt (cs : List Char) : Option Nat :=
+  let step (acc : Nat × Nat × Option Nat) (c : Char) : Nat × Nat × Option Nat :=
+    let (i, depth, found) := acc
+    if found.isSome then (i + 1, depth, found)
+    else if c == '(' then (i + 1, depth + 1, none)
+    else if c == ')' then (i + 1, depth - 1, none)
+    else if c == '→' && depth == 0 && i ≥ 1 then (i + 1, depth, some i)
+    else (i + 1, depth, none)
+  (cs.foldl step (0, 0, none)).2.2
+
+/-- Read a sort, with fuel for the nesting (`STerm.parse` gives enough). -/
+def STerm.parseFuel : Nat → String → STerm
+  | 0, s => .atom s
+  | fuel + 1, s =>
+    let appOf (s : String) : STerm :=
+      if s.endsWith ")" then
+        match s.toList.findIdx? (· == '(') with
+        | some k =>
+          if k > 0 then
+            .app (String.ofList (s.toList.take k))
+              ((splitTop (String.ofList ((s.toList.drop (k + 1)).dropLast))).map fun t => STerm.parseFuel fuel t)
+          else .atom s
+        | none => .atom s
+      else .atom s
+    if s.startsWith "(" && s.endsWith ")" then
+      let cs := ((s.drop 1).dropEnd 1).toString.toList
+      match arrowAt cs with
+      | some i =>
+        .arrow (STerm.parseFuel fuel (String.ofList (cs.take (i - 1))))
+          (STerm.parseFuel fuel (String.ofList (cs.drop (i + 2))))
+      | none => appOf s
+    else appOf s
+
+/-- Read a sort (the extractor's format): each part is read from a shorter
+text, so the text's length is fuel enough. -/
+def STerm.parse (s : String) : STerm := STerm.parseFuel (s.length + 1) s
+
+mutual
+/-- Write a sort back. -/
+def STerm.render : STerm → String
+  | .atom s => s
+  | .arrow a b => "(" ++ a.render ++ " → " ++ b.render ++ ")"
+  | .app h as => h ++ "(" ++ STerm.renderList as ++ ")"
+termination_by t => sizeOf t
+
+/-- Write sorts back, separated by commas. -/
+def STerm.renderList : List STerm → String
+  | [] => ""
+  | [t] => t.render
+  | t :: t' :: ts => t.render ++ ", " ++ STerm.renderList (t' :: ts)
+termination_by ts => sizeOf ts
+end
+
+mutual
+/-- The type variables of a sort. -/
+def STerm.tyvars : STerm → List String
+  | .atom a => if isTyVar a then [a] else []
+  | .arrow a b => a.tyvars ++ b.tyvars
+  | .app _ as => STerm.tyvarsList as
+termination_by t => sizeOf t
+
+/-- The type variables of sorts. -/
+def STerm.tyvarsList : List STerm → List String
+  | [] => []
+  | t :: ts => t.tyvars ++ STerm.tyvarsList ts
+termination_by ts => sizeOf ts
+end
+
+mutual
+/-- A sort with its type variables renamed. -/
+def STerm.mapVars (f : String → String) : STerm → STerm
+  | .atom a => .atom (if isTyVar a then f a else a)
+  | .arrow a b => .arrow (a.mapVars f) (b.mapVars f)
+  | .app h as => .app h (STerm.mapVarsList f as)
+termination_by t => sizeOf t
+
+/-- Sorts with their type variables renamed. -/
+def STerm.mapVarsList (f : String → String) : List STerm → List STerm
+  | [] => []
+  | t :: ts => t.mapVars f :: STerm.mapVarsList f ts
+termination_by ts => sizeOf ts
+end
+
+/-- The unknown sort, or a type variable: unknown until bound. -/
+def STerm.unknown (s : String) : Bool := s == "*" || isTyVar s
+
+/-- A universe: `Prop`, `Sort`, or `Sort*`, one that may be `Prop`. -/
+def STerm.univ (s : String) : Bool := s == "Prop" || s == "Sort" || s == "Sort*"
+
+/-- A proposition is read where a type is expected, and `Sort*` (either) is
+read where either is; but a type is not a proposition. -/
+def STerm.univFits (a b : String) : Bool :=
+  (a == "Prop" && (b == "Sort" || b == "Sort*")) || (a == "Sort" && b == "Sort*") ||
+  (a == "Sort*" && (b == "Prop" || b == "Sort"))
+
+/-- A named type: not a universe, not a type parameter. -/
+def STerm.named (s : String) : Bool := !STerm.univ s && !s.startsWith "'"
+
+mutual
+/-- Sorts compatible, the first found where the second is expected: equal up
+to unknowns (`*`, and type variables, which are unknown until bound), part
+by part. A type written without its arguments (as the packs write `Option`)
+stands for it with any. What is found (on the left) may be of a named type
+that is a function type by definition (`Matrix R C α` is `R → C → α`), which
+the reader does not unfold; but a function is not of a named type. -/
+def STerm.compat : STerm → STerm → Bool
+  | .atom a, .atom b => a == b || STerm.unknown a || STerm.unknown b || STerm.univFits a b
+  | .app h as, .app h' bs => h == h' && STerm.compatList as bs
+  | .app h _, .atom b => STerm.unknown b || h == b
+  | .atom a, .app h _ => STerm.unknown a || a == h
+  | .atom a, .arrow .. => STerm.unknown a || STerm.named a
+  | .app .., .arrow .. => true
+  | .arrow .., .atom b => STerm.unknown b
+  | .arrow .., .app .. => false
+  | .arrow a b, .arrow c d => a.compat c && b.compat d
+termination_by a _ => sizeOf a
+
+/-- Type arguments compatible, pairwise; lists of different lengths are,
+since a type written with fewer arguments stands for it with any. -/
+def STerm.compatList : List STerm → List STerm → Bool
+  | a :: as, b :: bs => (as.length != bs.length) || (a.compat b && STerm.compatList as bs)
+  | _, _ => true
+termination_by as _ => sizeOf as
+end
+
+/-- Sorts compatible (see `STerm.compat`). -/
+def compat (a b : String) : Bool :=
+  a == b || a == "*" || b == "*" || isTyVar a || isTyVar b || (STerm.parse a).compat (STerm.parse b)
+
+mutual
+/-- A sort under bindings: each type variable replaced by what it is bound
+to, or the unknown sort. -/
+def STerm.subst (env : Env) : STerm → STerm
+  | .atom a => if isTyVar a then STerm.parse (((env.find? (·.1 == a)).map (·.2)).getD "*") else .atom a
+  | .arrow a b => .arrow (STerm.subst env a) (STerm.subst env b)
+  | .app h as => .app h (STerm.substList env as)
+termination_by t => sizeOf t
+
+/-- Sorts under bindings. -/
+def STerm.substList (env : Env) : List STerm → List STerm
+  | [] => []
+  | t :: ts => STerm.subst env t :: STerm.substList env ts
+termination_by ts => sizeOf ts
+end
+
+/-- The sort a hole expects, under the type variables bound so far. -/
+def expected (env : Env) (s : String) : String :=
+  if !s.contains '?' then s
+  else if isTyVar s then ((env.find? (·.1 == s)).map (·.2)).getD "*"
+  else (STerm.subst env (STerm.parse s)).render
+
+mutual
+/-- Bind the type variables of a hole's sort to the parts of a filler's sort
+at the same places: a variable not yet bound, to a part that is known. -/
+def STerm.bind (env : Env) : STerm → STerm → Env
+  | .atom a, f =>
+    let fr := f.render
+    if isTyVar a && fr != "*" && !isTyVar fr && !env.any (·.1 == a) then env.push (a, fr) else env
+  | .arrow a b, .arrow c d => STerm.bind (STerm.bind env a c) b d
+  | .app h as, .app h' bs => if h == h' && as.length == bs.length then STerm.bindList env as bs else env
+  | _, _ => env
+termination_by a _ => sizeOf a
+
+/-- Bind pairwise. -/
+def STerm.bindList (env : Env) : List STerm → List STerm → Env
+  | a :: as, b :: bs => STerm.bindList (STerm.bind env a b) as bs
+  | _, _ => env
+termination_by as _ => sizeOf as
+end
+
+/-- Bind a hole's type variables to the parts of the sort of what fills it. -/
+def bind (env : Env) (s found : String) : Env :=
+  if !s.contains '?' then env else STerm.bind env (STerm.parse s) (STerm.parse found)
+
+/-- Lean's types, as the parser's sorts. -/
+def leanSorts : SortAlgebra := { compat, expected, bind, anySort := STerm.unknown }
 
 /-- The readings (at most two) of a token sequence as an expression of sort
 `s`, and where the reader gave up. -/

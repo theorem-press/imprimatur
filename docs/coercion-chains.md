@@ -279,6 +279,24 @@ replace every subterm at depth `D + 1` by `*`. Then:
   agree above `D + 1`. (Grammar sorts `s` are unchanged by `φ_D`, having
   depth at most `D`.)
 
+Phase B2 states these as five laws of the order `σ' ⊑ σ` (`σ'` is `σ`
+with some parts replaced by `*`), which is what the normalisation uses,
+and tests them (`extract/test/ExtractTest/SortLaws.lean`):
+
+1. *Sorts are terms*: `parse (render t) = t`.
+2. *The cut*: `φ_d t` has depth at most `d`, is `t` when `t` has, and is
+   below `t`.
+3. *Compatibility is monotone*, in both sorts: `σ' ⊑ σ → e' ⊑ e → compat σ e → compat σ' e'`.
+4. *Binding is monotone*: for a hole's sort `s` of depth at most `D`,
+   `bind env s (φ_{D+1} σ)` binds the same variables as `bind env s σ`,
+   each to a sort below; and a new binding is no deeper than `σ`. The
+   cut must lie below every variable of `s`: cut at a variable's depth,
+   a filler binds fewer variables, and a later occurrence of one may then
+   bind it to something else (`Prod(?α, ?α)` against `Prod(Nat, Bool)`
+   binds `?α := Nat`; against `Prod(*, Bool)`, `?α := Bool`).
+5. *The expected sort is monotone* in the bindings, and no deeper than
+   the hole's sort and the deepest binding together.
+
 **Normalisation.** Given a `Reads∞` derivation, apply `φ_D` to every sort
 in it. Every premise `compat …` still holds, by the first law, since it
 held before. Every `bind` and `expected` still computes the written
@@ -350,8 +368,9 @@ is always that, or find the shape that is not and add it to the rule.
 - **Truncation may not commute with binding** where a hole's sort is
   itself deep. `bind env (Option(Option(?α))) σ` reads `σ` two levels
   down, and `φ_D σ` may have `*` there. Since hole sorts have depth at
-  most `D`, the read stays above `D + 1` and the law holds; the proof
-  must track that invariant, which is the delicate part.
+  most `D`, the read stays above `D + 1` and the law holds (B2 tests it
+  under that hypothesis, and found it false without: law 4 above); the
+  proof must track that invariant, which is the delicate part.
 - **The rule may still lose a reading.** B0 measured the rule against the
   count bound on the fixtures and the paper and on this document's
   counterexamples, not on random grammars; B2's property tests compare
@@ -370,8 +389,8 @@ byte-identical unless it says otherwise.
 | Phase | Work | Exit |
 |---|---|---|
 | B0 | **A bounded chain, measured.** Done: the count bound tried and rejected, the depth cap and the three-part chain rule adopted (above); the counterexamples read correctly; goldens byte-identical; the paper at 58 seconds. | Done. |
-| B1 | **Lean's algebra, total and in the module.** `STerm.parse`, `compat`, `expected`, `bind` move to `bundle/ReadBack.lean` as total functions (`partial` gone, by a size measure on the string or a fuel on the parser); the extractor's `algebra` is their instance; `lint/verified` covers them. | Goldens byte-identical. |
-| B2 | **The laws, tested.** Properties for the three facts and the two truncation laws, on random sorts over random constructors, 10,000 cases per CI run; and the chain rule against the plain count bound (chains of any length under the depth cap) on random grammars and texts, reading sets compared. Every clause of the algebra that fails is listed with the formulas it affects. | The laws hold, or the theorem's hypotheses name the clauses; the rule and the count agree. |
+| B1 | **Lean's algebra, total and in the module.** Done: `STerm`, `parse` (fuel: the text's length), `render`, `compat`, `expected` (by `subst`), `bind` are total in `bundle/ReadBack.lean`, structural on the term; `leanSorts` is the extractor's algebra; `lint/verified` covers them. | Done: goldens byte-identical. |
+| B2 | **The laws, tested.** Done: `extract/test/ExtractTest/SortLaws.lean` states the cut `trunc`, the order `below` and the five laws below as properties of `leanSorts` on random sorts and bindings (10,000 cases under three seeds, all pass); `ChainLaws.lean` reads random texts under random grammars of the counterexamples' shapes under the rule, under a plain count of twelve and under a cap three deeper, and compares the readings (3,300 cases, all agree). No clause of the algebra fails a law. | Done. |
 | B3 | **The laws, proved**, for the total algebra: structural compatibility, structural binding, the two truncation laws. | Proved; `lint/axioms` clean. |
 | B4 | **Normalisation.** `Reads∞` in `SpliceModel`; `φ_D` on derivations; the small-model theorem; `Reads∞ → Reads` under the bound. | Proved. |
 | B5 | **Paper and docs.** `pollack∞`; §9 and the trusted base say the grammar is Lean's types with nothing narrowed; DESIGN §18.3 condition 2 and §18.4; this document's status. | `check` clean. |
@@ -387,6 +406,7 @@ relies on tested, and the counterexample closed.
 1. **The algebra's clauses that fail a law** (phase B2): restrict the
    theorem, or change the clause and review the goldens. Recommended:
    decide per clause, and prefer a change where it only reads more.
+   Settled: no clause fails.
 2. **Casts.** Keep the cast clause and prove the forgetful short-cut (that
    a cast under a cast reads as the inner cast alone), or drop it and let
    the bound cover casts too. Recommended: prove the short-cut, since the

@@ -47,104 +47,6 @@ namespace Imprimatur.Validate
 
 /-! ## Sorts -/
 
-/-- A sort as a term: a function sort `(A → B)`, and a type applied to type
-arguments `Option(Label)`, have parts. -/
-inductive STerm where
-  /-- A sort without parts. -/
-  | atom (s : String)
-  /-- A function sort. -/
-  | arrow (a b : STerm)
-  /-- A type constant applied to types. -/
-  | app (head : String) (args : Array STerm)
-  deriving Inhabited, BEq
-
-/-- Split at the commas that are not nested in parentheses. -/
-def splitTop (s : String) : Array String := Id.run do
-  let mut out : Array String := #[]
-  let mut cur := ""
-  let mut depth := 0
-  for c in s.toList do
-    if c == '(' then depth := depth + 1
-    if c == ')' then depth := depth - 1
-    if c == ',' && depth == 0 then
-      out := out.push cur.trimAscii.toString
-      cur := ""
-    else cur := cur.push c
-  return out.push cur.trimAscii.toString
-
-/-- Read a sort (`sortKey`'s format). -/
-partial def STerm.parse (s : String) : STerm := Id.run do
-  if s.startsWith "(" && s.endsWith ")" then
-    let cs := ((s.drop 1).dropEnd 1).toString.toList.toArray
-    let mut depth := 0
-    for i in [0:cs.size] do
-      let c := cs[i]!
-      if c == '(' then depth := depth + 1
-      else if c == ')' then depth := depth - 1
-      else if c == '→' && depth == 0 && i ≥ 1 then
-        let l := String.ofList (cs.extract 0 (i - 1)).toList
-        let r := String.ofList (cs.extract (i + 2) cs.size).toList
-        return .arrow (STerm.parse l) (STerm.parse r)
-  if s.endsWith ")" then
-    if let some k := s.toList.findIdx? (· == '(') then
-      if k > 0 then
-        let head := String.ofList (s.toList.take k)
-        let inner := String.ofList ((s.toList.drop (k + 1)).dropLast)
-        return .app head ((splitTop inner).map STerm.parse)
-  return .atom s
-
-/-- Write a sort back. -/
-partial def STerm.render : STerm → String
-  | .atom s => s
-  | .arrow a b => s!"({a.render} → {b.render})"
-  | .app h as => s!"{h}({", ".intercalate (as.map STerm.render).toList})"
-
-/-- The type variables of a sort. -/
-partial def STerm.tyvars : STerm → List String
-  | .atom a => if isTyVar a then [a] else []
-  | .arrow a b => a.tyvars ++ b.tyvars
-  | .app _ as => as.toList.flatMap STerm.tyvars
-
-/-- A sort with its type variables renamed. -/
-partial def STerm.mapVars (f : String → String) : STerm → STerm
-  | .atom a => .atom (if isTyVar a then f a else a)
-  | .arrow a b => .arrow (a.mapVars f) (b.mapVars f)
-  | .app h as => .app h (as.map (STerm.mapVars f))
-
-/-- Sorts compatible, the first found where the second is expected: equal up
-to unknowns (`*`, and type variables, which are unknown until bound), part
-by part. A type written without its arguments (as the packs write `Option`)
-stands for it with any. -/
-partial def STerm.compat : STerm → STerm → Bool
-  -- A proposition is a type.
-  | .atom a, .atom b => a == b || unknown a || unknown b || univFits a b
-  | .app h as, .app h' bs =>
-    h == h' && (as.size != bs.size || (as.zip bs).all fun (x, y) => x.compat y)
-  | .app h _, .atom b => unknown b || h == b
-  | .atom a, .app h _ => unknown a || a == h
-  -- What is found (on the left) may be of a named type that is a function
-  -- type by definition (`Matrix R C α` is `R → C → α`), which the reader does
-  -- not unfold; but a function is not of a named type.
-  | .atom a, .arrow .. => unknown a || named a
-  | .app .., .arrow .. => true
-  | .arrow .., .atom b => unknown b
-  | .arrow .., .app .. => false
-  | .arrow a b, .arrow c d => a.compat c && b.compat d
-where
-  unknown (s : String) : Bool := s == "*" || s.startsWith "?"
-  -- Propositions and types: a universe (`Sort*` is one that may be `Prop`).
-  univ (s : String) : Bool := s == "Prop" || s == "Sort" || s == "Sort*"
-  -- A proposition is read where a type is expected, and `Sort*` (either) is
-  -- read where either is; but a type is not a proposition.
-  univFits (a b : String) : Bool :=
-    (a == "Prop" && (b == "Sort" || b == "Sort*")) || (a == "Sort" && b == "Sort*") ||
-    (a == "Sort*" && (b == "Prop" || b == "Sort"))
-  named (s : String) : Bool := !univ s && !s.startsWith "'"
-
-/-- Sorts compatible (see `STerm.compat`). -/
-def compat (a b : String) : Bool :=
-  a == b || a == "*" || b == "*" || isTyVar a || isTyVar b || (STerm.parse a).compat (STerm.parse b)
-
 /-- The productions of the built-in forms of `Render.render`. An applied
 variable is written `f(a)` or `f_{a}` only under the style that asks for it
 (`latex_style applied_variables`), so those forms are read only then. -/
@@ -295,34 +197,8 @@ def notationGrammar (rules : Array NotationRule) (variant : Option String) (call
   Grammar.of (rules.filterMap ofRule ++ builtins call subscript cases lists)
 
 
-/-- The sort a hole expects, under the type variables bound so far. -/
-partial def expected (env : Env) (s : String) : String :=
-  if !s.contains '?' then s
-  else if isTyVar s then ((env.find? (·.1 == s)).map (·.2)).getD "*"
-  else
-    let rec go : STerm → STerm
-      | .atom a =>
-        if isTyVar a then STerm.parse (((env.find? (·.1 == a)).map (·.2)).getD "*") else .atom a
-      | .arrow a b => .arrow (go a) (go b)
-      | .app h as => .app h (as.map go)
-    (go (STerm.parse s)).render
-
-/-- Bind a hole's type variables to the parts of the sort of what fills it. -/
-partial def bind (env : Env) (s found : String) : Env :=
-  if !s.contains '?' then env
-  else
-    let rec go (env : Env) : STerm → STerm → Env
-      | .atom a, f =>
-        let fr := f.render
-        if isTyVar a && fr != "*" && !isTyVar fr && !env.any (·.1 == a) then env.push (a, fr) else env
-      | .arrow a b, .arrow c d => go (go env a c) b d
-      | .app h as, .app h' bs =>
-        if h == h' && as.size == bs.size then (as.zip bs).foldl (fun e (x, y) => go e x y) env else env
-      | _, _ => env
-    go env (STerm.parse s) (STerm.parse found)
-
-/-- Lean's types, as the parser's sorts. -/
-def algebra : SortAlgebra := { compat, expected, bind, anySort := fun s => s == "*" || isTyVar s }
+/-- Lean's types, as the parser's sorts: `leanSorts`, in the shared module. -/
+def algebra : SortAlgebra := leanSorts
 
 /-- The readings (at most two) of a token sequence as an expression of sort
 `s`, and where the reader gave up. -/
