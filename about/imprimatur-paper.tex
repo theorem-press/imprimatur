@@ -1949,7 +1949,8 @@ $e[v]$ & \texttt{subst} & \leanslot{Stlc.subst/0}{Substitution, as a stand-in: t
 Figure~\ref{fig:development} shows imprimatur's Lean by component, and
 each component's lines by the kind of declaration that holds them. The
 bundle's type is counted once, though the extractor and the splicer each
-hold a copy of it. The splicer's model and its proofs are in the splicer's
+hold a copy of it, and so is the reading back, counted with validation. The
+splicer's model and its proofs are in the splicer's
 package; the last bar is the Lean of this paper: its example and its
 notation.
 
