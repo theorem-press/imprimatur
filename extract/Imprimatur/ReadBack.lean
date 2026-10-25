@@ -381,6 +381,11 @@ def minLen : ASym → Nat
 def minLenFrom (body : Array ASym) (pos : Nat) : Nat :=
   (body.toList.drop pos).foldl (fun n s => n + minLen s) 0
 
+/-- Whether each list of the grammar takes at least a token per element, as
+every notation's do (an element is a hole): the parser looks for a list's
+rest only where its elements fit, which is complete only then. -/
+def listsWF (g : Grammar) : Bool := g.lists.all fun (elem, sep) => 1 ≤ minLenFrom (sep ++ elem) 0
+
 /-- The productions that can make an expression of sort `s`: those of a
 compatible sort, coercions included. A bound variable's name is not an
 expression, so is not among them. -/
@@ -676,22 +681,24 @@ structure Flags where
   pruned : Bool
   /-- A question was cut, being already asked. -/
   cut : Bool
+  /-- A list of the grammar takes no token per element (`listsWF`). -/
+  lists : Bool
   deriving Inhabited, Repr
 
-/-- The flags of a state after reading. -/
-def CState.flags (st : CState) : Flags :=
-  { over := st.over || st.steps > budget, pruned := st.pruned, cut := st.cut }
+/-- The flags of a state after reading in grammar `g`. -/
+def CState.flags (st : CState) (g : Grammar) : Flags :=
+  { over := st.over || st.steps > budget, pruned := st.pruned, cut := st.cut, lists := !listsWF g }
 
 /-- Whether the reading is not to be trusted: it gave up, dropped a
-reading, or cut a question. -/
-def Flags.any (f : Flags) : Bool := f.over || f.pruned || f.cut
+reading, cut a question, or the grammar has a list that takes no token. -/
+def Flags.any (f : Flags) : Bool := f.over || f.pruned || f.cut || f.lists
 
 /-- The readings (at most two) of a token sequence as an expression of sort
 `s`, and where the reader gave up. -/
 def readBackWith (A : SortAlgebra) (g : Grammar) (ts : Array String) (s : String) :
     Array Reading × Flags :=
   let p := (readings A g ts s).run {}
-  (p.1, p.2.flags)
+  (p.1, p.2.flags g)
 
 /-- `readBackWith`, with a log of what was read where. -/
 def readBackLogWith (A : SortAlgebra) (g : Grammar) (ts : Array String) (s : String) :

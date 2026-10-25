@@ -309,6 +309,8 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
     problems.modify (·.push s!"not validated, as a reading was dropped: ${tex}$")
   else if flags.cut then
     problems.modify (·.push s!"not validated, as reading it back went round in a circle: ${tex}$")
+  else if flags.lists then
+    problems.modify (·.push s!"not validated, as a list of the notation takes no token: ${tex}$")
   else if rs.isEmpty then
     -- IMPRIMATUR_VALIDATE_DEBUG=1 shows the tokens and the grammar.
     if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
