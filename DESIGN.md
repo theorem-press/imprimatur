@@ -1219,7 +1219,8 @@ constructors; the `def` view reads as the equation lemmas.
    different sorts (`(a\ b) \cdot e` for terms and for contexts);
 2. **separated holes:** holes are separated by tokens or enclosed in braces;
    a template that is a bare hole (`Tm.var x => #x`) is a coercion between
-   sorts, allowed when coercions form no cycle;
+   sorts; a chain of coercions visits each sort once, so a cycle of them
+   is harmless;
 3. **consistent precedence:** the precedences and associativities make
    `G_N` unambiguous; this is where `(a b)·e₁ e₂` failed;
 4. **injective names:** metavariable renamings (`latex_metavar`, including
@@ -1249,9 +1250,9 @@ The extractor is meta-programming and will not be verified. Instead:
   unit-tested (`extract/doc/*`), not proved. Its errors are caught formula
   by formula, as misreads (below).
 
-Nothing yet proves the validator itself: the parser that reads formulas
-back and the matching of readings are trusted. #22 is the plan for a
-theorem, and #50 for a proof of the emitter.
+The validator itself is proved (below, "The proved part"; #22): the parser
+that reads formulas back is sound and complete, and the matching of
+readings is structural. #50 is for a proof of the emitter.
 
 **Translation validation.** The extractor reads back every formula a view
 renders, as it renders it, and records what it finds in the bundle
@@ -1296,20 +1297,33 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   **None** means the grammar does not model what the renderer did, and the
   formula is *not validated*; that is a gap in the validator, or a rendering
   no reader could parse.
-- **The trusted part.** The chart parser that counts at most two readings
-  is one total module, `Imprimatur.ReadBack`, proved sound: every reading
-  it returns is a reading in the grammar (`SpliceModel.readBack_sound`),
-  and the matcher decides structural matching, so a validated formula reads
-  as what it was rendered from (`validated_sound`;
-  docs/verified-validator.md). What stays trusted is the other half, that
-  one reading is the only one: the parser keeps two readings of each
-  question and prunes sort variants, and notes when it dropped a reading
-  (`pruned`, reported as "not validated"), but a completeness theorem
-  needs the algebra of sorts axiomatised and is future work. Also trusted:
-  where the expected reading has a `⁇`, that `Validate.ofRule` follows
-  `Render.fillTemplate`; the precedence each hole needs is one function
-  they share, `Doc.holeNeeds` in the module `Imprimatur.Layout`, so that
-  part holds by construction. On
+- **The proved part.** The chart parser that counts at most two readings
+  is one total module, `Imprimatur.ReadBack`, proved sound and complete
+  for any algebra of sorts (docs/verified-validator.md,
+  docs/pollack-consistency.md): every reading it returns is a reading in
+  the grammar (`SpliceModel.readBack_sound`), and every reading in the
+  grammar is among those it returns unless it set a flag
+  (`readBack_complete`). The flags: `over` (the budget or the fuel ran
+  out), `pruned` (a third reading of a question, or a variant past the cap
+  of 256, dropped), `cut` (a question asked again while being asked, which
+  only a production whose body is a bare hole brings about), `lists` (a
+  list of the grammar takes no token per element); each is reported as
+  "not validated". A question is the sort, precedence, excluded
+  production, the sorts asked above it on the chain of coercions, and the
+  span; a chain visits each sort once and has no cast below a cast, so
+  chains are finite without a cut. The matcher decides structural matching, so a validated formula
+  (one reading, no flag, matching the expected reading) has in the grammar
+  no reading but the expected one, wherever that is definite
+  (`SpliceModel.pollack`); for the world as the validator sees it, whose
+  `Reads` is that it accepts each formula printed of a statement, the two
+  reading-back assumptions of a sound anatomy (§18.2's `Anatomy.Sound`)
+  are theorems (`Validated.sound`), and so each formula of a block that
+  checks clean reads only as the part it was printed from
+  (`document_pollack`). Trusted still: where the expected reading has a
+  `⁇`, that `Validate.ofRule` follows `Render.fillTemplate`; the
+  precedence each hole needs is one function they share, `Doc.holeNeeds`
+  in the module `Imprimatur.Layout`, so that part holds by construction.
+  On
   project B's standalone document, 610 of the 662 formulas with one reading
   have an expected reading without `⁇`, 21 have one in part, and 31 have
   none (#41 would close the gap). Making the emitter drop the parentheses its holes need is caught
@@ -1334,10 +1348,12 @@ which side condition 2 excludes.
 
 The Lean kernel and compiler; the extractor's reading of the environment,
 which gathers what a view says (binders, `isProp`, notation matching,
-`inferType`), and its read-back parser's completeness, checked per formula
-(docs/verified-extractor.md says what is proved instead: the prose and
-rules layouts, the emitter's parentheses and the holes' precedences are the
-shared module `Imprimatur.Layout`, and the paper's theorems are about it);
+`inferType`) and builds the reading it expects of a formula
+(docs/verified-extractor.md and docs/verified-validator.md say what is
+proved instead: the prose and rules layouts, the emitter's parentheses and
+the holes' precedences are the shared module `Imprimatur.Layout`, the
+parser that reads formulas back is the shared module `Imprimatur.ReadBack`,
+and the paper's theorems are about them);
 the splicer's shell, which reads files, the configuration and the
 bundle and writes what `apply` returns; the scanner's reading of TeX, which
 the theorems take as the specification of where markup is; collision

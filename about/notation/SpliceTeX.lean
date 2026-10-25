@@ -368,7 +368,19 @@ latex_notation Matches e r => r"#e \succcurlyeq #r" prec := 50
 latex_notation Array.size xs => r"|#xs|"
 latex_notation Imprimatur.Validate.readBackWith A g ts s => r"\mathsf{readBack}_{#A}(#g, #ts, #s)"
 latex_notation Prod.fst (Imprimatur.Validate.readBackWith A g ts s) => r"\mathsf{readings}_{#A}(#g, #ts, #s)"
-latex_notation Exp A g ts s p excl i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g}_{#A}(#s, #p, #excl)\ #r : #σ" prec := 50
+latex_notation Imprimatur.Validate.Flags.any (Prod.snd (Imprimatur.Validate.readBackWith A g ts s)) => r"\mathsf{flagged}_{#A}(#g, #ts, #s)"
+latex_notation Exp A g ts s p excl used i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g}_{#A}(#s, #p, #excl, #used)\ #r : #σ" prec := 50
+latex_notation Validated => r"\texttt{Validated}"
+latex_category Validated => "X"
+latex_notation Validated.base X => r"W^{\circ}_{#X}"
+latex_notation Validated.Part X => r"\mathit{Part}_{#X}"
+latex_notation Validated.world X => r"W_{#X}"
+latex_notation Validated.anatomy X => r"\mathcal{A}_{#X}"
+latex_notation Validated.gather X S => r"\mathit{gather}_{#X}(#S)"
+latex_notation Validated.ctors X S => r"\mathit{ctors}_{#X}(#S)"
+latex_notation Validated.print X q => r"\mathit{print}_{#X}(#q)"
+latex_notation Prose.map (Validated.print X) u => r"\mathit{print}^{*}_{#X}(#u)"
+latex_notation Rule.map (Validated.print X) q => r"\mathit{print}^{*}_{#X}(#q)"
 latex_category Imprimatur.Validate.SortAlgebra => r"\mathcal{S}"
 latex_category Imprimatur.Validate.Grammar => "G"
 
@@ -390,7 +402,9 @@ latex_entry "A view shows the statement" => Imprimatur.Bundle.True.view
 latex_entry "The prose parser undoes the layout" => SpliceModel.proseSentence_proseLayout
 latex_entry "The figure parser undoes the layout" => SpliceModel.figure_figureLayout
 latex_entry "The parser is sound" => SpliceModel.readBack_sound
-latex_entry "A validated formula reads as what it was rendered from" => SpliceModel.validated_sound
+latex_entry "The parser is complete" => SpliceModel.readBack_complete
+latex_entry "A validated formula reads only as what it was rendered from" => SpliceModel.pollack
+latex_entry "The validator's anatomy is sound" => SpliceModel.Validated.sound
 latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound.proseShows
 latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound.rulesShow
 latex_entry "Prose shows the statement" => SpliceModel.prose_true

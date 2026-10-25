@@ -1,5 +1,58 @@
 # Plan: Pollack-consistency, proved
 
+**Status: done**, on branch `pollack-plan` (phases A–G), with these changes
+to the plan below, each taken because the proof asked for it:
+
+- **Layer 2 is gone.** The parser keeps one of each *variant* of a reading
+  (the same reading tree, the same sort or bindings), not a most general
+  one, so no order on sorts, no `Lawful` laws and no `Reads.mono` are
+  needed: the completeness theorem holds for every algebra of sorts, and
+  phase F (the laws for Lean's algebra) has nothing left to prove. The
+  property tests of phase B found `bind_mono` false of Lean's `bind`
+  (a variable already bound keeps its binding), which is what decided it.
+- **Coercion chains, not `Acyclic`.** A question carries the sorts asked
+  above it on the chain of coercions it is the argument of (`used`), and
+  a chain visits each sort once (a coercion of the sort asked for applies
+  once): chains are finite, so no cycle of coercions is entered and
+  nothing is cut. The specification says the same (`Reads.coe`). A real
+  notation's coercion graph is cyclic as soon as it has a coercion with a
+  type variable (`Nat → * → Nat`), so `Acyclic` as a notation error would
+  have refused ordinary notations. A first version recorded the coercions
+  applied instead, which let a chain revisit a sort (`Nat → Int → Nat`) and
+  made one clause view of the paper ask 300,000 questions of one formula.
+  And a cast (a coercion whose sort stands for any sort, as the `core`
+  pack's `Nat.cast`, `Int.cast`, `Subtype.val`) is not applied below a
+  cast, a cast of a cast being a cast: otherwise the casts chained through
+  every sort in every order, and the same span was asked a hundred times.
+  The cut, which only a production whose body is a bare hole can now bring
+  about, is a flag like `over` and `pruned`, reported as "not validated",
+  and the cut bookkeeping (answers remembered with the questions they were
+  cut on) is gone.
+- **A production's body is read under no bindings**, whatever the sort
+  asked for, as before. Binding its type variables from the sort asked for
+  first was tried on the way: it asks each hole at a sort of its context
+  (`* → Nat`, `* → Int`, …) and so reads each span once per context rather
+  than once, which cost the chart parser its sharing, and the paper took
+  fifteen times longer to extract.
+- **The grammar's lists are checked**, not assumed: the search for a
+  list's rest is complete only when each element takes a token (`listsWF`,
+  a flag), so the theorem has no hypothesis about the grammar.
+- **Completeness triples** carry their precondition inside
+  (`CTriple m P Q`), so that the monotonicity of the flags, which the
+  conditional triple needs at every bind, is proved in the same induction
+  as completeness rather than in a second one.
+- **Phase E** instantiates the model with a world whose `Reads` is that the
+  validator accepts each formula printed of a statement (`Validated`), and
+  proves `Anatomy.Sound`'s two reading-back assumptions of it
+  (`Validated.sound`, `document_pollack`); the renderer's expected reading
+  stays the hypothesis it was.
+
+The theorems are `SpliceModel.readBack_complete`, `readBack_unique`,
+`pollack` (`splice/SpliceModel/ReadBackComplete.lean`), and
+`Validated.sound`, `document_pollack`, `document_pollack_rules`
+(`Validator.lean`); the goldens are byte-identical throughout, and
+`lint/axioms` finds the standard axioms only.
+
 Status: proposal. Continues docs/verified-validator.md, whose phases 0–3
 are done (the parser is sound, `SpliceModel.readBack_sound`; the matcher
 decides matching; a validated formula reads as what it was rendered from,

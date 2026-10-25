@@ -127,7 +127,9 @@ by the proof.
   [docs/trust.md](docs/trust.md).
 - **Translation validation:** each formula is parsed back in the notation's
   grammar, and one that is ambiguous, cannot be read back, or reads as
-  something other than its statement is reported where it is. With
+  something other than its statement is reported where it is. The parser is
+  proved sound and complete, so a formula that passes has no reading in the
+  grammar but its statement's (docs/verified-validator.md). With
   `latex_style categories := strict`, a variable is always written with its
   type's letter, so a reader can tell its type.
 - **Three modes:** inside the Lean project, as a sidecar package, or

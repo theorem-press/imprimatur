@@ -299,13 +299,25 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
     (Validate.notationGrammar ctx.rules ctx.variant ctx.callVars ctx.subscriptVars ctx.casesMatch
       ctx.listLiterals)
   let g := base.extend leaves
+  let h₀ ← IO.getNumHeartbeats
   let (rs, flags) := Validate.readBack g ts (← sortOf e)
+  -- IMPRIMATUR_VALIDATE_STATS=1 counts the questions each formula asks, and
+  -- the heartbeats (small allocations, in thousands) reading it back took.
+  if (← (IO.getEnv "IMPRIMATUR_VALIDATE_STATS" : IO _)) == some "1" then
+    let h₁ ← IO.getNumHeartbeats
+    let log := (Validate.readBackLog g ts (← sortOf e)).2
+    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats: {tex}"
+    if log.size > 100000 then for l in log do IO.eprintln s!"  read {l}"
   -- Two readings are two readings, whatever else was dropped.
   if rs.size ≥ 2 then
     problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!.text} and as {rs[1]!.text}")
   else if flags.over then
     problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
   else if flags.pruned then
+    -- IMPRIMATUR_VALIDATE_DEBUG=1 shows what was read where.
+    if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+      IO.eprintln s!"validate: pruned {ts} as {← sortOf e}"
+      for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
     problems.modify (·.push s!"not validated, as a reading was dropped: ${tex}$")
   else if flags.cut then
     problems.modify (·.push s!"not validated, as reading it back went round in a circle: ${tex}$")
