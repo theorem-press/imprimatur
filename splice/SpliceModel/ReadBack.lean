@@ -112,6 +112,33 @@ theorem matchesList_definite_eq : ∀ {ks ks' : List Reading}, DefiniteList ks �
 termination_by ks _ _ _ => sizeOf ks
 end
 
+/-! ## Readings equal -/
+
+mutual
+/-- `Reading.beq` decides equality. -/
+theorem Reading.beq_iff : ∀ (a b : Reading), Reading.beq a b = true ↔ a = b
+  | .any, .any => by simp [Reading.beq]
+  | .any, .node _ _ => by simp [Reading.beq]
+  | .node _ _, .any => by simp [Reading.beq]
+  | .node n ks, .node n' ks' => by
+    simp only [Reading.beq, Bool.and_eq_true, beq_iff_eq, Reading.node.injEq]
+    exact and_congr Iff.rfl (Reading.beqList_iff ks ks')
+termination_by a _ => sizeOf a
+
+theorem Reading.beqList_iff : ∀ (ks ks' : List Reading), Reading.beqList ks ks' = true ↔ ks = ks'
+  | [], [] => by simp [Reading.beqList]
+  | [], _ :: _ => by simp [Reading.beqList]
+  | _ :: _, [] => by simp [Reading.beqList]
+  | k :: ks, k' :: ks' => by
+    simp only [Reading.beqList, Bool.and_eq_true, List.cons.injEq]
+    exact and_congr (Reading.beq_iff k k') (Reading.beqList_iff ks ks')
+termination_by ks _ => sizeOf ks
+end
+
+instance : LawfulBEq Reading where
+  eq_of_beq h := (Reading.beq_iff _ _).mp h
+  rfl := (Reading.beq_iff _ _).mpr rfl
+
 /-! ## The grammar's readings -/
 
 section
@@ -124,8 +151,9 @@ end
 
 /-- A question the parser asks of a span of the text. -/
 inductive Question where
-  /-- an expression of sort `s`, at precedence `p`, not by production `excl` -/
-  | expr (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
+  /-- an expression of sort `s`, at precedence `p`, not by production
+  `excl`, not through the coercions `used` again -/
+  | expr (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
   /-- the rest of a body, `body[pos:]`, under bindings `env` -/
   | body (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat)
   /-- the rest of list `l`, `n` more elements required, under bindings `env` -/
@@ -145,41 +173,43 @@ variable (A : SortAlgebra) (g : Grammar) (ts : Array String)
 /-- `ts[i:j]` reads back (DESIGN §18.4): a question of the span, and an
 answer to it. An expression question is answered by a production of a
 compatible sort at or above the precedence, its body read left to right,
-or through a coercion, or inside the emitter's parentheses or a TeX
-group; a body question by its symbols in turn, a hole read at the sort
-the bindings so far give it and binding its type variables; a list's rest
-by nothing, when none is required, or a separator, an element and the
-rest. A reading's sort is its own: the production's under its bindings,
-or the coercion's. -/
+or through a coercion not on the chain already, or inside the emitter's
+parentheses or a TeX group; a body question by its symbols in turn, a hole
+read at the sort the bindings so far give it and binding its type
+variables; a list's rest by nothing, when none is required, or a
+separator, an element and the rest. A reading's sort is its own: the
+production's under its bindings, or the coercion's. -/
 inductive Reads : Question → Answer → Prop
   /-- By a production of a compatible sort, at or above the precedence, not
   the excluded one and not a coercion: its body read, its sort under the
   bindings compatible. -/
-  | prod {s : String} {p : Nat} {excl : Option Nat} {i j k : Nat} {pr : Imprimatur.Validate.Prod} {body : Array ASym}
-      {cs : Array Reading} {env : Env} :
+  | prod {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
+      {body : Array ASym} {cs : Array Reading} {env : Env} :
     g.prods[k]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
     excl ≠ some k → pr.coercion = false → p ≤ pr.prec → i < j →
     Reads (.body body 0 #[] i j) (.many cs env) → A.compat (A.expected env pr.sort) s = true →
-    Reads (.expr s p excl i j) (.one (mkReading pr.name pr.order cs) (A.expected env pr.sort))
-  /-- Through a coercion of a compatible sort: its argument read, at the
-  argument's sort, under the same exclusion (an operand of a chain is never
-  the chain, through a coercion either), and the coercion's sort with the
-  argument's bound compatible. -/
-  | coe {s : String} {p : Nat} {excl : Option Nat} {i j k : Nat} {pr : Imprimatur.Validate.Prod} {body : Array ASym}
-      {s' : String} {pc : Nat} {x : Option Nat} {r : Reading} {so : String} :
+    Reads (.expr s p excl used i j) (.one (mkReading pr.name pr.order cs) (A.expected env pr.sort))
+  /-- Through a coercion of a compatible sort, not on the chain already:
+  its argument read, at the argument's sort, under the same exclusion (an
+  operand of a chain is never the chain, through a coercion either) and
+  with the coercion on the chain, and the coercion's sort with the
+  argument's bound compatible. A chain of coercions applies each once, so
+  is finite. -/
+  | coe {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
+      {body : Array ASym} {s' : String} {pc : Nat} {x : Option Nat} {r : Reading} {so : String} :
     g.prods[k]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
-    pr.coercion = true → body[0]? = some (ASym.hole s' pc x) →
-    Reads (.expr (A.expected #[] s') p excl i j) (.one r so) →
+    pr.coercion = true → used.contains k = false → body[0]? = some (ASym.hole s' pc x) →
+    Reads (.expr (A.expected #[] s') p excl (k :: used) i j) (.one r so) →
     A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
-    Reads (.expr s p excl i j) (.one r (A.expected (A.bind #[] s' so) pr.sort))
+    Reads (.expr s p excl used i j) (.one r (A.expected (A.bind #[] s' so) pr.sort))
   /-- In the emitter's parentheses: read inside them, at any precedence. -/
-  | paren {s : String} {p : Nat} {excl : Option Nat} {i j : Nat} {r : Reading} {σ : String} :
+  | paren {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j : Nat} {r : Reading} {σ : String} :
     3 ≤ j - i → ts[i]? = some "(" → ts[j - 1]? = some ")" →
-    Reads (.expr s 0 none (i + 1) (j - 1)) (.one r σ) → Reads (.expr s p excl i j) (.one r σ)
+    Reads (.expr s 0 none [] (i + 1) (j - 1)) (.one r σ) → Reads (.expr s p excl used i j) (.one r σ)
   /-- In a TeX group: read inside it. -/
-  | group {s : String} {p : Nat} {excl : Option Nat} {i j : Nat} {r : Reading} {σ : String} :
+  | group {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j : Nat} {r : Reading} {σ : String} :
     3 ≤ j - i → ts[i]? = some "{" → ts[j - 1]? = some "}" →
-    Reads (.expr s p none (i + 1) (j - 1)) (.one r σ) → Reads (.expr s p excl i j) (.one r σ)
+    Reads (.expr s p none [] (i + 1) (j - 1)) (.one r σ) → Reads (.expr s p excl used i j) (.one r σ)
   /-- The end of the body, with nothing left. -/
   | done {body : Array ASym} {pos : Nat} {env : Env} {i : Nat} :
     pos = body.size → Reads (.body body pos env i i) (.many #[] env)
@@ -192,7 +222,7 @@ inductive Reads : Question → Answer → Prop
   | hole {body : Array ASym} {pos : Nat} {env : Env} {i j : Nat} {s : String} {p : Nat} {x : Option Nat}
       {m : Nat} {r : Reading} {so : String} {cs : Array Reading} {env' : Env} :
     body[pos]? = some (ASym.hole s p x) → i < m → m ≤ j →
-    Reads (.expr (A.expected env s) p x i m) (.one r so) →
+    Reads (.expr (A.expected env s) p x [] i m) (.one r so) →
     Reads (.body body (pos + 1) (A.bind env s so) m j) (.many cs env') →
     Reads (.body body pos env i j) (.many (#[r] ++ cs) env')
   /-- A bound variable's name. -/
@@ -214,9 +244,11 @@ inductive Reads : Question → Answer → Prop
     Reads (.rest l n env i j) (.many cs env')
 
 /-- `ts[i:j]` reads as `r`, of sort `σ`, as an expression of sort `s` at
-precedence `p` not made by production `excl`. -/
-abbrev Exp (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (r : Reading) (σ : String) : Prop :=
-  Reads A g ts (.expr s p excl i j) (.one r σ)
+precedence `p` not made by production `excl`, not through the coercions
+`used` again. -/
+abbrev Exp (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) (r : Reading) (σ : String) :
+    Prop :=
+  Reads A g ts (.expr s p excl used i j) (.one r σ)
 
 /-- `ts[i:j]` reads as `body[pos:]` under bindings `env`, with the readings
 of its holes, variables and lists `cs`, and the bindings after them. -/
