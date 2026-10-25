@@ -391,10 +391,14 @@ what remains may then be short of what a question above needs. -/
 def keep {α : Type} [BEq α] (key : α → String) (xs : Array α) : Array α × Bool :=
   keepGo key xs.toList #[] #[] false
 
-/-- `keep`, noting a dropped reading in the state. -/
+/-- `keep`, noting a dropped reading in the state (and, when tracing, in the
+log). -/
 def keepM {α : Type} [BEq α] (key : α → String) (xs : Array α) : CountM (Array α) := do
   let (out, pruned) := keep key xs
-  if pruned then modify fun st => { st with pruned := true }
+  if pruned then
+    modify fun st =>
+      let line := s!"pruned: {xs.size} answers, {(xs.map key).toList.eraseDups.length} readings, kept {out.size}"
+      { st with pruned := true, log := if st.trace then st.log.push line else st.log }
   return out
 
 /-- The work budget: past it, a formula is not validated. -/
@@ -465,16 +469,15 @@ def addProds (A : SortAlgebra) (s : String) (pr : Prod) :
     else addProds A s pr rest (← keepM (·.1.text) (out.push (mkReading pr.name pr.order cs, so)))
 
 /-- The readings through coercion `pr` of hole sort `s'`, from its
-argument's readings, onto `out`: each at the coercion's sort under the
-bindings `env₀` the sort asked for gives and the argument's sort adds, when
-that is compatible with the sort asked for. -/
-def addCoes (A : SortAlgebra) (s : String) (pr : Prod) (s' : String) (env₀ : Env) :
+argument's readings, onto `out`: each at the coercion's sort with the
+argument's bound, when that is compatible with the sort asked for. -/
+def addCoes (A : SortAlgebra) (s : String) (pr : Prod) (s' : String) :
     List (Reading × String) → Array (Reading × String) → CountM (Array (Reading × String))
   | [], out => pure out
   | (r, so) :: rest, out => do
-    let sort := A.expected (A.bind env₀ s' so) pr.sort
-    if !A.compat sort s then addCoes A s pr s' env₀ rest out
-    else addCoes A s pr s' env₀ rest (← keepM (·.1.text) (out.push (r, sort)))
+    let sort := A.expected (A.bind #[] s' so) pr.sort
+    if !A.compat sort s then addCoes A s pr s' rest out
+    else addCoes A s pr s' rest (← keepM (·.1.text) (out.push (r, sort)))
 
 /-- The readings of a nonterminal, each followed by the readings of the rest
 of the body, onto `out`. -/
@@ -586,10 +589,10 @@ mutual
         keepM (·.1.text) (out ++ (← expr A g ts fuel s p none [] (i + 1) (j - 1)))
       else pure out
 
-  /-- The readings by each production tried, onto `out`. The sort asked for
-  binds the production's type variables first (`List(Char)` asked of
-  `_ :: _ : List(?α)` makes `?α` `Char`), so its holes are asked at the sorts
-  the context gives them. -/
+  /-- The readings by each production tried, onto `out`. A production's
+  body is read under no bindings, whatever the sort asked for, so that a
+  span's readings are shared by every question of it; the sort asked for
+  filters the result. -/
   def prods (A : SortAlgebra) (g : Grammar) (ts : Array String) :
       Nat → String → Nat → Option Nat → Nat → Nat → List Nat → Array (Reading × String) →
       CountM (Array (Reading × String))
@@ -599,7 +602,7 @@ mutual
       if !tried g ts p excl i j k then prods A g ts fuel s p excl i j ks out
       else
         let some (pr, body) := g.prods[k]? | prods A g ts fuel s p excl i j ks out
-        let rs ← seq A g ts fuel body 0 (A.bind #[] pr.sort s) i j
+        let rs ← seq A g ts fuel body 0 #[] i j
         let out ← addProds A s pr rs.toList out
         prods A g ts fuel s p excl i j ks out
 
@@ -622,13 +625,12 @@ mutual
       if !pr.coercion then coes A g ts fuel s p excl used i j ks out
       else
         let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl used i j ks out
-        let env₀ := A.bind #[] pr.sort s
-        let es' := A.expected env₀ s'
+        let es' := A.expected #[] s'
         let cast := A.anySort pr.sort
         if used.contains es' || (cast && used.contains castMark) then coes A g ts fuel s p excl used i j ks out
         else
           let args ← expr A g ts fuel es' p excl (chainWith s (if cast then chainWith castMark used else used)) i j
-          let out ← addCoes A s pr s' env₀ args.toList out
+          let out ← addCoes A s pr s' args.toList out
           coes A g ts fuel s p excl used i j ks out
 
   /-- Readings of `ts[i:j]` as `body[pos:]` under bindings `env`: the readings of its holes, variables and lists, and

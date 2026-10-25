@@ -215,20 +215,20 @@ theorem triple_addProds (s : String) (pr : Imprimatur.Validate.Prod) {P : Readin
 
 /-- `addCoes` adds, to readings of a coercion's argument, the readings
 through it. -/
-theorem triple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : String) (env₀ : Env)
+theorem triple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : String)
     {P : Reading × String → Prop} {R : Reading × String → Prop}
-    (hP : ∀ r so, R (r, so) → A.compat (A.expected (A.bind env₀ s' so) pr.sort) s = true →
-      P (r, A.expected (A.bind env₀ s' so) pr.sort)) :
+    (hP : ∀ r so, R (r, so) → A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
+      P (r, A.expected (A.bind #[] s' so) pr.sort)) :
     ∀ (args : List (Reading × String)) (out : Array (Reading × String)), (∀ x ∈ args, R x) →
-      (∀ x ∈ out, P x) → Triple A g ts (addCoes A s pr s' env₀ args out) (fun res => ∀ x ∈ res, P x)
+      (∀ x ∈ out, P x) → Triple A g ts (addCoes A s pr s' args out) (fun res => ∀ x ∈ res, P x)
   | [], out, _, hout => by simp only [addCoes]; exact triple_pure hout
   | (r, so) :: rest, out, hargs, hout => by
     simp only [addCoes]
     split
-    · exact triple_addCoes s pr s' env₀ hP rest out (fun x hx => hargs x (List.mem_cons_of_mem _ hx)) hout
+    · exact triple_addCoes s pr s' hP rest out (fun x hx => hargs x (List.mem_cons_of_mem _ hx)) hout
     · rename_i hc
       refine triple_bind (triple_keepM _ _ (P := P) ?_) fun out' hout' =>
-        triple_addCoes s pr s' env₀ hP rest out' (fun x hx => hargs x (List.mem_cons_of_mem _ hx)) hout'
+        triple_addCoes s pr s' hP rest out' (fun x hx => hargs x (List.mem_cons_of_mem _ hx)) hout'
       intro x hx
       rw [Array.mem_push] at hx
       rcases hx with hx | rfl
@@ -717,9 +717,9 @@ theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) :
         rw [hk] at hk''
         simp only [Option.some.injEq, Prod.mk.injEq] at hk''
         obtain ⟨rfl, rfl⟩ := hk''
-        refine triple_bind (ihS body 0 (A.bind #[] pr.sort s) i j) fun rs hrs => ?_
+        refine triple_bind (ihS body 0 #[] i j) fun rs hrs => ?_
         refine triple_bind (triple_addProds s pr (P := fun x => ∀ used, Exp A g ts s p excl used i j x.1 x.2)
-          (R := fun x => Seq A g ts body 0 (A.bind #[] pr.sort s) i j x.1 x.2) ?_ rs.toList out
+          (R := fun x => Seq A g ts body 0 #[] i j x.1 x.2) ?_ rs.toList out
           (fun x hx => hrs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
           ihP s p excl i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'
         intro cs env hseq hc used
@@ -754,13 +754,12 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List String
           · exact hrest
           · rename_i hcond
             simp only [Bool.or_eq_true, Bool.and_eq_true, not_or, not_and, Bool.not_eq_true] at hcond
-            refine triple_bind (triple_mono (ihE (A.expected (A.bind #[] pr.sort s) s') p excl
+            refine triple_bind (triple_mono (ihE (A.expected #[] s') p excl
               (chainWith s (if A.anySort pr.sort then chainWith castMark used else used)) i j)
               fun res hres x hx => exp_usedEquiv (chain_contains s (A.anySort pr.sort) used) (hres x hx).2)
               fun args hargs => ?_
-            refine triple_bind (triple_addCoes s pr s' (A.bind #[] pr.sort s)
-              (P := fun x => Exp A g ts s p excl used i j x.1 x.2)
-              (R := fun x => Exp A g ts (A.expected (A.bind #[] pr.sort s) s') p excl
+            refine triple_bind (triple_addCoes s pr s' (P := fun x => Exp A g ts s p excl used i j x.1 x.2)
+              (R := fun x => Exp A g ts (A.expected #[] s') p excl
                 (s :: (if A.anySort pr.sort then castMark :: used else used)) i j x.1 x.2)
               ?_ args.toList out
               (fun x hx => hargs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>

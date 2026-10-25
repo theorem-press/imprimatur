@@ -32,19 +32,19 @@ variable (A : SortAlgebra) (g : Grammar) (ts : Array String)
 /-- A reading by production `k`, as the `prod` rule gives it. -/
 def ExpProd (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (r : Reading) (σ : String) : Prop :=
   ∃ pr body cs env, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
-    excl ≠ some k ∧ pr.coercion = false ∧ p ≤ pr.prec ∧ i < j ∧ Seq A g ts body 0 (A.bind #[] pr.sort s) i j cs env ∧
+    excl ≠ some k ∧ pr.coercion = false ∧ p ≤ pr.prec ∧ i < j ∧ Seq A g ts body 0 #[] i j cs env ∧
     A.compat (A.expected env pr.sort) s = true ∧ r = mkReading pr.name pr.order cs ∧ σ = A.expected env pr.sort
 
 /-- A reading through coercion `k`, as the `coe` rule gives it. -/
 def ExpCoe (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat) (r : Reading)
     (σ : String) : Prop :=
   ∃ pr body s' pc x so, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
-    pr.coercion = true ∧ used.contains (A.expected (A.bind #[] pr.sort s) s') = false ∧
+    pr.coercion = true ∧ used.contains (A.expected #[] s') = false ∧
     (A.anySort pr.sort = true → used.contains castMark = false) ∧ body[0]? = some (ASym.hole s' pc x) ∧
-    Exp A g ts (A.expected (A.bind #[] pr.sort s) s') p excl
+    Exp A g ts (A.expected #[] s') p excl
       (s :: (if A.anySort pr.sort then castMark :: used else used)) i j r so ∧
-    A.compat (A.expected (A.bind (A.bind #[] pr.sort s) s' so) pr.sort) s = true ∧
-    σ = A.expected (A.bind (A.bind #[] pr.sort s) s' so) pr.sort
+    A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true ∧
+    σ = A.expected (A.bind #[] s' so) pr.sort
 
 /-- A reading not through a coercion of the question's own: by a
 production, in the emitter's parentheses, or in a TeX group. -/
@@ -249,11 +249,11 @@ theorem ctriple_addProds (s : String) (pr : Imprimatur.Validate.Prod) :
 
 /-- `addCoes` adds every reading through the coercion, when the flags end
 clear. -/
-theorem ctriple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : String) (env₀ : Env) :
+theorem ctriple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : String) :
     ∀ (args : List (Reading × String)) (out : Array (Reading × String)),
-      CTriple A g ts (addCoes A s pr s' env₀ args out) True (fun res => (∀ x ∈ out, x ∈ res) ∧
-        ∀ r so, (r, so) ∈ args → A.compat (A.expected (A.bind env₀ s' so) pr.sort) s = true →
-          (r, A.expected (A.bind env₀ s' so) pr.sort) ∈ res)
+      CTriple A g ts (addCoes A s pr s' args out) True (fun res => (∀ x ∈ out, x ∈ res) ∧
+        ∀ r so, (r, so) ∈ args → A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
+          (r, A.expected (A.bind #[] s' so) pr.sort) ∈ res)
   | [], out => by
     simp only [addCoes]
     exact ctriple_pure fun _ => ⟨fun x hx => hx, fun r so h => by simp at h⟩
@@ -261,7 +261,7 @@ theorem ctriple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : Strin
     simp only [addCoes]
     split
     · rename_i hc
-      refine ctriple_mono (ctriple_addCoes s pr s' env₀ rest out) fun _ res ⟨hsub, hrest⟩ => ⟨hsub, ?_⟩
+      refine ctriple_mono (ctriple_addCoes s pr s' rest out) fun _ res ⟨hsub, hrest⟩ => ⟨hsub, ?_⟩
       intro r' so' hmem hc'
       rw [List.mem_cons] at hmem
       rcases hmem with heq | hmem
@@ -270,7 +270,7 @@ theorem ctriple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : Strin
         exact absurd hc' (by simpa using hc)
       · exact hrest r' so' hmem hc'
     · refine ctriple_bind (ctriple_keepM _ _) fun out' => ?_
-      refine ctriple_mono (ctriple_addCoes s pr s' env₀ rest out').ofTrue fun ⟨_, hkeep⟩ res ⟨hsub, hrest⟩ => ?_
+      refine ctriple_mono (ctriple_addCoes s pr s' rest out').ofTrue fun ⟨_, hkeep⟩ res ⟨hsub, hrest⟩ => ?_
       refine ⟨fun x hx => hsub x (hkeep x (Array.mem_push.mpr (Or.inl hx))), ?_⟩
       intro r' so' hmem hc'
       rw [List.mem_cons] at hmem
@@ -979,7 +979,7 @@ theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) :
       · exact hks k' hk' r σ he
     · split
       · rename_i pr body hk
-        refine ctriple_bind (ihS body 0 (A.bind #[] pr.sort s) i j).ofTrue fun rs => ?_
+        refine ctriple_bind (ihS body 0 #[] i j).ofTrue fun rs => ?_
         refine ctriple_bind (ctriple_addProds s pr rs.toList out).ofTrue fun out' => ?_
         refine ctriple_mono (ihP s p excl i j ks out').ofTrue fun ⟨⟨_, hrs⟩, hsub', hadd⟩ res ⟨hsub, hks⟩ => ?_
         refine ⟨fun x hx => hsub x (hsub' x hx), fun k' hk' r σ he => ?_⟩
@@ -1052,10 +1052,10 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List String
             rw [hcast' hskip.1] at hskip
             exact absurd hskip.2 Bool.false_ne_true
           · rename_i hcond
-            refine ctriple_bind (ihE (A.expected (A.bind #[] pr.sort s) s') p excl
+            refine ctriple_bind (ihE (A.expected #[] s') p excl
               (chainWith s (if A.anySort pr.sort then chainWith castMark used else used)) i j).ofTrue
               fun args => ?_
-            refine ctriple_bind (ctriple_addCoes s pr s' (A.bind #[] pr.sort s) args.toList out).ofTrue fun out' => ?_
+            refine ctriple_bind (ctriple_addCoes s pr s' args.toList out).ofTrue fun out' => ?_
             refine ctriple_mono (ihC s p excl used i j ks out').ofTrue
               fun ⟨⟨_, hargs⟩, hsub', hadd⟩ res ⟨hsub, hks⟩ => ?_
             refine ⟨fun x hx => hsub x (hsub' x hx), fun k' hk' r σ he => ?_⟩

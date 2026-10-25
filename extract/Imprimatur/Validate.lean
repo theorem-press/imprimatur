@@ -99,6 +99,18 @@ partial def STerm.render : STerm → String
   | .arrow a b => s!"({a.render} → {b.render})"
   | .app h as => s!"{h}({", ".intercalate (as.map STerm.render).toList})"
 
+/-- The type variables of a sort. -/
+partial def STerm.tyvars : STerm → List String
+  | .atom a => if isTyVar a then [a] else []
+  | .arrow a b => a.tyvars ++ b.tyvars
+  | .app _ as => as.toList.flatMap STerm.tyvars
+
+/-- A sort with its type variables renamed. -/
+partial def STerm.mapVars (f : String → String) : STerm → STerm
+  | .atom a => .atom (if isTyVar a then f a else a)
+  | .arrow a b => .arrow (a.mapVars f) (b.mapVars f)
+  | .app h as => .app h (as.map (STerm.mapVars f))
+
 /-- Sorts compatible, the first found where the second is expected: equal up
 to unknowns (`*`, and type variables, which are unknown until bound), part
 by part. A type written without its arguments (as the packs write `Option`)
@@ -207,6 +219,17 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
   let some parts := (splitTemplate r.template vars).toOption | return none
   let hidden := r.hides.map (·.1.toString)
   let sortOf (v : String) : String := ((r.holeSorts.find? (·.1.toString == v)).map (·.2)).getD "*"
+  -- A type variable that one hole alone mentions, and the rule's sort does
+  -- not, is bound by what fills that hole and read by nothing (`HAppend α β
+  -- γ` gives each operand its own): it is left unknown, so that the hole's
+  -- fillers of several sorts make one answer, not one each.
+  let mentions (s : String) : List String := (STerm.tyvars (STerm.parse s)).eraseDups
+  let counts : List String :=
+    (vars.filter (!hidden.contains ·)).toList.flatMap (fun v => mentions (sortOf v)) ++ mentions r.sort
+  let lone (a : String) : Bool := counts.count a == 1 && !(mentions r.sort).contains a
+  let sortOf (v : String) : String :=
+    let so := sortOf v
+    if (mentions so).any lone then ((STerm.parse so).mapVars fun a => if lone a then "*" else a).render else so
   let topCount := Id.run do
     let mut d := 0
     let mut n := 0

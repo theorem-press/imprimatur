@@ -182,32 +182,30 @@ separator, an element and the rest. A reading's sort is its own: the
 production's under its bindings, or the coercion's. -/
 inductive Reads : Question → Answer → Prop
   /-- By a production of a compatible sort, at or above the precedence, not
-  the excluded one and not a coercion: its body read under the bindings the
-  sort asked for gives its type variables, and its sort under the bindings
-  after the body compatible. -/
+  the excluded one and not a coercion: its body read, its sort under the
+  bindings compatible. -/
   | prod {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {cs : Array Reading} {env : Env} :
     g.prods[k]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
     excl ≠ some k → pr.coercion = false → p ≤ pr.prec → i < j →
-    Reads (.body body 0 (A.bind #[] pr.sort s) i j) (.many cs env) → A.compat (A.expected env pr.sort) s = true →
+    Reads (.body body 0 #[] i j) (.many cs env) → A.compat (A.expected env pr.sort) s = true →
     Reads (.expr s p excl used i j) (.one (mkReading pr.name pr.order cs) (A.expected env pr.sort))
   /-- Through a coercion of a compatible sort whose argument's sort was not
-  asked above on the chain: its argument read at that sort, under the
-  bindings the sort asked for gives, under the same exclusion (an operand
-  of a chain is never the chain, through a coercion either) and with the
-  sort asked for on the chain, and the coercion's sort with the argument's
-  bound compatible. A chain of coercions visits each sort once, and has no
+  asked above on the chain: its argument read at that sort, under the same
+  exclusion (an operand of a chain is never the chain, through a coercion
+  either) and with the sort asked for on the chain, and the coercion's
+  sort with the argument's bound compatible. A chain of coercions visits each sort once, and has no
   cast (a coercion whose sort stands for any sort) below a cast, a cast of
   a cast being a cast; so it is finite. -/
   | coe {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {s' : String} {pc : Nat} {x : Option Nat} {r : Reading} {so : String} :
     g.prods[k]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
-    pr.coercion = true → used.contains (A.expected (A.bind #[] pr.sort s) s') = false →
+    pr.coercion = true → used.contains (A.expected #[] s') = false →
     (A.anySort pr.sort = true → used.contains castMark = false) → body[0]? = some (ASym.hole s' pc x) →
-    Reads (.expr (A.expected (A.bind #[] pr.sort s) s') p excl
+    Reads (.expr (A.expected #[] s') p excl
       (s :: (if A.anySort pr.sort then castMark :: used else used)) i j) (.one r so) →
-    A.compat (A.expected (A.bind (A.bind #[] pr.sort s) s' so) pr.sort) s = true →
-    Reads (.expr s p excl used i j) (.one r (A.expected (A.bind (A.bind #[] pr.sort s) s' so) pr.sort))
+    A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
+    Reads (.expr s p excl used i j) (.one r (A.expected (A.bind #[] s' so) pr.sort))
   /-- In the emitter's parentheses: read inside them, at any precedence. -/
   | paren {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j : Nat} {r : Reading} {σ : String} :
     3 ≤ j - i → ts[i]? = some "(" → ts[j - 1]? = some ")" →
