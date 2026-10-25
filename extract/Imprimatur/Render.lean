@@ -82,9 +82,9 @@ form being rendered makes its own from them. A form without a frame reads as
 `Validate.anyReading`. -/
 structure Expect where
   /-- The expected readings of the subterms rendered at this level. -/
-  kids : Array String := #[]
+  kids : Array Validate.Reading := #[]
   /-- This form's reading, from its subterms'. -/
-  frame : Option (Array String → String) := none
+  frame : Option (Array Validate.Reading → Validate.Reading) := none
 
 /-- What rendering needs. -/
 structure Ctx where
@@ -282,7 +282,7 @@ def sortOf (e : Expr) : MetaM String := do
 /-- Read a rendered formula back (DESIGN §18.4): it must have exactly one
 reading as an expression of `e`'s sort, and its free variables must print
 differently. Problems go to the context's `problems`. -/
-def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : String)
+def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Reading)
     (problems : IO.Ref (Array String)) : RenderM Unit := do
   let ctx ← read
   let tex := d.render 100000
@@ -292,16 +292,21 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : String)
   for a in atoms do
     let p : Validate.Prod :=
       { name := a.tex, sort := a.sort, prec := Doc.maxPrec, isVar := a.isVar,
-        syms := (Validate.tokenize a.tex).map .tok }
+        syms := (Validate.tokenize a.tex).toList.map .tok }
     unless p.syms.isEmpty || leaves.any (fun q => q.name == p.name && q.sort == p.sort && q.isVar == p.isVar) do
       leaves := leaves.push p
   let base := ctx.grammar.getD
     (Validate.notationGrammar ctx.rules ctx.variant ctx.callVars ctx.subscriptVars ctx.casesMatch
       ctx.listLiterals)
   let g := base.extend leaves
-  let (rs, over) := Validate.readBack g ts (← sortOf e)
-  if over then
+  let (rs, flags) := Validate.readBack g ts (← sortOf e)
+  -- Two readings are two readings, whatever else was dropped.
+  if rs.size ≥ 2 then
+    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!.text} and as {rs[1]!.text}")
+  else if flags.over then
     problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
+  else if flags.pruned then
+    problems.modify (·.push s!"not validated, as a reading was dropped: ${tex}$")
   else if rs.isEmpty then
     -- IMPRIMATUR_VALIDATE_DEBUG=1 shows the tokens and the grammar.
     if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
@@ -309,12 +314,10 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : String)
       for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
       for (p, b) in g.prods do IO.eprintln s!"  {p.name} : {p.sort} @{p.prec} := {repr b}"
     problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
-  else if rs.size ≥ 2 then
-    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!} and as {rs[1]!}")
-  else if !Validate.readingMatches expected rs[0]! then
-    -- The one reading is not what was rendered: the grammar does not mirror
+  else if !expected.matches rs[0]! then
+    -- The one reading is not what was rendered: the grammar does not follow
     -- the renderer here, or the emitter left out parentheses a reader needs.
-    problems.modify (·.push s!"misread: ${tex}$ reads as {rs[0]!}, but was rendered from {expected}")
+    problems.modify (·.push s!"misread: ${tex}$ reads as {rs[0]!.text}, but was rendered from {expected.text}")
   -- A grammar category's metavariable stands for that category (the BNF
   -- convention: `e ::= e₁\;e₂`), so a variable of another type must not
   -- print as it.
@@ -372,17 +375,17 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : String)
     unless seen.any (·.1 == f) do seen := seen.push (f, t)
 
 /-- Set the frame of the form being rendered, if its reading is expected. -/
-def expectFrame (f : Option (Array String → String)) : RenderM Unit := do
+def expectFrame (f : Option (Array Validate.Reading → Validate.Reading)) : RenderM Unit := do
   if let some ex := (← read).expect then ex.modify ({ · with frame := f })
 
 /-- The form being rendered is an atom, which reads as its TeX. -/
-def expectLeaf (t : String) : RenderM Unit := expectFrame (some fun _ => t)
+def expectLeaf (t : String) : RenderM Unit := expectFrame (some fun _ => .node t [])
 
 /-- The form being rendered is a built-in form (`Validate.builtins`) with
 these bound variables and `n` subterms. -/
 def expectForm (name : String) (vars : Array String) (n : Nat) : RenderM Unit :=
   expectFrame (some fun kids =>
-    if kids.size == n then Validate.reading { name, sort := "*", prec := 0, syms := #[] } (vars ++ kids)
+    if kids.size == n then Validate.mkReading name none (vars.map (.node · []) ++ kids)
     else Validate.anyReading)
 
 /-- The form being rendered is an application of `pre` and the subterms. -/
@@ -390,8 +393,8 @@ def expectApp (pre : Array String) : RenderM Unit :=
   expectFrame (some fun kids =>
     -- A constant applied only to implicit arguments and proofs shows no
     -- argument, so it reads as an atom: `Fin.castSucc`, not an application.
-    if kids.isEmpty && pre.size == 1 then pre[0]!
-    else Validate.reading { name := "application", sort := "*", prec := 0, syms := #[] } (pre ++ kids))
+    if kids.isEmpty && pre.size == 1 then .node pre[0]! []
+    else Validate.mkReading "application" none (pre.map (.node · []) ++ kids))
 
 mutual
 
@@ -667,7 +670,7 @@ mutual
     match (if r.flatten || !multi.isEmpty then none else Validate.ofRule r) with
     | some p =>
       let n := (p.order.map (·.size)).getD 0
-      expectFrame (some fun kids => if kids.size == n then Validate.reading p kids else Validate.anyReading)
+      expectFrame (some fun kids => if kids.size == n then Validate.mkReading p.name p.order kids else Validate.anyReading)
     | none => expectFrame none
     return .node r.prec out
 

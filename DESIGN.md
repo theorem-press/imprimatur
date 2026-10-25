@@ -1296,11 +1296,20 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   **None** means the grammar does not model what the renderer did, and the
   formula is *not validated*; that is a gap in the validator, or a rendering
   no reader could parse.
-- **The trusted part** is a small chart parser that counts at most two
-  readings, with a work budget, and, where the expected reading has a `⁇`,
-  that `Validate.ofRule` follows `Render.fillTemplate`; the precedence each
-  hole needs is one function they share, `Doc.holeNeeds` in the module
-  `Imprimatur.Layout`, so that part holds by construction. On
+- **The trusted part.** The chart parser that counts at most two readings
+  is one total module, `Imprimatur.ReadBack`, proved sound: every reading
+  it returns is a reading in the grammar (`SpliceModel.readBack_sound`),
+  and the matcher decides structural matching, so a validated formula reads
+  as what it was rendered from (`validated_sound`;
+  docs/verified-validator.md). What stays trusted is the other half, that
+  one reading is the only one: the parser keeps two readings of each
+  question and prunes sort variants, and notes when it dropped a reading
+  (`pruned`, reported as "not validated"), but a completeness theorem
+  needs the algebra of sorts axiomatised and is future work. Also trusted:
+  where the expected reading has a `⁇`, that `Validate.ofRule` follows
+  `Render.fillTemplate`; the precedence each hole needs is one function
+  they share, `Doc.holeNeeds` in the module `Imprimatur.Layout`, so that
+  part holds by construction. On
   project B's standalone document, 610 of the 662 formulas with one reading
   have an expected reading without `⁇`, 21 have one in part, and 31 have
   none (#41 would close the gap). Making the emitter drop the parentheses its holes need is caught

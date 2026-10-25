@@ -5,6 +5,18 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Reading formulas back is one total module, `bundle/ReadBack.lean`
+  (tokens, the grammar's symbols, readings as trees, the chart parser, the
+  matcher), with the algebra of sorts as a parameter, and the paper's model
+  proves it sound: every reading the parser returns is a reading in the
+  notation's grammar, and a validated formula reads as what it was rendered
+  from (docs/verified-validator.md). Where the parser gives up is now
+  explicit and reported as "not validated": the budget, a reading past the
+  variant cap (now 256; 32 was exceeded silently by formulas of the paper
+  itself), and a third reading of a sub-formula dropped, which could before
+  let an ambiguous formula pass as having one reading; an ambiguity is
+  reported before any of these. An answer computed while a coercion cycle
+  was cut is no longer remembered as if complete.
 - The extractor's prose and rules layouts, its formula emitter and the
   precedence policy of a notation rule's holes are one pure, total module,
   `bundle/Layout.lean`, copied into both packages (`lint/bundle-copies`),

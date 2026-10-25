@@ -18,7 +18,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 DIRS = [ROOT / "splice" / "Splice" / "Core", ROOT / "splice" / "SpliceModel"]
-FILES = [ROOT / "bundle" / "Layout.lean"]
+FILES = [ROOT / "bundle" / "Layout.lean", ROOT / "bundle" / "ReadBack.lean"]
 FORBIDDEN = [
     (r"\bpartial\b", "partial"), (r"\bwhile\b", "while"), (r"\brepeat\b", "repeat"),
     (r"\bunsafe\b", "unsafe"), (r"\bimplemented_by\b", "implemented_by"),

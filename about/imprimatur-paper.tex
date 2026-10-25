@@ -120,7 +120,10 @@ source. What the reader sees depends further on:
 \item Normalisation. A region is the rendering after line endings,
   trailing blanks and blank lines at its ends are normalised; that these
   do not change what \TeX{} typesets is assumed.
-\item The parser that reads formulas back, and, where an expected reading
+\item The parser that reads formulas back, in part: that what it returns
+  is a reading in the notation's grammar, and that the comparison with the
+  expected reading is structural, are proved (Section~\ref{sec:faithful});
+  that one reading is the only one is not. And, where an expected reading
   is incomplete, that the grammar follows the renderer. The precedence each
   hole of a rule needs is one function both call, so that part holds by
   construction.
@@ -1548,6 +1551,41 @@ $(\lambda r\, q.\, e) = M$ as $\lambda r\, q.\, e = M$, a formula that
 reads back uniquely, and wrongly. Made to do so, imprimatur reports six
 misreads in a twenty-page paper about another Lean development.
 
+The parser that reads back is one total module, shared with the splicer
+as the layouts are (Section~\ref{sec:code}), and two things are proved of
+it in the paper's model. Its grammar is the one described: a production of
+a compatible sort at or above the precedence asked for, its body read left
+to right with each hole's sort fixed by the type variables bound so far,
+coercions and the emitter's parentheses invisible. Every reading the parser
+returns is a reading in that grammar, for any algebra of sorts:
+
+\begin{leantheorem}[sum=5_9zkVfAf7]{The parser is sound}{The parser is sound}
+\label{thm:The-parser-is-sound}
+\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{rd} \in \texttt{Reading}$. Assume $\mathit{rd} \in \mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s)$. Then there is $\sigma$ such that $\mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none})\ \mathit{rd} : \sigma$.}
+\end{leantheorem}
+
+And the comparison of the one reading with the expected one is structural:
+a node matches a node of the same name whose children match, and the
+reading of a form the renderer does not say how to read matches anything. So when the parser returns one reading and it matches,
+the formula reads, in the notation's grammar, as what it was rendered
+from, wherever the expected reading is definite:
+
+\begin{leantheorem}[sum=bgWg6MXo1e]{A validated formula reads as what it was rendered from}{A validated formula reads as what it was rendered from}
+\label{thm:A-validated-formula-reads-as-what-it-was-rendered-from}
+\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{ex}, \mathit{rd} \in \texttt{Reading}$. Assume $\mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s) = [\mathit{rd}]$ and $\mathsf{matches}(\mathit{ex}, \mathit{rd}) = \mathsf{true}$. Then (1)~$\exists \sigma,\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none})\ \mathit{rd} : \sigma$ and (2)~$\mathit{ex} \succcurlyeq \mathit{rd}$.}
+\end{leantheorem}
+
+What is not proved is the other half: that one reading is the only one.
+The parser keeps two readings of each sub-formula and prunes the sorts a
+reading can have, by the rule that an unknown sort stands for any; writing
+down what completeness would mean showed that the first could drop a third
+reading which a sub-formula above would have accepted, and so pass an
+ambiguous formula as having one reading. The parser now notes when it
+drops one, and the formula is not validated. A proof that nothing else is
+lost needs the algebra of sorts to satisfy laws (that an unknown sort
+accepts what any sort accepts, and binds nothing), which it has not been
+given; until then, uniqueness is checked, not proved.
+
 A few forms (a quantifier's binders, a case analysis, an associative chain)
 are not given an expected reading, and only what is below them is
 compared. There the check rests on the grammar following the renderer; the precedence each hole needs is one function both call, and the rest is built from the same rules. In that twenty-page paper, 610 of the
@@ -1606,7 +1644,7 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=Sk8pknLGr7, dflt=JEAy_QLiNY]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=mw0sk89DRX, dflt=8CcVMBHhHZ]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
@@ -1625,12 +1663,14 @@ $p$ & $\mathit{Piece}$ & \leanslot{SpliceModel.Piece}{A piece of a document} & \
 $\delta$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{check} reports} & \textit{Diag}, p.~\pageref{gram:SpliceModel.Diag}\\
 $d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Locality}, p.~\pageref{thm:Locality}\\
 $\mathcal{A}$ & $\texttt{Anatomy}(W)$ & \leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart} & \textit{Anatomies}, p.~\pageref{gram:Anatomies}\\
+$\mathcal{S}$ & $\texttt{Sorts}$ & \leanslot{Imprimatur.Validate.SortAlgebra}{How sorts behave: the parser's parameter} & \textit{The parser is sound}, p.~\pageref{thm:The-parser-is-sound}\\
+$G$ & $\texttt{Grammar}$ & \leanslot{Imprimatur.Validate.Grammar}{A compiled grammar} & \textit{The parser is sound}, p.~\pageref{thm:The-parser-is-sound}\\
 \end{longtable}
 A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type.
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=fhSoO3uQm3, dflt=5yBX6eR55d]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=ohkydcwTS9, dflt=xEPky-ZNyY]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -1803,6 +1843,10 @@ $\mathsf{trimAnd}(\mathit{ls})$ & \texttt{trimAnd} & \leanslot{Imprimatur.Layout
 $\mathsf{unbreak}_{\mathit{ps}}(o, \mathit{ls})$ & \texttt{unbreak} & \leanslot{Imprimatur.Layout.unbreak/0}{A premise less its \LeanCodeInline{ \textbackslash{}\textbackslash{}}, then the rest}\\
 $\mathsf{withPremises}(\mathit{mark}, \mathit{label}, o)$ & \texttt{withPremises} & \leanslot{Imprimatur.Layout.withPremises/0}{The rule, once its premises are read: its conclusion follows them}\\
 $\mathit{TeX}$ & \texttt{Imprimatur.TeX} & \leanslot{Imprimatur.TeX/0}{TeX source}\\
+$\texttt{Grammar}$ & \texttt{Imprimatur.Validate.Grammar} & \leanslot{Imprimatur.Validate.Grammar/0}{A compiled grammar}\\
+$\texttt{Reading}$ & \texttt{Imprimatur.Validate.Reading} & \leanslot{Imprimatur.Validate.Reading/0}{A reading: a tree named by what it reads as (a production's name, an atom's TeX, a bound variable's name), with its children in the order of the rule's pattern; or \LeanCodeInline{any}, which the renderer writes for a form it does not say how to read, and which matches any subterm}\\
+$\mathsf{matches}(e, r)$ & \texttt{Imprimatur.Validate.Reading.matches} & \leanslot{Imprimatur.Validate.Reading.matches/0}{A reading matches the expected one: \LeanCodeInline{any} matches any reading, and a node matches a node of the same name whose children match}\\
+$\texttt{Sorts}$ & \texttt{Imprimatur.Validate.SortAlgebra} & \leanslot{Imprimatur.Validate.SortAlgebra/0}{How sorts behave: the parser's parameter}\\
 $\texttt{Verdict}$ & \texttt{Imprimatur.Verdict} & \leanslot{Imprimatur.Verdict/0}{The verdict on a proof: whether Lean accepted it, and on what}\\
 $\mathit{View}$ & \texttt{Imprimatur.View} & \leanslot{Imprimatur.View/0}{The name of a view: \LeanCodeInline{math}, \LeanCodeInline{prose}, \LeanCodeInline{rules}, \LeanCodeInline{math|def=}, …}\\
 $\texttt{World}(\tau)$ & \texttt{Imprimatur.World} & \leanslot{Imprimatur.World/0}{A world: an environment, as the extractor presents it, rendered as \LeanCodeInline{τ}}\\
@@ -1816,6 +1860,7 @@ $\mathit{stmt}_{W}(k)$ & \texttt{Imprimatur.World.stmt} & \leanslot{Imprimatur.W
 $\mathit{trusted}_{W}(k)$ & \texttt{Imprimatur.World.trusted} & \leanslot{Imprimatur.World.trusted/0}{whether a key's proof is trusted}\\
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
 $\mathsf{Array}(\alpha)$ & \texttt{Array} & \leanslot{Array/0}{dynamic arrays with elements from \LeanCodeInline{α}}\\
+$|\mathit{xs}|$ & \texttt{Array.size} & \leanslot{Array.size/0}{Gets the number of elements stored in an array}\\
 $\mathbb{B}$ & \texttt{Bool} & \leanslot{Bool/0}{The Boolean values, \LeanCodeInline{true} and \LeanCodeInline{false}}\\
 $\mathsf{true}$ & \texttt{Bool.true} & \leanslot{Bool.true/0}{The Boolean value \LeanCodeInline{true}, not to be confused with the proposition \LeanCodeInline{True}}\\
 $\mathit{Char}$ & \texttt{Char} & \leanslot{Char/0}{Characters are Unicode [scalar values](http://www.unicode.org/glossary/\#unicode\_scalar\_value)}\\
@@ -1830,6 +1875,7 @@ $o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{
 $\mathsf{none}$ & \texttt{Option.none} & \leanslot{Option.none/0}{No value}\\
 $x$ & \texttt{Option.some} & \leanslot{Option.some/0}{Some value of type \LeanCodeInline{α}}\\
 $\alpha \times \beta$ & \texttt{Prod} & \leanslot{Prod/0}{The product type, usually written \LeanCodeInline{α × β}}\\
+$\mathsf{readings}_{A}(g, \mathit{ts}, s)$ & \texttt{Prod.fst} & \leanslot{Prod.fst/0}{The first element of a pair}\\
 $\mathit{String}$ & \texttt{String} & \leanslot{String/0}{A string is a sequence of Unicode scalar values}\\
 $\mathit{cs}$ & \texttt{String.ofList} & \leanslot{String.ofList/0}{Creates a string that contains the characters in a list, in order}\\
 $s$ & \texttt{String.toList} & \leanslot{String.toList/0}{Converts a string to a list of characters}\\
@@ -1869,6 +1915,8 @@ $\mathsf{stale}(k)$ & \texttt{Diag.stale} & \leanslot{SpliceModel.Diag.stale/0}{
 $\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.Diag.unfaithful/0}{the rendering does not read back as the statement}\\
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
 $W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
+$\mathit{ts}[i, j) \rightsquigarrow^{g}_{A}(s, p, \mathit{excl})\ r : \sigma$ & \texttt{Exp} & \leanslot{SpliceModel.Exp/0}{\LeanCodeInline{ts[i:j]} reads as \LeanCodeInline{r}, of sort \LeanCodeInline{σ}, as an expression of sort \LeanCodeInline{s} at precedence \LeanCodeInline{p} not made by production \LeanCodeInline{excl} (DESIGN §18.4)}\\
+$e \succcurlyeq r$ & \texttt{Matches} & \leanslot{SpliceModel.Matches/0}{A reading matches the expected one: \LeanCodeInline{any} matches any reading, and a node matches a node of the same name whose children match, pairwise}\\
 $W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
 $\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\
 $\mathsf{checked}_{k}(h)$ & \texttt{Piece.check} & \leanslot{SpliceModel.Piece.check/0}{a check that hand-written prose matches the statement with this hash}\\
