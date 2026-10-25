@@ -18,7 +18,7 @@ the shapes the counterexamples used (growing, projecting, forgetful and
 size-preserving coercions; wrappers with deep holes; a comparison with a
 type variable) and random texts: the parser under the rule and under a
 plain count of twelve coercions must return the same readings, with no
-flag; and a looser depth cap must change nothing.
+flag; and a depth cap one deeper must change nothing.
 -/
 
 open Testkit Imprimatur Imprimatur.Validate
@@ -91,10 +91,13 @@ def tests : TestM Unit := group "chain-laws" do
       (fun (ps, t, s) => s!"{ps.map (·.name)} ⊢ {t} : {s}") fun (ps, t, s) =>
     let g := Grammar.of ps
     agree (readBack g t.toArray s) (readBack { g with count := some 12 } t.toArray s) "a count of twelve"
-  forAll "extract/prop/depth-cap-complete"
+  -- A cap one deeper costs about ten times the rule (each level about ten
+  -- times the last), so it runs on at most 100 cases, nightly included.
+  let cfg ← PropConfig.fromEnv
+  forAllWith { cfg with cases := min cfg.cases 100 } "extract/prop/depth-cap-complete"
       (do let ps ← genGrammar; let t ← genText 2; let s ← Gen.elem #["Prop", "*"]; return (ps, t, s))
       (fun (ps, t, s) => s!"{ps.map (·.name)} ⊢ {t} : {s}") fun (ps, t, s) =>
     let g := Grammar.of ps
-    agree (readBack g t.toArray s) (readBack { g with depth := g.depth + 3 } t.toArray s) "a cap three deeper"
+    agree (readBack g t.toArray s) (readBack { g with depth := g.depth + 1 } t.toArray s) "a cap one deeper"
 
 end ExtractTest.ChainLaws
