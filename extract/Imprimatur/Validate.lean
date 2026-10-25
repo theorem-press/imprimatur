@@ -299,7 +299,7 @@ partial def bind (env : Env) (s found : String) : Env :=
     go env (STerm.parse s) (STerm.parse found)
 
 /-- Lean's types, as the parser's sorts. -/
-def algebra : SortAlgebra := { compat, expected, bind }
+def algebra : SortAlgebra := { compat, expected, bind, anySort := fun s => s == "*" || isTyVar s }
 
 /-- The readings (at most two) of a token sequence as an expression of sort
 `s`, and where the reader gave up. -/

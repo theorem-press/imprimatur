@@ -152,8 +152,9 @@ end
 /-- A question the parser asks of a span of the text. -/
 inductive Question where
   /-- an expression of sort `s`, at precedence `p`, not by production
-  `excl`, not through the coercions `used` again -/
-  | expr (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
+  `excl`, not through a coercion whose argument is of a sort in `used`,
+  the sorts asked above on the chain of coercions -/
+  | expr (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat)
   /-- the rest of a body, `body[pos:]`, under bindings `env` -/
   | body (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat)
   /-- the rest of list `l`, `n` more elements required, under bindings `env` -/
@@ -184,31 +185,35 @@ inductive Reads : Question → Answer → Prop
   the excluded one and not a coercion: its body read under the bindings the
   sort asked for gives its type variables, and its sort under the bindings
   after the body compatible. -/
-  | prod {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
+  | prod {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {cs : Array Reading} {env : Env} :
     g.prods[k]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
     excl ≠ some k → pr.coercion = false → p ≤ pr.prec → i < j →
     Reads (.body body 0 (A.bind #[] pr.sort s) i j) (.many cs env) → A.compat (A.expected env pr.sort) s = true →
     Reads (.expr s p excl used i j) (.one (mkReading pr.name pr.order cs) (A.expected env pr.sort))
-  /-- Through a coercion of a compatible sort, not on the chain already:
-  its argument read, at the sort its hole has under the bindings the sort
-  asked for gives, under the same exclusion (an operand of a chain is never
-  the chain, through a coercion either) and with the coercion on the
-  chain, and the coercion's sort with the argument's bound compatible. A
-  chain of coercions applies each once, so is finite. -/
-  | coe {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
+  /-- Through a coercion of a compatible sort whose argument's sort was not
+  asked above on the chain: its argument read at that sort, under the
+  bindings the sort asked for gives, under the same exclusion (an operand
+  of a chain is never the chain, through a coercion either) and with the
+  sort asked for on the chain, and the coercion's sort with the argument's
+  bound compatible. A chain of coercions visits each sort once, and has no
+  cast (a coercion whose sort stands for any sort) below a cast, a cast of
+  a cast being a cast; so it is finite. -/
+  | coe {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j k : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {s' : String} {pc : Nat} {x : Option Nat} {r : Reading} {so : String} :
     g.prods[k]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
-    pr.coercion = true → used.contains k = false → body[0]? = some (ASym.hole s' pc x) →
-    Reads (.expr (A.expected (A.bind #[] pr.sort s) s') p excl (k :: used) i j) (.one r so) →
+    pr.coercion = true → used.contains (A.expected (A.bind #[] pr.sort s) s') = false →
+    (A.anySort pr.sort = true → used.contains castMark = false) → body[0]? = some (ASym.hole s' pc x) →
+    Reads (.expr (A.expected (A.bind #[] pr.sort s) s') p excl
+      (s :: (if A.anySort pr.sort then castMark :: used else used)) i j) (.one r so) →
     A.compat (A.expected (A.bind (A.bind #[] pr.sort s) s' so) pr.sort) s = true →
     Reads (.expr s p excl used i j) (.one r (A.expected (A.bind (A.bind #[] pr.sort s) s' so) pr.sort))
   /-- In the emitter's parentheses: read inside them, at any precedence. -/
-  | paren {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j : Nat} {r : Reading} {σ : String} :
+  | paren {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j : Nat} {r : Reading} {σ : String} :
     3 ≤ j - i → ts[i]? = some "(" → ts[j - 1]? = some ")" →
     Reads (.expr s 0 none [] (i + 1) (j - 1)) (.one r σ) → Reads (.expr s p excl used i j) (.one r σ)
   /-- In a TeX group: read inside it. -/
-  | group {s : String} {p : Nat} {excl : Option Nat} {used : List Nat} {i j : Nat} {r : Reading} {σ : String} :
+  | group {s : String} {p : Nat} {excl : Option Nat} {used : List String} {i j : Nat} {r : Reading} {σ : String} :
     3 ≤ j - i → ts[i]? = some "{" → ts[j - 1]? = some "}" →
     Reads (.expr s p none [] (i + 1) (j - 1)) (.one r σ) → Reads (.expr s p excl used i j) (.one r σ)
   /-- The end of the body, with nothing left. -/
@@ -247,7 +252,7 @@ inductive Reads : Question → Answer → Prop
 /-- `ts[i:j]` reads as `r`, of sort `σ`, as an expression of sort `s` at
 precedence `p` not made by production `excl`, not through the coercions
 `used` again. -/
-abbrev Exp (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) (r : Reading) (σ : String) :
+abbrev Exp (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat) (r : Reading) (σ : String) :
     Prop :=
   Reads A g ts (.expr s p excl used i j) (.one r σ)
 
@@ -267,7 +272,7 @@ end
 /-- Questions alike but for the order of their chain of coercions. -/
 inductive UsedEquiv : Question → Question → Prop
   /-- the same chain in another order -/
-  | expr {s : String} {p : Nat} {excl : Option Nat} {used used' : List Nat} {i j : Nat} :
+  | expr {s : String} {p : Nat} {excl : Option Nat} {used used' : List String} {i j : Nat} :
     (∀ x, used.contains x = used'.contains x) → UsedEquiv (.expr s p excl used i j) (.expr s p excl used' i j)
   /-- the same question -/
   | refl (q : Question) : UsedEquiv q q
@@ -285,13 +290,14 @@ theorem Reads.usedEquiv {q : Question} {a : Answer} (h : Reads A g ts q a) :
     cases hq with
     | expr _ => exact Reads.prod hk hvar hc hex hcoe hprec hij (ih _ (.refl _)) hc'
     | refl => exact Reads.prod hk hvar hc hex hcoe hprec hij (ih _ (.refl _)) hc'
-  | @coe s p excl used i j k pr body s' pc x r so hk hvar hc hcoe hused hb _ hc' ih =>
+  | @coe s p excl used i j k pr body s' pc x r so hk hvar hc hcoe hused hcast hb _ hc' ih =>
     intro q' hq
     cases hq with
     | expr hu =>
-      refine Reads.coe hk hvar hc hcoe (by rw [← hu]; exact hused) hb (ih _ (.expr fun y => ?_)) hc'
-      simp only [List.contains_cons, hu]
-    | refl => exact Reads.coe hk hvar hc hcoe hused hb (ih _ (.refl _)) hc'
+      refine Reads.coe hk hvar hc hcoe (by rw [← hu]; exact hused) (fun ht => by rw [← hu]; exact hcast ht) hb
+        (ih _ (.expr fun y => ?_)) hc'
+      split <;> simp only [List.contains_cons, hu]
+    | refl => exact Reads.coe hk hvar hc hcoe hused hcast hb (ih _ (.refl _)) hc'
   | paren h3 hl hr _ ih =>
     intro q' hq
     cases hq with
@@ -317,14 +323,31 @@ theorem exp_usedEquiv {s p excl used used' i j r σ} (hu : ∀ x, used.contains 
 
 end
 
-/-- `chainWith` adds the coercion to the chain, as a set. -/
-theorem chainWith_contains (k : Nat) : ∀ (l : List Nat) (x : Nat), (chainWith k l).contains x = (k :: l).contains x
+/-- `chainWith` adds the sort to the chain, as a set. -/
+theorem chainWith_contains (k : String) :
+    ∀ (l : List String) (x : String), (chainWith k l).contains x = (k :: l).contains x
   | [], _ => rfl
   | k' :: ks, x => by
     simp only [chainWith]
     split
     · rfl
-    · simp only [List.contains_cons, chainWith_contains k ks x]
-      cases x == k <;> cases x == k' <;> simp
+    · split
+      · rename_i heq
+        rw [beq_iff_eq] at heq
+        subst heq
+        simp only [List.contains_cons]
+        cases x == k <;> simp
+      · simp only [List.contains_cons, chainWith_contains k ks x]
+        cases x == k <;> cases x == k' <;> simp
+
+/-- The parser's chain below a coercion is the specification's, as a set. -/
+theorem chain_contains (s : String) (cast : Bool) (used : List String) (x : String) :
+    (chainWith s (if cast then chainWith castMark used else used)).contains x =
+      (s :: (if cast then castMark :: used else used)).contains x := by
+  cases cast
+  · simp only [Bool.false_eq_true, ↓reduceIte]
+    exact chainWith_contains s used x
+  · simp only [↓reduceIte]
+    rw [chainWith_contains, List.contains_cons, List.contains_cons, chainWith_contains]
 
 end SpliceModel

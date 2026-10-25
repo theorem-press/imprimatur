@@ -295,35 +295,80 @@ theorem mem_reachable {s : String} {k : Nat} (h : k ∈ reachable A g s) :
   · simp at h
   · exact h
 
-/-- What `reachSplit` sorts into its two parts was reachable. -/
+/-! ### The step of `reachSplit` -/
+
+theorem reachStep_cks (acc : Reach) (k : Nat) :
+    (reachStep g acc k).2.2 = if isCoe g k then acc.2.2.push k else acc.2.2 := by
+  simp only [reachStep]
+  split <;> rfl
+
+theorem reachStep_others_tok (acc : Reach) (k : Nat) {t : String} (h : headSym g k = some (ASym.tok t)) :
+    (reachStep g acc k).2.1 = acc.2.1 := by
+  simp only [reachStep]
+  try (split <;> first | rfl | (rename_i hno; exact absurd h (hno t)))
+
+theorem reachStep_others_not (acc : Reach) (k : Nat) (h : ∀ t, headSym g k ≠ some (ASym.tok t)) :
+    (reachStep g acc k).2.1 = acc.2.1.push k := by
+  simp only [reachStep]
+
+theorem reachStep_byTok (acc : Reach) (k : Nat) (t : String) :
+    (reachStep g acc k).1.getD t #[] = acc.1.getD t #[] ∨
+      (headSym g k = some (ASym.tok t) ∧ (reachStep g acc k).1.getD t #[] = (acc.1.getD t #[]).push k) := by
+  simp only [reachStep]
+  split
+  · rename_i t' heq
+    simp only []
+    rw [Std.HashMap.getD_insert]
+    split
+    · rename_i ht
+      rw [beq_iff_eq] at ht
+      subst ht
+      exact Or.inr ⟨heq, rfl⟩
+    · exact Or.inl rfl
+  · exact Or.inl rfl
+
+/-- What a step adds is the production stepped. -/
+theorem mem_reachStep (acc : Reach) (k : Nat) :
+    (∀ t x, x ∈ (reachStep g acc k).1.getD t #[] → x ∈ acc.1.getD t #[] ∨ x = k) ∧
+    (∀ x ∈ (reachStep g acc k).2.1, x ∈ acc.2.1 ∨ x = k) ∧
+    (∀ x ∈ (reachStep g acc k).2.2, x ∈ acc.2.2 ∨ x = k) := by
+  refine ⟨fun t x hx => ?_, fun x hx => ?_, fun x hx => ?_⟩
+  · rcases reachStep_byTok (g := g) acc k t with h | ⟨_, h⟩
+    · rw [h] at hx; exact Or.inl hx
+    · rw [h, Array.mem_push] at hx; exact hx
+  · by_cases ht : ∃ t, headSym g k = some (ASym.tok t)
+    · obtain ⟨t, ht⟩ := ht
+      rw [reachStep_others_tok acc k ht] at hx
+      exact Or.inl hx
+    · rw [reachStep_others_not acc k fun t h => ht ⟨t, h⟩, Array.mem_push] at hx
+      exact hx
+  · rw [reachStep_cks] at hx
+    split at hx
+    · rw [Array.mem_push] at hx; exact hx
+    · exact Or.inl hx
+
+/-- What `reachSplit` sorts into its parts was reachable. -/
 theorem mem_reachSplit (s : String) :
     (∀ t k, k ∈ (reachSplit A g s).1.getD t #[] → k ∈ reachable A g s) ∧
-    (∀ k ∈ (reachSplit A g s).2, k ∈ reachable A g s) := by
+    (∀ k ∈ (reachSplit A g s).2.1, k ∈ reachable A g s) ∧
+    (∀ k ∈ (reachSplit A g s).2.2, k ∈ reachable A g s) := by
   unfold reachSplit
-  refine Array.foldl_induction (motive := fun (_ : Nat) (acc : Std.HashMap String (Array Nat) × Array Nat) =>
-    (∀ t k, k ∈ acc.1.getD t #[] → k ∈ reachable A g s) ∧ (∀ k ∈ acc.2, k ∈ reachable A g s)) ?_ ?_
-  · exact ⟨fun t k h => by simp at h, fun k h => by simp at h⟩
+  refine Array.foldl_induction (motive := fun (_ : Nat) (acc : Reach) =>
+    (∀ t k, k ∈ acc.1.getD t #[] → k ∈ reachable A g s) ∧ (∀ k ∈ acc.2.1, k ∈ reachable A g s) ∧
+      (∀ k ∈ acc.2.2, k ∈ reachable A g s)) ?_ ?_
+  · exact ⟨fun t k h => by simp at h, fun k h => by simp at h, fun k h => by simp at h⟩
   · intro n acc hacc
     have hmem : (reachable A g s)[n] ∈ reachable A g s := Array.getElem_mem _
-    obtain ⟨byTok, others⟩ := acc
-    simp only []
-    split
-    · rename_i t _
-      refine ⟨fun t' k h => ?_, hacc.2⟩
-      simp only at h
-      rw [Std.HashMap.getD_insert] at h
-      split at h
-      · rename_i heq
-        rw [Array.mem_push] at h
-        rcases h with h | rfl
-        · exact hacc.1 t k h
-        · exact hmem
-      · exact hacc.1 t' k h
-    · refine ⟨hacc.1, fun k h => ?_⟩
-      simp only at h
-      rw [Array.mem_push] at h
-      rcases h with h | rfl
-      · exact hacc.2 k h
+    obtain ⟨h1, h2, h3⟩ := mem_reachStep (g := g) acc (reachable A g s)[n]
+    refine ⟨fun t k h => ?_, fun k h => ?_, fun k h => ?_⟩
+    · rcases h1 t k h with h | rfl
+      · exact hacc.1 t k h
+      · exact hmem
+    · rcases h2 k h with h | rfl
+      · exact hacc.2.1 k h
+      · exact hmem
+    · rcases h3 k h with h | rfl
+      · exact hacc.2.2 k h
       · exact hmem
 
 /-- A production tried is not the excluded one, not a coercion, and at or
@@ -401,12 +446,16 @@ def SoundAll (fuel : Nat) : Prop :=
 
 /-- The candidates of a question are reachable. -/
 theorem cands_reachable (s : String) (t : String) :
-    Cands (A := A) (g := g) s ((reachSplit A g s).1.getD t #[] ++ (reachSplit A g s).2).toList := by
+    Cands (A := A) (g := g) s ((reachSplit A g s).1.getD t #[] ++ (reachSplit A g s).2.1).toList := by
   intro k hk
   rw [Array.toList_append, List.mem_append, ← Array.mem_def, ← Array.mem_def] at hk
   rcases hk with hk | hk
   · exact mem_reachable ((mem_reachSplit s).1 t k hk)
-  · exact mem_reachable ((mem_reachSplit s).2 k hk)
+  · exact mem_reachable ((mem_reachSplit s).2.1 k hk)
+
+/-- The coercions of a question are reachable. -/
+theorem coes_reachable (s : String) : Cands (A := A) (g := g) s (reachSplit A g s).2.2.toList :=
+  fun k hk => mem_reachable ((mem_reachSplit s).2.2 k (Array.mem_def.mpr hk))
 
 /-- A computation that only sets `over` is sound, with no readings. -/
 theorem triple_over {α : Type} {Q : Array α → Prop} (h : Q #[]) :
@@ -678,7 +727,7 @@ theorem prods_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) :
       · rename_i hnone
         exact absurd hk (hnone pr body)
 
-theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) :
+theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat) :
     ∀ (ks : List Nat) (out : Array (Reading × String)), i < j → Cands (A := A) (g := g) s ks →
       (∀ x ∈ out, Exp A g ts s p excl used i j x.1 x.2) →
       Triple A g ts (coes A g ts (fuel + 1) s p excl used i j ks out)
@@ -693,29 +742,35 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (
     · rename_i pr body hk
       split
       · exact hrest
-      · rename_i hcond
+      · rename_i hcoe
         have hcoe' : pr.coercion = true := by cases h : pr.coercion <;> simp_all
-        have hused : used.contains k = false := by cases h : used.contains k <;> simp_all
         obtain ⟨pr', body', hk', hvar, hcompat⟩ := hks k (List.mem_cons_self ..)
         rw [hk] at hk'
         simp only [Option.some.injEq, Prod.mk.injEq] at hk'
         obtain ⟨rfl, rfl⟩ := hk'
         split
         · rename_i s' pc x hb
-          refine triple_bind (triple_mono (ihE (A.expected (A.bind #[] pr.sort s) s') p excl (chainWith k used) i j)
-            fun res hres x hx => exp_usedEquiv (chainWith_contains k used) (hres x hx).2) fun args hargs => ?_
-          refine triple_bind (triple_addCoes s pr s' (A.bind #[] pr.sort s)
-            (P := fun x => Exp A g ts s p excl used i j x.1 x.2)
-            (R := fun x => Exp A g ts (A.expected (A.bind #[] pr.sort s) s') p excl (k :: used) i j x.1 x.2)
-            ?_ args.toList out
-            (fun x hx => hargs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
-            ihC s p excl used i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'
-          intro r so h hc
-          exact Reads.coe hk hvar hcompat hcoe' hused hb h hc
+          split
+          · exact hrest
+          · rename_i hcond
+            simp only [Bool.or_eq_true, Bool.and_eq_true, not_or, not_and, Bool.not_eq_true] at hcond
+            refine triple_bind (triple_mono (ihE (A.expected (A.bind #[] pr.sort s) s') p excl
+              (chainWith s (if A.anySort pr.sort then chainWith castMark used else used)) i j)
+              fun res hres x hx => exp_usedEquiv (chain_contains s (A.anySort pr.sort) used) (hres x hx).2)
+              fun args hargs => ?_
+            refine triple_bind (triple_addCoes s pr s' (A.bind #[] pr.sort s)
+              (P := fun x => Exp A g ts s p excl used i j x.1 x.2)
+              (R := fun x => Exp A g ts (A.expected (A.bind #[] pr.sort s) s') p excl
+                (s :: (if A.anySort pr.sort then castMark :: used else used)) i j x.1 x.2)
+              ?_ args.toList out
+              (fun x hx => hargs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
+              ihC s p excl used i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'
+            intro r so h hc
+            exact Reads.coe hk hvar hcompat hcoe' hcond.1 hcond.2 hb h hc
         · exact hrest
     · exact hrest
 
-theorem expr_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) :
+theorem expr_step (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat) :
     Triple A g ts (expr A g ts (fuel + 1) s p excl used i j)
       (fun res => ∀ x ∈ res, i < j ∧ Exp A g ts s p excl used i j x.1 x.2) := by
   obtain ⟨_, ihEF, _⟩ := ih
@@ -730,7 +785,7 @@ theorem expr_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (
       exact triple_pure (hst.1 s p excl used i j n hmemo)
     · exact triple_mono (ihEF s p excl used i j hij') fun res hres x hx => ⟨hij', hres x hx⟩
 
-theorem exprFresh_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat) (hij : i < j) :
+theorem exprFresh_step (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat) (hij : i < j) :
     Triple A g ts (exprFresh A g ts (fuel + 1) s p excl used i j)
       (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2) := by
   obtain ⟨_, _, ihER, _⟩ := ih
@@ -749,14 +804,14 @@ theorem exprFresh_step (s : String) (p : Nat) (excl : Option Nat) (used : List N
           ihER s p excl used i j r hij hr
 
 theorem exprDirect_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
-    (r : Std.HashMap String (Array Nat) × Array Nat) (hij : i < j) (hr : r = reachSplit A g s) :
+    (r : Reach) (hij : i < j) (hr : r = reachSplit A g s) :
     Triple A g ts (exprDirect A g ts (fuel + 1) s p excl i j r)
       (fun res => ∀ x ∈ res, ∀ used, Exp A g ts s p excl used i j x.1 x.2) := by
   obtain ⟨_, _, _, ihP, _, _, _, _, _, _, _, ihPa, ihG, _⟩ := ih
-  obtain ⟨byTok, others⟩ := r
+  obtain ⟨byTok, others, cks⟩ := r
   have hcands : Cands (A := A) (g := g) s (byTok.getD (ts.getD i "") #[] ++ others).toList := by
     have h1 : byTok = (reachSplit A g s).1 := congrArg Prod.fst hr
-    have h2 : others = (reachSplit A g s).2 := congrArg Prod.snd hr
+    have h2 : others = (reachSplit A g s).2.1 := congrArg (fun x => x.2.1) hr
     rw [h1, h2]
     exact cands_reachable s _
   simp only [exprDirect]
@@ -770,17 +825,16 @@ theorem exprDirect_step (s : String) (p : Nat) (excl : Option Nat) (i j : Nat)
     exact triple_bind (triple_modify fun st h => h.insertD (fun x hx => ⟨hij, hout₃ x hx⟩)) fun _ _ =>
       triple_pure hout₃
 
-theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (used : List Nat) (i j : Nat)
-    (r : Std.HashMap String (Array Nat) × Array Nat) (hij : i < j) (hr : r = reachSplit A g s) :
+theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (used : List String) (i j : Nat)
+    (r : Reach) (hij : i < j) (hr : r = reachSplit A g s) :
     Triple A g ts (exprRead A g ts (fuel + 1) s p excl used i j r)
       (fun res => ∀ x ∈ res, Exp A g ts s p excl used i j x.1 x.2) := by
   obtain ⟨_, _, _, _, ihC, _, _, _, _, _, _, _, _, ihD⟩ := ih
-  obtain ⟨byTok, others⟩ := r
-  have hcands : Cands (A := A) (g := g) s (byTok.getD (ts.getD i "") #[] ++ others).toList := by
-    have h1 : byTok = (reachSplit A g s).1 := congrArg Prod.fst hr
-    have h2 : others = (reachSplit A g s).2 := congrArg Prod.snd hr
-    rw [h1, h2]
-    exact cands_reachable s _
+  obtain ⟨byTok, others, cks⟩ := r
+  have hcands : Cands (A := A) (g := g) s cks.toList := by
+    have h3 : cks = (reachSplit A g s).2.2 := congrArg (fun x => x.2.2) hr
+    rw [h3]
+    exact coes_reachable s
   simp only [exprRead]
   refine triple_bind (ihD s p excl i j _ hij hr) fun direct hdirect => ?_
   refine triple_bind (ihC s p excl used i j _ direct hij hcands fun x hx => hdirect x hx used) fun out hout => ?_

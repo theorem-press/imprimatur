@@ -32,9 +32,9 @@ which only a production whose body is a hole and nothing else brings
 about). A formula with a flag set is not validated.
 
 **Coercions** are invisible, and chain: a reading through one may be a
-reading through another. A chain applies each coercion once, which the
-question records (`used`), so chains are finite and a question is never
-asked again through a cycle of coercions.
+reading through another. A chain visits each sort once, which the question
+records (`used`, the sorts asked above it), so chains are finite and a
+question is never asked again through a cycle of coercions.
 -/
 
 namespace Imprimatur.Validate
@@ -299,13 +299,38 @@ structure SortAlgebra where
   expected : Env → String → String
   /-- Bind a hole's type variables to the parts of the sort of what fills it. -/
   bind : Env → String → String → Env
+  /-- A sort that stands for any sort: the unknown sort, or a type variable
+  alone. A coercion of such a sort is a cast, and a cast of a cast is a
+  cast, so the parser does not chain them. -/
+  anySort : String → Bool
+
+/-- The first symbol of production `k`. -/
+def headSym (g : Grammar) (k : Nat) : Option ASym := (g.prods[k]?.map (·.2)).bind (·[0]?)
+
+/-- Whether production `k` is a coercion. -/
+def isCoe (g : Grammar) (k : Nat) : Bool :=
+  match g.prods[k]? with
+  | some (pr, _) => pr.coercion
+  | none => false
+
+/-- `reachable`, split into the productions that start with a token, by the
+token, and the others; and the coercions among them, which the parser
+tries at each chain. -/
+abbrev Reach := Std.HashMap String (Array Nat) × Array Nat × Array Nat
+
+/-- `reachSplit`'s step: production `k` sorted in. -/
+def reachStep (g : Grammar) (acc : Reach) (k : Nat) : Reach :=
+  let cks := if isCoe g k then acc.2.2.push k else acc.2.2
+  match headSym g k with
+  | some (ASym.tok t) => (acc.1.insert t ((acc.1.getD t #[]).push k), acc.2.1, cks)
+  | _ => (acc.1, acc.2.1.push k, cks)
 
 /-! ## Counting readings -/
 
 /-- A question of an expression: its sort, precedence, the production it is
-not made by, the coercions already on the chain it is the argument of, and
-its span. -/
-abbrev ExprKey := String × Nat × Option Nat × List Nat × Nat × Nat
+not made by, the sorts asked above it on the chain of coercions it is the
+argument of, and its span. -/
+abbrev ExprKey := String × Nat × Option Nat × List String × Nat × Nat
 
 /-- What the reader remembers. -/
 structure CState where
@@ -336,7 +361,7 @@ structure CState where
   log : Array String := #[]
   /-- `reachable`, by sort: those that start with a token, by the token,
   and the others. -/
-  reach : Std.HashMap String (Std.HashMap String (Array Nat) × Array Nat) := {}
+  reach : Std.HashMap String Reach := {}
 
 /-- The reader's monad. -/
 abbrev CountM := StateM CState
@@ -399,24 +424,23 @@ def reachable (A : SortAlgebra) (g : Grammar) (s : String) : Array Nat :=
     | some (p, _) => if !p.isVar && A.compat p.sort s then out.push i else out
     | none => out) #[]
 
-/-- `reachable`, split into the productions that start with a token, by the
-token, and the others. -/
-def reachSplit (A : SortAlgebra) (g : Grammar) (s : String) :
-    Std.HashMap String (Array Nat) × Array Nat :=
-  (reachable A g s).foldl (fun (byTok, others) k =>
-    match (g.prods[k]?.map (·.2)).bind (·[0]?) with
-    | some (ASym.tok t) => (byTok.insert t ((byTok.getD t #[]).push k), others)
-    | _ => (byTok, others.push k))
-    (({} : Std.HashMap String (Array Nat)), (#[] : Array Nat))
+/-- `reachable`, split: see `Reach`. -/
+def reachSplit (A : SortAlgebra) (g : Grammar) (s : String) : Reach :=
+  (reachable A g s).foldl (reachStep g) (({} : Std.HashMap String (Array Nat)), (#[] : Array Nat), (#[] : Array Nat))
 
 /-- The text of readings, as a key. -/
 def readingsKey (cs : Array Reading) : String := Reading.text (.node "" cs.toList)
 
-/-- The chain of coercions with `k` added, kept sorted: a question is the
-same whatever order its chain was made in. -/
-def chainWith (k : Nat) : List Nat → List Nat
+/-- The mark on a chain of coercions that a cast is above: no sort is
+written so. -/
+def castMark : String := ""
+
+/-- The sorts on a chain of coercions with `k` added, kept sorted and
+without repeats: a question is the same whatever order its chain was made
+in. -/
+def chainWith (k : String) : List String → List String
   | [] => [k]
-  | k' :: ks => if k < k' then k :: k' :: ks else k' :: chainWith k ks
+  | k' :: ks => if k < k' then k :: k' :: ks else if k == k' then k' :: ks else k' :: chainWith k ks
 
 /-- Whether production `k` is tried for sort `s` at precedence `p` on
 `ts[i:j]`: not the excluded one, not a coercion, at or above `p`, and, if
@@ -473,10 +497,11 @@ def varOf (g : Grammar) (ts : Array String) (i j : Nat) : List (Prod × Array AS
 
 mutual
   /-- Readings of `ts[i:j]` as an expression of sort `s` at precedence `p`,
-  not made by production `excl`, not through the coercions `used` again,
+  not made by production `excl`, not through a coercion whose argument is
+  of a sort in `used` (those asked above it on the chain of coercions),
   with their sorts: at most two. -/
   def expr (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List Nat → Nat → Nat → CountM (Array (Reading × String))
+      Nat → String → Nat → Option Nat → List String → Nat → Nat → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, p, excl, used, i, j => do
       if i ≥ j then return #[]
@@ -487,7 +512,7 @@ mutual
   /-- `expr`, when the question is not remembered: cut if it is being
   asked, else asked, and remembered. -/
   def exprFresh (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List Nat → Nat → Nat → CountM (Array (Reading × String))
+      Nat → String → Nat → Option Nat → List String → Nat → Nat → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, p, excl, used, i, j => do
       let key : ExprKey := (s, p, excl, used, i, j)
@@ -505,16 +530,16 @@ mutual
 
   /-- `expr`, asked: the readings not through a coercion of its own, and
   through each coercion (`r`: the candidate productions, those that start
-  with a token by the token, and the others); then remembered. -/
+  with a token by the token, the others, and the coercions); then
+  remembered. -/
   def exprRead (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List Nat → Nat → Nat →
-      Std.HashMap String (Array Nat) × Array Nat → CountM (Array (Reading × String))
+      Nat → String → Nat → Option Nat → List String → Nat → Nat →
+      Reach → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, s, p, excl, used, i, j, (byTok, others) => do
+    | fuel + 1, s, p, excl, used, i, j, (byTok, others, cks) => do
       let key : ExprKey := (s, p, excl, used, i, j)
-      let direct ← exprDirect A g ts fuel s p excl i j (byTok, others)
-      let cands := (byTok.getD (ts.getD i "") #[] ++ others).toList
-      let out ← coes A g ts fuel s p excl used i j cands direct
+      let direct ← exprDirect A g ts fuel s p excl i j (byTok, others, cks)
+      let out ← coes A g ts fuel s p excl used i j cks.toList direct
       modify fun st => { st with active := st.active.erase key, memo := st.memo.insert key out }
       if (← get).trace then
         let line := s!"{s} @{p} [{i},{j}) {ts.extract i j}: {out.map fun (r, so) => (r.text, so)}"
@@ -529,9 +554,9 @@ mutual
   it. -/
   def exprDirect (A : SortAlgebra) (g : Grammar) (ts : Array String) :
       Nat → String → Nat → Option Nat → Nat → Nat →
-      Std.HashMap String (Array Nat) × Array Nat → CountM (Array (Reading × String))
+      Reach → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, s, p, excl, i, j, (byTok, others) => do
+    | fuel + 1, s, p, excl, i, j, (byTok, others, _) => do
       let key := (s, p, excl, i, j)
       if let some n := (← get).memoD[key]? then return n
       let cands := (byTok.getD (ts.getD i "") #[] ++ others).toList
@@ -578,26 +603,33 @@ mutual
         let out ← addProds A s pr rs.toList out
         prods A g ts fuel s p excl i j ks out
 
-  /-- The readings through each coercion not on the chain already, onto
-  `out`: its argument read, at the precedence asked for and under the same
-  exclusion, with the coercion on the chain (`chainWith`). Coercions are invisible: a
-  reading through one is its argument's, and its sort is the coercion's,
-  with the argument's sort bound (`Option.some` of a label is an
-  `Option(Label)`). -/
+  /-- The readings through each coercion whose argument's sort was not
+  asked above on the chain, and that is not a cast below a cast, onto
+  `out`: the argument read at that sort, at the precedence asked for,
+  under the same exclusion, with the sort asked for added to the chain
+  (`chainWith`, and `castMark` for a cast): a chain of coercions visits
+  each sort once, so a coercion of the sort asked for applies once, and
+  a chain is finite. Coercions are invisible: a reading through one is
+  its argument's, and its sort is the coercion's, with the argument's sort
+  bound (`Option.some` of a label is an `Option(Label)`). -/
   def coes (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List Nat → Nat → Nat → List Nat → Array (Reading × String) →
+      Nat → String → Nat → Option Nat → List String → Nat → Nat → List Nat → Array (Reading × String) →
       CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | _, _, _, _, _, _, _, [], out => pure out
     | fuel + 1, s, p, excl, used, i, j, k :: ks, out => do
       let some (pr, body) := g.prods[k]? | coes A g ts fuel s p excl used i j ks out
-      if !pr.coercion || used.contains k then coes A g ts fuel s p excl used i j ks out
+      if !pr.coercion then coes A g ts fuel s p excl used i j ks out
       else
         let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl used i j ks out
         let env₀ := A.bind #[] pr.sort s
-        let args ← expr A g ts fuel (A.expected env₀ s') p excl (chainWith k used) i j
-        let out ← addCoes A s pr s' env₀ args.toList out
-        coes A g ts fuel s p excl used i j ks out
+        let es' := A.expected env₀ s'
+        let cast := A.anySort pr.sort
+        if used.contains es' || (cast && used.contains castMark) then coes A g ts fuel s p excl used i j ks out
+        else
+          let args ← expr A g ts fuel es' p excl (chainWith s (if cast then chainWith castMark used else used)) i j
+          let out ← addCoes A s pr s' env₀ args.toList out
+          coes A g ts fuel s p excl used i j ks out
 
   /-- Readings of `ts[i:j]` as `body[pos:]` under bindings `env`: the readings of its holes, variables and lists, and
   the bindings after them. -/
