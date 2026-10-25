@@ -32,9 +32,10 @@ which only a production whose body is a hole and nothing else brings
 about). A formula with a flag set is not validated.
 
 **Coercions** are invisible, and chain: a reading through one may be a
-reading through another. A chain visits each sort once, which the question
-records (`used`, the sorts asked above it), so chains are finite and a
-question is never asked again through a cycle of coercions.
+reading through another. A chain visits a sort once but for growth, grows a
+sort at most `Grammar.depth + 1` times, and casts no cast (`Chain`); so
+chains are finite, and a chain so shaped reads whatever a longer one would
+(docs/coercion-chains.md).
 -/
 
 namespace Imprimatur.Validate
@@ -266,21 +267,46 @@ def compileSym (chain : Option Nat) : Sym → Lists → Array ASym × Lists
     (e.push (.tail idx (min - 1)), lists.push (e, (sep.map ASym.tok).toArray))
 end
 
+/-- The depth of a sort as written: its nesting of parentheses
+(`List(Option(Nat))` is 2). -/
+def sortDepth (s : String) : Nat :=
+  (s.toList.foldl (fun (dm : Nat × Nat) c =>
+    if c == '(' then (dm.1 + 1, max dm.2 (dm.1 + 1)) else if c == ')' then (dm.1 - 1, dm.2) else dm) (0, 0)).2
+
+/-- The depth of the deepest sort a symbol writes. -/
+def ASym.depth : ASym → Nat
+  | .hole so _ _ => sortDepth so
+  | _ => 0
+
+/-- The depth of the deepest sort a grammar writes: a production's, a
+hole's. -/
+def depthOf (prods : Array (Prod × Array ASym)) (lists : Lists) : Nat :=
+  let depth := prods.foldl (fun m (pr, body) =>
+    max m (max (sortDepth pr.sort) (body.foldl (fun m sym => max m sym.depth) 0))) 0
+  lists.foldl (fun m (elem, sep) =>
+    max m (max (elem.foldl (fun m sym => max m sym.depth) 0) (sep.foldl (fun m sym => max m sym.depth) 0))) depth
+
 /-- A compiled grammar. -/
 structure Grammar where
   /-- The productions, with their compiled bodies. -/
   prods : Array (Prod × Array ASym)
   /-- The lists: element and separator, compiled. -/
   lists : Lists
+  /-- The depth of the deepest sort it writes (`depthOf`): a reading of a
+  deeper sort than one more is not kept, since no sort of the grammar can
+  tell it from one truncated there, and a chain of coercions grows a sort
+  at most that often (docs/coercion-chains.md). -/
+  depth : Nat
 
 /-- Add productions to a grammar. -/
 def Grammar.extend (g : Grammar) (ps : Array Prod) : Grammar :=
-  ps.foldl (fun g p =>
+  let g := ps.foldl (fun g p =>
     let (b, lists) := compileSyms (if p.chain then some g.prods.size else none) p.syms g.lists
-    { prods := g.prods.push (p, b), lists }) g
+    { g with prods := g.prods.push (p, b), lists }) g
+  { g with depth := depthOf g.prods g.lists }
 
 /-- Compile productions into a grammar. -/
-def Grammar.of (ps : Array Prod) : Grammar := Grammar.extend { prods := #[], lists := #[] } ps
+def Grammar.of (ps : Array Prod) : Grammar := Grammar.extend { prods := #[], lists := #[], depth := 0 } ps
 
 /-! ## Sorts -/
 
@@ -303,6 +329,59 @@ structure SortAlgebra where
   alone. A coercion of such a sort is a cast, and a cast of a cast is a
   cast, so the parser does not chain them. -/
   anySort : String → Bool
+
+/-- A reading's sort fits the sort asked for: compatible, and no deeper
+than the grammar's deepest sort and one more. -/
+def fits (A : SortAlgebra) (g : Grammar) (so s : String) : Bool :=
+  A.compat so s && sortDepth so ≤ g.depth + 1
+
+/-- The sorts on a chain of coercions with `k` added, kept sorted and
+without repeats: a question is the same whatever order its chain was made
+in. -/
+def chainWith (k : String) : List String → List String
+  | [] => [k]
+  | k' :: ks => if k < k' then k :: k' :: ks else if k == k' then k' :: ks else k' :: chainWith k ks
+
+/-- What a question knows of the chain of invisible coercions it is the
+argument of: the sorts asked above it, how many growing coercions (whose
+sort is deeper than their hole's, `Option.some : ?α → Option(?α)`) may still
+be applied, and whether a cast (`forgetful`) is above. A chain visits a sort once but for growth, grows a sort at most
+`Grammar.depth + 1` times, and casts no cast: a chain so shaped reads
+whatever a longer one would (docs/coercion-chains.md). -/
+structure Chain where
+  /-- the sorts asked above, as a set -/
+  visited : List String
+  /-- how many growing coercions may still be applied -/
+  growth : Nat
+  /-- whether a cast is above -/
+  cast : Bool
+  deriving DecidableEq, Hashable, Repr, Inhabited
+
+/-- A coercion grows its argument's sort: its sort is deeper than its hole's. -/
+def growing (pr : Prod) (s' : String) : Bool := sortDepth s' < sortDepth pr.sort
+
+/-- A coercion forgets its argument's sort (a cast): its sort stands for any
+sort and its hole's sort does not mention it, so what it yields does not
+depend on what it is given (`Nat.cast : Nat → *`). A cast of a cast is a
+cast, so chains apply one at most. -/
+def forgetful (A : SortAlgebra) (pr : Prod) (s' : String) : Bool :=
+  A.anySort pr.sort && (s'.splitOn pr.sort).length == 1
+
+/-- Whether the chain lets coercion `pr`, of hole sort `s'`, be applied. -/
+def Chain.allows (A : SortAlgebra) (ch : Chain) (pr : Prod) (s' : String) : Bool :=
+  if growing pr s' then 0 < ch.growth
+  else !ch.visited.contains (A.expected #[] s') && !(forgetful A pr s' && ch.cast)
+
+/-- The chain below coercion `pr`, of hole sort `s'`, applied at a question
+of sort `s`. -/
+def Chain.push (A : SortAlgebra) (ch : Chain) (pr : Prod) (s' s : String) : Chain :=
+  { visited := chainWith s ch.visited,
+    growth := if growing pr s' then ch.growth - 1 else ch.growth,
+    cast := ch.cast || forgetful A pr s' }
+
+/-- The chain at a hole, in parentheses, in a group, or at the top: nothing
+above, the grammar's growth. -/
+def Grammar.chain0 (g : Grammar) : Chain := { visited := [], growth := g.depth + 1, cast := false }
 
 /-- The first symbol of production `k`. -/
 def headSym (g : Grammar) (k : Nat) : Option ASym := (g.prods[k]?.map (·.2)).bind (·[0]?)
@@ -328,9 +407,9 @@ def reachStep (g : Grammar) (acc : Reach) (k : Nat) : Reach :=
 /-! ## Counting readings -/
 
 /-- A question of an expression: its sort, precedence, the production it is
-not made by, the sorts asked above it on the chain of coercions it is the
-argument of, and its span. -/
-abbrev ExprKey := String × Nat × Option Nat × List String × Nat × Nat
+not made by, what it knows of the chain of coercions it is the argument of
+(`Chain`), and its span. -/
+abbrev ExprKey := String × Nat × Option Nat × Chain × Nat × Nat
 
 /-- What the reader remembers. -/
 structure CState where
@@ -435,17 +514,6 @@ def reachSplit (A : SortAlgebra) (g : Grammar) (s : String) : Reach :=
 /-- The text of readings, as a key. -/
 def readingsKey (cs : Array Reading) : String := Reading.text (.node "" cs.toList)
 
-/-- The mark on a chain of coercions that a cast is above: no sort is
-written so. -/
-def castMark : String := ""
-
-/-- The sorts on a chain of coercions with `k` added, kept sorted and
-without repeats: a question is the same whatever order its chain was made
-in. -/
-def chainWith (k : String) : List String → List String
-  | [] => [k]
-  | k' :: ks => if k < k' then k :: k' :: ks else if k == k' then k' :: ks else k' :: chainWith k ks
-
 /-- Whether production `k` is tried for sort `s` at precedence `p` on
 `ts[i:j]`: not the excluded one, not a coercion, at or above `p`, and, if
 its body starts or ends with a token, that token where it stands. -/
@@ -458,26 +526,26 @@ def tried (g : Grammar) (ts : Array String) (p : Nat) (excl : Option Nat) (i j k
       (match body.back? with | some (ASym.tok t) => ts[j - 1]? == some t | _ => true)
 
 /-- The readings of production `pr`, from the readings of its body, onto
-`out`: each at the production's sort under its bindings, when that is
-compatible with the sort asked for. -/
-def addProds (A : SortAlgebra) (s : String) (pr : Prod) :
+`out`: each at the production's sort under its bindings, when that fits
+the sort asked for. -/
+def addProds (A : SortAlgebra) (g : Grammar) (s : String) (pr : Prod) :
     List (Array Reading × Env) → Array (Reading × String) → CountM (Array (Reading × String))
   | [], out => pure out
   | (cs, env) :: rest, out => do
     let so := A.expected env pr.sort
-    if !A.compat so s then addProds A s pr rest out
-    else addProds A s pr rest (← keepM (·.1.text) (out.push (mkReading pr.name pr.order cs, so)))
+    if !fits A g so s then addProds A g s pr rest out
+    else addProds A g s pr rest (← keepM (·.1.text) (out.push (mkReading pr.name pr.order cs, so)))
 
 /-- The readings through coercion `pr` of hole sort `s'`, from its
 argument's readings, onto `out`: each at the coercion's sort with the
-argument's bound, when that is compatible with the sort asked for. -/
-def addCoes (A : SortAlgebra) (s : String) (pr : Prod) (s' : String) :
+argument's bound, when that fits the sort asked for. -/
+def addCoes (A : SortAlgebra) (g : Grammar) (s : String) (pr : Prod) (s' : String) :
     List (Reading × String) → Array (Reading × String) → CountM (Array (Reading × String))
   | [], out => pure out
   | (r, so) :: rest, out => do
     let sort := A.expected (A.bind #[] s' so) pr.sort
-    if !A.compat sort s then addCoes A s pr s' rest out
-    else addCoes A s pr s' rest (← keepM (·.1.text) (out.push (r, sort)))
+    if !fits A g sort s then addCoes A g s pr s' rest out
+    else addCoes A g s pr s' rest (← keepM (·.1.text) (out.push (r, sort)))
 
 /-- The readings of a nonterminal, each followed by the readings of the rest
 of the body, onto `out`. -/
@@ -500,25 +568,24 @@ def varOf (g : Grammar) (ts : Array String) (i j : Nat) : List (Prod × Array AS
 
 mutual
   /-- Readings of `ts[i:j]` as an expression of sort `s` at precedence `p`,
-  not made by production `excl`, not through a coercion whose argument is
-  of a sort in `used` (those asked above it on the chain of coercions),
-  with their sorts: at most two. -/
+  not made by production `excl`, through the invisible coercions the chain
+  `ch` allows, with their sorts: at most two. -/
   def expr (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List String → Nat → Nat → CountM (Array (Reading × String))
+      Nat → String → Nat → Option Nat → Chain → Nat → Nat → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, s, p, excl, used, i, j => do
+    | fuel + 1, s, p, excl, ch, i, j => do
       if i ≥ j then return #[]
-      let key : ExprKey := (s, p, excl, used, i, j)
+      let key : ExprKey := (s, p, excl, ch, i, j)
       if let some n := (← get).memo[key]? then return n
-      exprFresh A g ts fuel s p excl used i j
+      exprFresh A g ts fuel s p excl ch i j
 
   /-- `expr`, when the question is not remembered: cut if it is being
   asked, else asked, and remembered. -/
   def exprFresh (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List String → Nat → Nat → CountM (Array (Reading × String))
+      Nat → String → Nat → Option Nat → Chain → Nat → Nat → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, s, p, excl, used, i, j => do
-      let key : ExprKey := (s, p, excl, used, i, j)
+    | fuel + 1, s, p, excl, ch, i, j => do
+      let key : ExprKey := (s, p, excl, ch, i, j)
       if (← get).active.contains key then
         modify fun st => { st with cut := true }
         return #[]
@@ -529,20 +596,20 @@ mutual
           let r := reachSplit A g s
           modify fun st => { st with reach := st.reach.insert s r }
           pure r
-      exprRead A g ts fuel s p excl used i j r
+      exprRead A g ts fuel s p excl ch i j r
 
   /-- `expr`, asked: the readings not through a coercion of its own, and
   through each coercion (`r`: the candidate productions, those that start
   with a token by the token, the others, and the coercions); then
   remembered. -/
   def exprRead (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List String → Nat → Nat →
+      Nat → String → Nat → Option Nat → Chain → Nat → Nat →
       Reach → CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
-    | fuel + 1, s, p, excl, used, i, j, (byTok, others, cks) => do
-      let key : ExprKey := (s, p, excl, used, i, j)
+    | fuel + 1, s, p, excl, ch, i, j, (byTok, others, cks) => do
+      let key : ExprKey := (s, p, excl, ch, i, j)
       let direct ← exprDirect A g ts fuel s p excl i j (byTok, others, cks)
-      let out ← coes A g ts fuel s p excl used i j cks.toList direct
+      let out ← coes A g ts fuel s p excl ch i j cks.toList direct
       modify fun st => { st with active := st.active.erase key, memo := st.memo.insert key out }
       if (← get).trace then
         let line := s!"{s} @{p} [{i},{j}) {ts.extract i j}: {out.map fun (r, so) => (r.text, so)}"
@@ -576,7 +643,7 @@ mutual
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, _, _, i, j, out => do
       if j - i ≥ 3 && ts[i]? == some "(" && ts[j - 1]? == some ")" then
-        keepM (·.1.text) (out ++ (← expr A g ts fuel s 0 none [] (i + 1) (j - 1)))
+        keepM (·.1.text) (out ++ (← expr A g ts fuel s 0 none g.chain0 (i + 1) (j - 1)))
       else pure out
 
   /-- The readings in a TeX group (`{k_{1}}_{x}`), which does not print,
@@ -586,7 +653,7 @@ mutual
     | 0, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | fuel + 1, s, p, _, i, j, out => do
       if j - i ≥ 3 && ts[i]? == some "{" && ts[j - 1]? == some "}" then
-        keepM (·.1.text) (out ++ (← expr A g ts fuel s p none [] (i + 1) (j - 1)))
+        keepM (·.1.text) (out ++ (← expr A g ts fuel s p none g.chain0 (i + 1) (j - 1)))
       else pure out
 
   /-- The readings by each production tried, onto `out`. A production's
@@ -603,35 +670,30 @@ mutual
       else
         let some (pr, body) := g.prods[k]? | prods A g ts fuel s p excl i j ks out
         let rs ← seq A g ts fuel body 0 #[] i j
-        let out ← addProds A s pr rs.toList out
+        let out ← addProds A g s pr rs.toList out
         prods A g ts fuel s p excl i j ks out
 
-  /-- The readings through each coercion whose argument's sort was not
-  asked above on the chain, and that is not a cast below a cast, onto
-  `out`: the argument read at that sort, at the precedence asked for,
-  under the same exclusion, with the sort asked for added to the chain
-  (`chainWith`, and `castMark` for a cast): a chain of coercions visits
-  each sort once, so a coercion of the sort asked for applies once, and
-  a chain is finite. Coercions are invisible: a reading through one is
-  its argument's, and its sort is the coercion's, with the argument's sort
-  bound (`Option.some` of a label is an `Option(Label)`). -/
+  /-- The readings through each coercion the chain allows, onto `out`: the
+  argument read at the sort of the coercion's hole, at the precedence
+  asked for, under the same exclusion, below the coercion on the chain.
+  Coercions are invisible: a reading through one is its argument's, and
+  its sort is the coercion's, with the argument's sort bound
+  (`Option.some` of a label is an `Option(Label)`). -/
   def coes (A : SortAlgebra) (g : Grammar) (ts : Array String) :
-      Nat → String → Nat → Option Nat → List String → Nat → Nat → List Nat → Array (Reading × String) →
+      Nat → String → Nat → Option Nat → Chain → Nat → Nat → List Nat → Array (Reading × String) →
       CountM (Array (Reading × String))
     | 0, _, _, _, _, _, _, _, _ => do modify fun st => { st with over := true }; return #[]
     | _, _, _, _, _, _, _, [], out => pure out
-    | fuel + 1, s, p, excl, used, i, j, k :: ks, out => do
-      let some (pr, body) := g.prods[k]? | coes A g ts fuel s p excl used i j ks out
-      if !pr.coercion then coes A g ts fuel s p excl used i j ks out
+    | fuel + 1, s, p, excl, ch, i, j, kk :: ks, out => do
+      let some (pr, body) := g.prods[kk]? | coes A g ts fuel s p excl ch i j ks out
+      if !pr.coercion then coes A g ts fuel s p excl ch i j ks out
       else
-        let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl used i j ks out
-        let es' := A.expected #[] s'
-        let cast := A.anySort pr.sort
-        if used.contains es' || (cast && used.contains castMark) then coes A g ts fuel s p excl used i j ks out
+        let some (ASym.hole s' _ _) := body[0]? | coes A g ts fuel s p excl ch i j ks out
+        if !ch.allows A pr s' then coes A g ts fuel s p excl ch i j ks out
         else
-          let args ← expr A g ts fuel es' p excl (chainWith s (if cast then chainWith castMark used else used)) i j
-          let out ← addCoes A s pr s' args.toList out
-          coes A g ts fuel s p excl used i j ks out
+          let args ← expr A g ts fuel (A.expected #[] s') p excl (ch.push A pr s' s) i j
+          let out ← addCoes A g s pr s' args.toList out
+          coes A g ts fuel s p excl ch i j ks out
 
   /-- Readings of `ts[i:j]` as `body[pos:]` under bindings `env`: the readings of its holes, variables and lists, and
   the bindings after them. -/
@@ -659,7 +721,7 @@ mutual
           if i < j && ts[i]? == some t then seq A g ts fuel body (pos + 1) env (i + 1) j else pure #[]
         | some (.hole s p x) =>
           split A g ts fuel (fun env a b => do
-              return (← expr A g ts fuel (A.expected env s) p x [] a b).map fun (r, so) => (#[r], A.bind env s so))
+              return (← expr A g ts fuel (A.expected env s) p x g.chain0 a b).map fun (r, so) => (#[r], A.bind env s so))
             body pos env i j
         | some .var =>
           split A g ts fuel (fun env a b => pure ((varOf g ts a b g.prods.toList).toArray.map (#[·], env)))
@@ -735,7 +797,7 @@ def fuelFor (g : Grammar) (ts : Array String) : Nat :=
 
 /-- The readings of a whole formula as sort `s`: at most two. -/
 def readings (A : SortAlgebra) (g : Grammar) (ts : Array String) (s : String) : CountM (Array Reading) := do
-  let rs := (← expr A g ts (fuelFor g ts) s 0 none [] 0 ts.size).map (·.1)
+  let rs := (← expr A g ts (fuelFor g ts) s 0 none g.chain0 0 ts.size).map (·.1)
   return rs.foldl (fun acc r => if acc.any (· == r) then acc else acc.push r) #[]
 
 /-- Where the reader gave up, if it did. -/

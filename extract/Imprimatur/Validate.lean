@@ -329,6 +329,14 @@ def algebra : SortAlgebra := { compat, expected, bind, anySort := fun s => s == 
 def readBack (g : Grammar) (ts : Array String) (s : String) : Array Reading × Flags :=
   readBackWith algebra g ts s
 
+/-- `readBack` with the grammar's depth overridden (`IMPRIMATUR_CHAIN_DEPTH`,
+for measuring; see docs/coercion-chains.md, phase B0). -/
+def readBackBounded (depth : Option Nat) (g : Grammar) (ts : Array String) (s : String) :
+    Array Reading × Flags :=
+  match depth with
+  | some d => readBackWith algebra { g with depth := d } ts s
+  | none => readBack g ts s
+
 /-- `readBack`, with a log of what was read where. -/
 def readBackLog (g : Grammar) (ts : Array String) (s : String) : Array Reading × Array String :=
   readBackLogWith algebra g ts s

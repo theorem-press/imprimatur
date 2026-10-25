@@ -48,7 +48,7 @@ def tokens (t : List Char) : Array String := tokenize (String.ofList t)
 /-- A formula reads back as a part: every reading of it in the grammar, as
 an expression of the part's sort, matches the expected one. -/
 def ReadsPart (t : List Char) (q : Part) : Prop :=
-  ∀ rd σ, Exp V.A V.G (tokens t) (V.sort q) 0 none [] 0 (tokens t).size rd σ → Matches (V.expect q) rd
+  ∀ rd σ, Exp V.A V.G (tokens t) (V.sort q) 0 none V.G.chain0 0 (tokens t).size rd σ → Matches (V.expect q) rd
 
 /-- The validator accepts a formula as a part: the parser returns one
 reading, with no flag set, and it matches the expected one. This is what

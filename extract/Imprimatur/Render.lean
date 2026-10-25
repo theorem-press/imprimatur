@@ -300,13 +300,14 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       ctx.listLiterals)
   let g := base.extend leaves
   let h₀ ← IO.getNumHeartbeats
-  let (rs, flags) := Validate.readBack g ts (← sortOf e)
+  let boundOverride := (← (IO.getEnv "IMPRIMATUR_CHAIN_DEPTH" : IO _)).bind (·.toNat?)
+  let (rs, flags) := Validate.readBackBounded boundOverride g ts (← sortOf e)
   -- IMPRIMATUR_VALIDATE_STATS=1 counts the questions each formula asks, and
   -- the heartbeats (small allocations, in thousands) reading it back took.
   if (← (IO.getEnv "IMPRIMATUR_VALIDATE_STATS" : IO _)) == some "1" then
     let h₁ ← IO.getNumHeartbeats
     let log := (Validate.readBackLog g ts (← sortOf e)).2
-    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats: {tex}"
+    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats depth {g.depth} key {(← read).key}: {tex}"
     if log.size > 100000 then for l in log do IO.eprintln s!"  read {l}"
   -- Two readings are two readings, whatever else was dropped.
   if rs.size ≥ 2 then
