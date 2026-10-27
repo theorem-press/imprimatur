@@ -358,6 +358,7 @@ latex_group "Reading back" := [Anatomy.ReadsAll.nil, Anatomy.ReadsAll.cons, Anat
   Anatomy.ReadsConcl.exists_, Anatomy.ReadsProse.define, Anatomy.ReadsProse.statement,
   Anatomy.ReadsRule.mk, Anatomy.ReadsRules.nil, Anatomy.ReadsRules.cons]
 latex_display "Reading two views" := [Anatomy.Prose, Anatomy.Rules]
+latex_display "Pollack-consistency" := [Validated.ReadsAs, Validated.Pollack]
 
 -- Reading formulas back (Imprimatur.ReadBack), and what is proved of it.
 latex_notation Imprimatur.Validate.SortAlgebra => r"\texttt{Sorts}"
@@ -389,6 +390,14 @@ latex_notation Validated.ctors X S => r"\mathit{ctors}_{#X}(#S)"
 latex_notation Validated.print X q => r"\mathit{print}_{#X}(#q)"
 latex_notation Prose.map (Validated.print X) u => r"\mathit{print}^{*}_{#X}(#u)"
 latex_notation Rule.map (Validated.print X) q => r"\mathit{print}^{*}_{#X}(#q)"
+-- The introduction's top level: the extractor's function, what it is trusted
+-- for, and Pollack-consistency of a document.
+latex_notation Validated.extract X vs ks => r"\mathsf{extract}_{#X}(#vs, #ks)"
+latex_notation Validated.Prints X => r"\mathsf{prints}(#X)"
+latex_notation Validated.Pollack X d => r"\mathsf{pollack}_{#X}(#d)"
+latex_notation Validated.ReadsAs X "prose" r k => r"#r \rightsquigarrow^{\mathsf{prose}}_{#X} #k" prec := 50
+latex_notation Validated.ReadsAs X "rules" r k => r"#r \rightsquigarrow^{\mathsf{rules}}_{#X} #k" prec := 50
+latex_notation Validated.ReadsAs X v r k => r"#r \rightsquigarrow^{#v}_{#X} #k" prec := 50
 latex_category Imprimatur.Validate.SortAlgebra => r"\mathcal{S}"
 latex_category Imprimatur.Validate.Grammar => "G"
 
@@ -420,3 +429,6 @@ latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound
 latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound.rulesShow
 latex_entry "Prose shows the statement" => SpliceModel.prose_true
 latex_entry "Rules show the predicate" => SpliceModel.rules_true
+latex_entry "Extraction is true" => SpliceModel.Validated.extract_true
+latex_entry "Building regenerates blocks, once" => SpliceModel.apply_laws
+latex_entry "A paper that checks clean is true and reads only as Lean's" => SpliceModel.Validated.paper_true

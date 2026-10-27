@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The about paper's introduction states its results at the top level, each
+  generated from a theorem of the model (`SpliceModel.Summary`): the bundle
+  the extractor writes is true; building rewrites only blocks, once, and
+  leaves nothing stale; and a paper that checks clean against the extracted
+  bundle is true of the development and Pollack-consistent, every block
+  reading only as its key's statement.
 - The paper's model proves what the chain rule costs and why it is there
   (`SpliceModel.ReadBackChains`): every reading in the parser's grammar is
   one in the grammar of chains of any length, and the counterexample of
