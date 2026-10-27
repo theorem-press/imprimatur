@@ -219,6 +219,99 @@ statement it was checked against therefore assumes that no two statements
 in question share those 48 bits: safe against accident, but not against a
 forger. And the prose is only as right as the person who checked it.
 
+\subsection{Contributions}\label{sec:contributions}
+
+Several tools print a prover's statements into a paper, and Wiedijk has
+proposed reading a printed term back (Section~\ref{sec:related}). This
+paper adds the following.
+
+\begin{enumerate}
+\item \emph{A stated and proved guarantee for a checked paper.} We give the
+  file between the prover and the paper a type and a meaning, and prove in
+  Lean that a paper that checks clean against a true bundle is true of the
+  development (Theorems~\ref{thm:Extraction-is-true}
+  and~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}),
+  for a model of the splicer and for the code the binary runs
+  (Section~\ref{sec:code}). The tools closest in function check less, and
+  say so informally: \texttt{checkdecls} that each name
+  exists~\cite{Massot20}, LeanArchitect that no dependency is
+  \texttt{sorryAx}~\cite{Zhu26}, Isabelle that an antiquotation is
+  well-typed in its context~\cite{Wenzel26}, and Cog that a file would not
+  change if generated again~\cite{Batchelder25}. Comparator states what
+  it guarantees of a proof~\cite{Boving25}, but no tool of
+  Section~\ref{sec:related} that puts statements into a document states
+  what a successful check guarantees of the document, or proves it.
+\item \emph{Generated statements that keep their place in a paper people
+  write.} The splicer rewrites only the blocks of the authors' own
+  \TeX{}, keeps the text they write in a block's slots, and is proved
+  local, idempotent and slot-preserving, with a fixed point at which
+  nothing is stale (Section~\ref{sec:laws}). HOL4's munger, like Ott's
+  filter, writes a separate \verb|.tex| from a hand-written source on every
+  run~\cite{HOL25,Sewell10}, and Isabelle generates the document from its
+  theories, where the printed form ``may even fluctuate a bit as the
+  underlying theory is changed''~\cite{Wenzel26}; none of the three can
+  tell a stale rendering from a fresh one, since each regenerates them
+  all. Cog has the
+  splicer's shape, regenerating in place with checksums against hand
+  edits~\cite{Batchelder25}, but its output is any text, and its check asks
+  only that it be fresh. imprimatur's check asks also that the statement
+  rendered be proved with trusted axioms only, and that it read back.
+\item \emph{Prose tied to the meaning of a statement.} A \verb|\leancheck|
+  records a hash of a statement's meaning, its type with every definition
+  it depends on, beside a second hash of the statement as written; the
+  check then tells a renaming from a change of meaning, including the
+  change a reader cannot see, in a definition the statement depends on
+  (Section~\ref{sec:attested}). LeanArchitect's statement text is
+  written in the attribute that tags a declaration, and not compared with
+  its type~\cite{Zhu26}; plectis records the wording of each claim with its
+  declarations and compares digests of passages and their sources, where,
+  as its author notes, a matching digest establishes agreement with
+  recorded bytes~\cite{Cook26}.
+\item \emph{Pollack-consistency of a whole paper, in its own notation.}
+  Each formula is read back in a grammar built from the paper's notation
+  rules, with Lean's types on their holes, and must have one reading, the
+  statement it was rendered from (Section~\ref{sec:faithful}); the prose
+  and rules views are taken apart by parsers proved to undo their layouts,
+  so the guarantee covers sentences and figures, formula by formula
+  (Section~\ref{sec:views}). Wiedijk proposes printing a term and reading
+  it back, falling back to a fail-safe syntax~\cite{Wiedijk12}; Adams
+  suggests adding such a check to HOL Zero's printers, and observes that
+  Pollack-consistency alone is not faithfulness~\cite{Adams16}. imprimatur
+  makes the check for the notation an author defines, which is where
+  Wiedijk's weak failures live; it compares the one reading with the
+  statement, which is faithfulness and not only that no two terms print
+  alike, wherever the expected reading is definite; and it refuses a
+  formula rather than print it another way. The parser that reads back is
+  proved sound and complete (Theorems~\ref{thm:The-parser-is-sound}
+  and~\ref{thm:The-parser-is-complete}): as with Tristan and Leroy's
+  validators~\cite{Tristan08}, what is proved is the checker, not the
+  printer. Of the tools of Section~\ref{sec:related} that print into a
+  document, none reads what it printed back; the nearest is HOL4's guard
+  that its plain-text output can be read in again~\cite{HOL25}.
+\item \emph{Hidden coercions, bounded.} A grammar that hides coercions in
+  unbounded chains has puns that the renderer's grammar does not
+  (Theorems~\ref{thm:Unbounded-chains-make-a-pun}
+  and~\ref{thm:The-chain-rule-leaves-the-pun-out}); the renderer shows any
+  coercion the rule would not read, so the grammar holds every rendering.
+  Hidden coercions are among the ways Wiedijk shows provers to fail
+  Pollack-consistency~\cite{Wiedijk12}.
+\end{enumerate}
+
+\noindent The evidence is this paper, every displayed definition and
+theorem of which is generated, and its claims about the development
+attested (Section~\ref{sec:example}); and a twenty-page paper about
+another Lean development, in which the check found six misreads when the
+renderer was made to drop the parentheses its holes need, and compares
+610 of the 662 formulas with one reading in full
+(Section~\ref{sec:faithful}).
+
+Some of the design is not new. Splicing between markers, with a checksum
+against hand edits, is Cog's; the view options follow Isabelle's
+antiquotations and HOL4's \verb|\HOLthm|, and splitting a definition into
+inference rules follows Ott; printing and reading back is Wiedijk's
+proposal; and checking each run, with a proved validator, is translation
+validation~\cite{Pnueli98,Tristan08}.
+
 \section{The running example}\label{sec:example}
 
 The development is a simply typed
