@@ -1596,6 +1596,39 @@ Wiedijk's property, of the formula:
 \LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$ and $\mathit{ex}, \mathit{rd} \in \texttt{Reading}$. Assume $\mathsf{readings}_{\mathcal{S}}(G, \mathit{ts}, s) = [\mathit{rd}]$, $\mathsf{flagged}_{\mathcal{S}}(G, \mathit{ts}, s) = \mathsf{false}$ and $\mathsf{matches}(\mathit{ex}, \mathit{rd}) = \mathsf{true}$. Then (1)~$\exists \sigma,\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, \mathsf{top}_{G})\ \mathit{rd} : \sigma$ and (2)~$\forall \mathit{rd}' : \texttt{Reading},\ \forall \sigma : \mathit{String},\ \mathit{ts}[0, |\mathit{ts}|) \rightsquigarrow^{G}_{\mathcal{S}}(s, 0, \mathsf{none}, \mathsf{top}_{G})\ \mathit{rd}' : \sigma \implies \mathit{ex} \succcurlyeq \mathit{rd}'$.}
 \end{leantheorem}
 
+The grammar is the renderer's: a chain of hidden coercions stacks no two
+of the same argument sort. Lean's types allow longer chains, and the
+grammar with them ($\rightsquigarrow^{G,\infty}$) has every reading this
+one has:
+
+\begin{leantheorem}[sum=1xNECGJZ4f]{The chain rule only narrows}{The chain rule only narrows}
+\label{thm:The-chain-rule-only-narrows}
+\LeanProse{Let $\mathcal{S} \in \texttt{Sorts}$, $G \in \texttt{Grammar}$, $\mathit{ts} \in \mathsf{Array}(\mathit{String})$, $s \in \mathit{String}$, $\mathit{prec} \in \mathbb{N}$, $\mathit{excl} \in \mathsf{Option}(\mathbb{N})$, $\mathit{ch} \in \texttt{Chain}$, $i, j \in \mathbb{N}$, $\mathit{rd} \in \texttt{Reading}$ and $\sigma \in \mathit{String}$. Assume $\mathit{ts}[i, j) \rightsquigarrow^{G}_{\mathcal{S}}(s, \mathit{prec}, \mathit{excl}, \mathit{ch})\ \mathit{rd} : \sigma$. Then $\mathit{ts}[i, j) \rightsquigarrow^{G,\infty}_{\mathcal{S}}(s, \mathit{prec}, \mathit{excl}, \mathit{ch})\ \mathit{rd} : \sigma$.}
+\end{leantheorem}
+
+\noindent but more besides, which can hide an ambiguity. With
+\texttt{Option.some} hidden, a function $g$ of an
+$\mathsf{Option}(\mathsf{Option}(\mathsf{Option}(\mathbb{N})))$ applied
+to $x : \mathbb{N}$, and an $h$ that prints as $g$, the unrestricted grammar
+reads \texttt{g ( x )} two ways, the renderer's grammar one:
+
+\begin{leantheorem}[sum=zBIW1SK1nz]{Unbounded chains make a pun}{Unbounded chains make a pun}
+\label{thm:Unbounded-chains-make-a-pun}
+\LeanProse{(1)~$\texttt{g ( x )}[0, 4) \rightsquigarrow^{G_{\mathsf{pun}},\infty}_{\mathcal{S}_{\mathsf{toy}}}(\text{``Prop''}, 0, \mathsf{none}, \mathsf{top}_{G_{\mathsf{pun}}})\ g[x] : \text{``Prop''}$ and (2)~$\texttt{g ( x )}[0, 4) \rightsquigarrow^{G_{\mathsf{pun}},\infty}_{\mathcal{S}_{\mathsf{toy}}}(\text{``Prop''}, 0, \mathsf{none}, \mathsf{top}_{G_{\mathsf{pun}}})\ h[x] : \text{``Prop''}$.}
+\end{leantheorem}
+
+\begin{leantheorem}[sum=FEtW4GToJM]{The chain rule leaves the pun out}{The chain rule leaves the pun out}
+\label{thm:The-chain-rule-leaves-the-pun-out}
+\LeanProse{Let $\sigma \in \mathit{String}$. Then $\neg \texttt{g ( x )}[0, 4) \rightsquigarrow^{G_{\mathsf{pun}}}_{\mathcal{S}_{\mathsf{toy}}}(\text{``Prop''}, 0, \mathsf{none}, \mathsf{top}_{G_{\mathsf{pun}}})\ g[x] : \sigma$.}
+\end{leantheorem}
+
+\noindent What keeps the pun out of the paper is that the renderer obeys
+the rule: it decides whether to hide a coercion with the parser's own
+\texttt{Chain.allows}, and shows one the rule would not read, so
+$g(\mathit{some}(\mathit{some}(\mathit{some}\ x)))$ never prints as
+$g(x)$. That the grammar holds every rendering is trusted by construction,
+as the holes' precedences are.
+
 Both halves hold for any algebra of sorts, since the algebra only filters:
 what is proved is the search. What the validator records in the bundle is
 this check, formula by formula. Section~\ref{sec:views} left two things
@@ -1697,7 +1730,7 @@ A variable with a prime or a subscript ($M'$, $M_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=5fSOEa_diF, dflt=8-Hm2sTmtT]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=gZ3eJ8SzmK, dflt=yWHdXLp-VE]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -1870,6 +1903,7 @@ $\mathsf{trimAnd}(\mathit{ls})$ & \texttt{trimAnd} & \leanslot{Imprimatur.Layout
 $\mathsf{unbreak}_{\mathit{ps}}(o, \mathit{ls})$ & \texttt{unbreak} & \leanslot{Imprimatur.Layout.unbreak/0}{A premise less its \LeanCodeInline{ \textbackslash{}\textbackslash{}}, then the rest}\\
 $\mathsf{withPremises}(\mathit{mark}, \mathit{label}, o)$ & \texttt{withPremises} & \leanslot{Imprimatur.Layout.withPremises/0}{The rule, once its premises are read: its conclusion follows them}\\
 $\mathit{TeX}$ & \texttt{Imprimatur.TeX} & \leanslot{Imprimatur.TeX/0}{TeX source}\\
+$\texttt{Chain}$ & \texttt{Imprimatur.Validate.Chain} & \leanslot{Imprimatur.Validate.Chain/0}{What a question knows of the chain of invisible coercions it is the argument of: the argument sorts of the coercions above it, and whether a cast (\LeanCodeInline{forgetful}) is above}\\
 $\mathsf{flagged}_{A}(g, \mathit{ts}, s)$ & \texttt{Imprimatur.Validate.Flags.any} & \leanslot{Imprimatur.Validate.Flags.any/0}{Whether the reading is not to be trusted: it gave up, dropped a reading, cut a question, or the grammar has a list that takes no token}\\
 $\texttt{Grammar}$ & \texttt{Imprimatur.Validate.Grammar} & \leanslot{Imprimatur.Validate.Grammar/0}{A compiled grammar}\\
 $\mathsf{top}_{g}$ & \texttt{Imprimatur.Validate.Grammar.chain0} & \leanslot{Imprimatur.Validate.Grammar.chain0/0}{The chain at a hole, in parentheses, in a group, or at the top: nothing above}\\
@@ -1899,6 +1933,7 @@ $\mathsf{List}(\alpha)$ & \texttt{List} & \leanslot{List/0}{Linked lists: ordere
 $a \mathbin{::} l$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
 $[]$ & \texttt{List.nil} & \leanslot{List.nil/0}{The empty list, usually written \LeanCodeInline{[]}}\\
 $l$ & \texttt{List.toArray} & \leanslot{List.toArray/0}{Converts a \LeanCodeInline{List α} into an \LeanCodeInline{Array α}}\\
+$\mathbb{N}$ & \texttt{Nat} & \leanslot{Nat/0}{The natural numbers, starting at zero}\\
 $a \notin l$ & \texttt{Not} & \leanslot{Not/0}{\LeanCodeInline{Not p}, or \LeanCodeInline{¬p}, is the negation of \LeanCodeInline{p}}\\
 $\mathsf{Option}(\alpha)$ & \texttt{Option} & \leanslot{Option/0}{Optional values, which are either \LeanCodeInline{some} around a value from the underlying type or \LeanCodeInline{none}}\\
 $o \mathbin{\mathsf{else}} t$ & \texttt{Option.getD} & \leanslot{Option.getD/0}{Gets an optional value, returning a given default on \LeanCodeInline{none}}\\
@@ -1946,11 +1981,17 @@ $\mathsf{unfaithful}_{k}(v)$ & \texttt{Diag.unfaithful} & \leanslot{SpliceModel.
 $\mathsf{untrusted}(k)$ & \texttt{Diag.untrusted} & \leanslot{SpliceModel.Diag.untrusted/0}{the key's proof is not trusted}\\
 $W \models d$ & \texttt{Doc.True} & \leanslot{SpliceModel.Doc.True/0}{A document is true of a world when each of its pieces is}\\
 $\mathit{ts}[i, j) \rightsquigarrow^{g}_{A}(s, p, \mathit{excl}, \mathit{ch})\ r : \sigma$ & \texttt{Exp} & \leanslot{SpliceModel.Exp/0}{\LeanCodeInline{ts[i:j]} reads as \LeanCodeInline{r}, of sort \LeanCodeInline{σ}, as an expression of sort \LeanCodeInline{s} at precedence \LeanCodeInline{p} not made by production \LeanCodeInline{excl}, through the coercions the chain \LeanCodeInline{ch} allows (DESIGN §18.4)}\\
+$\mathit{ts}[i, j) \rightsquigarrow^{g,\infty}_{A}(s, p, \mathit{excl}, \mathit{ch})\ r : \sigma$ & \texttt{ExpFree} & \leanslot{SpliceModel.ExpFree/0}{\LeanCodeInline{Exp} in the unrestricted grammar: through chains of coercions of any length, whatever the chain rule allows}\\
 $e \succcurlyeq r$ & \texttt{Matches} & \leanslot{SpliceModel.Matches/0}{A reading matches the expected one: \LeanCodeInline{any} matches any reading, and a node matches a node of the same name whose children match, pairwise}\\
 $W \models p$ & \texttt{Piece.True} & \leanslot{SpliceModel.Piece.True/0}{What a piece claims of a world}\\
 $\mathsf{block}_{k}^{v}(\mathit{body})$ & \texttt{Piece.block} & \leanslot{SpliceModel.Piece.block/0}{a generated block: a key, shown in a view}\\
 $\mathsf{checked}_{k}(h)$ & \texttt{Piece.check} & \leanslot{SpliceModel.Piece.check/0}{a check that hand-written prose matches the statement with this hash}\\
 $\mathsf{text}(s)$ & \texttt{Piece.text} & \leanslot{SpliceModel.Piece.text/0}{hand-written text}\\
+$G_{\mathsf{pun}}$ & \texttt{Pun.G} & \leanslot{SpliceModel.Pun.G/0}{The grammar of the counterexample, compiled}\\
+$\texttt{g ( x )}$ & \texttt{Pun.T} & \leanslot{SpliceModel.Pun.T/0}{The text \LeanCodeInline{g ( x )}}\\
+$g[x]$ & \texttt{Pun.gx} & \leanslot{SpliceModel.Pun.gx/0}{The reading \LeanCodeInline{g[x]}}\\
+$h[x]$ & \texttt{Pun.hx} & \leanslot{SpliceModel.Pun.hx/0}{The reading \LeanCodeInline{h[x]}}\\
+$\mathcal{S}_{\mathsf{toy}}$ & \texttt{Pun.toy} & \leanslot{SpliceModel.Pun.toy/0}{A toy algebra of sorts, total and small: \LeanCodeInline{?α} is the one type variable, and \LeanCodeInline{Option(?α)} the one sort that mentions it}\\
 $\mathsf{gen}(s)$ & \texttt{Seg.gen} & \leanslot{SpliceModel.Seg.gen/0}{text generated from Lean}\\
 $\mathsf{slot}_{i}(t)$ & \texttt{Seg.slot} & \leanslot{SpliceModel.Seg.slot/0}{a slot, whose text the authors own}\\
 $\mathit{SlotId}$ & \texttt{SlotId} & \leanslot{SpliceModel.SlotId/0}{The identifiers of slots: a slot's id, and which occurrence of that id in its body it is, from 0}\\

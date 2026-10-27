@@ -370,6 +370,12 @@ latex_notation Imprimatur.Validate.readBackWith A g ts s => r"\mathsf{readBack}_
 latex_notation Prod.fst (Imprimatur.Validate.readBackWith A g ts s) => r"\mathsf{readings}_{#A}(#g, #ts, #s)"
 latex_notation Imprimatur.Validate.Flags.any (Prod.snd (Imprimatur.Validate.readBackWith A g ts s)) => r"\mathsf{flagged}_{#A}(#g, #ts, #s)"
 latex_notation Exp A g ts s p excl ch i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g}_{#A}(#s, #p, #excl, #ch)\ #r : #σ" prec := 50
+latex_notation ExpFree A g ts s p excl ch i j r σ => r"#ts[#i, #j) \rightsquigarrow^{#g,\infty}_{#A}(#s, #p, #excl, #ch)\ #r : #σ" prec := 50
+latex_notation SpliceModel.Pun.toy => r"\mathcal{S}_{\mathsf{toy}}"
+latex_notation SpliceModel.Pun.G => r"G_{\mathsf{pun}}"
+latex_notation SpliceModel.Pun.T => r"\texttt{g ( x )}"
+latex_notation SpliceModel.Pun.gx => r"g[x]"
+latex_notation SpliceModel.Pun.hx => r"h[x]"
 latex_notation Imprimatur.Validate.Chain => r"\texttt{Chain}"
 latex_notation Imprimatur.Validate.Grammar.chain0 g => r"\mathsf{top}_{#g}"
 latex_notation Validated => r"\texttt{Validated}"
@@ -406,6 +412,9 @@ latex_entry "The figure parser undoes the layout" => SpliceModel.figure_figureLa
 latex_entry "The parser is sound" => SpliceModel.readBack_sound
 latex_entry "The parser is complete" => SpliceModel.readBack_complete
 latex_entry "A validated formula reads only as what it was rendered from" => SpliceModel.pollack
+latex_entry "The chain rule only narrows" => SpliceModel.Exp.free
+latex_entry "Unbounded chains make a pun" => SpliceModel.Pun.pun_free
+latex_entry "The chain rule leaves the pun out" => SpliceModel.Pun.pun_rule
 latex_entry "The validator's anatomy is sound" => SpliceModel.Validated.sound
 latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound.proseShows
 latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound.rulesShow

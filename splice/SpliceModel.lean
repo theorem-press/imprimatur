@@ -7,6 +7,7 @@ import SpliceModel.ReadBack
 import SpliceModel.ReadBackSound
 import SpliceModel.Pruning
 import SpliceModel.ReadBackComplete
+import SpliceModel.ReadBackChains
 import SpliceModel.Validator
 import SpliceModel.Views
 import SpliceModel.Splicer

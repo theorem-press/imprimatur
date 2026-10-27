@@ -120,6 +120,7 @@ FILES: list[tuple[str, list[str]]] = [
         "splice/SpliceModel/ReadBackSound.lean",
         "splice/SpliceModel/ReadBackComplete.lean",
         "splice/SpliceModel/Pruning.lean",
+        "splice/SpliceModel/ReadBackChains.lean",
         "splice/SpliceModel/Validator.lean",
     ]),
     ("Tests", [

@@ -1360,7 +1360,10 @@ which gathers what a view says (binders, `isProp`, notation matching,
 proved instead: the prose and rules layouts, the emitter's parentheses and
 the holes' precedences are the shared module `Imprimatur.Layout`, the
 parser that reads formulas back is the shared module `Imprimatur.ReadBack`,
-and the paper's theorems are about them);
+and the paper's theorems are about them; that the grammar holds every
+rendering, coercion chains included, holds by construction, the renderer
+deciding with the parser's own functions, `Doc.holeNeeds` and
+`Chain.allows`);
 the splicer's shell, which reads files, the configuration and the
 bundle and writes what `apply` returns; the scanner's reading of TeX, which
 the theorems take as the specification of where markup is; collision

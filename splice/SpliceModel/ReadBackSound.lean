@@ -763,7 +763,7 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i j :
               (fun x hx => hargs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
               ihC s p excl ch i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'
             intro r so h hc
-            exact Reads.coe hk hvar hcompat hcoe' hallow' hb h hc
+            exact Reads.coe hk hvar hcompat hcoe' (Or.inr hallow') hb h hc
         · exact hrest
     · exact hrest
 
