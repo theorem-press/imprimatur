@@ -13,6 +13,8 @@ leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
 leanrules   = { view = "rules" }
 leandef     = { view = "clauses", wrap = "LeanDisplayBox" }
 leansource  = { view = "lean" }
+# The TeX of a prose block, and the formulas it comes apart into.
+leananatomy = { view = "about.prose-anatomy" }
 # Appendix A: the metavariables, and the notation the paper uses.
 leanconventions = { view = "conventions" }
 leannotation    = { view = "vocabulary|scope=all" }
