@@ -70,11 +70,16 @@ def builtins (call subscript : Bool := false) (cases : Bool := false) (lists : B
     syms := [.tok "\\exists", .var, .tok "\\in", .hole "*" 50, .tok ",", .tok "\\ ", .hole "Prop" 0] },
   { name := "λ", sort := "*", prec := 0,
     syms := [.tok "\\lambda", .var, .tok ".", .tok "\\,", .hole "*" 0] },
-  { name := "application", sort := "*", prec := Doc.maxPrec - 1,
-    syms := [.hole "*" Doc.maxPrec, .list [.tok "\\,", .hole "*" Doc.maxPrec] [] 1] }]
+  -- Applications are binary, the function on the left (`f\,a\,b` is
+  -- `(f\,a)\,b`; `mkReading` flattens the nested `app`s), so that the
+  -- result has the function's codomain for its sort when the function's
+  -- sort is an arrow. A function of a named type, or of unknown sort,
+  -- binds nothing, and its result is of unknown sort.
+  { name := "application", sort := "?β", prec := Doc.maxPrec - 1,
+    syms := [.hole "(?α → ?β)" (Doc.maxPrec - 1), .tok "\\,", .hole "?α" Doc.maxPrec] }]
   let callForm : Prod :=
-  { name := "application f(a)", sort := "*", prec := Doc.maxPrec,
-    syms := [.hole "*" Doc.maxPrec, .list [.tok "(", .hole "*" 0, .tok ")"] [] 1] }
+  { name := "application f(a)", sort := "?β", prec := Doc.maxPrec,
+    syms := [.hole "(?α → ?β)" Doc.maxPrec, .tok "(", .hole "?α" 0, .tok ")"] }
   let subscriptForm : Prod :=
   { name := "application f_{a}", sort := "*", prec := Doc.maxPrec,
     syms := [.hole "*" Doc.maxPrec, .tok "_", .tok "{",
