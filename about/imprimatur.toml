@@ -2,7 +2,7 @@ schema = 1
 main = "imprimatur-paper.tex"
 lean_project = "lean"
 mode = "external"
-imports = ["SpliceModel", "Stlc"]
+imports = ["SpliceModel", "Stlc", "About"]
 notation = ["notation/SpliceTeX.lean", "notation/StlcTeX.lean"]
 strip_namespaces = ["SpliceModel", "Stlc", "Imprimatur.Layout"]
 

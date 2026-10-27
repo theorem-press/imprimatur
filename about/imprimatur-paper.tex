@@ -93,14 +93,16 @@ each is proved in Lean. The first two say that each program does its part:
 proof is trusted, and each view it does not flag reads back as the
 statement (Section~\ref{sec:meaning}). For the example of
 Figure~\ref{fig:example}, $X$ is the calculus with its notation, and the
-paper's four blocks make four requests:
-\begin{align*}
-  \mathit{rs} = [\,&(\texttt{Stlc.Tm}, [\texttt{grammar|display}]),\
-    (\texttt{Stlc.Step}, [\texttt{rules}]),\\
-  &(\text{Values are final}, [\texttt{prose}]),\
-    (\texttt{Stlc.values\_final}, [\texttt{lean}])\,].
-\end{align*}
-Then $b$ has one entry per key, and $\mathsf{world}(X) \models b$ says,
+paper's four blocks make four requests, each a key and a list of views,
+all of them strings:
+
+\begin{leandef}[sum=srSPrfWLj7, dflt=mg0ZFoUaby]{The requests of Figure 1}{The requests of Figure 1}
+\begin{LeanDisplay}
+\LeanClause{\mathit{rs}_{1} \;\deq\; [(\text{``Stlc.Tm''}, [\text{``grammar|display''}]),\ (\text{``Stlc.Step''}, [\text{``rules''}]),\ (\text{``Values are final''}, [\text{``prose''}]),\ (\text{``Stlc.values\_final''}, [\text{``lean''}])]}{\leanslot{About.figureRequests}{Each key, as written, with the view of its block}}
+\end{LeanDisplay}
+\end{leandef}
+
+\noindent Then $b = \mathsf{extract}_{X}(\mathit{rs}_{1})$ has one entry per key, and $\mathsf{world}(X) \models b$ says,
 for the key ``Values are final'', that it names the theorem
 \texttt{Stlc.values\_final}, that its proof is trusted, that its hash is
 its statement's, and that its prose view is that statement's rendering,
@@ -1798,8 +1800,10 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=i6dMbK-tyE, dflt=GTR7Gs2ENQ]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=Rr4-6YHiHP, dflt=KoMshGACnO]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
+\multicolumn{3}{@{}l}{\textit{About}}\\
+$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the four blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
 $W \models b$ & \texttt{Imprimatur.Bundle.True} & \leanslot{Imprimatur.Bundle.True/0}{A bundle is true of a world when the entry it gives for each key is}\\

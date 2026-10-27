@@ -393,6 +393,7 @@ latex_notation Rule.map (Validated.print X) q => r"\mathit{print}^{*}_{#X}(#q)"
 -- The introduction's top level: the extractor's function, what it is trusted
 -- for, and Pollack-consistency of a document.
 latex_notation Validated.extract X rs => r"\mathsf{extract}_{#X}(#rs)"
+latex_notation About.figureRequests => r"\mathit{rs}_{1}"
 latex_notation Validated.Prints X => r"\mathsf{prints}(#X)"
 latex_notation Validated.Pollack X d => r"\mathsf{pollack}_{#X}(#d)"
 latex_notation Validated.ReadsAs X "prose" r k => r"#r \rightsquigarrow^{\mathsf{prose}}_{#X} #k" prec := 50
@@ -430,5 +431,6 @@ latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound
 latex_entry "Prose shows the statement" => SpliceModel.prose_true
 latex_entry "Rules show the predicate" => SpliceModel.rules_true
 latex_entry "Extraction is true" => SpliceModel.Validated.extract_true
+latex_entry "The requests of Figure 1" => About.figureRequests
 latex_entry "Building regenerates blocks, once" => SpliceModel.apply_laws
 latex_entry "A paper that checks clean is true and reads only as Lean's" => SpliceModel.Validated.paper_true
