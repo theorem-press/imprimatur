@@ -195,10 +195,10 @@ theorem triple_keepM {α : Type} [BEq α] (key : α → String) (xs : Array α)
 readings. -/
 theorem triple_addProds (s : String) (pr : Imprimatur.Validate.Prod) {P : Reading × String → Prop}
     {R : Array Reading × Env → Prop}
-    (hP : ∀ cs env, R (cs, env) → fits A g (A.expected env pr.sort) s = true →
+    (hP : ∀ cs env, R (cs, env) → A.compat (A.expected env pr.sort) s = true →
       P (mkReading pr.name pr.order cs, A.expected env pr.sort)) :
     ∀ (rs : List (Array Reading × Env)) (out : Array (Reading × String)), (∀ x ∈ rs, R x) →
-      (∀ x ∈ out, P x) → Triple A g ts (addProds A g s pr rs out) (fun res => ∀ x ∈ res, P x)
+      (∀ x ∈ out, P x) → Triple A g ts (addProds A s pr rs out) (fun res => ∀ x ∈ res, P x)
   | [], out, _, hout => by simp only [addProds]; exact triple_pure hout
   | (cs, env) :: rest, out, hrs, hout => by
     simp only [addProds]
@@ -217,10 +217,10 @@ theorem triple_addProds (s : String) (pr : Imprimatur.Validate.Prod) {P : Readin
 through it. -/
 theorem triple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : String)
     {P : Reading × String → Prop} {R : Reading × String → Prop}
-    (hP : ∀ r so, R (r, so) → fits A g (A.expected (A.bind #[] s' so) pr.sort) s = true →
+    (hP : ∀ r so, R (r, so) → A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
       P (r, A.expected (A.bind #[] s' so) pr.sort)) :
     ∀ (args : List (Reading × String)) (out : Array (Reading × String)), (∀ x ∈ args, R x) →
-      (∀ x ∈ out, P x) → Triple A g ts (addCoes A g s pr s' args out) (fun res => ∀ x ∈ res, P x)
+      (∀ x ∈ out, P x) → Triple A g ts (addCoes A s pr s' args out) (fun res => ∀ x ∈ res, P x)
   | [], out, _, hout => by simp only [addCoes]; exact triple_pure hout
   | (r, so) :: rest, out, hargs, hout => by
     simp only [addCoes]
@@ -754,11 +754,11 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i j :
           · exact hrest
           · rename_i hallow
             have hallow' : ch.allows A pr s' = true := by cases h : ch.allows A pr s' <;> simp_all
-            refine triple_bind (triple_mono (ihE (A.expected #[] s') p excl (ch.push A pr s' s) i j)
+            refine triple_bind (triple_mono (ihE (A.expected #[] s') p excl (ch.push A pr s') i j)
               fun res hres x hx => (hres x hx).2) fun args hargs => ?_
             refine triple_bind (triple_addCoes s pr s'
               (P := fun x => Exp A g ts s p excl ch i j x.1 x.2)
-              (R := fun x => Exp A g ts (A.expected #[] s') p excl (ch.push A pr s' s) i j x.1 x.2)
+              (R := fun x => Exp A g ts (A.expected #[] s') p excl (ch.push A pr s') i j x.1 x.2)
               ?_ args.toList out
               (fun x hx => hargs x (Array.mem_def.mpr hx)) hout) fun out' hout' =>
               ihC s p excl ch i j ks out' hij (fun k' hk' => hks k' (List.mem_cons_of_mem _ hk')) hout'

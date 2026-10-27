@@ -28,9 +28,10 @@ recorded in the module:
 - **A question carries its chain of coercions.** The plan cut a question
   asked again while being asked, to break coercion cycles, and bookkept
   which answers a cut had left incomplete. Instead a question records the
-  sorts asked above it on the chain of coercions it is the argument of,
-  and a chain visits each sort once (so a coercion of the sort asked for
-  applies once) and has no cast below a cast (a coercion whose sort stands
+  argument sorts of the coercions above it on the chain of coercions it is
+  the argument of, and a chain applies no coercion whose argument sort is
+  on it already and has no cast below a cast (docs/coercion-chains.md,
+  route A; the renderer obeys the same rule) (a coercion whose sort stands
   for any sort; a cast of a cast is a cast): chains are finite, no cycle
   is ever entered, and the search is complete without bookkeeping. A cut can now come only
   from a production whose body is a bare hole and nothing else; it is a
@@ -142,10 +143,9 @@ them: `STerm.parse` reads with fuel (the text's length, since each part is
 shorter), and the structural functions recurse on the term. Every theorem
 of soundness and completeness holds for every algebra, so what is proved
 there is the search; what the algebra says about Lean's types is tested
-(phase B2: the laws of the cut and the order below a sort, in
-`extract/test/ExtractTest/SortLaws.lean`; the chain rule against chains of
-any length, in `ChainLaws.lean`) and, for the laws the chain rule rests
-on, to be proved (phase B3).
+(the laws of the cut and the order below a sort, in
+`extract/test/ExtractTest/SortLaws.lean`; that the parser reads what the
+renderer prints under the chain rule, in `ChainLaws.lean`).
 
 ### Readings are trees
 

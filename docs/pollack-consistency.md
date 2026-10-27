@@ -10,10 +10,11 @@ to the plan below, each taken because the proof asked for it:
   phase F (the laws for Lean's algebra) has nothing left to prove. The
   property tests of phase B found `bind_mono` false of Lean's `bind`
   (a variable already bound keeps its binding), which is what decided it.
-- **Coercion chains, not `Acyclic`.** A question carries the sorts asked
-  above it on the chain of coercions it is the argument of (`used`), and
-  a chain visits each sort once (a coercion of the sort asked for applies
-  once): chains are finite, so no cycle of coercions is entered and
+- **Coercion chains, not `Acyclic`.** A question carries the argument
+  sorts of the coercions above it on the chain of coercions it is the
+  argument of, and a chain applies a coercion only if no coercion above
+  has its argument sort (route A of docs/coercion-chains.md, which
+  replaced the first rule here, the sorts asked above): chains are finite, so no cycle of coercions is entered and
   nothing is cut. The specification says the same (`Reads.coe`). A real
   notation's coercion graph is cyclic as soon as it has a coercion with a
   type variable (`Nat → * → Nat`), so `Acyclic` as a notation error would

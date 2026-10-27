@@ -1219,8 +1219,9 @@ constructors; the `def` view reads as the equation lemmas.
    different sorts (`(a\ b) \cdot e` for terms and for contexts);
 2. **separated holes:** holes are separated by tokens or enclosed in braces;
    a template that is a bare hole (`Tm.var x => #x`) is a coercion between
-   sorts; a chain of coercions visits each sort once, so a cycle of them
-   is harmless;
+   sorts; a chain of hidden coercions never stacks two with the same
+   argument sort, and the renderer shows a coercion it may not hide there,
+   so a cycle of them is harmless;
 3. **consistent precedence:** the precedences and associativities make
    `G_N` unambiguous; this is where `(a b)·e₁ e₂` failed;
 4. **injective names:** metavariable renamings (`latex_metavar`, including
@@ -1309,9 +1310,15 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   only a production whose body is a bare hole brings about), `lists` (a
   list of the grammar takes no token per element); each is reported as
   "not validated". A question is the sort, precedence, excluded
-  production, the sorts asked above it on the chain of coercions, and the
-  span; a chain visits each sort once and has no cast below a cast, so
-  chains are finite without a cut. The matcher decides structural matching, so a validated formula
+  production, the argument sorts of the coercions above it on its chain of
+  coercions, and the span; a chain applies no coercion whose argument sort
+  is on it already, and no cast below a cast, so chains are finite without
+  a cut. The rule mentions the chain's coercions alone, never the sort
+  asked for, so the renderer obeys it: where it would hide a coercion the
+  rule does not allow, it shows it, as a constant applied
+  (`\LeanMathConst{Option.some}\,x`). So the grammar holds every
+  rendering, and the theorems are about the renderer's grammar, not a
+  narrowing of it (docs/coercion-chains.md, route A). The matcher decides structural matching, so a validated formula
   (one reading, no flag, matching the expected reading) has in the grammar
   no reading but the expected one, wherever that is definite
   (`SpliceModel.pollack`); for the world as the validator sees it, whose

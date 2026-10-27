@@ -1,6 +1,10 @@
 # Proposal: chains of invisible coercions, closed
 
-Status: route B chosen (25 October 2026); its phases below. Follows
+Status: route A taken (27 October 2026, issue #87), after route B
+(chosen 25 October; phases B0–B2 merged) proved too slow on deep grammars:
+its depth cap let the LLMbda paper's chains grow six levels, and extracting
+that paper did not finish in an hour. Route A's phases are below; route B
+is kept for the record. Follows
 docs/pollack-consistency.md (PR #83), whose theorem
 `SpliceModel.pollack` is about the grammar `SpliceModel.Reads`. That
 grammar limits chains of invisible coercions, for speed, and the question
@@ -27,14 +31,14 @@ of it. The same happens with a cast under a cast when the casts project,
 as with `unwrap : Wrap(?α) → ?α` over `unbox : Box(?β) → ?β`.
 
 So the gap cannot be closed by proving the two grammars equal as they
-stand. Two routes close it. Route A makes the renderer obey the parser's
-chain rule, so that no rendering needs a chain the parser does not read.
-Route B, the one taken, keeps the renderer and changes the parser's chain
-rule to one that is complete for Lean's algebra of sorts, proving for
-that algebra that a bounded chain reads everything an unbounded one
-does. Route A is kept below for the record.
+stand. Two routes close it. Route A, the one taken, makes the renderer
+obey the parser's chain rule, so that no rendering needs a chain the
+parser does not read. Route B keeps the renderer and changes the parser's
+chain rule to one that is complete for Lean's algebra of sorts, proving
+for that algebra that a bounded chain reads everything an unbounded one
+does; it was tried first and withdrawn.
 
-## The restriction, exactly
+## The restriction before either route
 
 The parser's question carries `used`, the sorts asked above it on the
 chain of coercions it is the argument of (`Imprimatur.Validate.coes`,
@@ -114,7 +118,7 @@ So closing the gap needs one of two things. Either laws of Lean's algebra
 that bound the chains that matter (route B), or a target grammar that is
 not the unrestricted one (route A).
 
-## Route A: the renderer obeys the chain rule (not taken)
+## Route A: the renderer obeys the chain rule (taken)
 
 The theorem needs the grammar to contain the renderings, not Lean's
 types. Every reading the unrestricted grammar has and `Reads` lacks is a
@@ -124,39 +128,36 @@ readings of the text, and they cannot collide with it.
 
 ### The shared rule
 
-A new structure in `bundle/ReadBack.lean`:
+`Imprimatur.Validate.Chain` in `bundle/ReadBack.lean`, which the parser,
+its specification (`SpliceModel.Reads.coe`) and the renderer all use. It
+is the rule before route B with one change. The chain records the
+argument sorts of the coercions on it, not the sorts asked for: the
+renderer cannot know the sort asked at a hole, since it comes from the
+parser's bindings, and a rule that mentions it could not be obeyed by
+construction.
 
-```lean
-/-- Which invisible coercions a chain may stack: decided from the coercions
-on it alone, never from the sort asked for at its top. -/
-structure ChainRule where
-  allows : List String → Nat → Bool   -- the chain so far, the coercion
-  push   : List String → Nat → List String
-```
+- `allows ch k := !ch.visited.contains e_k && !(forgetful k && ch.cast)`
+- `push ch k := { visited := chainWith e_k ch.visited, cast := ch.cast || forgetful k }`
 
-The production rule, `ChainRule.std A g`, is the current one with one
-change. The chain starts with the argument sort of the first coercion,
-not with the sort asked at the hole. The renderer cannot know that sort,
-since it comes from the parser's bindings. A rule that mentions it could
-not be obeyed by construction.
-
-- `allows used k := !used.contains e_k && !(cast k && used.contains castMark)`
-- `push used k := chainWith e_k (if cast k then chainWith castMark used else used)`
-
-Chains stay finite, of length at most `|E| + 1`.
+A cast is `forgetful`, as route B's phase B0 defined it: its sort stands
+for any sort and its hole's sort does not mention it. Chains stay finite,
+of length at most `|E| + 1`. A plain count of coercions (`Chain.count`,
+set by `Grammar.count`) is kept for tests, in place of the rule.
 
 ### What changes
 
-- **Parser.** `coes` takes the rule. `Reads.coe` takes it as a premise,
-  `R.allows used k = true`, with the argument at `R.push used k`. The
-  soundness and completeness proofs become generic in `R`, which is a
-  mechanical change.
-- **Renderer.** `RenderM` carries the chain of invisible coercions above
-  the term being rendered. A coercion rule is applied invisibly only when
-  `ChainRule.std.allows` permits it. Otherwise the application is
-  rendered as for a constant without notation, `\LeanMathConst{Option.some}\,x`,
-  which the grammar already reads. Any other node resets the chain. Both
-  sides compute `e_k` and `cast k` from `Validate.ofRule` of the same rule.
+- **Parser.** `coes` and `Reads.coe` take `Chain.allows` as a premise,
+  with the argument at `Chain.push`, which no longer mentions the sort
+  asked for. The depth cap of route B (`fits`) is gone, and with it the
+  grammar's depth. The soundness and completeness proofs did not change
+  in shape: they never looked inside the rule.
+- **Renderer.** `Render.Ctx` carries the chain of invisible coercions
+  above the term being rendered. A coercion rule is applied invisibly
+  only when `Chain.allows` permits it. Otherwise it gives way, to a rule
+  that shows the coercion or to the constant applied,
+  `\LeanMathConst{Option.some}\,x`, which the grammar already reads. Any
+  other form starts a new chain. Both sides compute `e_k` and the cast
+  from `Validate.ofRule` of the same rule (`Render.coercionOf`).
 - **Paper.** The conventions say what a reader needs: an invisible
   coercion never hides another whose argument has the same sort. Where
   one would, it is written.
@@ -196,6 +197,15 @@ The other premises of `Reads` that are narrower than Lean:
 
 The exclusion row gets a fixture in phase A2.
 
+### Phases
+
+| Phase | Work | Status |
+|---|---|---|
+| A0 | **Measure.** The goldens, the fixtures and the papers under the rule: what renders differently, and the cost. | Goldens byte-identical (153 extractor tests); the papers below. |
+| A1 | **The shared rule** in the parser and the specification; B0's depth cap and growth budget removed; the proofs rebuilt. | Done. |
+| A2 | **The renderer obeys it**; `ChainLaws.lean` tests that the parser reads what a printer obeying the rule prints, for random terms of the counterexamples' shapes, and that the counterexample's two terms print apart. | Done. |
+| A3 | **In Lean:** `Reads.mono_rule`, the counterexample under a toy algebra, `pollack` restated for the renderer's grammar; the paper's §9 and the trusted base. | Open. |
+
 ### Cost and risk
 
 Rendering changes only where the renderer hides a chain that `std`
@@ -214,7 +224,16 @@ Making the rule independent of the top sort also lets the parser explore
 one more step at the top of each chain. That costs time, also measured
 in A0.
 
-## Route B: prove that long chains add nothing (chosen)
+## Route B: prove that long chains add nothing (withdrawn)
+
+Withdrawn on 27 October 2026 (issue #87). On the LLMbda paper the
+grammar's depth is 5, set by one production's sort, so chains could stack
+six growing coercions in every combination, under every span: a 7-token
+formula asked the parser 144,481 questions, and extraction did not finish
+in an hour, against about two minutes under the rule before. Lowering the
+depth lost formulas' own readings. Phases B1 (Lean's algebra, total) and
+B2's laws of sorts (`SortLaws.lean`) stay; B0's rule is replaced by route
+A's. The plan follows as it was.
 
 Keep the renderer as it is. Take the unrestricted grammar as the target
 of the theorem, for Lean's algebra of sorts, and prove that the parser

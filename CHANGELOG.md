@@ -5,6 +5,16 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The renderer and the reader of formulas share one rule for chains of
+  hidden coercions (docs/coercion-chains.md, route A): a chain never
+  stacks two coercions with the same argument sort, nor a cast below a
+  cast, and where the renderer would hide a coercion the rule forbids it
+  now shows it, as a constant applied (`\LeanMathConst{Option.some}\,x`).
+  So a validated formula has no reading but its statement in the grammar
+  of what the renderer prints; before, `g(some(some(some x)))` could print
+  as `g(x)` and validate as another statement. The depth cap and growth
+  budget of route B are gone, and with them its cost: reading back is
+  affordable again on large papers (`IMPRIMATUR_CHAIN_DEPTH` is removed).
 - Reading formulas back is one total module, `bundle/ReadBack.lean`
   (tokens, the grammar's symbols, readings as trees, the chart parser, the
   matcher), with the algebra of sorts as a parameter, and the paper's model
@@ -20,8 +30,8 @@ All notable changes to imprimatur are recorded here. Versions follow
   dropped, which could before let an ambiguous formula pass as having one
   reading, a question that comes round to itself, and a list of the
   notation that takes no token; an ambiguity is reported before any of
-  these. A chain of coercions visits each sort once and has no cast below
-  a cast, so a cycle of coercions no longer cuts the search, and the
+  these. A chain of coercions applies each argument sort once and has no
+  cast below a cast, so a cycle of coercions no longer cuts the search, and the
   readings a cut lost are found.
 - The extractor's prose and rules layouts, its formula emitter and the
   precedence policy of a notation rule's holes are one pure, total module,
