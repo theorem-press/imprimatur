@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- A premise that `latex_metavar_convention` hides is no longer lost: the
+  `prose` view binds the variable it names in the predicate, `Let
+  $\val \in \mathit{Val}$` for a hidden `IsValue v`, instead of in its
+  type, and the `conventions` table lists the convention's metavariable
+  with the predicate and the block that shows it. The about paper's
+  Theorem 1.1 read as a stronger theorem than the one proved; it now reads
+  "Let $V \in \mathit{Val}$ and $M \in \mathit{Term}$" (#77).
 - The paper's model proves what the chain rule costs and why it is there
   (`SpliceModel.ReadBackChains`): every reading in the parser's grammar is
   one in the grammar of chains of any length, and the counterexample of

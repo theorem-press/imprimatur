@@ -63,6 +63,7 @@ def withConventions {α : Type} (hyps : Array (Name × Expr))
   let conventions := projectConventions (← getEnv)
   let mut kept : Array (Name × Expr) := #[]
   let mut overrides : Array (FVarId × String) := #[]
+  let mut ranges : Array (FVarId × Expr) := #[]
   for (n, h) in hyps do
     let mut hidden := false
     for cv in conventions do
@@ -75,8 +76,14 @@ def withConventions {α : Type} (hyps : Array (Name × Expr))
               | _ :: rest@(_ :: _) => "_" ++ "_".intercalate rest
               | _ => ""
             overrides := overrides.push (f, tex ++ sub)
+            indexEvents.modify (·.push (.convention (← read).key cv.pat.head tex))
+            -- The predicate the premise puts the variable in: `IsValue` for
+            -- `IsValue v`, when the variable is the premise's last argument.
+            let pred := (← mkLambdaFVars #[.fvar f] h).eta
+            unless pred.containsFVar f do ranges := ranges.push (f, pred)
     unless hidden do kept := kept.push (n, h)
-  withReader (fun ctx => { ctx with overrides := ctx.overrides ++ overrides }) (k kept)
+  withReader (fun ctx => { ctx with overrides := ctx.overrides ++ overrides, ranges := ctx.ranges ++ ranges })
+    (k kept)
 
 /-- The conjuncts of `a ∧ (b ∧ c)`. -/
 partial def conjuncts (e : Expr) : Array Expr :=
@@ -326,9 +333,14 @@ def gatherProse (c : ConstantInfo) : RenderM (Layout.Prose (List Char)) := do
     return .define ((← mathDoc c).render 100000).toList
   statementParts c.type fun vars hyps concl => withConventions hyps fun hyps => do
     -- Variables, grouped by type. Each is rendered as a variable, so a
-    -- metavariable convention (`\val`) applies to it here too.
+    -- metavariable convention (`\val`) applies to it here too; and a
+    -- variable a convention names is bound in the predicate its hidden
+    -- premise puts it in, not in its type (`V \in \mathit{Val}`), so the
+    -- premise is still said.
+    let ranges := (← read).ranges
     let mut groups : Array (Array Expr × Expr) := #[]
     for (_, x, t) in vars do
+      let t := ((ranges.find? (·.1 == x.fvarId!)).map (·.2)).getD t
       match groups.back? with
       | some (xs, t') =>
         if t' == t then groups := groups.pop.push (xs.push x, t) else groups := groups.push (#[x], t)

@@ -132,6 +132,7 @@ where
               if let some (v, tex) := cv.metavar then
                 if let some (_, .fvar f) := bs.find? (·.1 == v) then
                   overrides := overrides.push (f, conventionTeX tex (← f.getUserName))
+                  indexEvents.modify (·.push (.convention (← read).key cv.pat.head tex))
           go body (if hidden then premises else premises.push t) overrides k
         else go body premises overrides k
     | _ => k premises e overrides
@@ -153,6 +154,9 @@ def gatherRules (ctors : Array Name) : RenderM (List (Layout.Item (List Char))) 
   for c in ctors do
     match env.find? c with
     | some ci@(.ctorInfo i) =>
+      -- The figure displays the inductive its rules belong to, which the
+      -- table of conventions points to (a predicate a convention hides).
+      noteShown i.induct
       out := out.push (.rule (← gatherRule ci (styles.find? (·.induct == i.induct))))
     | _ => out := out.push (.missing c.toString.toList)
   return out.toList

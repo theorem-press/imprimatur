@@ -4,6 +4,7 @@
 \hline\endhead
 $\tau$ & $\LeanMathConst{Ty}$ & \leanslot{Stlc.Ty}{Types} & \textit{Ty}, p.~\pageref{gram:Ty}\\
 $e$ & $\LeanMathConst{Tm}$ & \leanslot{Stlc.Tm}{Terms, with de Bruijn variables} & \textit{Tm}, p.~\pageref{gram:Tm}\\
+$\val$ & $\mathit{Val}$ & \leanslot{Stlc.IsValue}{Values} & \textit{IsValue}, p.~\pageref{fig:values}\\
 \end{longtable}
 A variable with a prime or a subscript ($\tau'$, $\tau_{1}$) ranges over the same type.
 % vocabulary
@@ -14,5 +15,6 @@ A variable with a prime or a subscript ($\tau'$, $\tau_{1}$) ranges over the sam
 \textit{Result} & \textit{Lean} & \textit{Source} & \textit{Axioms}\\
 \hline\endhead
 Thm.~\ref{thm:Stlc.size_pos}, p.~\pageref{thm:Stlc.size_pos} & \texttt{size\_pos} & \texttt{Semantics/\allowbreak Lang.lean:78} & standard\\
+ & \texttt{step\_app} & \texttt{Semantics/\allowbreak Lang.lean:72} & standard\\
 \end{longtable}
 The standard axioms are \texttt{propext}, \texttt{Classical.choice} and \texttt{Quot.sound}.
