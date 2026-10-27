@@ -148,6 +148,30 @@ which we prove sound and complete (Section~\ref{sec:faithful}). What is left
 to trust is what $\mathsf{prints}(X)$ assumes: that the extractor prints a
 statement as the notation and its layouts say.
 
+\paragraph{The example.} Take for $d$ the four blocks of
+Figure~\ref{fig:example}, as this paper's source writes them, and for $b$
+the bundle $\mathsf{extract}_{X}(\mathit{rs}_{1})$. Against it
+\texttt{check} reports nothing, so the theorem applies, and its two halves
+say different things about the figure. The first is about what each block
+shows. Each key names a statement that Lean proved, with trusted axioms,
+and each block is that statement's rendering, with the authors' text kept
+in its slots: the grammar is the rendering of \texttt{Stlc.Tm}, with the
+descriptions the authors wrote beside its forms (``an abstraction''), the
+figure of reduction rules is the rendering of the constructors of
+\texttt{Stlc.Step}, and the sentence of \emph{Values are final} is the
+rendering of \texttt{Stlc.values\_final}. The second half is about how they
+read. The sentence comes apart into its binders and its conclusion,
+$\neg (V \longrightarrow M)$, and each rule of the reduction figure into
+its premises and its conclusion; each of these formulas has, in the
+notation's grammar, no reading but the part it was printed from. Take the
+conclusion of (Beta), $(\lambda{:}A.\, M)\; V \longrightarrow M[V]$. An
+abstraction extends as far to the right as it can, so the parentheses are
+what make this an application of an abstraction to $V$. Printed without
+them, it would also read as
+$\lambda{:}A.\, (M\; V) \longrightarrow M[V]$, which is well formed and
+says something else. The validator would then have found a second reading,
+and \texttt{check} would not have been clean.
+
 \subsection{The trusted base}\label{sec:trusted}
 
 What we prove is this: if the bundle is true of the development, and the
