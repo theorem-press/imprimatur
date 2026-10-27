@@ -182,25 +182,24 @@ production's under its bindings, or the coercion's. -/
 inductive Reads : Question → Answer → Prop
   /-- By a production of a compatible sort, at or above the precedence, not
   the excluded one and not a coercion: its body read, its sort under the
-  bindings fitting the sort asked for (compatible, and no deeper than the
-  grammar's deepest sort and one more). -/
+  bindings compatible with the sort asked for. -/
   | prod {s : String} {p : Nat} {excl : Option Nat} {ch : Chain} {i j kp : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {cs : Array Reading} {env : Env} :
     g.prods[kp]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
     excl ≠ some kp → pr.coercion = false → p ≤ pr.prec → i < j →
-    Reads (.body body 0 #[] i j) (.many cs env) → fits A g (A.expected env pr.sort) s = true →
+    Reads (.body body 0 #[] i j) (.many cs env) → A.compat (A.expected env pr.sort) s = true →
     Reads (.expr s p excl ch i j) (.one (mkReading pr.name pr.order cs) (A.expected env pr.sort))
   /-- Through a coercion of a compatible sort that the chain allows: its
   argument read at the sort of the coercion's hole, under the same
   exclusion (an operand of a chain is never the chain, through a coercion
   either), below the coercion on the chain; and the coercion's sort with
-  the argument's bound fitting. -/
+  the argument's bound compatible. -/
   | coe {s : String} {p : Nat} {excl : Option Nat} {ch : Chain} {i j kp : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {s' : String} {pc : Nat} {x : Option Nat} {r : Reading} {so : String} :
     g.prods[kp]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
     pr.coercion = true → ch.allows A pr s' = true → body[0]? = some (ASym.hole s' pc x) →
-    Reads (.expr (A.expected #[] s') p excl (ch.push A pr s' s) i j) (.one r so) →
-    fits A g (A.expected (A.bind #[] s' so) pr.sort) s = true →
+    Reads (.expr (A.expected #[] s') p excl (ch.push A pr s') i j) (.one r so) →
+    A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
     Reads (.expr s p excl ch i j) (.one r (A.expected (A.bind #[] s' so) pr.sort))
   /-- In the emitter's parentheses: read inside them, at any precedence. -/
   | paren {s : String} {p : Nat} {excl : Option Nat} {ch : Chain} {i j : Nat} {r : Reading} {σ : String} :

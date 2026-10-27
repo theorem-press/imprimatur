@@ -33,15 +33,15 @@ variable (A : SortAlgebra) (g : Grammar) (ts : Array String)
 def ExpProd (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (i j : Nat) (r : Reading) (σ : String) : Prop :=
   ∃ pr body cs env, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
     excl ≠ some k ∧ pr.coercion = false ∧ p ≤ pr.prec ∧ i < j ∧ Seq A g ts body 0 #[] i j cs env ∧
-    fits A g (A.expected env pr.sort) s = true ∧ r = mkReading pr.name pr.order cs ∧ σ = A.expected env pr.sort
+    A.compat (A.expected env pr.sort) s = true ∧ r = mkReading pr.name pr.order cs ∧ σ = A.expected env pr.sort
 
 /-- A reading through coercion `k`, as the `coe` rule gives it. -/
 def ExpCoe (k : Nat) (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i j : Nat) (r : Reading)
     (σ : String) : Prop :=
   ∃ pr body s' pc x so, g.prods[k]? = some (pr, body) ∧ pr.isVar = false ∧ A.compat pr.sort s = true ∧
     pr.coercion = true ∧ ch.allows A pr s' = true ∧ body[0]? = some (ASym.hole s' pc x) ∧
-    Exp A g ts (A.expected #[] s') p excl (ch.push A pr s' s) i j r so ∧
-    fits A g (A.expected (A.bind #[] s' so) pr.sort) s = true ∧
+    Exp A g ts (A.expected #[] s') p excl (ch.push A pr s') i j r so ∧
+    A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true ∧
     σ = A.expected (A.bind #[] s' so) pr.sort
 
 /-- A reading not through a coercion of the question's own: by a
@@ -216,8 +216,8 @@ theorem ctriple_keepM {α : Type} [BEq α] [LawfulBEq α] (key : α → String) 
 clear. -/
 theorem ctriple_addProds (s : String) (pr : Imprimatur.Validate.Prod) :
     ∀ (rs : List (Array Reading × Env)) (out : Array (Reading × String)),
-      CTriple A g ts (addProds A g s pr rs out) True (fun res => (∀ x ∈ out, x ∈ res) ∧
-        ∀ cs env, (cs, env) ∈ rs → fits A g (A.expected env pr.sort) s = true →
+      CTriple A g ts (addProds A s pr rs out) True (fun res => (∀ x ∈ out, x ∈ res) ∧
+        ∀ cs env, (cs, env) ∈ rs → A.compat (A.expected env pr.sort) s = true →
           (mkReading pr.name pr.order cs, A.expected env pr.sort) ∈ res)
   | [], out => by
     simp only [addProds]
@@ -249,8 +249,8 @@ theorem ctriple_addProds (s : String) (pr : Imprimatur.Validate.Prod) :
 clear. -/
 theorem ctriple_addCoes (s : String) (pr : Imprimatur.Validate.Prod) (s' : String) :
     ∀ (args : List (Reading × String)) (out : Array (Reading × String)),
-      CTriple A g ts (addCoes A g s pr s' args out) True (fun res => (∀ x ∈ out, x ∈ res) ∧
-        ∀ r so, (r, so) ∈ args → fits A g (A.expected (A.bind #[] s' so) pr.sort) s = true →
+      CTriple A g ts (addCoes A s pr s' args out) True (fun res => (∀ x ∈ out, x ∈ res) ∧
+        ∀ r so, (r, so) ∈ args → A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
           (r, A.expected (A.bind #[] s' so) pr.sort) ∈ res)
   | [], out => by
     simp only [addCoes]
@@ -1047,7 +1047,7 @@ theorem coes_step (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i j :
             cases hb'
             rw [hallow] at hskip
             simp at hskip
-          · refine ctriple_bind (ihE (A.expected #[] s') p excl (ch.push A pr s' s) i j).ofTrue fun args => ?_
+          · refine ctriple_bind (ihE (A.expected #[] s') p excl (ch.push A pr s') i j).ofTrue fun args => ?_
             refine ctriple_bind (ctriple_addCoes s pr s' args.toList out).ofTrue fun out' => ?_
             refine ctriple_mono (ihC s p excl ch i j ks out').ofTrue
               fun ⟨⟨_, hargs⟩, hsub', hadd⟩ res ⟨hsub, hks⟩ => ?_

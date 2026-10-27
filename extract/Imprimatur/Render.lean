@@ -86,6 +86,16 @@ structure Expect where
   /-- This form's reading, from its subterms'. -/
   frame : Option (Array Validate.Reading → Validate.Reading) := none
 
+/-- No invisible coercion above. -/
+def noChain : Validate.Chain := { visited := [], cast := false, count := none }
+
+/-- A rule's production as an invisible coercion, with its hole's sort:
+what the reader's chain rule is decided by (`Validate.Chain.allows`). -/
+def coercionOf (r : NotationRule) : Option (Validate.Prod × String) :=
+  match Validate.ofRule r with
+  | some p => if p.coercion then match p.syms with | [.hole s' _] => some (p, s') | _ => none else none
+  | none => none
+
 /-- What rendering needs. -/
 structure Ctx where
   /-- The rules, project first, then packs. -/
@@ -132,6 +142,11 @@ structure Ctx where
   /-- The grammar of the notation in scope (`Validate.notationGrammar`),
   built once for the formulas a view renders. -/
   grammar : Option Validate.Grammar := none
+  /-- The chain of invisible coercions above the term being rendered: a
+  coercion is hidden only when the reader's chain rule allows it there, so
+  that every chain the renderer hides is one the reader reads
+  (docs/coercion-chains.md, route A). Any other form starts a new chain. -/
+  chain : Validate.Chain := noChain
 
 /-- The renderer's monad. -/
 abbrev RenderM := ReaderT Ctx MetaM
@@ -300,17 +315,22 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       ctx.listLiterals)
   let g := base.extend leaves
   let h₀ ← IO.getNumHeartbeats
-  let boundOverride := (← (IO.getEnv "IMPRIMATUR_CHAIN_DEPTH" : IO _)).bind (·.toNat?)
-  let (rs, flags) := Validate.readBackBounded boundOverride g ts (← sortOf e)
+  let (rs, flags) := Validate.readBack g ts (← sortOf e)
   -- IMPRIMATUR_VALIDATE_STATS=1 counts the questions each formula asks, and
   -- the heartbeats (small allocations, in thousands) reading it back took.
   if (← (IO.getEnv "IMPRIMATUR_VALIDATE_STATS" : IO _)) == some "1" then
     let h₁ ← IO.getNumHeartbeats
     let log := (Validate.readBackLog g ts (← sortOf e)).2
-    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats depth {g.depth} key {(← read).key}: {tex}"
+    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats key {(← read).key}: {tex}"
     if log.size > 100000 then for l in log do IO.eprintln s!"  read {l}"
   -- Two readings are two readings, whatever else was dropped.
   if rs.size ≥ 2 then
+    -- IMPRIMATUR_VALIDATE_DEBUG=1 shows what was read where, and the atoms'
+    -- sorts, which are what tell two readings apart.
+    if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+      IO.eprintln s!"validate: ambiguous {ts} as {← sortOf e}"
+      for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
+      for p in leaves do IO.eprintln s!"  atom {p.name} : {p.sort}"
     problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!.text} and as {rs[1]!.text}")
   else if flags.over then
     problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
@@ -440,8 +460,15 @@ mutual
     ex.set { saved with kids := saved.kids.push r }
     return d
 
-  /-- Render an expression, without reading it back. -/
+  /-- Render an expression, without reading it back. The chain of invisible
+  coercions above it reaches only a coercion's rule; anything else is
+  rendered with no chain above. -/
   partial def renderForm (e : Expr) : RenderM Doc := do
+    let ch := (← read).chain
+    withReader (fun c => { c with chain := noChain }) (renderFormIn ch e)
+
+  /-- `renderForm`, below the chain of invisible coercions `ch`. -/
+  partial def renderFormIn (ch : Validate.Chain) (e : Expr) : RenderM Doc := do
     let ctx ← read
     let e := e.consumeMData
     -- `latex_style lists := literal`: `[a, b]`, not `a :: b :: []`.
@@ -469,16 +496,26 @@ mutual
       let shown := cands.any fun r => !bare r && r.pat.arity > 0
       for r in cands do
         if ctx.inPattern && shown && bare r then continue
-        let fire (e : Expr) (bs : Array (Name × Expr)) : RenderM (Option Doc) := do
+        -- An invisible coercion is hidden only where the chain rule allows
+        -- it; elsewhere it gives way, to a rule that shows it or to the
+        -- constant applied (`\LeanMathConst{Option.some}\,x`).
+        let coe := coercionOf r
+        -- The chain below this rule: one more coercion, or a new chain.
+        let below (ch : Validate.Chain) : Option Validate.Chain := match coe with
+          | some (p, s') => if ch.allows Validate.algebra p s' then some (ch.push Validate.algebra p s') else none
+          | none => some noChain
+        let fire (ch : Validate.Chain) (e : Expr) (bs : Array (Name × Expr)) : RenderM (Option Doc) := do
           (← read).used.modify (·.push s!"{r.origin}: {r.template}")
           indexEvents.modify (·.push (.rule (← read).key r))
-          return some (← applyRule r bs e)
+          return some (← withReader (fun c => { c with chain := ch }) (applyRule r bs e))
         let ctx ← read
-        if let some d ← r.tryMatchK e (fun bs => (fire e bs).run ctx) then return d
+        if let some ch' := below ch then
+          if let some d ← r.tryMatchK e (fun bs => (fire ch' e bs).run ctx) then return d
         -- Over-applied, as `(f ∘ g) x`: match a prefix, then apply the rest.
+        -- The prefix is the function of an application, so starts a chain.
         if let some (pre, rest) ← splitAfterExplicit e r.pat.arity then
-          if !rest.isEmpty then
-            if let some d ← r.tryMatchK pre (fun bs => (fire pre bs).run ctx) then
+          if let (false, some ch') := (rest.isEmpty, below noChain) then
+            if let some d ← r.tryMatchK pre (fun bs => (fire ch' pre bs).run ctx) then
               let d ← apply d rest
               expectFrame none
               return d
