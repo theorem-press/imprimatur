@@ -1,5 +1,44 @@
 {
   "entries": {
+    "Stlc.IsValue": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 11,
+        "untrusted": []
+      },
+      "decl": "Stlc.IsValue",
+      "doc": "Values: abstractions and unit.",
+      "kind": "inductive",
+      "macros": [
+        "\\LeanCode",
+        "\\LeanConst",
+        "\\LeanKeyword",
+        "\\LeanMeta",
+        "\\LeanSorryFree",
+        "\\LeanSort",
+        "\\and",
+        "\\begin",
+        "\\end",
+        "\\in",
+        "\\inferrule",
+        "\\lambda",
+        "\\leanmetasource",
+        "\\mathit"
+      ],
+      "sigHash": "51973fbc4c7a83bb7d2537378a65192b862e6ce0afc2cbdd48effc2933c7ac17",
+      "sorry": false,
+      "source": {
+        "line": 35,
+        "path": "Stlc.lean"
+      },
+      "stmtHash": "7459e3c7611fb7359e6cc2492362797846b30f2ef808fbecf250e9df46ec8f5d",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{IsValue} : \\LeanConst{Tm} → \\LeanSort{Prop}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Values: abstractions and unit.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[(Lam)]\n  { }\n  { (\\lambda{:}A.\\, M) \\in \\mathit{Val} }\n\n\\and\n\n\\inferrule[(Unit)]\n  { }\n  { () \\in \\mathit{Val} }\n\n\\end{mathpar}"
+      }
+    },
     "Stlc.Step": {
       "axioms": [],
       "cone": {
@@ -143,7 +182,7 @@
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{values\\_final} \\{\\LeanBound{v} \\LeanBound{e} : \\LeanConst{Tm}\\} (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{v}) : ¬\\LeanConst{Step} \\LeanBound{v} \\LeanBound{e}}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Values are final: a value does not reduce.}",
-        "prose": "\\LeanProse{Let $V, M \\in \\mathit{Term}$. Then $\\neg (V \\longrightarrow M)$.}"
+        "prose": "\\LeanProse{Let $V \\in \\mathit{Val}$ and $M \\in \\mathit{Term}$. Then $\\neg (V \\longrightarrow M)$.}"
       }
     }
   },

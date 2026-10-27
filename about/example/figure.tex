@@ -9,6 +9,22 @@
 \end{LeanDisplay}
 \end{leangrammar}
 
+\begin{leanrules}[sum=mXx-JpINJ1]{Stlc.IsValue}{Values}
+\begin{mathpar}
+
+\inferrule[(Lam)]
+  { }
+  { (\lambda{:}A.\, M) \in \mathit{Val} }
+
+\and
+
+\inferrule[(Unit)]
+  { }
+  { () \in \mathit{Val} }
+
+\end{mathpar}
+\end{leanrules}
+
 \begin{leanrules}[sum=5cW2xFjnlQ]{Stlc.Step}{Reduction}
 \begin{mathpar}
 
@@ -35,9 +51,9 @@
 \end{mathpar}
 \end{leanrules}
 
-\begin{leantheorem}[sum=8gdE1ntMBs]{Values are final}{Values are final}
+\begin{leantheorem}[sum=8jx5_cPcFh]{Values are final}{Values are final}
 \label{thm:Values-are-final}
-\LeanProse{Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
+\LeanProse{Let $V \in \mathit{Val}$ and $M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
 \end{leantheorem}
 
 \begin{leansource}[sum=zIy9s_XPen]{Stlc.values_final}{The source}
@@ -45,7 +61,7 @@
 \LeanKeyword{theorem} \LeanConst{values\_final} \{\LeanBound{v} \LeanBound{e} : \LeanConst{Tm}\} (\LeanBound{hv} : \LeanConst{IsValue} \LeanBound{v}) : ¬\LeanConst{Step} \LeanBound{v} \LeanBound{e}}
 \end{leansource}
 \caption{The running example: a simply typed $\lambda$-calculus, as the
-paper's reader sees it, and the source of its theorem. All four blocks are
+paper's reader sees it, and the source of its theorem. All five blocks are
 generated.}
 \label{fig:example}
 \end{figure}

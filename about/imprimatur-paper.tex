@@ -4,6 +4,8 @@
 % Appendix C: the running example's files, verbatim, long lines broken.
 \usepackage{fvextra}
 \usepackage{imprimatur}
+% ⁇, in a reading: what the renderer does not say how to read matches any.
+\newunicodechar{⁇}{\ensuremath{?\!?}}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
 \leanblockalias{leangrammar}{LeanDisplayBox}
 \leanblockalias{leantheorem}{theorem}
@@ -329,12 +331,13 @@ $r_{3} = [\mathsf{gen}(s)]$, with no slots, where $s$ is
 exactly the two lines between the header and \texttt{\cs{end}}, each with
 its newline:\newline
 \texttt{\cs{label}\{thm:Values-are-final\}}\newline
-\texttt{\cs{LeanProse}\{Let \$V, M \cs{in} \cs{mathit}\{Term\}\$. Then
-\$\cs{neg} (V \cs{longrightarrow} M)\$.\}}
+\texttt{\cs{LeanProse}\{Let \$V \cs{in} \cs{mathit}\{Val\}\$ and
+\$M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V
+\cs{longrightarrow} M)\$.\}}
 &
 \raggedright\texttt{\cs{begin}\{leantheorem\}[sum=...]\{Values are final\}\{Values are final\}}\newline
 \texttt{\cs{label}\{thm:Values-are-final\}}\newline
-\texttt{\cs{LeanProse}\{Let \$V, M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V \cs{longrightarrow} M)\$.\}}\newline
+\texttt{\cs{LeanProse}\{Let \$V \cs{in} \cs{mathit}\{Val\}\$ and \$M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V \cs{longrightarrow} M)\$.\}}\newline
 \texttt{\cs{end}\{leantheorem\}}
 \tabularnewline\noalign{\medskip}
 \raggedright $\mathsf{block}_{\mathtt{Stlc.values\_final}}^{\mathtt{lean}}(r_{4})$, where
@@ -345,7 +348,7 @@ $r_{4} = [\mathsf{gen}(\ldots)]$, with no slots
 \texttt{\cs{LeanKeyword}\{theorem\} \cs{LeanConst}\{values\cs{}\_final\} ...\}}\newline
 \texttt{\cs{end}\{leansource\}}
 \end{tabular}
-\caption{The four blocks of Figure~\ref{fig:example}, as pieces
+\caption{Four of the blocks of Figure~\ref{fig:example}, as pieces
 (Section~\ref{sec:documents}) and as the \TeX{} that \texttt{check}
 parses. The key is the first argument; the view is the environment's, by
 the paper's aliases; the title and the summary are not part of the piece.
@@ -365,7 +368,7 @@ in full.
 \includegraphics[width=\linewidth]{example-diagram.pdf}
 \caption{The theorem of Figure~\ref{fig:example}, from the development to
 the paper. The extractor reads the Lean and the notation and writes the
-bundle, here for the figure's four requests; the splicer writes each
+bundle, here for the figure's five requests; the splicer writes each
 rendering into the paper's \TeX{} as a block. Before the extractor writes a
 rendering, the validator's parser reads each of its formulas back in the
 notation's grammar (below): each has one reading, and it is the statement's
@@ -379,12 +382,12 @@ Appendix~\ref{app:example} when the paper is built.}
 
 Theorem~\ref{thm:Extraction-is-true} is about the bundle the extractor
 writes. Here $X$ is the calculus with its notation, and the paper's four
-blocks in Figure~\ref{fig:example} make four requests, each a key and a
+blocks in Figure~\ref{fig:example} make five requests, each a key and a
 list of views, all of them strings:
 
-\begin{leandef}[sum=srSPrfWLj7, dflt=mg0ZFoUaby]{The requests of Figure 1}{The requests of Figure 1}
+\begin{leandef}[sum=XRzcN--NQb, dflt=r4adX8nPas]{The requests of Figure 1}{The requests of Figure 1}
 \begin{LeanDisplay}
-\LeanClause{\mathit{rs}_{1} \;\deq\; [(\text{``Stlc.Tm''}, [\text{``grammar|display''}]),\ (\text{``Stlc.Step''}, [\text{``rules''}]),\ (\text{``Values are final''}, [\text{``prose''}]),\ (\text{``Stlc.values\_final''}, [\text{``lean''}])]}{\leanslot{About.figureRequests}{Each key, as written, with the view of its block}}
+\LeanClause{\mathit{rs}_{1} \;\deq\; [(\text{``Stlc.Tm''}, [\text{``grammar|display''}]),\ (\text{``Stlc.IsValue''}, [\text{``rules''}]),\ (\text{``Stlc.Step''}, [\text{``rules''}]),\ (\text{``Values are final''}, [\text{``prose''}]),\ (\text{``Stlc.values\_final''}, [\text{``lean''}])]}{\leanslot{About.figureRequests}{Each key, as written, with the view of its block}}
 \end{LeanDisplay}
 \end{leandef}
 
@@ -399,7 +402,7 @@ statement (the entry is shown in Section~\ref{sec:bundle}).
 
 Theorem~\ref{thm:Building-regenerates-blocks,-once} is about
 $\mathsf{apply}$. Regenerating the figure against $b$ rewrites the bodies
-of its four blocks and nothing else: not the text between them, nor the
+of its five blocks and nothing else: not the text between them, nor the
 blocks' keys and views. The grammar is the one block with slots, and the
 descriptions the authors wrote in them (``Terms, with de Bruijn
 variables'', ``a variable'', \ldots) are kept
@@ -411,7 +414,7 @@ stale.
 \subsection{What the paper says}\label{sec:example-paper}
 
 Theorem~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
-is about the paper. Take for $d$ the four blocks of
+is about the paper. Take for $d$ the five blocks of
 Figure~\ref{fig:example}, as this paper's source writes them, and for $b$
 the bundle $\mathsf{extract}_{X}(\mathit{rs}_{1})$. Against it
 \texttt{check} reports nothing, so the theorem applies, and its two halves
@@ -420,20 +423,21 @@ shows. Each key names a statement that Lean proved, with trusted axioms,
 and each block is that statement's rendering, with the authors' text kept
 in its slots: the grammar is the rendering of \texttt{Stlc.Tm}, with the
 descriptions the authors wrote beside its forms (``an abstraction''), the
-figure of reduction rules is the rendering of the constructors of
-\texttt{Stlc.Step}, and the sentence of \emph{Values are final} is the
+two figures of rules are the renderings of the constructors of
+\texttt{Stlc.IsValue} and \texttt{Stlc.Step}, and the sentence of \emph{Values are final} is the
 rendering of \texttt{Stlc.values\_final}. The second half is about how they
 read, and it is about the \TeX{} itself. The prose parser takes the body
 of \emph{Values are final}, the string below, apart into formulas, each a
 string of \TeX{} too:
-\begin{leananatomy}[sum=RySh8_Er-s, view={about.prose-anatomy|pin=About.valuesFinalTeX}]{Values are final}{The anatomy of a sentence}
+\begin{leananatomy}[sum=qJK8IF-9Ky, view={about.prose-anatomy|pin=About.valuesFinalTeX}]{Values are final}{The anatomy of a sentence}
 \begin{center}\small
-\LeanCodeInline{"\textbackslash{}LeanProse\{Let \$V, M \textbackslash{}in \textbackslash{}mathit\{Term\}\$. Then \$\textbackslash{}neg (V \textbackslash{}longrightarrow M)\$.\}"}
+\LeanCodeInline{"\textbackslash{}LeanProse\{Let \$V \textbackslash{}in \textbackslash{}mathit\{Val\}\$ and \$M \textbackslash{}in \textbackslash{}mathit\{Term\}\$. Then \$\textbackslash{}neg (V \textbackslash{}longrightarrow M)\$.\}"}
 \\[1ex]
 \begin{tabular}{@{}l@{\quad}l@{\quad}l@{}}
 \textit{Part} & \textit{Formula, as TeX} & \textit{Typeset}\\
 \hline
 a variable & \LeanCodeInline{"V"} & $V$\\
+its range & \LeanCodeInline{"\textbackslash{}mathit\{Val\}"} & $\mathit{Val}$\\
 a variable & \LeanCodeInline{"M"} & $M$\\
 its range & \LeanCodeInline{"\textbackslash{}mathit\{Term\}"} & $\mathit{Term}$\\
 the conclusion & \LeanCodeInline{"\textbackslash{}neg (V \textbackslash{}longrightarrow M)"} & $\neg (V \longrightarrow M)$\\
@@ -1407,15 +1411,17 @@ prose or a rules block shows, part by part.
 
 In the example, the statement of \emph{Values are final} is printed in
 three steps. The anatomy gathers what the view says, as the notation shows
-it: one group of variables, \texttt{v} and \texttt{e} of type \texttt{Tm},
-no hypotheses, and the conclusion \texttt{¬ Step v e}. Its hypothesis
-\texttt{IsValue v} is not a part, because the notation writes \texttt{v}
-as $V$ and leaves the hypothesis implicit; that a hidden hypothesis is no
-part is the notation's claim, and is in the trusted base. The notation
-prints the variables as $V, M \in \mathit{Term}$ and the conclusion as
-$\neg (V \longrightarrow M)$. The layout sets these out as \emph{Let
-\ldots{} Then \ldots}, with no \emph{Assume}, there being no hypotheses.
-Read back, the sentence comes apart into the same two formulas, and each
+it: two groups of variables, \texttt{v} in the predicate \texttt{IsValue}
+that its hypothesis puts it in, and \texttt{e} of type \texttt{Tm}; no
+hypotheses; and the conclusion \texttt{¬ Step v e}. The hypothesis
+\texttt{IsValue v} is not a part of its own: the notation writes
+\texttt{v} as $V$, and the range of $V$ says what the hypothesis did;
+that it does is the notation's claim, and is in the trusted base. The
+notation prints the groups as $V \in \mathit{Val}$ and
+$M \in \mathit{Term}$ and the conclusion as $\neg (V \longrightarrow M)$.
+The layout sets these out as \emph{Let \ldots{} Then \ldots}, with no
+\emph{Assume}, there being no hypotheses. Read back, the sentence comes
+apart into the same formulas, and each
 reads back as the part it was printed from. The reduction of
 Figure~\ref{fig:example} is printed the same way: three rules, each with
 its label and its mark, and the layout sets them out as the figure. Read
@@ -1917,10 +1923,10 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}{Notation}{The notation of the paper}
+\begin{leannotation}[sum=pBPsmm8-f0, dflt=zLNNbzt7ou]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{About}}\\
-$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the four blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
+$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the five blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
 $\mathit{pr}_{1}$ & \texttt{About.valuesFinalSentence} & \leanslot{About.valuesFinalSentence/0}{The sentence of \emph{Values are final}, as the prose view says it: two variables of terms, and a conclusion, each a formula of TeX}\\
 $t_{1}$ & \texttt{About.valuesFinalTeX} & \leanslot{About.valuesFinalTeX/0}{The TeX of the block of \emph{Values are final}: its prose rendering, which the paper's view of the block checks it still is}\\
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\

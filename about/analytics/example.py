@@ -70,6 +70,13 @@ def lean_requests() -> list[tuple[str, list[str]]]:
     return [(k, re.findall(r'"([^"]*)"', vs)) for k, vs in re.findall(r'\("([^"]*)",\s*\[([^\]]*)\]\)', body)]
 
 
+def matches(expected: str, found: str) -> bool:
+    """A reading matches the one expected, as the validator compares them:
+    ⁇ in the expected reading stands for any reading."""
+    pattern = "".join(".+?" if part == "⁇" else re.escape(part) for part in re.split("(⁇)", expected))
+    return re.fullmatch(pattern, found) is not None
+
+
 def run_extractor(rs: list[tuple[str, list[str]]]) -> tuple[dict, list[tuple[str, str, str, str]]]:
     """The bundle the extractor writes for the requests `rs` alone, and each
     formula it read back: key, TeX, readings found, reading expected."""
@@ -175,7 +182,7 @@ def bundle_excerpt(bundle: dict) -> list[Line]:
 
 def tex_excerpt(fig: str) -> list[Line]:
     out = block(fig, "\\begin{leantheorem}", "\\end{leantheorem}", hot=True)
-    out += plain("") + block(fig, "\\begin{leanrules}", "{ (\\lambda") + plain("  ...", "")
+    out += plain("") + block(fig, "{Stlc.Step}{Reduction}", "{ (\\lambda") + plain("  ...", "")
     out += block(fig, "\\begin{leansource}", "\\end{leansource}")
     return wrap(out)
 
@@ -300,8 +307,12 @@ def main() -> None:
         if k != last:
             lines += ([""] if last else []) + [k]
             last = k
-        lines += [f"  {t}", f"    reads only as  {found}" if found == expected else
-                  f"    reads as  {found}, but was rendered from  {expected}"]
+        if found == expected:
+            lines += [f"  {t}", f"    reads only as  {found}"]
+        elif matches(expected, found):
+            lines += [f"  {t}", f"    reads only as  {found},", f"    which matches the reading expected, {expected}"]
+        else:
+            lines += [f"  {t}", f"    reads as  {found}, but was rendered from  {expected}"]
     (OUT / "readings.txt").write_text("\n".join(lines) + "\n")
     lean = (ABOUT / "lean" / "Stlc.lean").read_text()
     notation = (ABOUT / "notation" / "StlcTeX.lean").read_text()

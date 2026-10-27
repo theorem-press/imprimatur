@@ -4,6 +4,11 @@
       "grammar|display"
     ]
   },
+  "Stlc.IsValue": {
+    "views": [
+      "rules"
+    ]
+  },
   "Stlc.Step": {
     "views": [
       "rules"
