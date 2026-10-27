@@ -922,23 +922,20 @@ def STerm.univFits (a b : String) : Bool :=
   (a == "Prop" && (b == "Sort" || b == "Sort*")) || (a == "Sort" && b == "Sort*") ||
   (a == "Sort*" && (b == "Prop" || b == "Sort"))
 
-/-- A named type: not a universe, not a type parameter. -/
-def STerm.named (s : String) : Bool := !STerm.univ s && !s.startsWith "'"
-
 mutual
 /-- Sorts compatible, the first found where the second is expected: equal up
 to unknowns (`*`, and type variables, which are unknown until bound), part
 by part. A type written without its arguments (as the packs write `Option`)
-stands for it with any. What is found (on the left) may be of a named type
-that is a function type by definition (`Matrix R C α` is `R → C → α`), which
-the reader does not unfold; but a function is not of a named type. -/
+stands for it with any. A function type is written as one wherever it is
+one by definition (the extractor unfolds `Matrix R C α` to `R → C → α`), so
+a named or applied type is not a function, and a function is not of one. -/
 def STerm.compat : STerm → STerm → Bool
   | .atom a, .atom b => a == b || STerm.unknown a || STerm.unknown b || STerm.univFits a b
   | .app h as, .app h' bs => h == h' && STerm.compatList as bs
   | .app h _, .atom b => STerm.unknown b || h == b
   | .atom a, .app h _ => STerm.unknown a || a == h
-  | .atom a, .arrow .. => STerm.unknown a || STerm.named a
-  | .app .., .arrow .. => true
+  | .atom a, .arrow .. => STerm.unknown a
+  | .app .., .arrow .. => false
   | .arrow .., .atom b => STerm.unknown b
   | .arrow .., .app .. => false
   | .arrow a b, .arrow c d => a.compat c && b.compat d

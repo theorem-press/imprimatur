@@ -150,10 +150,6 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "bcd5ea338db26567bb6b94bdb39bb976c43ce9cc88b3cfdf909cb0e25c08eb36",
-      "validation": {
-        "rules": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[app[\\Gamma; i]; t]"],
-        "rules|exclude=beta": ["ambiguous: $\\Gamma(i) = t$ reads as (Eq Stlc.lookup Option.some{0:Stlc.Ty}){0:(Option Stlc.Ty)}[\\Gamma; i; t] and as Eq[app[\\Gamma; i]; t]"]
-      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
         "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{a \\vdash e : \\tau}{\\leanslot{Stlc.HasType}{Typing}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.var}}{\\leanslot{Stlc.HasType.var}{T-Var: a variable has its type in the context}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.lam}}{\\leanslot{Stlc.HasType.lam}{T-Abs: abstraction}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.app}}{\\leanslot{Stlc.HasType.app}{T-App: application}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.unit}}{\\leanslot{Stlc.HasType.unit}{T-Unit}}\n\\end{LeanDisplay}",

@@ -162,8 +162,10 @@ def tests : TestM Unit := group "validate" do
       (tokenize "f(a)(b)") "*").1 1
   -- An application has the function's codomain for its sort (#90): with
   -- `\le` written alike at two types, `f(x) \le 1` has one reading when `f`
-  -- is a function to one of them, and still reads when `f` is of a named
-  -- type or of unknown sort, with a result of unknown sort.
+  -- is a function to one of them, and still reads when `f` is of unknown
+  -- sort, with a result of unknown sort. A named type is not a function
+  -- (one that is by definition, `Set α`, is written as its function type),
+  -- so `f` of a named type does not apply.
   let leAt (t : String) : NotationRule :=
     { mk `LE.le #[(`a, t), (`b, t)] "#a \\le #b" "Prop" 50 "none" with
       pat := .constrained (.app `LE.le #[.var `a, .var `b]) #[(0, .app (.mkSimple t) #[])] }
@@ -171,7 +173,7 @@ def tests : TestM Unit := group "validate" do
     (count (Grammar.of (#[leAt "NNReal", leAt "ENNReal"].filterMap ofRule ++ builtins true false ++
       #[atom "f" fs, atom "x" "Nat", atom "1" "*"])) (tokenize "f(x) \\le 1") "Prop").1
   checkEq "extract/validate/application-typed" (typed "(Nat → NNReal)") 1
-  checkEq "extract/validate/application-named" (typed "Pred") 2
+  checkEq "extract/validate/application-named" (typed "Pred") 0
   checkEq "extract/validate/application-unknown" (typed "*") 2
   checkEq "extract/validate/application-ill-typed" (typed "(Bool → NNReal)") 0
   -- A synonym adds no production.

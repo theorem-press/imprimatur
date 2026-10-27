@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- A type that is a function type by definition (`Matrix R C α`, `Set α`)
+  is read back as that function type, and a named or applied type is no
+  longer taken for a function. So `Γ(i)` no longer reads as an application
+  of a context, and with typed applications, `\sum_u f(u) \le 1` reads at
+  the one type `f` returns (#90, part 2). A fixture built with an earlier
+  extractor keeps its rules' old sorts until it is rebuilt.
 - Reading formulas back types applications: `f(a)` and `f\,a` have the
   function's codomain for their sort when its sort is a function type,
   where before every application was of unknown sort. A function of a named
