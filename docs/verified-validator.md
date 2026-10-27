@@ -102,7 +102,8 @@ not prove the renderer.
 - **Sorts** are strings in `sortKey`'s format, compared by `compat`,
   specialised by `expected` and bound by `bind`, all over `STerm.parse`. This
   is the algebra of Lean types (`Prop` reads where `Sort` is expected, a
-  named type may be a function type, `Option` without arguments stands for
+  type that is a function type by definition is written as one, so a named
+  type is not a function (#90), `Option` without arguments stands for
   any). It is tested, and #22 already proposed to leave it so.
 - **Pruning.** `keep2` keeps two distinct readings and at most 32 sort or
   binding variants of each; the budget is 3,000,000 steps. Past the budget a
