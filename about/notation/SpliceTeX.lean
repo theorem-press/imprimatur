@@ -35,8 +35,8 @@ latex_notation WF b => r"\mathsf{wf}(#b)"
 -- The bundle of a world: the views and the validator are fixed for a paper.
 latex_notation entryOf W views problems k S => r"\mathsf{entry}_{#W}(#k, #S)"
   hide views := _ hide problems := _
-latex_notation bundleOf W views problems keys => r"\mathsf{bundle}_{#W}(#keys)"
-  hide views := _ hide problems := _
+latex_notation bundleOf W problems rs => r"\mathsf{bundle}_{#W}(#rs)"
+  hide problems := _
 
 -- The bundle's type, and the model's instance of it.
 latex_notation Imprimatur.Bundle.find? b k => r"#b[#k]"
@@ -358,6 +358,7 @@ latex_group "Reading back" := [Anatomy.ReadsAll.nil, Anatomy.ReadsAll.cons, Anat
   Anatomy.ReadsConcl.exists_, Anatomy.ReadsProse.define, Anatomy.ReadsProse.statement,
   Anatomy.ReadsRule.mk, Anatomy.ReadsRules.nil, Anatomy.ReadsRules.cons]
 latex_display "Reading two views" := [Anatomy.Prose, Anatomy.Rules]
+latex_display "Pollack-consistency" := [Validated.ReadsAs, Validated.Pollack]
 
 -- Reading formulas back (Imprimatur.ReadBack), and what is proved of it.
 latex_notation Imprimatur.Validate.SortAlgebra => r"\texttt{Sorts}"
@@ -380,15 +381,24 @@ latex_notation Imprimatur.Validate.Chain => r"\texttt{Chain}"
 latex_notation Imprimatur.Validate.Grammar.chain0 g => r"\mathsf{top}_{#g}"
 latex_notation Validated => r"\texttt{Validated}"
 latex_category Validated => "X"
-latex_notation Validated.base X => r"W^{\circ}_{#X}"
+latex_notation Validated.base X => r"\mathsf{base}(#X)"
 latex_notation Validated.Part X => r"\mathit{Part}_{#X}"
-latex_notation Validated.world X => r"W_{#X}"
+latex_notation Validated.world X => r"\mathsf{world}(#X)"
 latex_notation Validated.anatomy X => r"\mathcal{A}_{#X}"
 latex_notation Validated.gather X S => r"\mathit{gather}_{#X}(#S)"
 latex_notation Validated.ctors X S => r"\mathit{ctors}_{#X}(#S)"
 latex_notation Validated.print X q => r"\mathit{print}_{#X}(#q)"
 latex_notation Prose.map (Validated.print X) u => r"\mathit{print}^{*}_{#X}(#u)"
 latex_notation Rule.map (Validated.print X) q => r"\mathit{print}^{*}_{#X}(#q)"
+-- The introduction's top level: the extractor's function, what it is trusted
+-- for, and Pollack-consistency of a document.
+latex_notation Validated.extract X rs => r"\mathsf{extract}_{#X}(#rs)"
+latex_notation About.figureRequests => r"\mathit{rs}_{1}"
+latex_notation Validated.Prints X => r"\mathsf{prints}(#X)"
+latex_notation Validated.Pollack X d => r"\mathsf{pollack}_{#X}(#d)"
+latex_notation Validated.ReadsAs X "prose" r k => r"#r \rightsquigarrow^{\mathsf{prose}}_{#X} #k" prec := 50
+latex_notation Validated.ReadsAs X "rules" r k => r"#r \rightsquigarrow^{\mathsf{rules}}_{#X} #k" prec := 50
+latex_notation Validated.ReadsAs X v r k => r"#r \rightsquigarrow^{#v}_{#X} #k" prec := 50
 latex_category Imprimatur.Validate.SortAlgebra => r"\mathcal{S}"
 latex_category Imprimatur.Validate.Grammar => "G"
 
@@ -420,3 +430,7 @@ latex_entry "A prose rendering shows its statement" => SpliceModel.Anatomy.Sound
 latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound.rulesShow
 latex_entry "Prose shows the statement" => SpliceModel.prose_true
 latex_entry "Rules show the predicate" => SpliceModel.rules_true
+latex_entry "Extraction is true" => SpliceModel.Validated.extract_true
+latex_entry "The requests of Figure 1" => About.figureRequests
+latex_entry "Building regenerates blocks, once" => SpliceModel.apply_laws
+latex_entry "A paper that checks clean is true and reads only as Lean's" => SpliceModel.Validated.paper_true

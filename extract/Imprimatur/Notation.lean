@@ -153,6 +153,12 @@ partial def sortKey (t : Expr) : MetaM String := do
     let b ← sortKey b
     return if d == "*" && b == "*" then "*" else s!"({d} → {b})"
   | _ =>
+    -- A type that is a function type by definition (`Matrix R C α`, `Set α`)
+    -- is written as one: the reader's algebra does not let a named type
+    -- stand for a function (`STerm.compat`).
+    if let .const .. := t.getAppFn then
+      if let some f ← (try some <$> whnf t catch _ => pure none) then
+        if f.isForall then return ← sortKey f
     match t.getAppFn with
     | .const n _ =>
       -- With its type arguments (`Option(Label)`); other arguments, such as

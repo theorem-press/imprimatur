@@ -12,6 +12,22 @@ All notable changes to imprimatur are recorded here. Versions follow
   with the predicate and the block that shows it. The about paper's
   Theorem 1.1 read as a stronger theorem than the one proved; it now reads
   "Let $V \in \mathit{Val}$ and $M \in \mathit{Term}$" (#77).
+- The about paper's introduction states its results at the top level, each
+  generated from a theorem of the model (`SpliceModel.Summary`): the bundle
+  the extractor writes is true; building rewrites only blocks, once, and
+  leaves nothing stale; and a paper that checks clean against the extracted
+  bundle is true of the development and Pollack-consistent, every block
+  reading only as its key's statement.
+- A type that is a function type by definition (`Matrix R C α`, `Set α`)
+  is read back as that function type, and a named or applied type is no
+  longer taken for a function. So `Γ(i)` no longer reads as an application
+  of a context, and with typed applications, `\sum_u f(u) \le 1` reads at
+  the one type `f` returns (#90, part 2). A fixture built with an earlier
+  extractor keeps its rules' old sorts until it is rebuilt.
+- Reading formulas back types applications: `f(a)` and `f\,a` have the
+  function's codomain for their sort when its sort is a function type,
+  where before every application was of unknown sort. A function of a named
+  type or of unknown sort applies as before (#90, part 1).
 - The paper's model proves what the chain rule costs and why it is there
   (`SpliceModel.ReadBackChains`): every reading in the parser's grammar is
   one in the grammar of chains of any length, and the counterexample of

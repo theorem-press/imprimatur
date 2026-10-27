@@ -1276,8 +1276,9 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   notation, Lean's fallback text).
 - **Sorts** are Lean types: a head constant with its type arguments
   (`Option(Label)`), `Prop`, a function sort `(A → B)`, a type parameter of
-  the statement, or unknown. A named type found where a function is expected
-  is accepted, since it may be one by definition (`Matrix R C α`). A hole of a
+  the statement, or unknown. A type that is a function type by definition
+  (`Matrix R C α`, `Set α`) is written as that function type, so a named or
+  applied type is not taken for a function (#90). A hole of a
   type the pattern leaves open (`a ⊔ b` for any `a b : α`) is a type
   variable, bound by what fills the first such hole, so `a = b = c` does not
   read as comparing a proposition with a label. A rule elaborated with a

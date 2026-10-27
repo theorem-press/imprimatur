@@ -280,7 +280,8 @@ end
 /-! ## The bundle of a world is true of it -/
 
 section
-variable {W : World} {views : List View} {problems : View → W.Stmt → Array String} {keys : List Key}
+variable {W : World} {views : List View} {problems : View → W.Stmt → Array String}
+  {rs : List (Key × List View)}
 
 /-- The problems an honest entry records for a view are the validator's. -/
 theorem entryOf_problems {k : Key} {S : W.Stmt} {v : View} (hv : v ∈ views) :
@@ -306,7 +307,7 @@ finds no problem in reads back as its statement, the bundle of a world is
 true of it. -/
 theorem bundleOf_true
     (hval : ∀ v S r, problems v S = #[] → W.render v S = some r → W.Reads r S) :
-    (bundleOf W views problems keys).True W id := by
+    (bundleOf W problems rs).True W id := by
   intro k e he
   simp only [Imprimatur.Bundle.find?, bundleOf, List.find?_toArray, Option.map_eq_some_iff] at he
   obtain ⟨⟨k', e'⟩, hf, rfl⟩ := he
@@ -314,7 +315,7 @@ theorem bundleOf_true
   have hm := List.mem_of_find?_eq_some hf
   simp only [beq_iff_eq] at hk
   subst hk
-  obtain ⟨k₀, _, hk₀⟩ := List.mem_filterMap.mp hm
+  obtain ⟨⟨k₀, vs⟩, _, hk₀⟩ := List.mem_filterMap.mp hm
   obtain ⟨S, hS, hpair⟩ := Option.map_eq_some_iff.mp hk₀
   simp only [Prod.mk.injEq] at hpair
   obtain ⟨rfl, rfl⟩ := hpair
