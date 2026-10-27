@@ -11,7 +11,9 @@
 #      imprimatur.toml, the notation is in notation/.
 #   3. imprimatur check: must report nothing at all, warnings included, as CI
 #      requires (every formula reads back, no \leancheck has drifted).
-#   4. analytics/chart.py: redraw development-chart.png, the appendix's chart
+#   4. analytics/chart.py: redraw development-chart.png, the appendix's chart;
+#      and analytics/example.py: the running example's requests, bundle and
+#      TeX (example/), and the diagram of the three, example-diagram.pdf
 #      of imprimatur's Lean (with uv; skipped, with a warning, without it).
 #   5. latexmk: typeset it, with BibTeX (ACM-Reference-Format.bst is here).
 #
@@ -115,6 +117,11 @@ if [ $no_chart -eq 0 ]; then
     echo "== analytics/chart.py: the chart of imprimatur's Lean =="
     if ! (cd "$HERE/analytics" && uv run --quiet chart.py); then
       echo "!! the chart failed; see the messages above"
+      exit 1
+    fi
+    echo "== analytics/example.py: the running example, in full, and its diagram =="
+    if ! (cd "$HERE/analytics" && uv run --quiet example.py); then
+      echo "!! the example failed; see the messages above"
       exit 1
     fi
   else
