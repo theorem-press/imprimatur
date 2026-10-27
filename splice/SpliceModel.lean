@@ -9,6 +9,7 @@ import SpliceModel.Pruning
 import SpliceModel.ReadBackComplete
 import SpliceModel.ReadBackChains
 import SpliceModel.Validator
+import SpliceModel.Summary
 import SpliceModel.Views
 import SpliceModel.Splicer
 import SpliceModel.Theorem1

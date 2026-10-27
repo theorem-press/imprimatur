@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The about paper's introduction states its results at the top level, each
+  generated from a theorem of the model (`SpliceModel.Summary`): the bundle
+  the extractor writes is true; building rewrites only blocks, once, and
+  leaves nothing stale; and a paper that checks clean against the extracted
+  bundle is true of the development and Pollack-consistent, every block
+  reading only as its key's statement.
 - A type that is a function type by definition (`Matrix R C α`, `Set α`)
   is read back as that function type, and a named or applied type is no
   longer taken for a function. So `Γ(i)` no longer reads as an application
