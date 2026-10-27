@@ -155,7 +155,7 @@ echo "== e2e/about"
 work="e2e-out/about"; rm -rf "$work"; mkdir -p "$work"
 # The paper's Lean requires the splice package at ../../splice.
 ln -sfn "$ROOT/splice" e2e-out/splice
-(cd about && tar --exclude=.lake --exclude=.imprimatur --exclude='*.pdf' --exclude='*.aux' \
+(cd about && tar --exclude=.lake --exclude=.imprimatur --exclude=imprimatur-paper.pdf --exclude='*.aux' \
   --exclude='*.log' --exclude='*.fls' --exclude='*.fdb_latexmk' -cf - .) | (cd "$work" && tar -xf -)
 if ! (cd "$work/lean" && lake build -q > ../lake.log 2>&1); then
   echo "  FAIL: the Lean model does not build"; sed 's/^/    /' "$work/lake.log"; status=1
