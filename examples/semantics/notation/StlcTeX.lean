@@ -41,7 +41,10 @@ latex_notation Ctx => r"\mathit{Context}"
 -- Contexts.
 latex_notation List.cons (x, t) Γ => r"#Γ, #x{:}#t" prec := 20
 latex_notation lookup Γ x = some t => r"#Γ(#x) = #t" prec := 50
-latex_notation IsValue v => r"#v \in \mathit{Val}"
+-- `v ∈ Val` is membership in the predicate `Val`, which is `IsValue v`; a
+-- theorem binds a value in `Val` (the convention below).
+latex_notation IsValue v => r"#v \in \mathit{Val}"  synonym
+latex_notation IsValue => r"\mathit{Val}"
 
 -- A type variable is written τ, with its subscript: t₁ is τ₁.
 latex_metavar t => r"\tau" decorated
