@@ -164,7 +164,7 @@ rendering of \texttt{Stlc.values\_final}. The second half is about how they
 read, and it is about the \TeX{} itself. The prose parser takes the body
 of \emph{Values are final}, the string below, apart into formulas, each a
 string of \TeX{} too:
-\begin{leananatomy}[sum=RySh8_Er-s]{Values are final}{The anatomy of a sentence}
+\begin{leananatomy}[sum=RySh8_Er-s, view={about.prose-anatomy|pin=About.valuesFinalTeX}]{Values are final}{The anatomy of a sentence}
 \begin{center}\small
 \LeanCodeInline{"\textbackslash{}LeanProse\{Let \$V, M \textbackslash{}in \textbackslash{}mathit\{Term\}\$. Then \$\textbackslash{}neg (V \textbackslash{}longrightarrow M)\$.\}"}
 \\[1ex]
@@ -178,6 +178,15 @@ the conclusion & \LeanCodeInline{"\textbackslash{}neg (V \textbackslash{}longrig
 \end{tabular}
 \end{center}
 \end{leananatomy}
+\noindent That the parser takes this string apart so is a theorem, about
+the string the block is pinned to, $t_{1}$, and the sentence the table
+shows, $\mathit{pr}_{1}$; the build checks that the block is still $t_{1}$:
+
+\begin{leantheorem}[sum=WQ-WFxGWZX]{Values are final, taken apart}{Values are final, taken apart}
+\label{thm:Values-are-final,-taken-apart}
+\LeanProse{$\mathsf{sentence}(t_{1}) = \mathit{pr}_{1}$.}
+\end{leantheorem}
+
 \noindent Each of these formulas has, in the notation's grammar, no reading
 but its part of the statement: the variables are \texttt{v} and
 \texttt{e}, and the conclusion is $\neg\,\texttt{Step}\ v\ e$. So
@@ -1842,10 +1851,12 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=Rr4-6YHiHP, dflt=KoMshGACnO]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=Gkqr6m8wZl, dflt=0VflqQSEGs]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{About}}\\
 $\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the four blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
+$\mathit{pr}_{1}$ & \texttt{About.valuesFinalSentence} & \leanslot{About.valuesFinalSentence/0}{The sentence of \emph{Values are final}, as the prose view says it: two variables of terms, and a conclusion, each a formula of TeX}\\
+$t_{1}$ & \texttt{About.valuesFinalTeX} & \leanslot{About.valuesFinalTeX/0}{The TeX of the block of \emph{Values are final}: its prose rendering, which the paper's view of the block checks it still is}\\
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
 $W \models b$ & \texttt{Imprimatur.Bundle.True} & \leanslot{Imprimatur.Bundle.True/0}{A bundle is true of a world when the entry it gives for each key is}\\
