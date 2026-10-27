@@ -350,8 +350,11 @@ in full.
 \caption{The theorem of Figure~\ref{fig:example}, from the development to
 the paper. The extractor reads the Lean and the notation and writes the
 bundle, here for the figure's four requests; the splicer writes each
-rendering into the paper's \TeX{} as a block. In red, \emph{Values are
-final} at each stage. The excerpts are cut from the files of
+rendering into the paper's \TeX{} as a block. Before the extractor writes a
+rendering, the validator's parser reads each of its formulas back in the
+notation's grammar (below): each has one reading, and it is the statement's
+part it was printed from. In red, \emph{Values are final} at each stage.
+The excerpts, and the readings, are cut from the files of
 Appendix~\ref{app:example} when the paper is built.}
 \label{fig:pipeline}
 \end{figure}
@@ -2240,6 +2243,10 @@ The Lean, \texttt{lean/Stlc.lean}:
 The bundle the extractor writes for those requests,
 \texttt{example/bundle.json}:
 \VerbatimInput{example/bundle.json}
+
+\noindent Each formula of the figure, as the validator's parser read it
+back while the extractor wrote that bundle, \texttt{example/readings.txt}:
+\VerbatimInput{example/readings.txt}
 
 \subsection{The paper}
 
