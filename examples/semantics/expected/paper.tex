@@ -195,9 +195,9 @@ in the notation module:
 \LeanProse{Let $a, b \in \mathit{Name}$ and $e \in \mathit{Term}$. Then $(a\ b) \cdot ((a\ b) \cdot e) = e$.}
 \end{leantheorem}
 
-\begin{leantheorem}[sum=OKrVw4uVc8]{Values are final}{Values are final}
+\begin{leantheorem}[sum=Llwby7f-kQ]{Values are final}{Values are final}
 \label{thm:Values-are-final}
-\LeanProse{Let $\val, e \in \mathit{Term}$. Then $\neg (\val \longrightarrow e)$.}
+\LeanProse{Let $\val \in \mathit{Val}$ and $e \in \mathit{Term}$. Then $\neg (\val \longrightarrow e)$.}
 \end{leantheorem}
 
 Or as a rule, from a theorem whose hypotheses become its premises:
@@ -258,12 +258,13 @@ prime ranges over the same type. imprimatur generates the table from the
 categories the notation declares, and checks that every variable printed with
 a metavariable has its type.
 
-\begin{leanconventions}[sum=hkPr-RgjND, dflt=FkVnVPwHEw]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=orTYyOUD6_, dflt=hLiHzj5na2]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
 $\tau$ & $\mathit{Type}$ & \leanslot{Stlc.Ty}{types} & \textit{Ty}, p.~\pageref{gram:Stlc.Ty}\\
 $e$ & $\mathit{Term}$ & \leanslot{Stlc.Tm}{terms, with names} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
+$\val$ & $\mathit{Val}$ & \leanslot{Stlc.IsValue}{Values} & \textit{Step}\\
 \end{longtable}
 A variable with a prime or a subscript ($\tau'$, $\tau_{1}$) ranges over the same type.
 \end{leanconventions}
@@ -272,7 +273,7 @@ The notation, grouped by where it is defined: the paper's own (\textit{Stlc})
 and Lean's. Each is written as the paper writes it, with the Lean constant it
 stands for.
 
-\begin{leannotation}[sum=wgbTFD2MXK, dflt=6oqRwSRbwl]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=KyC23XccFs, dflt=-Zw4mooy8H]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
 $\Gamma, x{:}\tau$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
@@ -284,6 +285,7 @@ $(a\ b) \cdot \Gamma$ & \texttt{Ctx.swap} & \leanslot{Stlc.Ctx.swap/0}{Swapping 
 $\Gamma \vdash e : \tau$ & \texttt{HasType} & \leanslot{Stlc.HasType/0}{Typing}\\
 $\vdash e : \tau$ & \texttt{HasType} & \leanslot{Stlc.HasType/1}{Typing}\\
 $v \in \mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/0}{Values}\\
+$\mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/1}{Values}\\
 $e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction, call by value}\\
 $e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
 $c \mathrel{\#} a, b, e, e'$ & \texttt{Tm.atoms} & \leanslot{Stlc.Tm.atoms/0}{The names that occur in a term, bound or free}\\

@@ -23,8 +23,10 @@ latex_notation List.cons t Γ => r"#Γ, #t" prec := 20
 latex_notation lookup Γ i = some t => r"#Γ(#i) = #t" prec := 50
 latex_notation subst e v => r"#e[#v]"
 
--- Values are written v, and their IsValue premises are left implicit.
+-- Values are written v, and their IsValue premises are left implicit; a
+-- theorem binds such a variable in the predicate, written Val.
 latex_metavar_convention IsValue v => r"\val"
+latex_notation IsValue => r"\mathit{Val}"
 -- Well-formedness side conditions are not shown.
 latex_hide_premise Ctx.WF _
 

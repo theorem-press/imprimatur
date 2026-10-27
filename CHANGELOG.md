@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- A premise that `latex_metavar_convention` hides is no longer lost: the
+  `prose` view binds the variable it names in the predicate, `Let
+  $\val \in \mathit{Val}$` for a hidden `IsValue v`, instead of in its
+  type, and the `conventions` table lists the convention's metavariable
+  with the predicate and the block that shows it. The about paper's
+  Theorem 1.1 read as a stronger theorem than the one proved; it now reads
+  "Let $V \in \mathit{Val}$ and $M \in \mathit{Term}$" (#77).
 - The about paper's introduction states its results at the top level, each
   generated from a theorem of the model (`SpliceModel.Summary`): the bundle
   the extractor writes is true; building rewrites only blocks, once, and

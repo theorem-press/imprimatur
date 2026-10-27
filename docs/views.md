@@ -132,7 +132,12 @@ Each constructor becomes a mathpartir `\inferrule`, so the document needs
   proposition, in source order. Premise conventions
   ([notation.md](notation.md)) hide some: `latex_hide_premise` drops those
   matching a pattern, and `latex_metavar_convention` drops them and renders
-  the variable they constrain as a metavariable (`\val`).
+  the variable they constrain as a metavariable (`\val`). In the `prose`
+  view the variable is then bound in the predicate rather than its type,
+  when it is the premise's last argument: `Let $\val \in \mathit{Val}$`
+  for a hidden `IsValue v`, so the sentence still says what the convention
+  hides (#77). Give the bare predicate a rule (`latex_notation IsValue =>
+  r"\mathit{Val}"`); without one it is written as a constant.
 - **The conclusion** is the constructor's result type. Formulas never break
   across lines.
 - **Labels** come, in order, from `latex_rule_label`, a docstring starting
@@ -237,7 +242,12 @@ view notes what it displays). Each table is a `longtable`, which
   the block has a label. Rows are in document order, those that share a
   metavariable together. Translation validation already checks that a
   variable printed as a category's metavariable has that category's type, so
-  the table states a property `check` verifies.
+  the table states a property `check` verifies. Then, for each
+  `latex_metavar_convention` the document uses, its metavariable, the
+  predicate whose premises it hides (as the notation writes the bare
+  predicate), the predicate's description, and the first block that shows
+  it (a `rules` block of the predicate), else where the convention is first
+  used (#77).
 - **`vocabulary`**: the notation of the library (Lean core, Batteries,
   Mathlib) that the document uses: each rule whose pattern mentions no
   constant of the project's modules, as it is written, with the constant and

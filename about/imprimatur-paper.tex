@@ -245,6 +245,22 @@ theorem came from, shown by the \texttt{lean} view.
 \end{LeanDisplay}
 \end{leangrammar}
 
+\begin{leanrules}[sum=mXx-JpINJ1]{Stlc.IsValue}{Values}
+\begin{mathpar}
+
+\inferrule[(Lam)]
+  { }
+  { (\lambda{:}A.\, M) \in \mathit{Val} }
+
+\and
+
+\inferrule[(Unit)]
+  { }
+  { () \in \mathit{Val} }
+
+\end{mathpar}
+\end{leanrules}
+
 \begin{leanrules}[sum=5cW2xFjnlQ]{Stlc.Step}{Reduction}
 \begin{mathpar}
 
@@ -271,9 +287,9 @@ theorem came from, shown by the \texttt{lean} view.
 \end{mathpar}
 \end{leanrules}
 
-\begin{leantheorem}[sum=8gdE1ntMBs]{Values are final}{Values are final}
+\begin{leantheorem}[sum=8jx5_cPcFh]{Values are final}{Values are final}
 \label{thm:Values-are-final}
-\LeanProse{Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
+\LeanProse{Let $V \in \mathit{Val}$ and $M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
 \end{leantheorem}
 
 \begin{leansource}[sum=zIy9s_XPen]{Stlc.values_final}{The source}
@@ -281,7 +297,7 @@ theorem came from, shown by the \texttt{lean} view.
 \LeanKeyword{theorem} \LeanConst{values\_final} \{\LeanBound{v} \LeanBound{e} : \LeanConst{Tm}\} (\LeanBound{hv} : \LeanConst{IsValue} \LeanBound{v}) : ¬\LeanConst{Step} \LeanBound{v} \LeanBound{e}}
 \end{leansource}
 \caption{The running example: a simply typed $\lambda$-calculus, as the
-paper's reader sees it, and the source of its theorem. All four blocks are
+paper's reader sees it, and the source of its theorem. All five blocks are
 generated.}
 \label{fig:example}
 \end{figure}
@@ -421,7 +437,8 @@ paper was built with.}
   "kind": "theorem", "decl": "Stlc.values_final",
   "source": { "path": "Stlc.lean", "line": 54 },
   "stmtHash": "4ad202811bf6...", "sigHash": "2d5428d0311d...",
-  "views": { "prose": "\LeanProse{Let $V, M \in \mathit{Term}$.
+  "views": { "prose": "\LeanProse{Let $V \in \mathit{Val}$ and
+                        $M \in \mathit{Term}$.
                         Then $\neg (V \longrightarrow M)$.}",
              "lean": "...", "meta": "..." },
   "axioms": [], "sorry": false, "cone": { "size": 16, "untrusted": [] }
@@ -676,8 +693,8 @@ are final} in Figure~\ref{fig:example}. Here $W$ is the example's world;
 $b$ is the bundle this paper was built with, which is true of $W$ and
 against which \verb|check| reports nothing; $d$ is this paper; $k$ is the
 key ``\texttt{Values are final}''; $v$ is ``\texttt{prose}''; and $r$ is the
-sentence ``Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow
-M)$.'' The conclusion, $W \models \mathsf{block}^{\mathtt{prose}}_{k}(r)$,
+sentence ``Let $V \in \mathit{Val}$ and $M \in \mathit{Term}$. Then
+$\neg (V \longrightarrow M)$.'' The conclusion, $W \models \mathsf{block}^{\mathtt{prose}}_{k}(r)$,
 unfolds into five facts:
 \begin{itemize}
 \item $\mathit{stmt}_{W}(k) = S$, for some statement $S$. The key names a
@@ -698,12 +715,16 @@ unfolds into five facts:
   \texttt{prose} view has no slots, so $r$ is $r'$ itself. For the terms
   grammar above it, the same fact says more: the formulas are the
   rendering, and the descriptions are the authors'.
-\item $\mathit{reads}_{W}(r', S)$. The formula $\neg (V \longrightarrow
-  M)$ parses back, in the notation of Appendix~\ref{app:notation}, to $S$
-  and to nothing else. There $\longrightarrow$ is reduction,
-  \texttt{Stlc.Step}, and $M$ ranges over terms. $V$ ranges over values,
-  by the notation's convention that values are written $V$, which leaves
-  the source's premise \texttt{IsValue v} implicit.
+\item $\mathit{reads}_{W}(r', S)$. The formulas parse back, in the
+  notation of Appendix~\ref{app:notation}, to $S$ and to nothing else.
+  There $\longrightarrow$ is reduction, \texttt{Stlc.Step}, and $M$ ranges
+  over terms. The source's premise \texttt{IsValue v} is not a premise of
+  the sentence: the notation's convention writes values $V$ and leaves it
+  implicit. But it is not lost. The binder says it, $V \in \mathit{Val}$,
+  with $\mathit{Val}$ the predicate \texttt{IsValue}, which the figure
+  displays, and the table of conventions (Appendix~\ref{app:notation})
+  lists $V$ with it. A convention may hide a premise, but the sentence
+  still says what it hides.
 \end{itemize}
 So a reader who trusts the extractor and the notation may conclude:
 \emph{what I read is a theorem of this development, and Lean proved it.}
@@ -1773,7 +1794,7 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=Hr1EBXPKlr, dflt=LWe0feMW_Y]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=E5WVfvIsup, dflt=FUUstDVqN2]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
@@ -1795,12 +1816,13 @@ $\delta$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{ch
 $\mathcal{A}$ & $\texttt{Anatomy}(W)$ & \leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart} & \textit{Anatomies}, p.~\pageref{gram:Anatomies}\\
 $\mathcal{S}$ & $\texttt{Sorts}$ & \leanslot{Imprimatur.Validate.SortAlgebra}{How sorts behave: the parser's parameter} & \textit{The parser is sound}, p.~\pageref{thm:The-parser-is-sound}\\
 $G$ & $\texttt{Grammar}$ & \leanslot{Imprimatur.Validate.Grammar}{A compiled grammar} & \textit{The parser is sound}, p.~\pageref{thm:The-parser-is-sound}\\
+$V$ & $\mathit{Val}$ & \leanslot{Stlc.IsValue}{Values: abstractions and unit} & \textit{IsValue}\\
 \end{longtable}
 A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type.
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=Rr4-6YHiHP, dflt=KoMshGACnO]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=rvQuBBkZw5, dflt=y-b-6O5dee]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{About}}\\
 $\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the four blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
@@ -2091,6 +2113,8 @@ $l[i]$ & \texttt{lookup} & \leanslot{SpliceModel.lookup/0}{The text of slot \Lea
 $\lfloor d \rfloor$ & \texttt{outline} & \leanslot{SpliceModel.outline/0}{The outline of a piece: a block without its body}\\
 $\mathsf{slots}(r)$ & \texttt{slots} & \leanslot{SpliceModel.slots/0}{The slots of a body, with their text}\\
 \multicolumn{3}{@{}l}{\textit{Stlc}}\\
+$v \in \mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/0}{Values: abstractions and unit}\\
+$\mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/1}{Values: abstractions and unit}\\
 $e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction}\\
 $e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
 $\lambda{:}t.\, e$ & \texttt{Tm.lam} & \leanslot{Stlc.Tm.lam/0}{an abstraction}\\

@@ -189,14 +189,16 @@ unsafe def indexTest : TestM Unit := group "index" do
     blk "Conventions" "conventions" 0, blk "Vocabulary" "vocabulary" 1,
     blk "Stlc.Ty" "grammar" 2 (some "gram:Ty"), blk "Stlc.Tm" "grammar" 3 (some "gram:Tm"),
     blk "Stlc.size_pos" "prose" 4 (some "thm:Stlc.size_pos"),
-    blk "Provenance" "provenance" 5, blk "Notation" "vocabulary|scope=project" 6] }
+    blk "Provenance" "provenance" 5, blk "Notation" "vocabulary|scope=project" 6,
+    blk "Stlc.IsValue" "rules" 7 (some "fig:values"), blk "Stlc.step_app" "prose" 8] }
   let settings : Settings := { imports := #[f.module], stripNamespaces := f.strip, document }
   let reqs : Array Request := #[
     { key := "Conventions", views := #["conventions"] }, { key := "Vocabulary", views := #["vocabulary"] },
     { key := "Provenance", views := #["provenance"] },
     { key := "Notation", views := #["vocabulary|scope=project"] },
     { key := "Stlc.Ty", views := #["grammar"] }, { key := "Stlc.Tm", views := #["grammar"] },
-    { key := "Stlc.size_pos", views := #["prose"] }]
+    { key := "Stlc.size_pos", views := #["prose"] },
+    { key := "Stlc.IsValue", views := #["rules"] }, { key := "Stlc.step_app", views := #["prose"] }]
   let (entries, warnings) ← exportEntries env dir settings reqs
   checkEq "extract/index/no-warnings" warnings #[]
   let bundle := renderBundle entries none
@@ -219,6 +221,13 @@ unsafe def indexTest : TestM Unit := group "index" do
   check "extract/index/vocabulary-project"
     ((own.splitOn "\\textit{Semantics}").length == 2 && (own.splitOn "\\textit{Lean}").length == 1 &&
       (own.splitOn "\\texttt{Tm.app}").length > 1 && (own.splitOn "\\texttt{Ty}").length == 1) own
+  -- A metavariable convention hides `IsValue e₂`, but not what it says
+  -- (#77): the prose binds the variable in the predicate, and the table of
+  -- conventions lists the metavariable, pointing to where values are shown.
+  let stepApp := view "Stlc.step_app" "prose"
+  check "extract/index/convention-binds" ((stepApp.splitOn "\\val_{2} \\in \\mathit{Val}").length > 1) stepApp
+  check "extract/index/convention-row" ((conv.splitOn "$\\val$ & $\\mathit{Val}$").length > 1) conv
+  check "extract/index/convention-shown" ((conv.splitOn "\\pageref{fig:values}").length > 1) conv
   golden "extract/index/golden" ("golden" / "Index.tex")
     (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
 

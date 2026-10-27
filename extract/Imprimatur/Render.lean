@@ -70,6 +70,9 @@ inductive IndexEvent where
   | category (key : String) (ty : Name)
   /-- The block displays the declaration `n`. -/
   | shows (key : String) (n : Name)
+  /-- A metavariable convention hid a premise of predicate `pred`, and
+  printed the variable it constrains as `tex` (DESIGN §7.6). -/
+  | convention (key : String) (pred : Name) (tex : String)
   deriving Inhabited
 
 /-- The events of an export, in the order the blocks were rendered. The
@@ -110,6 +113,11 @@ structure Ctx where
   used : IO.Ref (Array String)
   /-- Renderings of particular variables, from metavariable conventions. -/
   overrides : Array (FVarId × String) := #[]
+  /-- The variables a metavariable convention names, each with the predicate
+  its hidden premise puts it in (`IsValue` for `IsValue v`): the prose view
+  binds such a variable in the predicate, not in its type, so that the
+  premise the convention hides is still said (DESIGN §7.6). -/
+  ranges : Array (FVarId × Expr) := #[]
   /-- `latex_style names := raw`: binder names are written as they are. -/
   rawVars : Bool := false
   /-- `latex_style applied_variables := call`: `f(a)(b)` for an applied variable. -/

@@ -122,6 +122,24 @@ def conventionsView : RenderM String := do
   out := out ++ "\\textit{Variable} & \\textit{Type} & & \\textit{Shown in}\\\\\n\\hline\\endhead\n"
   for (_, tex, ty, wh, _) in sorted do
     out := out ++ s!"${tex}$ & ${← typeTeX ty}$ & \\leanslot\{{ty}}\{{← docSentence ty}} & {wh}\\\\\n"
+  -- Each metavariable convention the document uses (DESIGN §7.6): its
+  -- metavariable stands for a variable of the predicate whose premise it
+  -- hides, which is shown where the predicate is displayed, else where the
+  -- convention is first used.
+  let mut convs : Array (Nat × String × Name × String) := #[]
+  for e in ev do
+    let .convention _ pred tex := e | continue
+    if convs.any (fun (_, t, p, _) => t == tex && p == pred) then continue
+    let shown := ev.filterMap fun | .shows k n => if n == pred then some k else none | _ => none
+    let used := ev.filterMap fun | .convention k p t => if p == pred && t == tex then some k else none | _ => none
+    let some (order, key) ← (do
+        if let some f ← firstOf shown then return some f
+        firstOf used) | continue
+    convs := convs.push (order, tex, pred, ← whereTeX key)
+  for (_, tex, pred, wh) in convs.qsort (·.1 < ·.1) do
+    let ci ← getConstInfo pred
+    let range := (← render (.const pred (ci.levelParams.map Level.param))).render 100000
+    out := out ++ s!"${tex}$ & ${range}$ & \\leanslot\{{pred}}\{{← docSentence pred}} & {wh}\\\\\n"
   out := out ++ "\\end{longtable}\n"
   -- The convention for decorations, shown on the first metavariable.
   if let some (_, m, _, _, _) := sorted[0]? then

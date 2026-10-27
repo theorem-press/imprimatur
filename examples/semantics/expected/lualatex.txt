@@ -82,7 +82,7 @@ A result can be generated, as a sentence; its key can be a title, declared in th
 notation module:
 Theorem 1 (Swapping is involutive). Let a, b ∈ Name and e ∈ Term. Then
 (a b) · ((a b) · e) = e.
-Theorem 2 (Values are final). Let v, e ∈ Term. Then ¬(v −→ e).
+Theorem 2 (Values are final). Let v ∈ Val and e ∈ Term. Then ¬(v −→ e).
 Or as a rule, from a theorem whose hypotheses become its premises:
 e1 −→ e0
 1
@@ -124,6 +124,7 @@ has its type.
 Variable Type Shown in
 τ Type types Ty, p. 1
 e Term terms, with names Tm, p. 1
+v Val Values Step
 A variable with a prime or a subscript (τ0
 , τ1) ranges over the same type.
 The notation, grouped by where it is defined: the paper’s own (Stlc) and
@@ -142,6 +143,7 @@ the most recent first
 Γ ` e : τ HasType Typing
 ` e : τ HasType Typing
 v ∈ Val IsValue Values
+Val IsValue Values
 e −→ e0
 Step Small-step reduction, call by value
 e1 e2 Tm.app an application

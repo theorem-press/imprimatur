@@ -511,6 +511,14 @@ latex_hide_premise (_ : Fintype _)
 Instance binders are always hidden. Block options `show=` and `hide=`, to
 override these choices per block, are designed but not implemented (#35).
 
+A hidden premise must still be said somewhere the reader looks (#77): a
+statement that drops `IsValue v` is stronger than the one proved, unless the
+reader knows that `\val` ranges over values. So the `prose` view binds a
+variable a metavariable convention names in the predicate its premise puts
+it in (`Let $\val \in \mathit{Val}$`), and the `conventions` table lists
+the convention's metavariable with the predicate and where it is shown.
+What `latex_hide_premise` drops is not said (#42).
+
 ### 7.7 Trust metadata
 
 For every entry, the extractor imports the environment at `private` level
