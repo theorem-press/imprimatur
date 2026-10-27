@@ -1,0 +1,22 @@
+{
+  "Stlc.Tm": {
+    "views": [
+      "grammar|display"
+    ]
+  },
+  "Stlc.Step": {
+    "views": [
+      "rules"
+    ]
+  },
+  "Values are final": {
+    "views": [
+      "prose"
+    ]
+  },
+  "Stlc.values_final": {
+    "views": [
+      "lean"
+    ]
+  }
+}

@@ -20,6 +20,8 @@ _site/
 /about/*.fls
 /about/*.fdb_latexmk
 /about/*.pdf
+# but not the diagram of the running example, an input of the paper
+!/about/example-diagram.pdf
 /about/*.synctex.gz
 /about/*.out
 /about/*.bbl

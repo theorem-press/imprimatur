@@ -1,6 +1,8 @@
 % The PACMPL format: acmsmall, single column, 10pt (the POPL instructions).
 \documentclass[acmsmall,screen,review,anonymous,nonacm]{acmart}
 \usepackage{mathpartir}
+% Appendix C: the running example's files, verbatim, long lines broken.
+\usepackage{fvextra}
 \usepackage{imprimatur}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
 \leanblockalias{leangrammar}{LeanDisplayBox}
@@ -339,6 +341,20 @@ spans, shown in full for $r_{3}$. Only the grammar has slots.}
 The figure is the example's thread through the paper: what the bundle says of the theorem, what that means, what the
 paper claims, and what happens when the development changes. We begin
 by working the three theorems of Section~\ref{sec:intro} through for it.
+Figure~\ref{fig:pipeline} follows the theorem from its Lean, through the
+bundle, into the paper's \TeX; Appendix~\ref{app:example} gives the three
+in full.
+
+\begin{figure}[t]
+\includegraphics[width=\linewidth]{example-diagram.pdf}
+\caption{The theorem of Figure~\ref{fig:example}, from the development to
+the paper. The extractor reads the Lean and the notation and writes the
+bundle, here for the figure's four requests; the splicer writes each
+rendering into the paper's \TeX{} as a block. In red, \emph{Values are
+final} at each stage. The excerpts are cut from the files of
+Appendix~\ref{app:example} when the paper is built.}
+\label{fig:pipeline}
+\end{figure}
 
 \subsection{What the bundle says}\label{sec:example-bundle}
 
@@ -2198,5 +2214,37 @@ commands, such as \texttt{latex\_notation}. Drawn by
 \texttt{analytics/chart.py}.}
 \label{fig:development}
 \end{figure}
+
+\section{The running example, in full}\label{app:example}
+
+The three stages of Figure~\ref{fig:pipeline}, in full, as
+\texttt{analytics/example.py} writes them when the paper is built. The
+requests are read from Figure~\ref{fig:example}'s blocks and checked
+against $\mathit{rs}_{1}$; the bundle is what the extractor writes for
+them alone, which is the $b$ of Section~\ref{sec:example-bundle}.
+
+\fvset{fontsize=\scriptsize, breaklines, frame=lines, framesep=1ex}
+
+\subsection{The development}
+
+The Lean, \texttt{lean/Stlc.lean}:
+\VerbatimInput{lean/Stlc.lean}
+\noindent The notation, \texttt{notation/StlcTeX.lean}:
+\VerbatimInput{notation/StlcTeX.lean}
+\noindent The requests Figure~\ref{fig:example} makes,
+\texttt{example/requests.json}:
+\VerbatimInput{example/requests.json}
+
+\subsection{The bundle}
+
+The bundle the extractor writes for those requests,
+\texttt{example/bundle.json}:
+\VerbatimInput{example/bundle.json}
+
+\subsection{The paper}
+
+The \TeX{} of Figure~\ref{fig:example}, \texttt{example/figure.tex}, as
+\texttt{imprimatur build} leaves it in this paper's source:
+\VerbatimInput{example/figure.tex}
 
 \end{document}

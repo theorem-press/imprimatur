@@ -1,0 +1,156 @@
+{
+  "entries": {
+    "Stlc.Step": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.Step",
+      "doc": "Small-step reduction.",
+      "kind": "inductive",
+      "macros": [
+        "\\LeanCode",
+        "\\LeanConst",
+        "\\LeanKeyword",
+        "\\LeanMeta",
+        "\\LeanSorryFree",
+        "\\LeanSort",
+        "\\and",
+        "\\begin",
+        "\\end",
+        "\\inferrule",
+        "\\lambda",
+        "\\leanmetasource",
+        "\\longrightarrow"
+      ],
+      "sigHash": "050a4fcd8fcd2b2a42d83dca4dda99586670bd274a99d9835174608c672866e6",
+      "sorry": false,
+      "source": {
+        "line": 45,
+        "path": "Stlc.lean"
+      },
+      "stmtHash": "e76370a2950fdd08ee59ebd5aa660ed4a3f08a206b7de94adeceed2c40323e36",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Step} : \\LeanConst{Tm} → \\LeanConst{Tm} → \\LeanSort{Prop}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Small-step reduction.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[(Beta)]\n  { }\n  { (\\lambda{:}A.\\, M)\\; V \\longrightarrow M[V] }\n\n\\and\n\n\\inferrule[(App-Left)]\n  {\n    M_{1} \\longrightarrow M_{1}'\n  }\n  { M_{1}\\; M_{2} \\longrightarrow M_{1}'\\; M_{2} }\n\n\\and\n\n\\inferrule[(App-Right)]\n  {\n    M_{2} \\longrightarrow M_{2}'\n  }\n  { V\\; M_{2} \\longrightarrow V\\; M_{2}' }\n\n\\end{mathpar}"
+      }
+    },
+    "Stlc.Tm": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 8,
+        "untrusted": []
+      },
+      "decl": "Stlc.Tm",
+      "doc": "Terms, with de Bruijn variables.",
+      "kind": "inductive",
+      "macros": [
+        "\\LeanCategory",
+        "\\LeanCode",
+        "\\LeanConst",
+        "\\LeanEntry",
+        "\\LeanKeyword",
+        "\\LeanMeta",
+        "\\LeanSorryFree",
+        "\\LeanSort",
+        "\\begin",
+        "\\end",
+        "\\in",
+        "\\lambda",
+        "\\leanmetasource",
+        "\\leanslot",
+        "\\mathit"
+      ],
+      "sigHash": "b60631772fb50b61f4c48115854a1a9c8c33b5caaee027e921640f1eb57aedc5",
+      "sorry": false,
+      "source": {
+        "line": 24,
+        "path": "Stlc.lean"
+      },
+      "stmtHash": "8cfc6f91ea41d3a118e34916502a747519762ee3516598d311beff5f21dae928",
+      "views": {
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{M \\in \\mathit{Term}}{\\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\\\\n\\LeanEntry{x_{i}}{\\leanslot{Stlc.Tm.var}{a variable}}\\\\\n\\LeanEntry{\\lambda{:}A.\\, M}{\\leanslot{Stlc.Tm.lam}{an abstraction}}\\\\\n\\LeanEntry{M_{1}\\; M_{2}}{\\leanslot{Stlc.Tm.app}{an application}}\\\\\n\\LeanEntry{()}{\\leanslot{Stlc.Tm.unit}{the unit value}}\n\\end{LeanDisplay}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Tm} : \\LeanSort{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Terms, with de Bruijn variables.}"
+      }
+    },
+    "Stlc.values_final": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.values_final",
+      "doc": "Values are final: a value does not reduce.",
+      "kind": "theorem",
+      "macros": [
+        "\\LeanBound",
+        "\\LeanCode",
+        "\\LeanConst",
+        "\\LeanKeyword",
+        "\\LeanMeta",
+        "\\LeanSorryFree",
+        "\\leanmetasource"
+      ],
+      "sigHash": "cc8cbdb3f5cf7a77eb5f582f8cfd955cd5fff2ad79cac163d5f31755924f3222",
+      "sorry": false,
+      "source": {
+        "line": 54,
+        "path": "Stlc.lean"
+      },
+      "stmtHash": "4ad202811bf6223e353aab24cc8fae4f250dbc21d25d880db1c1954439c8da17",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{values\\_final} \\{\\LeanBound{v} \\LeanBound{e} : \\LeanConst{Tm}\\} (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{v}) : ¬\\LeanConst{Step} \\LeanBound{v} \\LeanBound{e}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Values are final: a value does not reduce.}"
+      }
+    },
+    "Values are final": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "Stlc.values_final",
+      "doc": "Values are final: a value does not reduce.",
+      "kind": "theorem",
+      "macros": [
+        "\\LeanBound",
+        "\\LeanCode",
+        "\\LeanConst",
+        "\\LeanKeyword",
+        "\\LeanMeta",
+        "\\LeanProse",
+        "\\LeanSorryFree",
+        "\\in",
+        "\\leanmetasource",
+        "\\longrightarrow",
+        "\\mathit",
+        "\\neg"
+      ],
+      "sigHash": "cc8cbdb3f5cf7a77eb5f582f8cfd955cd5fff2ad79cac163d5f31755924f3222",
+      "sorry": false,
+      "source": {
+        "line": 54,
+        "path": "Stlc.lean"
+      },
+      "stmtHash": "4ad202811bf6223e353aab24cc8fae4f250dbc21d25d880db1c1954439c8da17",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{values\\_final} \\{\\LeanBound{v} \\LeanBound{e} : \\LeanConst{Tm}\\} (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{v}) : ¬\\LeanConst{Step} \\LeanBound{v} \\LeanBound{e}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Values are final: a value does not reduce.}",
+        "prose": "\\LeanProse{Let $V, M \\in \\mathit{Term}$. Then $\\neg (V \\longrightarrow M)$.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.35.0",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}
