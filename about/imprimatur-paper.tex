@@ -252,9 +252,9 @@ theorem came from, shown by the \texttt{lean} view.
 \end{mathpar}
 \end{leanrules}
 
-\begin{leantheorem}[sum=WQa21-S41z]{Values are final}{Values are final}
+\begin{leantheorem}[sum=8gdE1ntMBs]{Values are final}{Values are final}
 \label{thm:Values-are-final}
-\LeanProse{Let $V \in \LeanMathConst{IsValue}$ and $M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
+\LeanProse{Let $V, M \in \mathit{Term}$. Then $\neg (V \longrightarrow M)$.}
 \end{leantheorem}
 
 \begin{leansource}[sum=zIy9s_XPen]{Stlc.values_final}{The source}
@@ -1754,7 +1754,7 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=1P4wGI2ylK, dflt=FUUstDVqN2]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=Hr1EBXPKlr, dflt=LWe0feMW_Y]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
@@ -1776,7 +1776,6 @@ $\delta$ & $\mathit{Diag}$ & \leanslot{SpliceModel.Diag}{What \LeanCodeInline{ch
 $\mathcal{A}$ & $\texttt{Anatomy}(W)$ & \leanslot{SpliceModel.Anatomy}{How a world's statements, and the prose and rules views' renderings, come apart} & \textit{Anatomies}, p.~\pageref{gram:Anatomies}\\
 $\mathcal{S}$ & $\texttt{Sorts}$ & \leanslot{Imprimatur.Validate.SortAlgebra}{How sorts behave: the parser's parameter} & \textit{The parser is sound}, p.~\pageref{thm:The-parser-is-sound}\\
 $G$ & $\texttt{Grammar}$ & \leanslot{Imprimatur.Validate.Grammar}{A compiled grammar} & \textit{The parser is sound}, p.~\pageref{thm:The-parser-is-sound}\\
-$V$ & $\LeanMathConst{IsValue}$ & \leanslot{Stlc.IsValue}{Values: abstractions and unit} & \textit{Step}\\
 \end{longtable}
 A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type.
 \end{leanconventions}
