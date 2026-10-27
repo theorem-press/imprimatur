@@ -205,11 +205,12 @@ def entryOf (W : World) (views : List View) (problems : View → W.Stmt → Arra
       validation := (views.map fun v => (v, problems v S)).toArray },
     verdict := W.trusted k }
 
-/-- The bundle an honest extractor makes of a world, for some keys and
-views. -/
-def bundleOf (W : World) (views : List View) (problems : View → W.Stmt → Array String)
-    (keys : List Key) : Bundle :=
+/-- The bundle an honest extractor makes of a world, for the requests `rs`:
+each key a document cites, with the views it shows the key in, as the
+extractor's requests file gives them. -/
+def bundleOf (W : World) (problems : View → W.Stmt → Array String) (rs : List (Key × List View)) :
+    Bundle :=
   { producer := { tool := "model", version := "" },
-    entries := (keys.filterMap fun k => (W.stmt k).map fun S => (k, entryOf W views problems k S)).toArray }
+    entries := (rs.filterMap fun (k, vs) => (W.stmt k).map fun S => (k, entryOf W vs problems k S)).toArray }
 
 end SpliceModel

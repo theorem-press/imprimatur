@@ -35,8 +35,8 @@ latex_notation WF b => r"\mathsf{wf}(#b)"
 -- The bundle of a world: the views and the validator are fixed for a paper.
 latex_notation entryOf W views problems k S => r"\mathsf{entry}_{#W}(#k, #S)"
   hide views := _ hide problems := _
-latex_notation bundleOf W views problems keys => r"\mathsf{bundle}_{#W}(#keys)"
-  hide views := _ hide problems := _
+latex_notation bundleOf W problems rs => r"\mathsf{bundle}_{#W}(#rs)"
+  hide problems := _
 
 -- The bundle's type, and the model's instance of it.
 latex_notation Imprimatur.Bundle.find? b k => r"#b[#k]"
@@ -392,7 +392,7 @@ latex_notation Prose.map (Validated.print X) u => r"\mathit{print}^{*}_{#X}(#u)"
 latex_notation Rule.map (Validated.print X) q => r"\mathit{print}^{*}_{#X}(#q)"
 -- The introduction's top level: the extractor's function, what it is trusted
 -- for, and Pollack-consistency of a document.
-latex_notation Validated.extract X vs ks => r"\mathsf{extract}_{#X}(#vs, #ks)"
+latex_notation Validated.extract X rs => r"\mathsf{extract}_{#X}(#rs)"
 latex_notation Validated.Prints X => r"\mathsf{prints}(#X)"
 latex_notation Validated.Pollack X d => r"\mathsf{pollack}_{#X}(#d)"
 latex_notation Validated.ReadsAs X "prose" r k => r"#r \rightsquigarrow^{\mathsf{prose}}_{#X} #k" prec := 50

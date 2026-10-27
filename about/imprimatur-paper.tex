@@ -66,10 +66,11 @@ them:
 What does it mean for the paper to be correct? That what it shows is what
 Lean proved, and that it says so in a notation with one reading. Three
 functions connect the three things. The extractor writes the bundle of a
-development, $\mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$: the keys
-$\mathit{ks}$ the paper cites, each hashed and rendered in the views
-$\mathit{vs}$ it shows, where $X$ is the development as the extractor sees
-it, with the validator that reads each rendering back. The world it
+development, $\mathsf{extract}_{X}(\mathit{rs})$, for the requests
+$\mathit{rs}$ the paper makes: each key it cites, with the views it shows
+the key in, whose statement the bundle hashes and renders in those views.
+Here $X$ is the development as the extractor sees it, with the validator
+that reads each rendering back. The world it
 presents is $\mathsf{world}(X)$: what each key states, whether its proof is
 trusted, how a statement is hashed and rendered, and, for when a rendering
 reads back as a statement, the validator's verdict on every formula printed
@@ -78,9 +79,9 @@ $\mathsf{apply}_{b}(d)$, and lists what is wrong with the paper against it,
 $\mathsf{check}_{b}(d)$. The paper's results are about these three, and
 each is proved in Lean. The first two say that each program does its part:
 
-\begin{leantheorem}[sum=403lxGO75s]{Extraction is true}{Extraction is true}
+\begin{leantheorem}[sum=ohIfXYzy6m]{Extraction is true}{Extraction is true}
 \label{thm:Extraction-is-true}
-\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$. Then $\mathsf{world}(X) \models b$.}
+\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{rs} \in \mathsf{List}(\mathit{Key} \times \mathsf{List}(\mathit{View}))$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{rs})$. Then $\mathsf{world}(X) \models b$.}
 \end{leantheorem}
 
 \begin{leantheorem}[sum=icUDbrYH8A]{Building regenerates blocks, once}{Building regenerates blocks, once}
@@ -90,14 +91,30 @@ each is proved in Lean. The first two say that each program does its part:
 
 \noindent The bundle says of each key what Lean states and whether its
 proof is trusted, and each view it does not flag reads back as the
-statement (Section~\ref{sec:meaning}). Building rewrites only the generated
+statement (Section~\ref{sec:meaning}). For the example of
+Figure~\ref{fig:example}, $X$ is the calculus with its notation, and the
+paper's four blocks make four requests:
+\begin{align*}
+  \mathit{rs} = [\,&(\texttt{Stlc.Tm}, [\texttt{grammar|display}]),\
+    (\texttt{Stlc.Step}, [\texttt{rules}]),\\
+  &(\text{Values are final}, [\texttt{prose}]),\
+    (\texttt{Stlc.values\_final}, [\texttt{lean}])\,].
+\end{align*}
+Then $b$ has one entry per key, and $\mathsf{world}(X) \models b$ says,
+for the key ``Values are final'', that it names the theorem
+\texttt{Stlc.values\_final}, that its proof is trusted, that its hash is
+its statement's, and that its prose view is that statement's rendering,
+which, since the validator reports no problem in it, reads back as the
+statement (the entry is shown in Section~\ref{sec:bundle}).
+
+Building rewrites only the generated
 blocks, keeping the authors' text in their slots, once, and leaves nothing
 stale (Section~\ref{sec:laws}). The third says that together they make the
 paper true:
 
-\begin{leantheorem}[sum=a10IW2AAGN]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
+\begin{leantheorem}[sum=sWXEMdMl7w]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
 \label{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
-\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$\mathsf{world}(X) \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
+\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{rs} \in \mathsf{List}(\mathit{Key} \times \mathsf{List}(\mathit{View}))$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $b = \mathsf{extract}_{X}(\mathit{rs})$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$\mathsf{world}(X) \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
 \end{leantheorem}
 
 \noindent Its first half is the paper's main theorem
@@ -1409,9 +1426,9 @@ and rendering each statement and recording what its validator finds, is
 true of it, provided a rendering the validator finds no problem in reads
 back as its statement, which is what Section~\ref{sec:faithful} checks.
 
-\begin{leantheorem}[sum=gvG0W1TTVo]{The bundle of a world is true}{The bundle of a world is true}
+\begin{leantheorem}[sum=EpjyBYZKqT]{The bundle of a world is true}{The bundle of a world is true}
 \label{thm:The-bundle-of-a-world-is-true}
-\LeanProse{Let $W \in \mathit{World}$, $\mathit{views} \in \mathsf{List}(\mathit{View})$, $\mathit{problems} \in \mathit{View} \to \mathit{Stmt}_{W} \to \mathsf{Array}(\mathit{String})$ and $\mathit{keys} \in \mathsf{List}(\mathit{Key})$. Assume $\forall v : \mathit{View},\ \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{problems}(v)(S) = [] \implies \mathit{render}_{W}(v, S) = r \implies \mathit{reads}_{W}(r, S)$. Then $W \models \mathsf{bundle}_{W}(\mathit{keys})$.}
+\LeanProse{Let $W \in \mathit{World}$, $\mathit{problems} \in \mathit{View} \to \mathit{Stmt}_{W} \to \mathsf{Array}(\mathit{String})$ and $\mathit{rs} \in \mathsf{List}(\mathit{Key} \times \mathsf{List}(\mathit{View}))$. Assume $\forall v : \mathit{View},\ \forall S : \mathit{Stmt}_{W},\ \forall r : \mathit{Body},\ \mathit{problems}(v)(S) = [] \implies \mathit{render}_{W}(v, S) = r \implies \mathit{reads}_{W}(r, S)$. Then $W \models \mathsf{bundle}_{W}(\mathit{rs})$.}
 \end{leantheorem}
 
 The splicer that runs on real papers works on \TeX{} source, not on
@@ -1781,7 +1798,7 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=c9P-tmRO0w, dflt=viNGL8FWhS]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=i6dMbK-tyE, dflt=GTR7Gs2ENQ]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -2055,14 +2072,14 @@ $r \rightsquigarrow^{\mathsf{rules}}_{X} k$ & \texttt{Validated.ReadsAs} & \lean
 $\mathcal{A}_{X}$ & \texttt{Validated.anatomy} & \leanslot{SpliceModel.Validated.anatomy/0}{The anatomy, reading a formula as a part when every reading of it in the grammar is the expected one}\\
 $\mathsf{base}(X)$ & \texttt{Validated.base} & \leanslot{SpliceModel.Validated.base/0}{the world, but for when a rendering reads back}\\
 $\mathit{ctors}_{X}(S)$ & \texttt{Validated.ctors} & \leanslot{SpliceModel.Validated.ctors/0}{what the rules view says of an inductive predicate}\\
-$\mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$ & \texttt{Validated.extract} & \leanslot{SpliceModel.Validated.extract/0}{The bundle the extractor writes of the development: each of the keys \LeanCodeInline{ks} hashed and rendered in the views \LeanCodeInline{vs}, with what the validator reports of it}\\
+$\mathsf{extract}_{X}(\mathit{rs})$ & \texttt{Validated.extract} & \leanslot{SpliceModel.Validated.extract/0}{The bundle the extractor writes of the development, for the requests \LeanCodeInline{rs}: each key a document cites, its statement hashed and rendered in the views the document shows it in, with what the validator reports of it}\\
 $\mathit{gather}_{X}(S)$ & \texttt{Validated.gather} & \leanslot{SpliceModel.Validated.gather/0}{what the prose view says of a statement}\\
 $\mathit{print}^{*}_{X}(q)$ & \texttt{Validated.print} & \leanslot{SpliceModel.Validated.print/0}{a part printed as a formula, by the notation}\\
 $\mathit{print}^{*}_{X}(u)$ & \texttt{Validated.print} & \leanslot{SpliceModel.Validated.print/1}{a part printed as a formula, by the notation}\\
 $\mathsf{world}(X)$ & \texttt{Validated.world} & \leanslot{SpliceModel.Validated.world/0}{The world as the validator sees it: a rendering reads back as a statement when the validator accepts every formula printed of it}\\
 $\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
 $\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
-$\mathsf{bundle}_{W}(\mathit{keys})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for some keys and views}\\
+$\mathsf{bundle}_{W}(\mathit{rs})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for the requests \LeanCodeInline{rs}: each key a document cites, with the views it shows the key in}\\
 $\mathsf{check}_{b}(d)$ & \texttt{check} & \leanslot{SpliceModel.check/0}{\LeanCodeInline{imprimatur check}: what it reports about a document}\\
 $\mathsf{fill}(\mathit{old}, r)$ & \texttt{fill} & \leanslot{SpliceModel.fill/0}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}\\
 $\mathsf{ids}(r)$ & \texttt{ids} & \leanslot{SpliceModel.ids/0}{The identifiers of a body's slots}\\

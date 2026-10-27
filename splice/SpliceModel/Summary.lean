@@ -45,11 +45,11 @@ accepts every formula printed of the statement, else that it does not. -/
 noncomputable def problems (_ : View) (S : X.base.Stmt) : Array String :=
   if X.AcceptsAll S then #[] else #["not validated"]
 
-/-- The bundle the extractor writes of the development: each of the keys
-`ks` hashed and rendered in the views `vs`, with what the validator reports
-of it. -/
-noncomputable def extract (vs : List View) (ks : List Key) : Bundle :=
-  bundleOf X.world vs X.problems ks
+/-- The bundle the extractor writes of the development, for the requests
+`rs`: each key a document cites, its statement hashed and rendered in the
+views the document shows it in, with what the validator reports of it. -/
+noncomputable def extract (rs : List (Key × List View)) : Bundle :=
+  bundleOf X.world X.problems rs
 
 /-- The extractor prints as the anatomy says, which is what it is trusted
 for: what the notation prints of a statement is plain, and the extractor
@@ -80,7 +80,7 @@ def Pollack (d : Doc) : Prop :=
 
 /-- **Extraction is true.** The bundle the extractor writes is true of the
 development, as the validator sees it. -/
-theorem extract_true {vs : List View} {ks : List Key} {b : Bundle} (hb : b = X.extract vs ks) :
+theorem extract_true {rs : List (Key × List View)} {b : Bundle} (hb : b = X.extract rs) :
     b.True X.world id :=
   hb ▸ bundleOf_true fun _ S _ h _ => by
     unfold problems at h
@@ -113,8 +113,8 @@ theorem pollack_of_check (hX : X.Prints) {b : Bundle} {d : Doc} (hb : b.True X.w
 extractor prints as it is trusted to and `check` reports nothing against the
 bundle it writes, the document is true of the development, and each of its
 formulas reads only as the part of the statement it was printed from. -/
-theorem paper_true (hX : X.Prints) {vs : List View} {ks : List Key} {b : Bundle} {d : Doc}
-    (hb : b = X.extract vs ks) (hc : check b d = []) : d.True X.world ∧ X.Pollack d :=
+theorem paper_true (hX : X.Prints) {rs : List (Key × List View)} {b : Bundle} {d : Doc}
+    (hb : b = X.extract rs) (hc : check b d = []) : d.True X.world ∧ X.Pollack d :=
   ⟨document_true (X.extract_true hb) hc, X.pollack_of_check hX (X.extract_true hb) hc⟩
 
 end Validated
