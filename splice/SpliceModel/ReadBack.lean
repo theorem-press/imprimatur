@@ -168,7 +168,7 @@ inductive Answer where
   | many (cs : Array Reading) (env : Env)
 
 section
-variable (A : SortAlgebra) (g : Grammar) (ts : Array String)
+variable (A : SortAlgebra) (g : Grammar) (ts : Array String) (free : Bool)
 
 /-- `ts[i:j]` reads back (DESIGN §18.4): a question of the span, and an
 answer to it. An expression question is answered by a production of a
@@ -178,7 +178,12 @@ parentheses or a TeX group; a body question by its symbols in turn, a hole
 read at the sort the bindings so far give it and binding its type
 variables; a list's rest by nothing, when none is required, or a
 separator, an element and the rest. A reading's sort is its own: the
-production's under its bindings, or the coercion's. -/
+production's under its bindings, or the coercion's.
+
+With `free` set, a coercion is applied whatever the chain above it: this
+is the unrestricted grammar, whose chains of coercions are of any length,
+against which the chain rule is measured (`ExpFree`,
+`SpliceModel.ReadBackChains`). -/
 inductive Reads : Question → Answer → Prop
   /-- By a production of a compatible sort, at or above the precedence, not
   the excluded one and not a coercion: its body read, its sort under the
@@ -189,7 +194,8 @@ inductive Reads : Question → Answer → Prop
     excl ≠ some kp → pr.coercion = false → p ≤ pr.prec → i < j →
     Reads (.body body 0 #[] i j) (.many cs env) → A.compat (A.expected env pr.sort) s = true →
     Reads (.expr s p excl ch i j) (.one (mkReading pr.name pr.order cs) (A.expected env pr.sort))
-  /-- Through a coercion of a compatible sort that the chain allows: its
+  /-- Through a coercion of a compatible sort that the chain allows (any,
+  if `free`): its
   argument read at the sort of the coercion's hole, under the same
   exclusion (an operand of a chain is never the chain, through a coercion
   either), below the coercion on the chain; and the coercion's sort with
@@ -197,7 +203,7 @@ inductive Reads : Question → Answer → Prop
   | coe {s : String} {p : Nat} {excl : Option Nat} {ch : Chain} {i j kp : Nat} {pr : Imprimatur.Validate.Prod}
       {body : Array ASym} {s' : String} {pc : Nat} {x : Option Nat} {r : Reading} {so : String} :
     g.prods[kp]? = some (pr, body) → pr.isVar = false → A.compat pr.sort s = true →
-    pr.coercion = true → ch.allows A pr s' = true → body[0]? = some (ASym.hole s' pc x) →
+    pr.coercion = true → (free ∨ ch.allows A pr s' = true) → body[0]? = some (ASym.hole s' pc x) →
     Reads (.expr (A.expected #[] s') p excl (ch.push A pr s') i j) (.one r so) →
     A.compat (A.expected (A.bind #[] s' so) pr.sort) s = true →
     Reads (.expr s p excl ch i j) (.one r (A.expected (A.bind #[] s' so) pr.sort))
@@ -247,16 +253,22 @@ precedence `p` not made by production `excl`, through the coercions the
 chain `ch` allows. -/
 abbrev Exp (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i j : Nat) (r : Reading) (σ : String) :
     Prop :=
-  Reads A g ts (.expr s p excl ch i j) (.one r σ)
+  Reads A g ts false (.expr s p excl ch i j) (.one r σ)
+
+/-- `Exp` in the unrestricted grammar: through chains of coercions of any
+length, whatever the chain rule allows. -/
+abbrev ExpFree (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i j : Nat) (r : Reading) (σ : String) :
+    Prop :=
+  Reads A g ts true (.expr s p excl ch i j) (.one r σ)
 
 /-- `ts[i:j]` reads as `body[pos:]` under bindings `env`, with the readings
 of its holes, variables and lists `cs`, and the bindings after them. -/
 abbrev Seq (body : Array ASym) (pos : Nat) (env : Env) (i j : Nat) (cs : Array Reading) (env' : Env) : Prop :=
-  Reads A g ts (.body body pos env i j) (.many cs env')
+  Reads A g ts false (.body body pos env i j) (.many cs env')
 
 /-- `ts[i:j]` reads as the rest of list `l`, `n` more elements required. -/
 abbrev Tail (l n : Nat) (env : Env) (i j : Nat) (cs : Array Reading) (env' : Env) : Prop :=
-  Reads A g ts (.rest l n env i j) (.many cs env')
+  Reads A g ts false (.rest l n env i j) (.many cs env')
 
 end
 

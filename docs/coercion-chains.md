@@ -164,14 +164,18 @@ set by `Grammar.count`) is kept for tests, in place of the rule.
 
 ### What is proved
 
-- `Reads.mono_rule`: a more permissive rule has more readings. The
-  unrestricted grammar is `Reads` under the rule that allows every
-  chain, so `Reads (std)` is contained in it, and soundness carries over.
-- `pollack`, generic in `R`, and for `R = std` as now.
-- **The counterexample**, under a total toy algebra in `SpliceModel`:
-  the unrestricted grammar reads `g ( x )` as both `g[x]` and `h[x]`, and
-  `Reads (std)` only as `h[x]`. This records in Lean why the target is the
-  renderer's grammar.
+`SpliceModel.ReadBackChains`:
+
+- `Exp.free`: the rule only narrows. The unrestricted grammar is `Reads`
+  with `free` set, which applies a coercion whatever the chain (`ExpFree`);
+  every reading in the parser's grammar is a reading there.
+- `pollack`, as before, for the parser's grammar, which is the
+  renderer's.
+- **The counterexample**, under a total toy algebra (`Pun.toy`): the
+  unrestricted grammar reads `g ( x )` as both `g[x]` and `h[x]`
+  (`Pun.pun_free`), and the parser's grammar not as `g[x]` (`Pun.pun_rule`;
+  every reading it has is made by `h`, `Pun.only_h`). This records in Lean
+  why the target is the renderer's grammar.
 
 What stays trusted is unchanged in kind. "The grammar follows the
 renderer" now covers coercion chains, and their structure holds by
@@ -204,7 +208,7 @@ The exclusion row gets a fixture in phase A2.
 | A0 | **Measure.** The goldens, the fixtures and the papers under the rule: what renders differently, and the cost. | Goldens byte-identical (153 extractor tests); the papers below. |
 | A1 | **The shared rule** in the parser and the specification; B0's depth cap and growth budget removed; the proofs rebuilt. | Done. |
 | A2 | **The renderer obeys it**; `ChainLaws.lean` tests that the parser reads what a printer obeying the rule prints, for random terms of the counterexamples' shapes, and that the counterexample's two terms print apart. | Done. |
-| A3 | **In Lean:** `Reads.mono_rule`, the counterexample under a toy algebra, `pollack` restated for the renderer's grammar; the paper's §9 and the trusted base. | Open. |
+| A3 | **In Lean:** the rule only narrows, and the counterexample under a toy algebra; the paper's §9 and the trusted base. | Done: `SpliceModel.ReadBackChains`. `Reads` takes a flag `free`, with which a coercion is applied whatever the chain: `ExpFree`, the unrestricted grammar. `Exp.free`: every reading in the parser's grammar is one in it. `Pun.pun_free`: under a toy algebra it reads `g ( x )` as `g[x]` and as `h[x]`; `Pun.pun_rule`: the parser's grammar does not read it as `g[x]`. `pollack` is unchanged: it was about the parser's grammar already, which route A makes the renderer's. |
 
 ### Cost and risk
 

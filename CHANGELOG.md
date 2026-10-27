@@ -5,6 +5,11 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The paper's model proves what the chain rule costs and why it is there
+  (`SpliceModel.ReadBackChains`): every reading in the parser's grammar is
+  one in the grammar of chains of any length, and the counterexample of
+  docs/coercion-chains.md is a theorem, under a toy algebra: the unbounded
+  grammar reads `g ( x )` two ways, the parser's grammar one.
 - The renderer and the reader of formulas share one rule for chains of
   hidden coercions (docs/coercion-chains.md, route A): a chain never
   stacks two coercions with the same argument sort, nor a cast below a

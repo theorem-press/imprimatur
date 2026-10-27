@@ -347,7 +347,7 @@ abbrev Spans : Question → Prop
   | .body body pos _ i j => i + minLenFrom body pos ≤ j
   | .rest _ n _ i j => i + n ≤ j
 
-theorem Reads.spans (hg : ListsWF g) {q : Question} {a : Answer} (h : Reads A g ts q a) : Spans q := by
+theorem Reads.spans (hg : ListsWF g) {q : Question} {a : Answer} (h : Reads A g ts false q a) : Spans q := by
   induction h with
   | prod _ _ _ _ _ _ hij _ _ => exact hij
   | coe _ _ _ _ _ _ _ _ ih => exact ih
@@ -387,7 +387,7 @@ abbrev LastTok (t : String) : Question → Prop
   | .body body pos _ _ j => pos < body.size → body[body.size - 1]? = some (ASym.tok t) → ts[j - 1]? = some t
   | _ => True
 
-theorem Reads.lastTok {t : String} {q : Question} {a : Answer} (h : Reads A g ts q a) : LastTok (ts := ts) t q := by
+theorem Reads.lastTok {t : String} {q : Question} {a : Answer} (h : Reads A g ts false q a) : LastTok (ts := ts) t q := by
   induction h with
   | prod => trivial
   | coe => trivial
@@ -1167,7 +1167,7 @@ theorem exprRead_step (s : String) (p : Nat) (excl : Option Nat) (ch : Chain) (i
       exact hsub _ (hD _ _ (Or.inl ⟨_, _, _, _, _, hk, hvar, hcompat, hex, hcoe, hprec, hij, hseq, hc, rfl, rfl⟩))
     | coe hk hvar hcompat hcoe hallow hb hexp hc =>
       exact hC _ (mem_coes_of hk hvar hcompat hcoe) _ _
-        ⟨_, _, _, _, _, _, hk, hvar, hcompat, hcoe, hallow, hb, hexp, hc, rfl⟩
+        ⟨_, _, _, _, _, _, hk, hvar, hcompat, hcoe, hallow.resolve_left Bool.false_ne_true, hb, hexp, hc, rfl⟩
     | paren h3 hl hr' hinner => exact hsub _ (hD _ _ (Or.inr (Or.inl ⟨h3, hl, hr', hinner⟩)))
     | group h3 hl hr' hinner => exact hsub _ (hD _ _ (Or.inr (Or.inr ⟨h3, hl, hr', hinner⟩)))
   refine ctriple_bind (ihC s p excl ch i j _ direct).ofTrue fun out => ?_
