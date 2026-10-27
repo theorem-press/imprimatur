@@ -80,8 +80,9 @@ def Pollack (d : Doc) : Prop :=
 
 /-- **Extraction is true.** The bundle the extractor writes is true of the
 development, as the validator sees it. -/
-theorem extract_true (vs : List View) (ks : List Key) : (X.extract vs ks).True X.world id :=
-  bundleOf_true fun _ S _ h _ => by
+theorem extract_true {vs : List View} {ks : List Key} {b : Bundle} (hb : b = X.extract vs ks) :
+    b.True X.world id :=
+  hb ▸ bundleOf_true fun _ S _ h _ => by
     unfold problems at h
     split at h
     · assumption
@@ -113,9 +114,8 @@ extractor prints as it is trusted to and `check` reports nothing against the
 bundle it writes, the document is true of the development, and each of its
 formulas reads only as the part of the statement it was printed from. -/
 theorem paper_true (hX : X.Prints) {vs : List View} {ks : List Key} {b : Bundle} {d : Doc}
-    (hb : X.extract vs ks = b) (hc : check b d = []) : d.True X.world ∧ X.Pollack d := by
-  subst hb
-  exact ⟨document_true (X.extract_true vs ks) hc, X.pollack_of_check hX (X.extract_true vs ks) hc⟩
+    (hb : b = X.extract vs ks) (hc : check b d = []) : d.True X.world ∧ X.Pollack d :=
+  ⟨document_true (X.extract_true hb) hc, X.pollack_of_check hX (X.extract_true hb) hc⟩
 
 end Validated
 

@@ -75,9 +75,9 @@ $\mathsf{apply}_{b}(d)$, and lists what is wrong with the paper against it,
 $\mathsf{check}_{b}(d)$. The paper's results are about these three, and
 each is proved in Lean. The first two say that each program does its part:
 
-\begin{leantheorem}[sum=6MAFiBC0ST]{Extraction is true}{Extraction is true}
+\begin{leantheorem}[sum=I6LaUWBYpd]{Extraction is true}{Extraction is true}
 \label{thm:Extraction-is-true}
-\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$ and $\mathit{ks} \in \mathsf{List}(\mathit{Key})$. Then $W_{X} \models \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$.}
+\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$. Then $W_{X} \models b$.}
 \end{leantheorem}
 
 \begin{leantheorem}[sum=icUDbrYH8A]{Building regenerates blocks, once}{Building regenerates blocks, once}
@@ -92,9 +92,9 @@ blocks, keeping the authors' text in their slots, once, and leaves nothing
 stale (Section~\ref{sec:laws}). The third says that together they make the
 paper true:
 
-\begin{leantheorem}[sum=wEZ7dKCUqW]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
+\begin{leantheorem}[sum=QewOVsDtQ5]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
 \label{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
-\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $\mathsf{extract}_{X}(\mathit{vs}, \mathit{ks}) = b$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$W_{X} \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
+\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$W_{X} \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
 \end{leantheorem}
 
 \noindent Its first half is the paper's main theorem
