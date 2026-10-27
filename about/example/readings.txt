@@ -1,0 +1,43 @@
+Stlc.IsValue
+  (\lambda{:}A.\, M) \in \mathit{Val}
+    reads only as  Membership.mem[Stlc.IsValue; Stlc.Tm.lam[A; M]],
+    which matches the reading expected, ⁇
+  () \in \mathit{Val}
+    reads only as  Membership.mem[Stlc.IsValue; Stlc.Tm.unit],
+    which matches the reading expected, ⁇
+
+Stlc.Step
+  (\lambda{:}A.\, M)\; V \longrightarrow M[V]
+    reads only as  Stlc.Step[Stlc.Tm.app[Stlc.Tm.lam[A; M]; V]; Stlc.subst[M; V]]
+  M_{1} \longrightarrow M_{1}'
+    reads only as  Stlc.Step[M_{1}; M_{1}']
+  M_{1}\; M_{2} \longrightarrow M_{1}'\; M_{2}
+    reads only as  Stlc.Step[Stlc.Tm.app[M_{1}; M_{2}]; Stlc.Tm.app[M_{1}'; M_{2}]]
+  M_{2} \longrightarrow M_{2}'
+    reads only as  Stlc.Step[M_{2}; M_{2}']
+  V\; M_{2} \longrightarrow V\; M_{2}'
+    reads only as  Stlc.Step[Stlc.Tm.app[V; M_{2}]; Stlc.Tm.app[V; M_{2}']]
+
+Stlc.Tm
+  \mathit{Term}
+    reads only as  Stlc.Tm
+  x_{i}
+    reads only as  Stlc.Tm.var[i]
+  \lambda{:}A.\, M
+    reads only as  Stlc.Tm.lam[A; M]
+  M_{1}\; M_{2}
+    reads only as  Stlc.Tm.app[M_{1}; M_{2}]
+  ()
+    reads only as  Stlc.Tm.unit
+
+Values are final
+  V
+    reads only as  V
+  \mathit{Val}
+    reads only as  Stlc.IsValue
+  M
+    reads only as  M
+  \mathit{Term}
+    reads only as  Stlc.Tm
+  \neg (V \longrightarrow M)
+    reads only as  Not[Stlc.Step[V; M]]

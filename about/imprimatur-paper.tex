@@ -1,13 +1,18 @@
 % The PACMPL format: acmsmall, single column, 10pt (the POPL instructions).
 \documentclass[acmsmall,screen,review,anonymous,nonacm]{acmart}
 \usepackage{mathpartir}
+% Appendix C: the running example's files, verbatim, long lines broken.
+\usepackage{fvextra}
 \usepackage{imprimatur}
+% ⁇, in a reading: what the renderer does not say how to read matches any.
+\newunicodechar{⁇}{\ensuremath{?\!?}}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
 \leanblockalias{leangrammar}{LeanDisplayBox}
 \leanblockalias{leantheorem}{theorem}
 \leanblockalias{leanrules}{}
 \leanblockalias{leandef}{LeanDisplayBox}
 \leanblockalias{leansource}{}
+\leanblockalias{leananatomy}{}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 
@@ -91,23 +96,7 @@ each is proved in Lean. The first two say that each program does its part:
 
 \noindent The bundle says of each key what Lean states and whether its
 proof is trusted, and each view it does not flag reads back as the
-statement (Section~\ref{sec:meaning}). For the example of
-Figure~\ref{fig:example}, $X$ is the calculus with its notation, and the
-paper's four blocks make four requests, each a key and a list of views,
-all of them strings:
-
-\begin{leandef}[sum=srSPrfWLj7, dflt=mg0ZFoUaby]{The requests of Figure 1}{The requests of Figure 1}
-\begin{LeanDisplay}
-\LeanClause{\mathit{rs}_{1} \;\deq\; [(\text{``Stlc.Tm''}, [\text{``grammar|display''}]),\ (\text{``Stlc.Step''}, [\text{``rules''}]),\ (\text{``Values are final''}, [\text{``prose''}]),\ (\text{``Stlc.values\_final''}, [\text{``lean''}])]}{\leanslot{About.figureRequests}{Each key, as written, with the view of its block}}
-\end{LeanDisplay}
-\end{leandef}
-
-\noindent Then $b = \mathsf{extract}_{X}(\mathit{rs}_{1})$ has one entry per key, and $\mathsf{world}(X) \models b$ says,
-for the key ``Values are final'', that it names the theorem
-\texttt{Stlc.values\_final}, that its proof is trusted, that its hash is
-its statement's, and that its prose view is that statement's rendering,
-which, since the validator reports no problem in it, reads back as the
-statement (the entry is shown in Section~\ref{sec:bundle}).
+statement (Section~\ref{sec:meaning}).
 
 Building rewrites only the generated
 blocks, keeping the authors' text in their slots, once, and leaves nothing
@@ -147,6 +136,9 @@ read back as a whole and not taken apart. It rests on the parser that reads form
 which we prove sound and complete (Section~\ref{sec:faithful}). What is left
 to trust is what $\mathsf{prints}(X)$ assumes: that the extractor prints a
 statement as the notation and its layouts say.
+
+Section~\ref{sec:example} works the three theorems through for the running
+example.
 
 \subsection{The trusted base}\label{sec:trusted}
 
@@ -227,7 +219,7 @@ statement it was checked against therefore assumes that no two statements
 in question share those 48 bits: safe against accident, but not against a
 forger. And the prose is only as right as the person who checked it.
 
-\subsection{A running example}\label{sec:example}
+\section{The running example}\label{sec:example}
 
 The development is a simply typed
 $\lambda$-calculus with de Bruijn variables, its values, and small-step
@@ -339,12 +331,13 @@ $r_{3} = [\mathsf{gen}(s)]$, with no slots, where $s$ is
 exactly the two lines between the header and \texttt{\cs{end}}, each with
 its newline:\newline
 \texttt{\cs{label}\{thm:Values-are-final\}}\newline
-\texttt{\cs{LeanProse}\{Let \$V, M \cs{in} \cs{mathit}\{Term\}\$. Then
-\$\cs{neg} (V \cs{longrightarrow} M)\$.\}}
+\texttt{\cs{LeanProse}\{Let \$V \cs{in} \cs{mathit}\{Val\}\$ and
+\$M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V
+\cs{longrightarrow} M)\$.\}}
 &
 \raggedright\texttt{\cs{begin}\{leantheorem\}[sum=...]\{Values are final\}\{Values are final\}}\newline
 \texttt{\cs{label}\{thm:Values-are-final\}}\newline
-\texttt{\cs{LeanProse}\{Let \$V, M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V \cs{longrightarrow} M)\$.\}}\newline
+\texttt{\cs{LeanProse}\{Let \$V \cs{in} \cs{mathit}\{Val\}\$ and \$M \cs{in} \cs{mathit}\{Term\}\$. Then \$\cs{neg} (V \cs{longrightarrow} M)\$.\}}\newline
 \texttt{\cs{end}\{leantheorem\}}
 \tabularnewline\noalign{\medskip}
 \raggedright $\mathsf{block}_{\mathtt{Stlc.values\_final}}^{\mathtt{lean}}(r_{4})$, where
@@ -355,7 +348,7 @@ $r_{4} = [\mathsf{gen}(\ldots)]$, with no slots
 \texttt{\cs{LeanKeyword}\{theorem\} \cs{LeanConst}\{values\cs{}\_final\} ...\}}\newline
 \texttt{\cs{end}\{leansource\}}
 \end{tabular}
-\caption{The four blocks of Figure~\ref{fig:example}, as pieces
+\caption{Four of the blocks of Figure~\ref{fig:example}, as pieces
 (Section~\ref{sec:documents}) and as the \TeX{} that \texttt{check}
 parses. The key is the first argument; the view is the environment's, by
 the paper's aliases; the title and the summary are not part of the piece.
@@ -365,7 +358,113 @@ spans, shown in full for $r_{3}$. Only the grammar has slots.}
 \end{figure}
 
 The figure is the example's thread through the paper: what the bundle says of the theorem, what that means, what the
-paper claims, and what happens when the development changes.
+paper claims, and what happens when the development changes. We begin
+by working the three theorems of Section~\ref{sec:intro} through for it.
+Figure~\ref{fig:pipeline} follows the theorem from its Lean, through the
+bundle, into the paper's \TeX; Appendix~\ref{app:example} gives the three
+in full.
+
+\begin{figure}[t]
+\includegraphics[width=\linewidth]{example-diagram.pdf}
+\caption{The theorem of Figure~\ref{fig:example}, from the development to
+the paper. The extractor reads the Lean and the notation and writes the
+bundle, here for the figure's five requests; the splicer writes each
+rendering into the paper's \TeX{} as a block. Before the extractor writes a
+rendering, the validator's parser reads each of its formulas back in the
+notation's grammar (below): each has one reading, and it is the statement's
+part it was printed from. In red, \emph{Values are final} at each stage.
+The excerpts, and the readings, are cut from the files of
+Appendix~\ref{app:example} when the paper is built.}
+\label{fig:pipeline}
+\end{figure}
+
+\subsection{What the bundle says}\label{sec:example-bundle}
+
+Theorem~\ref{thm:Extraction-is-true} is about the bundle the extractor
+writes. Here $X$ is the calculus with its notation, and the paper's four
+blocks in Figure~\ref{fig:example} make five requests, each a key and a
+list of views, all of them strings:
+
+\begin{leandef}[sum=XRzcN--NQb, dflt=r4adX8nPas]{The requests of Figure 1}{The requests of Figure 1}
+\begin{LeanDisplay}
+\LeanClause{\mathit{rs}_{1} \;\deq\; [(\text{``Stlc.Tm''}, [\text{``grammar|display''}]),\ (\text{``Stlc.IsValue''}, [\text{``rules''}]),\ (\text{``Stlc.Step''}, [\text{``rules''}]),\ (\text{``Values are final''}, [\text{``prose''}]),\ (\text{``Stlc.values\_final''}, [\text{``lean''}])]}{\leanslot{About.figureRequests}{Each key, as written, with the view of its block}}
+\end{LeanDisplay}
+\end{leandef}
+
+\noindent Then $b = \mathsf{extract}_{X}(\mathit{rs}_{1})$ has one entry per key, and $\mathsf{world}(X) \models b$ says,
+for the key ``Values are final'', that it names the theorem
+\texttt{Stlc.values\_final}, that its proof is trusted, that its hash is
+its statement's, and that its prose view is that statement's rendering,
+which, since the validator reports no problem in it, reads back as the
+statement (the entry is shown in Section~\ref{sec:bundle}).
+
+\subsection{What building does}\label{sec:example-build}
+
+Theorem~\ref{thm:Building-regenerates-blocks,-once} is about
+$\mathsf{apply}$. Regenerating the figure against $b$ rewrites the bodies
+of its five blocks and nothing else: not the text between them, nor the
+blocks' keys and views. The grammar is the one block with slots, and the
+descriptions the authors wrote in them (``Terms, with de Bruijn
+variables'', ``a variable'', \ldots) are kept
+(Theorem~\ref{thm:Slot-preservation}); Figure~\ref{fig:blocks}
+shows each block as the piece \texttt{check} parses, slots and all.
+Regenerating a second time changes nothing, and afterwards no block is
+stale.
+
+\subsection{What the paper says}\label{sec:example-paper}
+
+Theorem~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
+is about the paper. Take for $d$ the five blocks of
+Figure~\ref{fig:example}, as this paper's source writes them, and for $b$
+the bundle $\mathsf{extract}_{X}(\mathit{rs}_{1})$. Against it
+\texttt{check} reports nothing, so the theorem applies, and its two halves
+say different things about the figure. The first is about what each block
+shows. Each key names a statement that Lean proved, with trusted axioms,
+and each block is that statement's rendering, with the authors' text kept
+in its slots: the grammar is the rendering of \texttt{Stlc.Tm}, with the
+descriptions the authors wrote beside its forms (``an abstraction''), the
+two figures of rules are the renderings of the constructors of
+\texttt{Stlc.IsValue} and \texttt{Stlc.Step}, and the sentence of \emph{Values are final} is the
+rendering of \texttt{Stlc.values\_final}. The second half is about how they
+read, and it is about the \TeX{} itself. The prose parser takes the body
+of \emph{Values are final}, the string below, apart into formulas, each a
+string of \TeX{} too:
+\begin{leananatomy}[sum=qJK8IF-9Ky, view={about.prose-anatomy|pin=About.valuesFinalTeX}]{Values are final}{The anatomy of a sentence}
+\begin{center}\small
+\LeanCodeInline{"\textbackslash{}LeanProse\{Let \$V \textbackslash{}in \textbackslash{}mathit\{Val\}\$ and \$M \textbackslash{}in \textbackslash{}mathit\{Term\}\$. Then \$\textbackslash{}neg (V \textbackslash{}longrightarrow M)\$.\}"}
+\\[1ex]
+\begin{tabular}{@{}l@{\quad}l@{\quad}l@{}}
+\textit{Part} & \textit{Formula, as TeX} & \textit{Typeset}\\
+\hline
+a variable & \LeanCodeInline{"V"} & $V$\\
+its range & \LeanCodeInline{"\textbackslash{}mathit\{Val\}"} & $\mathit{Val}$\\
+a variable & \LeanCodeInline{"M"} & $M$\\
+its range & \LeanCodeInline{"\textbackslash{}mathit\{Term\}"} & $\mathit{Term}$\\
+the conclusion & \LeanCodeInline{"\textbackslash{}neg (V \textbackslash{}longrightarrow M)"} & $\neg (V \longrightarrow M)$\\
+\end{tabular}
+\end{center}
+\end{leananatomy}
+\noindent That the parser takes this string apart so is a theorem, about
+the string the block is pinned to, $t_{1}$, and the sentence the table
+shows, $\mathit{pr}_{1}$; the build checks that the block is still $t_{1}$:
+
+\begin{leantheorem}[sum=WQ-WFxGWZX]{Values are final, taken apart}{Values are final, taken apart}
+\label{thm:Values-are-final,-taken-apart}
+\LeanProse{$\mathsf{sentence}(t_{1}) = \mathit{pr}_{1}$.}
+\end{leantheorem}
+
+\noindent Each of these formulas has, in the notation's grammar, no reading
+but its part of the statement: the variables are \texttt{v} and
+\texttt{e}, and the conclusion is $\neg\,\texttt{Step}\ v\ e$. So
+does each formula of the reduction figure, premise or conclusion. Take the
+conclusion of (Beta), $(\lambda{:}A.\, M)\; V \longrightarrow M[V]$. An
+abstraction extends as far to the right as it can, so the parentheses are
+what make this an application of an abstraction to $V$. Printed without
+them, it would also read as
+$\lambda{:}A.\, (M\; V) \longrightarrow M[V]$, which is well formed and
+says something else. The validator would then have found a second reading,
+and \texttt{check} would not have been clean.
+
 
 \section{The bundle}\label{sec:bundle}
 
@@ -1312,15 +1411,17 @@ prose or a rules block shows, part by part.
 
 In the example, the statement of \emph{Values are final} is printed in
 three steps. The anatomy gathers what the view says, as the notation shows
-it: one group of variables, \texttt{v} and \texttt{e} of type \texttt{Tm},
-no hypotheses, and the conclusion \texttt{¬ Step v e}. Its hypothesis
-\texttt{IsValue v} is not a part, because the notation writes \texttt{v}
-as $V$ and leaves the hypothesis implicit; that a hidden hypothesis is no
-part is the notation's claim, and is in the trusted base. The notation
-prints the variables as $V, M \in \mathit{Term}$ and the conclusion as
-$\neg (V \longrightarrow M)$. The layout sets these out as \emph{Let
-\ldots{} Then \ldots}, with no \emph{Assume}, there being no hypotheses.
-Read back, the sentence comes apart into the same two formulas, and each
+it: two groups of variables, \texttt{v} in the predicate \texttt{IsValue}
+that its hypothesis puts it in, and \texttt{e} of type \texttt{Tm}; no
+hypotheses; and the conclusion \texttt{¬ Step v e}. The hypothesis
+\texttt{IsValue v} is not a part of its own: the notation writes
+\texttt{v} as $V$, and the range of $V$ says what the hypothesis did;
+that it does is the notation's claim, and is in the trusted base. The
+notation prints the groups as $V \in \mathit{Val}$ and
+$M \in \mathit{Term}$ and the conclusion as $\neg (V \longrightarrow M)$.
+The layout sets these out as \emph{Let \ldots{} Then \ldots}, with no
+\emph{Assume}, there being no hypotheses. Read back, the sentence comes
+apart into the same formulas, and each
 reads back as the part it was printed from. The reduction of
 Figure~\ref{fig:example} is printed the same way: three rules, each with
 its label and its mark, and the layout sets them out as the figure. Read
@@ -1822,10 +1923,12 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=rvQuBBkZw5, dflt=y-b-6O5dee]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=pBPsmm8-f0, dflt=zLNNbzt7ou]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{About}}\\
-$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the four blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
+$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the five blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
+$\mathit{pr}_{1}$ & \texttt{About.valuesFinalSentence} & \leanslot{About.valuesFinalSentence/0}{The sentence of \emph{Values are final}, as the prose view says it: two variables of terms, and a conclusion, each a formula of TeX}\\
+$t_{1}$ & \texttt{About.valuesFinalTeX} & \leanslot{About.valuesFinalTeX/0}{The TeX of the block of \emph{Values are final}: its prose rendering, which the paper's view of the block checks it still is}\\
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
 $W \models b$ & \texttt{Imprimatur.Bundle.True} & \leanslot{Imprimatur.Bundle.True/0}{A bundle is true of a world when the entry it gives for each key is}\\
@@ -2144,5 +2247,41 @@ commands, such as \texttt{latex\_notation}. Drawn by
 \texttt{analytics/chart.py}.}
 \label{fig:development}
 \end{figure}
+
+\section{The running example, in full}\label{app:example}
+
+The three stages of Figure~\ref{fig:pipeline}, in full, as
+\texttt{analytics/example.py} writes them when the paper is built. The
+requests are read from Figure~\ref{fig:example}'s blocks and checked
+against $\mathit{rs}_{1}$; the bundle is what the extractor writes for
+them alone, which is the $b$ of Section~\ref{sec:example-bundle}.
+
+\fvset{fontsize=\scriptsize, breaklines, frame=lines, framesep=1ex}
+
+\subsection{The development}
+
+The Lean, \texttt{lean/Stlc.lean}:
+\VerbatimInput{lean/Stlc.lean}
+\noindent The notation, \texttt{notation/StlcTeX.lean}:
+\VerbatimInput{notation/StlcTeX.lean}
+\noindent The requests Figure~\ref{fig:example} makes,
+\texttt{example/requests.json}:
+\VerbatimInput{example/requests.json}
+
+\subsection{The bundle}
+
+The bundle the extractor writes for those requests,
+\texttt{example/bundle.json}:
+\VerbatimInput{example/bundle.json}
+
+\noindent Each formula of the figure, as the validator's parser read it
+back while the extractor wrote that bundle, \texttt{example/readings.txt}:
+\VerbatimInput{example/readings.txt}
+
+\subsection{The paper}
+
+The \TeX{} of Figure~\ref{fig:example}, \texttt{example/figure.tex}, as
+\texttt{imprimatur build} leaves it in this paper's source:
+\VerbatimInput{example/figure.tex}
 
 \end{document}
