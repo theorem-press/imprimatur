@@ -8,6 +8,7 @@
 \leanblockalias{leanrules}{}
 \leanblockalias{leandef}{LeanDisplayBox}
 \leanblockalias{leansource}{}
+\leanblockalias{leananatomy}{}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 
@@ -160,10 +161,27 @@ descriptions the authors wrote beside its forms (``an abstraction''), the
 figure of reduction rules is the rendering of the constructors of
 \texttt{Stlc.Step}, and the sentence of \emph{Values are final} is the
 rendering of \texttt{Stlc.values\_final}. The second half is about how they
-read. The sentence comes apart into its binders and its conclusion,
-$\neg (V \longrightarrow M)$, and each rule of the reduction figure into
-its premises and its conclusion; each of these formulas has, in the
-notation's grammar, no reading but the part it was printed from. Take the
+read, and it is about the \TeX{} itself. The prose parser takes the body
+of \emph{Values are final}, the string below, apart into formulas, each a
+string of \TeX{} too:
+\begin{leananatomy}[sum=RySh8_Er-s]{Values are final}{The anatomy of a sentence}
+\begin{center}\small
+\LeanCodeInline{"\textbackslash{}LeanProse\{Let \$V, M \textbackslash{}in \textbackslash{}mathit\{Term\}\$. Then \$\textbackslash{}neg (V \textbackslash{}longrightarrow M)\$.\}"}
+\\[1ex]
+\begin{tabular}{@{}l@{\quad}l@{\quad}l@{}}
+\textit{Part} & \textit{Formula, as TeX} & \textit{Typeset}\\
+\hline
+a variable & \LeanCodeInline{"V"} & $V$\\
+a variable & \LeanCodeInline{"M"} & $M$\\
+its range & \LeanCodeInline{"\textbackslash{}mathit\{Term\}"} & $\mathit{Term}$\\
+the conclusion & \LeanCodeInline{"\textbackslash{}neg (V \textbackslash{}longrightarrow M)"} & $\neg (V \longrightarrow M)$\\
+\end{tabular}
+\end{center}
+\end{leananatomy}
+\noindent Each of these formulas has, in the notation's grammar, no reading
+but its part of the statement: the variables are \texttt{v} and
+\texttt{e}, and the conclusion is $\neg\,\texttt{Step}\ v\ e$. So
+does each formula of the reduction figure, premise or conclusion. Take the
 conclusion of (Beta), $(\lambda{:}A.\, M)\; V \longrightarrow M[V]$. An
 abstraction extends as far to the right as it can, so the parentheses are
 what make this an application of an abstraction to $V$. Printed without
