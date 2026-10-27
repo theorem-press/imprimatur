@@ -69,15 +69,18 @@ functions connect the three things. The extractor writes the bundle of a
 development, $\mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$: the keys
 $\mathit{ks}$ the paper cites, each hashed and rendered in the views
 $\mathit{vs}$ it shows, where $X$ is the development as the extractor sees
-it, with the validator that reads each rendering back, and $W_{X}$ the world
-it presents. The splicer regenerates the paper's blocks from a bundle,
+it, with the validator that reads each rendering back. The world it
+presents is $\mathsf{world}(X)$: what each key states, whether its proof is
+trusted, how a statement is hashed and rendered, and, for when a rendering
+reads back as a statement, the validator's verdict on every formula printed
+of it. The splicer regenerates the paper's blocks from a bundle,
 $\mathsf{apply}_{b}(d)$, and lists what is wrong with the paper against it,
 $\mathsf{check}_{b}(d)$. The paper's results are about these three, and
 each is proved in Lean. The first two say that each program does its part:
 
-\begin{leantheorem}[sum=I6LaUWBYpd]{Extraction is true}{Extraction is true}
+\begin{leantheorem}[sum=403lxGO75s]{Extraction is true}{Extraction is true}
 \label{thm:Extraction-is-true}
-\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$. Then $W_{X} \models b$.}
+\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$. Then $\mathsf{world}(X) \models b$.}
 \end{leantheorem}
 
 \begin{leantheorem}[sum=icUDbrYH8A]{Building regenerates blocks, once}{Building regenerates blocks, once}
@@ -92,9 +95,9 @@ blocks, keeping the authors' text in their slots, once, and leaves nothing
 stale (Section~\ref{sec:laws}). The third says that together they make the
 paper true:
 
-\begin{leantheorem}[sum=QewOVsDtQ5]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
+\begin{leantheorem}[sum=a10IW2AAGN]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
 \label{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
-\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$W_{X} \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
+\LeanProse{Let $X \in \texttt{Validated}$, $\mathit{vs} \in \mathsf{List}(\mathit{View})$, $\mathit{ks} \in \mathsf{List}(\mathit{Key})$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $b = \mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$\mathsf{world}(X) \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
 \end{leantheorem}
 
 \noindent Its first half is the paper's main theorem
@@ -108,10 +111,10 @@ splicer's own code, which the model abstracts (Section~\ref{sec:code}). Its
 second half is Pollack-consistency~\cite{Pollack98,Wiedijk12}, of the whole
 document:
 
-\begin{leandef}[sum=UIqbEP0gYN, dflt=vAoQO3qBuI]{Pollack-consistency}{Pollack-consistency}
+\begin{leandef}[sum=KV3oBaXryx, dflt=vAoQO3qBuI]{Pollack-consistency}{Pollack-consistency}
 \begin{LeanDisplay}
-\LeanClause{r \rightsquigarrow^{\mathsf{prose}}_{X} k \;\deq\; \forall S : \mathit{Stmt}_{W_{X}},\ \mathit{stmt}_{W_{X}}(k) = S \implies \mathit{prose}_{\mathcal{A}_{X}}(r, S)}{\leanslot{SpliceModel.Validated.ReadsAs}{A block, read formula by formula}}\\
-\LeanClause{r \rightsquigarrow^{\mathsf{rules}}_{X} k \;\deq\; \forall S : \mathit{Stmt}_{W_{X}},\ \mathit{stmt}_{W_{X}}(k) = S \implies \mathit{rules}_{\mathcal{A}_{X}}(r, S)}{}\\
+\LeanClause{r \rightsquigarrow^{\mathsf{prose}}_{X} k \;\deq\; \forall S : \mathit{Stmt}_{\mathsf{world}(X)},\ \mathit{stmt}_{\mathsf{world}(X)}(k) = S \implies \mathit{prose}_{\mathcal{A}_{X}}(r, S)}{\leanslot{SpliceModel.Validated.ReadsAs}{A block, read formula by formula}}\\
+\LeanClause{r \rightsquigarrow^{\mathsf{rules}}_{X} k \;\deq\; \forall S : \mathit{Stmt}_{\mathsf{world}(X)},\ \mathit{stmt}_{\mathsf{world}(X)}(k) = S \implies \mathit{rules}_{\mathcal{A}_{X}}(r, S)}{}\\
 \LeanClause{r \rightsquigarrow^{v}_{X} k \;\deq\; \top}{}\\
 \LeanClause{\mathsf{pollack}_{X}(d) \;\deq\; \forall k : \mathit{Key},\ \forall v : \mathit{View},\ \forall r : \mathit{Body},\ \mathsf{block}_{k}^{v}(r) \in d \implies r \rightsquigarrow^{v}_{X} k}{\leanslot{SpliceModel.Validated.Pollack}{Each block reads only as its key}}
 \end{LeanDisplay}
@@ -1688,9 +1691,9 @@ and~\ref{thm:Rules-show-the-predicate} then say of a document that checks
 clean: each formula of each block reads, in the notation's grammar, only as
 the part it was printed from.
 
-\begin{leantheorem}[sum=nisjB17aX8]{The validator's anatomy is sound}{The validator's anatomy is sound}
+\begin{leantheorem}[sum=bFehaYIcNf]{The validator's anatomy is sound}{The validator's anatomy is sound}
 \label{thm:The-validator's-anatomy-is-sound}
-\LeanProse{Let $X \in \texttt{Validated}$. Assume $\forall S : \mathit{Stmt}_{W^{\circ}_{X}},\ \forall u : \texttt{Prose}(\mathit{Part}_{X}),\ \mathit{gather}_{X}(S) = u \implies \mathsf{plain}(\mathit{print}^{*}_{X}(u))$, $\forall S : \mathit{Stmt}_{W_{X}},\ \forall r : \mathit{Body},\ \mathit{render}_{W_{X}}(\text{``prose''}, S) = r \implies r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}_{X}}(S)$, $\forall S : \mathit{Stmt}_{W^{\circ}_{X}},\ \forall \mathit{qs} : \mathsf{List}(\texttt{Rule}(\mathit{Part}_{X})),\ \mathit{ctors}_{X}(S) = \mathit{qs} \implies (\forall q \in \mathit{qs},\ \mathsf{plain}(\mathit{print}^{*}_{X}(q)))$ and $\forall S : \mathit{Stmt}_{W_{X}},\ \forall r : \mathit{Body},\ \mathit{render}_{W_{X}}(\text{``rules''}, S) = r \implies r = \mathit{print}^{\mathsf{rules}}_{\mathcal{A}_{X}}(S)$. Then $\mathsf{sound}(\mathcal{A}_{X})$.}
+\LeanProse{Let $X \in \texttt{Validated}$. Assume $\forall S : \mathit{Stmt}_{\mathsf{base}(X)},\ \forall u : \texttt{Prose}(\mathit{Part}_{X}),\ \mathit{gather}_{X}(S) = u \implies \mathsf{plain}(\mathit{print}^{*}_{X}(u))$, $\forall S : \mathit{Stmt}_{\mathsf{world}(X)},\ \forall r : \mathit{Body},\ \mathit{render}_{\mathsf{world}(X)}(\text{``prose''}, S) = r \implies r = \mathit{print}^{\mathsf{prose}}_{\mathcal{A}_{X}}(S)$, $\forall S : \mathit{Stmt}_{\mathsf{base}(X)},\ \forall \mathit{qs} : \mathsf{List}(\texttt{Rule}(\mathit{Part}_{X})),\ \mathit{ctors}_{X}(S) = \mathit{qs} \implies (\forall q \in \mathit{qs},\ \mathsf{plain}(\mathit{print}^{*}_{X}(q)))$ and $\forall S : \mathit{Stmt}_{\mathsf{world}(X)},\ \forall r : \mathit{Body},\ \mathit{render}_{\mathsf{world}(X)}(\text{``rules''}, S) = r \implies r = \mathit{print}^{\mathsf{rules}}_{\mathcal{A}_{X}}(S)$. Then $\mathsf{sound}(\mathcal{A}_{X})$.}
 \end{leantheorem}
 
 A few forms (a quantifier's binders, a case analysis, an associative chain)
@@ -1779,7 +1782,7 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=UTRbhTDFv1, dflt=viNGL8FWhS]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=c9P-tmRO0w, dflt=viNGL8FWhS]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
 $\texttt{Bundle}(\sigma, \pi)$ & \texttt{Imprimatur.Bundle} & \leanslot{Imprimatur.Bundle/0}{A bundle: an entry for each key a document cites}\\
@@ -2051,13 +2054,13 @@ $r \rightsquigarrow^{v}_{X} k$ & \texttt{Validated.ReadsAs} & \leanslot{SpliceMo
 $r \rightsquigarrow^{\mathsf{prose}}_{X} k$ & \texttt{Validated.ReadsAs} & \leanslot{SpliceModel.Validated.ReadsAs/1}{A block of view \LeanCodeInline{v} reads as its key's statement, formula by formula}\\
 $r \rightsquigarrow^{\mathsf{rules}}_{X} k$ & \texttt{Validated.ReadsAs} & \leanslot{SpliceModel.Validated.ReadsAs/2}{A block of view \LeanCodeInline{v} reads as its key's statement, formula by formula}\\
 $\mathcal{A}_{X}$ & \texttt{Validated.anatomy} & \leanslot{SpliceModel.Validated.anatomy/0}{The anatomy, reading a formula as a part when every reading of it in the grammar is the expected one}\\
-$W^{\circ}_{X}$ & \texttt{Validated.base} & \leanslot{SpliceModel.Validated.base/0}{the world, but for when a rendering reads back}\\
+$\mathsf{base}(X)$ & \texttt{Validated.base} & \leanslot{SpliceModel.Validated.base/0}{the world, but for when a rendering reads back}\\
 $\mathit{ctors}_{X}(S)$ & \texttt{Validated.ctors} & \leanslot{SpliceModel.Validated.ctors/0}{what the rules view says of an inductive predicate}\\
 $\mathsf{extract}_{X}(\mathit{vs}, \mathit{ks})$ & \texttt{Validated.extract} & \leanslot{SpliceModel.Validated.extract/0}{The bundle the extractor writes of the development: each of the keys \LeanCodeInline{ks} hashed and rendered in the views \LeanCodeInline{vs}, with what the validator reports of it}\\
 $\mathit{gather}_{X}(S)$ & \texttt{Validated.gather} & \leanslot{SpliceModel.Validated.gather/0}{what the prose view says of a statement}\\
 $\mathit{print}^{*}_{X}(q)$ & \texttt{Validated.print} & \leanslot{SpliceModel.Validated.print/0}{a part printed as a formula, by the notation}\\
 $\mathit{print}^{*}_{X}(u)$ & \texttt{Validated.print} & \leanslot{SpliceModel.Validated.print/1}{a part printed as a formula, by the notation}\\
-$W_{X}$ & \texttt{Validated.world} & \leanslot{SpliceModel.Validated.world/0}{The world as the validator sees it: a rendering reads back as a statement when the validator accepts every formula printed of it}\\
+$\mathsf{world}(X)$ & \texttt{Validated.world} & \leanslot{SpliceModel.Validated.world/0}{The world as the validator sees it: a rendering reads back as a statement when the validator accepts every formula printed of it}\\
 $\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
 $\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
 $\mathsf{bundle}_{W}(\mathit{keys})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for some keys and views}\\
