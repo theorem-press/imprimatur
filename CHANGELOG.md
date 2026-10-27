@@ -5,6 +5,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Reading formulas back types applications: `f(a)` and `f\,a` have the
+  function's codomain for their sort when its sort is a function type,
+  where before every application was of unknown sort. A function of a named
+  type or of unknown sort applies as before (#90, part 1).
 - The paper's model proves what the chain rule costs and why it is there
   (`SpliceModel.ReadBackChains`): every reading in the parser's grammar is
   one in the grammar of chains of any length, and the counterexample of
