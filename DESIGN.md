@@ -526,7 +526,11 @@ What `latex_hide_premise` drops is not said (#42).
 For every entry, the extractor imports the environment at `private` level
 (constraint 7) and computes the following.
 
-- **Axioms** used by the declaration, via `collectAxioms`.
+- **Axioms** used by the declaration: the axioms reachable through the
+  constants of types and values, and an inductive type's constructors
+  (`Imprimatur.Axioms`, what Lean's `collectAxioms` walks, with the answers
+  kept for the export; Lean's own per-module table can hold a partial
+  answer for a constant in a cycle, so the two can differ there).
 - **`sorry`**: whether it depends on `sorryAx`.
 - **The statement's dependency cone**, following comparator. This is every
   constant appearing in the declaration's type, followed transitively through

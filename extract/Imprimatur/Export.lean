@@ -57,6 +57,10 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
     Views.indexViews.contains (parseViewSpec v).base
   let reqs := reqs.filter (!isIndex ·) ++ reqs.filter isIndex
   Render.indexEvents.set #[]
+  -- The cones' nodes and the axioms are kept across the entries of one
+  -- environment, which this export's is.
+  Trust.resetMemo
+  Axioms.reset
   for r in reqs do
     let declKey := if r.key.endsWith challengeSuffix then
       (r.key.dropEnd challengeSuffix.length).toString else r.key

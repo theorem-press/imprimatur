@@ -59,6 +59,17 @@ instance instInhabitedPair : Inhabited (Pair Nat) := ⟨⟨0, 0⟩⟩
 /-- Uses classical logic. -/
 theorem em' (p : Prop) : p ∨ ¬p := Classical.em p
 
+/-- A number an axiom chooses, for `Wrap`. -/
+noncomputable def pick : Nat := Classical.choice ⟨0⟩
+
+/-- An inductive type in a cycle with its constructors, one of whose types
+depends on an axiom through `pick`. Its axioms are `Classical.choice`,
+whichever of the type and the constructor is asked first; Lean's own
+`collectAxioms` can answer none for the type. -/
+inductive Wrap where
+  | leaf (h : pick = pick) : Wrap
+  | node : Wrap → Wrap
+
 end Basic
 
 /-- Outside the namespace, with no docstring on the theorem below. -/
