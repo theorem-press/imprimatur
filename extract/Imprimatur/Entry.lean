@@ -164,8 +164,10 @@ def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array Str
 back unless the configuration says not to (DESIGN §18.4); the problems
 found come back with the view's text. -/
 def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array String))
-    (key : String) (act : Render.Ctx → MetaM String) (root : System.FilePath := ".") :
+    (key : String) (act : Render.Ctx → MetaM String) (root : System.FilePath := ".")
+    (view : String := "") :
     MetaM (Except String String × Array String) := do
+  let t0 ← IO.monoMsNow
   let ctx ← renderCtx s variant used key root
   let problems ← IO.mkRef #[]
   let ctx := if s.validate then
@@ -173,8 +175,27 @@ def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array S
                  grammar := some (Validate.notationGrammar ctx.rules variant ctx.callVars
                    ctx.subscriptVars ctx.casesMatch ctx.listLiterals) }
     else ctx
+  let ctx := { ctx with view }
+  -- The context and the grammar are the view's setup; the rest is rendering.
+  let tSetup ← IO.monoMsNow
   let r ← guarded (act ctx)
-  return (r, ← problems.get)
+  let ps ← problems.get
+  Timing.event "view" ((← IO.monoMsNow) - t0)
+    [("key", Lean.toJson key), ("view", Lean.toJson view), ("setup_ms", Lean.toJson (tSetup - t0)),
+     ("problems", Lean.toJson ps.size)]
+  return (r, ps)
+
+/-- A logger of an entry's stages (`Imprimatur.Timing`): each call records
+the time since the last, under the stage's name. IMPRIMATUR_TRACE=1 also
+reports it as it ends. -/
+def stageLogger (key : String) : MetaM (String → MetaM Unit) := do
+  let trace ← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)
+  let last ← IO.mkRef (← IO.monoMsNow)
+  return fun what => do
+    let now ← IO.monoMsNow
+    Timing.event "stage" (now - (← last.get)) [("key", Lean.toJson key), ("stage", Lean.toJson what)]
+    last.set now
+    if trace == some "1" then IO.eprintln s!"imprimatur-export: {key}: {what} ({now})"
 
 /-- The entry for a title: a `latex_group` of rules or a `latex_display`,
 which names several declarations. It states what they state: its hash and
@@ -185,10 +206,11 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
   let mut views : Array (String × String) := #[]
   let mut errors : Array (String × String) := #[]
   let mut validation : Array (String × Array String) := #[]
+  let stage ← stageLogger r.key
   for v in r.views do
     let spec := parseViewSpec v
     let spec := { spec with opts := spec.opts ++ extra }
-    let run := fun act => runRendered s spec.variant used r.key act root
+    let run := fun act => runRendered s spec.variant used r.key act root (view := v)
     if Views.indexViews.contains spec.base then
       -- A view that indexes the document (`Views/Index.lean`).
       let (res, ps) ← run (Views.runIndexView spec.base (sourceOf root) axiomsOf spec.opts).run
@@ -225,6 +247,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       | .error msg => errors := errors.push (v, msg)
     else errors := errors.push (v, s!"{r.key} names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not {v}")
   let allTeX := String.join (views.toList.map (·.2))
+  stage "views"
   -- The group's statement is its members': their types, with their cones
   -- united, hashed together. Its verdict is their cone and whether any
   -- depends on `sorry`; it has no axioms of its own, since its members are
@@ -244,6 +267,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       if errors.all (·.1 != "cone") then errors := errors.push ("cone", msg)
     if let .ok ax ← guarded (axiomsOf ci.name) then
       axioms := axioms ++ ax.filter (!axioms.contains ·)
+  stage "cone"
   let untrusted := cone.issues.map (·.1.toString) |>.foldl (fun a n => if a.contains n then a else a.push n) #[]
   return {
     decl := { kind := .group, name := r.key },
@@ -262,11 +286,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
     (used : IO.Ref (Array String)) (extra : Array (String × String) := #[]) :
     MetaM (Entry (Image TeX) Verdict) := do
   let env ← getEnv
-  -- IMPRIMATUR_TRACE=1 reports each stage, for finding what is slow.
-  let trace ← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)
-  let stage (what : String) : MetaM Unit := do
-    if trace == some "1" then IO.eprintln s!"imprimatur-export: {c.name}: {what} ({← IO.monoMsNow})"
-  stage "start"
+  let stage ← stageLogger c.name.toString
   let doc := (← findDocString? env c.name).map (·.trimAscii.toString)
   let axioms ← match ← guarded (axiomsOf c.name) with
     | .ok ax => pure ax
@@ -292,7 +312,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
       let spec := { spec with opts := spec.opts ++ extra }
       let base := spec.base
       let variant := spec.variant
-      let run := runRendered s variant used r.key
+      let run (act : Render.Ctx → MetaM String) := runRendered s variant used r.key act (view := other)
       if let some (_, fn) := (projectViews (← getEnv)).find? (·.1 == base) then
         let (res, ps) ← run (runCustomView fn r.key (some c) spec.opts).run
         validation := validation.push (other, ps)

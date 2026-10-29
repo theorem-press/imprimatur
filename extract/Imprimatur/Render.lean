@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean
+import Imprimatur.Timing
 import Imprimatur.Doc
 import Imprimatur.Trust
 import Imprimatur.TeX
@@ -135,6 +136,8 @@ structure Ctx where
   document : DocumentInfo := {}
   /-- The key being rendered, as the document writes it. -/
   key : String := ""
+  /-- The view being rendered (`math`, `rules`, …), for the timing log. -/
+  view : String := ""
   /-- The project's root, for source locations. -/
   root : System.FilePath := "."
   /-- The modules the document imports: the project's, whose first
@@ -306,8 +309,9 @@ def sortOf (e : Expr) : MetaM String := do
 reading as an expression of `e`'s sort, and its free variables must print
 differently. Problems go to the context's `problems`. -/
 def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Reading)
-    (problems : IO.Ref (Array String)) : RenderM Unit := do
+    (problems : IO.Ref (Array String)) (renderMs : Nat := 0) : RenderM Unit := do
   let ctx ← read
+  let t0 ← IO.monoMsNow
   let tex := d.render 100000
   let ts := Validate.tokenize tex
   if ts.isEmpty then return
@@ -323,7 +327,14 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       ctx.listLiterals)
   let g := base.extend leaves
   let h₀ ← IO.getNumHeartbeats
-  let (rs, flags) := Validate.readBack g ts (← sortOf e)
+  let (rs, flags, steps) := Validate.readBackSteps g ts (← sortOf e)
+  -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering and
+  -- reading it back took (`Imprimatur.Timing`).
+  if ← Timing.on then
+    Timing.event "formula" ((← IO.monoMsNow) - t0)
+      [("key", toJson ctx.key), ("view", toJson ctx.view), ("render_ms", toJson renderMs),
+       ("tokens", toJson ts.size), ("steps", toJson steps), ("readings", toJson rs.size),
+       ("tex", toJson (String.ofList (tex.toList.take 120)))]
   -- IMPRIMATUR_VALIDATE_READINGS=1 prints each formula, as one tab-separated
   -- line: its key, its TeX, the readings the parser found, and the reading
   -- the renderer expected (about/analytics/example.py draws them).
@@ -455,8 +466,10 @@ mutual
     if let (some problems, none) := (ctx.problems, ctx.atoms) then
       let atoms ← IO.mkRef #[]
       let ex ← IO.mkRef ({} : Expect)
+      let t0 ← IO.monoMsNow
       let d ← withReader (fun c => { c with atoms := some atoms, expect := some ex }) (render e)
-      validate e d (← atoms.get) (((← ex.get).kids[0]?).getD Validate.anyReading) problems
+      let renderMs := (← IO.monoMsNow) - t0
+      validate e d (← atoms.get) (((← ex.get).kids[0]?).getD Validate.anyReading) problems renderMs
       return d
     let some ex := ctx.expect | renderForm e
     -- This form's subterms' readings are collected afresh, and its own is

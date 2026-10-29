@@ -71,6 +71,8 @@ structure Args where
   all : Bool := false
   /-- `show`'s views (`--view`); none means the document's, or `math`. -/
   views : Array String := #[]
+  /-- `--timing`: log where the time goes, and summarise it. -/
+  timing : Bool := false
 
 /-- Parse the arguments. -/
 partial def parseArgs (args : List String) (a : Args := {}) : Except String Args :=
@@ -92,6 +94,7 @@ partial def parseArgs (args : List String) (a : Args := {}) : Except String Args
   | "--check-fail-msg" :: v :: rest => parseArgs rest { a with failMsg := some v }
   | "--all" :: rest => parseArgs rest { a with all := true }
   | "--view" :: v :: rest => parseArgs rest { a with views := a.views.push v }
+  | "--timing" :: rest => parseArgs rest { a with timing := true }
   | arg :: rest =>
     if arg.startsWith "-" then .error s!"unknown or incomplete option {arg}"
     else if a.command.isEmpty then parseArgs rest { a with command := arg }

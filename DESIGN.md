@@ -155,7 +155,9 @@ feed the same splicer, such as an Isabelle or Rocq exporter, or a script.
 
 A wrapper command `imprimatur` runs the whole flow:
 
-- `imprimatur build` runs scan, then export, then apply.
+- `imprimatur build` runs scan, then export, then apply. With `--timing`,
+  both programs log where the time goes to `.imprimatur/timing.jsonl`, and
+  the run ends with a summary naming the slowest entries, views and formulas.
 - `imprimatur check` runs the same steps without writing, and exits non-zero if
   anything is out of date or fails a trust check.
 
