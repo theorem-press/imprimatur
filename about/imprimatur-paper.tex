@@ -59,39 +59,113 @@ imprimatur is two programs. The extractor runs inside Lean, at the
 development's own toolchain, and reads its elaborated environment. The
 splicer edits \TeX{} and uses nothing of Lean but its standard library, so
 one splicer serves every toolchain. All that passes between them is the
-bundle, a JSON file. So there are three things, and two relations between
-them:
+bundle, a JSON file. The split is the point, not a convenience: the
+extractor is large and is built again for each toolchain, the splicer is
+small and is proved once, and the bundle is the certificate the proved
+part checks, a file a paper can commit, a reader can diff, and a build
+without Lean can check against. So there are three things, two functions
+between them, and, for each function, a relation that holds once it has
+run:
 \begin{center}
-  the development $W$
-  $\xrightarrow{\;\text{the bundle is true of it}\;}$
+  the development $X$
+  $\xrightarrow[\;\mathsf{world}(X)\,\models\,b\;]{\;b\,=\,\mathsf{extract}_{X}(\mathit{rs})\;}$
   the bundle $b$
-  $\xrightarrow{\;\text{the paper checks clean}\;}$
+  $\xrightarrow[\;\mathsf{check}_{b}(d)\,=\,{[]}\;\Longrightarrow\;\mathsf{world}(X)\,\models\,d\;]{\;d\,=\,\mathsf{splice}_{b}(d_{0})\;}$
   the paper $d$.
 \end{center}
+Above each arrow is the function that makes the thing on its right; below
+it, what is then true of that thing: the bundle is true of the development,
+and so is the paper, once it checks clean against the bundle. Splicing
+alone does not make it so: a built paper has no stale block, but it may
+still cite a key the bundle lacks, or a proof that is not trusted, and
+\verb|check| says which.
+\begin{figure}[t]
+\includegraphics[width=\linewidth]{example-diagram.pdf}
+\caption{The theorem of Figure~\ref{fig:example}, from the development $X$
+to the paper $d$, in the terms of the text. The extractor reads the Lean and
+the notation and writes the bundle, $b = \mathsf{extract}_{X}(\mathit{rs})$,
+here for the figure's five requests $\mathit{rs}$; the splicer writes each
+rendering into the paper's \TeX{} as a block, $d = \mathsf{splice}_{b}(d_{0})$.
+Before the extractor writes a rendering, the validator's parser reads each
+of its formulas back in the notation's grammar (below), which is what
+$\mathsf{world}(X)$ records of it: each has one reading, and it is the
+statement's part it was printed from. That is what the paper's
+Pollack-consistency, $\mathsf{pollack}_{X}(d)$, comes to. In red,
+\emph{Values are final} at each stage.
+The excerpts, and the readings, are cut from the files of
+Appendix~\ref{app:example} when the paper is built.}
+\label{fig:pipeline}
+\end{figure}
 What does it mean for the paper to be correct? That what it shows is what
-Lean proved, and that it says so in a notation with one reading. Three
-functions connect the three things. The extractor writes the bundle of a
-development, $\mathsf{extract}_{X}(\mathit{rs})$, for the requests
-$\mathit{rs}$ the paper makes: each key it cites, with the views it shows
-the key in, whose statement the bundle hashes and renders in those views.
-Here $X$ is the development as the extractor sees it, with the validator
-that reads each rendering back. The world it
-presents is $\mathsf{world}(X)$: what each key states, whether its proof is
-trusted, how a statement is hashed and rendered, and, for when a rendering
-reads back as a statement, the validator's verdict on every formula printed
-of it. The splicer regenerates the paper's blocks from a bundle,
-$\mathsf{apply}_{b}(d)$, and lists what is wrong with the paper against it,
-$\mathsf{check}_{b}(d)$. The paper's results are about these three, and
-each is proved in Lean. The first two say that each program does its part:
+Lean proved, and that it says so in a notation with one reading. The three
+things first, and with them the two relations:
+\begin{itemize}
+\item \textbf{The development} $X \in \texttt{Validated}$, and its world
+  $W = \mathsf{world}(X)$. $X$ is the development as the extractor sees it,
+  in three parts. A world $\mathsf{base}(X)$: what each key states, whether
+  its proof is trusted, and how a statement is hashed and rendered, but
+  with one thing left open, whether a rendering reads back as its
+  statement. The anatomy of its statements: the parts $\mathit{Part}_{X}$
+  the notation shows a statement in, each printed as a formula; what the
+  prose view says of a statement, $\mathit{gather}_{X}$, sentences over
+  parts; and what the rules view says of an inductive predicate,
+  $\mathit{ctors}_{X}$, rules over parts. And the validator, which reads a
+  printed part back. $W$ is the world $X$ presents, what the paper is true
+  or false of: $\mathsf{base}(X)$ with the open thing settled, by the
+  validator's verdict on every formula printed of a statement.
+\item \textbf{The bundle} $b$ is a map from keys to entries. A key is
+  what a paper cites: the name of a Lean constant, or the title of a group
+  of them. An entry says of its key what it names, its statement, and the
+  verdict on its proof. The statement is there as two images, since the
+  file cannot hold Lean: a hash, which names it, and its renderings in the
+  views the paper shows it in. $W \models b$ when every entry is true of
+  its key in $W$: the key names what the entry says, the hash and each
+  rendering are of the statement $W$ gives the key, and the verdict is
+  $W$'s.
+\item \textbf{The paper} $d$ is a list of pieces: hand-written text;
+  generated blocks $\mathsf{block}_{k}^{v}(r)$, a key $k$ shown in a view
+  $v$, whose body $r$ is text generated from Lean around slots the authors
+  own; and checks $\mathsf{checked}_{k}(h)$ beside hand-written prose,
+  recording the hash of the statement the prose was checked against.
+  $W \models d$ when every piece is true of $W$: text, always; a block,
+  when its body is $W$'s rendering of the key's statement in that view,
+  the slots filled, the key's proof is trusted, and the rendering reads
+  back as the statement; a check, when $h$ is the hash of what the key
+  states, with a trusted proof.
+\end{itemize}
+Three functions connect the three things. In each, the subscript is what
+a run fixes, the development for the extractor's and the bundle for the
+splicer's, and the argument is what it is asked about:
+\begin{itemize}
+\item $b = \mathsf{extract}_{X}(\mathit{rs})$, the extractor.
+  $\mathit{rs}$ are the requests the paper makes: each key it cites, with
+  the views it shows the key in. The result $b$ is the bundle: for each
+  key, its statement, hashed and rendered in those views, and whether its
+  proof is trusted.
+\item $d = \mathsf{splice}_{b}(d_{0})$, the splicer. $b$ is a bundle and
+  $d_{0}$ the paper as the authors left it. The result $d$ is the paper
+  with each generated block rewritten from the bundle, the authors' text
+  in its slots and between the blocks kept.
+\item $\mathit{ps} = \mathsf{check}_{b}(d)$, the splicer again. The same
+  $b$, and a paper $d$, built or not. The result $\mathit{ps}$ is the list
+  of what is wrong with the paper against the bundle, each with the key it
+  concerns: a block that is not the key's rendering, $\mathsf{stale}(k)$;
+  a statement that has changed since the prose about it was checked,
+  $\mathsf{drift}(k)$; a key the bundle has no entry for,
+  $\mathsf{broken}(k)$. The paper checks clean when the list is empty,
+  $\mathsf{check}_{b}(d) = []$.
+\end{itemize}
+The paper's results are about these three, and each is proved in Lean. The
+first two say that each program does its part:
 
 \begin{leantheorem}[sum=ohIfXYzy6m]{Extraction is true}{Extraction is true}
 \label{thm:Extraction-is-true}
 \LeanProse{Let $X \in \texttt{Validated}$, $\mathit{rs} \in \mathsf{List}(\mathit{Key} \times \mathsf{List}(\mathit{View}))$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{rs})$. Then $\mathsf{world}(X) \models b$.}
 \end{leantheorem}
 
-\begin{leantheorem}[sum=icUDbrYH8A]{Building regenerates blocks, once}{Building regenerates blocks, once}
+\begin{leantheorem}[sum=IQM5E09fop]{Building regenerates blocks, once}{Building regenerates blocks, once}
 \label{thm:Building-regenerates-blocks,-once}
-\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{wf}(b)$. Then (1)~$\lfloor \mathsf{apply}_{b}(d) \rfloor = \lfloor d \rfloor$, (2)~$\mathsf{apply}_{b}(\mathsf{apply}_{b}(d)) = \mathsf{apply}_{b}(d)$ and (3)~$\forall k : \mathit{Key},\ \mathsf{stale}(k) \notin \mathsf{check}_{b}(\mathsf{apply}_{b}(d))$.}
+\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{wf}(b)$. Then (1)~$\lfloor \mathsf{splice}_{b}(d) \rfloor = \lfloor d \rfloor$, (2)~$\mathsf{splice}_{b}(\mathsf{splice}_{b}(d)) = \mathsf{splice}_{b}(d)$ and (3)~$\forall k : \mathit{Key},\ \mathsf{stale}(k) \notin \mathsf{check}_{b}(\mathsf{splice}_{b}(d))$.}
 \end{leantheorem}
 
 \noindent The bundle says of each key what Lean states and whether its
@@ -457,20 +531,6 @@ Figure~\ref{fig:pipeline} follows the theorem from its Lean, through the
 bundle, into the paper's \TeX; Appendix~\ref{app:example} gives the three
 in full.
 
-\begin{figure}[t]
-\includegraphics[width=\linewidth]{example-diagram.pdf}
-\caption{The theorem of Figure~\ref{fig:example}, from the development to
-the paper. The extractor reads the Lean and the notation and writes the
-bundle, here for the figure's five requests; the splicer writes each
-rendering into the paper's \TeX{} as a block. Before the extractor writes a
-rendering, the validator's parser reads each of its formulas back in the
-notation's grammar (below): each has one reading, and it is the statement's
-part it was printed from. In red, \emph{Values are final} at each stage.
-The excerpts, and the readings, are cut from the files of
-Appendix~\ref{app:example} when the paper is built.}
-\label{fig:pipeline}
-\end{figure}
-
 \subsection{What the bundle says}\label{sec:example-bundle}
 
 Theorem~\ref{thm:Extraction-is-true} is about the bundle the extractor
@@ -478,7 +538,7 @@ writes. Here $X$ is the calculus with its notation, and the paper's four
 blocks in Figure~\ref{fig:example} make five requests, each a key and a
 list of views, all of them strings:
 
-\begin{leandef}[sum=XRzcN--NQb, dflt=r4adX8nPas]{The requests of Figure 1}{The requests of Figure 1}
+\begin{leandef}[sum=XRzcN--NQb, dflt=2j7fTRiy7H]{The requests of Figure 2}{The requests of Figure 2}
 \begin{LeanDisplay}
 \LeanClause{\mathit{rs}_{1} \;\deq\; [(\text{``Stlc.Tm''}, [\text{``grammar|display''}]),\ (\text{``Stlc.IsValue''}, [\text{``rules''}]),\ (\text{``Stlc.Step''}, [\text{``rules''}]),\ (\text{``Values are final''}, [\text{``prose''}]),\ (\text{``Stlc.values\_final''}, [\text{``lean''}])]}{\leanslot{About.figureRequests}{Each key, as written, with the view of its block}}
 \end{LeanDisplay}
@@ -494,7 +554,7 @@ statement (the entry is shown in Section~\ref{sec:bundle}).
 \subsection{What building does}\label{sec:example-build}
 
 Theorem~\ref{thm:Building-regenerates-blocks,-once} is about
-$\mathsf{apply}$. Regenerating the figure against $b$ rewrites the bodies
+$\mathsf{splice}$. Regenerating the figure against $b$ rewrites the bodies
 of its five blocks and nothing else: not the text between them, nor the
 blocks' keys and views. The grammar is the one block with slots, and the
 descriptions the authors wrote in them (``Terms, with de Bruijn
@@ -557,7 +617,6 @@ them, it would also read as
 $\lambda{:}A.\, (M\; V) \longrightarrow M[V]$, which is well formed and
 says something else. The validator would then have found a second reading,
 and \texttt{check} would not have been clean.
-
 
 \section{The bundle}\label{sec:bundle}
 
@@ -646,7 +705,6 @@ The proof is absent, and the statement appears twice: as a hash, and as
 \LeanClause{b \in \mathit{Bundle} \;\deq\; \texttt{Bundle}(\texttt{Image}(\mathit{Body}), \mathbb{B})}{\leanslot{SpliceModel.Bundle}{A bundle as the splicer holds it}}
 \end{LeanDisplay}
 \end{leandef}
-
 
 \section{What a bundle means}\label{sec:meaning}
 
@@ -750,7 +808,6 @@ has no problems.
 \LeanProse{Let $\tau, \pi$ be types, $W \in \texttt{World}(\tau)$, $\mathit{trusted} \in \pi \to \mathbb{B}$, $b \in \texttt{Bundle}(\texttt{Image}(\tau), \pi)$, $k \in \mathit{Key}$, $e \in \texttt{Entry}(\texttt{Image}(\tau), \pi)$, $v \in \mathit{View}$ and $t \in \tau$. Assume $W \models b$, $b[k] = e$ and $\mathit{view}_{v}(e.\mathit{statement}) = t$. Then there is $S$ such that (1)~$\mathit{stmt}_{W}(k) = S$, (2)~$\mathit{render}_{W}(v, S) = t$ and (3)~$\mathit{problems}_{e.\mathit{statement}}(v) = [] \implies \mathit{reads}_{W}(t, S)$.}
 \end{leantheorem}
 
-
 \section{Documents}\label{sec:documents}
 
 A document is a list of pieces: hand-written text, generated blocks, and
@@ -830,24 +887,24 @@ First, it changes nothing they wrote outside generated blocks. Write
 $\lfloor d \rfloor$ for the outline of document $d$: its text, its checks,
 and its blocks without their bodies.
 
-\begin{leantheorem}[sum=3p5XLvWAci]{Locality}{Locality}
+\begin{leantheorem}[sum=Ud2Z56iQ-4]{Locality}{Locality}
 \label{thm:Locality}
-\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Then $\lfloor \mathsf{apply}_{b}(d) \rfloor = \lfloor d \rfloor$.}
+\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Then $\lfloor \mathsf{splice}_{b}(d) \rfloor = \lfloor d \rfloor$.}
 \end{leantheorem}
 
 Second, running it again changes nothing more. This needs each rendering's
 slots to be distinct, which we write $\mathsf{wf}(b)$\leancheck[stmt=c6662354836a, sig=9d550ab02488]{SpliceModel.WF}.
 
-\begin{leantheorem}[sum=rUqQQUgoM3]{Idempotence}{Idempotence}
+\begin{leantheorem}[sum=EY5olH0hBV]{Idempotence}{Idempotence}
 \label{thm:Idempotence}
-\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{wf}(b)$. Then $\mathsf{apply}_{b}(\mathsf{apply}_{b}(d)) = \mathsf{apply}_{b}(d)$.}
+\LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{wf}(b)$. Then $\mathsf{splice}_{b}(\mathsf{splice}_{b}(d)) = \mathsf{splice}_{b}(d)$.}
 \end{leantheorem}
 
 Third, \verb|check| agrees with \verb|apply|: after it, no block is stale.
 
-\begin{leantheorem}[sum=ajKQ-ezoOC]{Fixed point}{Fixed point}
+\begin{leantheorem}[sum=oZMp8ct0Im]{Fixed point}{Fixed point}
 \label{thm:Fixed-point}
-\LeanProse{Let $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$ and $k \in \mathit{Key}$. Assume $\mathsf{wf}(b)$. Then $\mathsf{stale}(k) \notin \mathsf{check}_{b}(\mathsf{apply}_{b}(d))$.}
+\LeanProse{Let $b \in \mathit{Bundle}$, $d \in \mathit{Doc}$ and $k \in \mathit{Key}$. Assume $\mathsf{wf}(b)$. Then $\mathsf{stale}(k) \notin \mathsf{check}_{b}(\mathsf{splice}_{b}(d))$.}
 \end{leantheorem}
 
 Fourth, the text the authors wrote in a slot survives regeneration, as long
@@ -857,7 +914,6 @@ as the rendering still has that slot.
 \label{thm:Slot-preservation}
 \LeanProse{Let $i \in \mathit{SlotId}$, $t \in \mathit{String}$, $\mathit{old} \in \mathsf{List}(\mathit{SlotId} \times \mathit{String})$ and $r \in \mathit{Body}$. Assume $i \in \mathsf{ids}(r)$ and $\mathit{old}[i] = t$. Then $\mathsf{slots}(\mathsf{fill}(\mathit{old}, r))[i] = t$.}
 \end{leantheorem}
-
 
 \section{What \texttt{check} guarantees}
 \label{sec:check}
@@ -2108,10 +2164,10 @@ A variable with a prime or a subscript ($X'$, $X_{1}$) ranges over the same type
 \end{leanconventions}
 
 \begingroup\small
-\begin{leannotation}[sum=pBPsmm8-f0, dflt=zLNNbzt7ou]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=5aoupIqLBz, dflt=vPB0bAyp7w]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{About}}\\
-$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the five blocks of Figure 1 make: each key, as the document writes it, with the view its block shows}\\
+$\mathit{rs}_{1}$ & \texttt{About.figureRequests} & \leanslot{About.figureRequests/0}{The requests the five blocks of Figure 2 make: each key, as the document writes it, with the view its block shows}\\
 $\mathit{pr}_{1}$ & \texttt{About.valuesFinalSentence} & \leanslot{About.valuesFinalSentence/0}{The sentence of \emph{Values are final}, as the prose view says it: two variables of terms, and a conclusion, each a formula of TeX}\\
 $t_{1}$ & \texttt{About.valuesFinalTeX} & \leanslot{About.valuesFinalTeX/0}{The TeX of the block of \emph{Values are final}: its prose rendering, which the paper's view of the block checks it still is}\\
 \multicolumn{3}{@{}l}{\textit{Imprimatur}}\\
@@ -2392,7 +2448,7 @@ $\mathit{print}^{*}_{X}(q)$ & \texttt{Validated.print} & \leanslot{SpliceModel.V
 $\mathit{print}^{*}_{X}(u)$ & \texttt{Validated.print} & \leanslot{SpliceModel.Validated.print/1}{a part printed as a formula, by the notation}\\
 $\mathsf{world}(X)$ & \texttt{Validated.world} & \leanslot{SpliceModel.Validated.world/0}{The world as the validator sees it: a rendering reads back as a statement when the validator accepts every formula printed of it}\\
 $\mathsf{wf}(b)$ & \texttt{WF} & \leanslot{SpliceModel.WF/0}{A bundle is well formed when no rendering has two slots with the same identifier}\\
-$\mathsf{apply}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
+$\mathsf{splice}_{b}(d)$ & \texttt{apply} & \leanslot{SpliceModel.apply/0}{\LeanCodeInline{imprimatur apply}: regenerate every block}\\
 $\mathsf{bundle}_{W}(\mathit{rs})$ & \texttt{bundleOf} & \leanslot{SpliceModel.bundleOf/0}{The bundle an honest extractor makes of a world, for the requests \LeanCodeInline{rs}: each key a document cites, with the views it shows the key in}\\
 $\mathsf{check}_{b}(d)$ & \texttt{check} & \leanslot{SpliceModel.check/0}{\LeanCodeInline{imprimatur check}: what it reports about a document}\\
 $\mathsf{fill}(\mathit{old}, r)$ & \texttt{fill} & \leanslot{SpliceModel.fill/0}{Fill a rendering's slots: each keeps the authors' text, if they wrote some, else the rendering's}\\

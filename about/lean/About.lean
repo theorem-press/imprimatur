@@ -9,7 +9,7 @@ import Stlc
 
 namespace About
 
-/-- The requests the five blocks of Figure 1 make: each key, as the document
+/-- The requests the five blocks of Figure 2 make: each key, as the document
 writes it, with the view its block shows. -/
 def figureRequests : List (Imprimatur.Key × List Imprimatur.View) :=
   [("Stlc.Tm", ["grammar|display"]), ("Stlc.IsValue", ["rules"]), ("Stlc.Step", ["rules"]),

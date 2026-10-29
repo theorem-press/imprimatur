@@ -1,6 +1,6 @@
 """The running example, in full: what goes into imprimatur, the bundle, and the TeX.
 
-For Figure 1 of the paper this writes, under about/example/:
+For Figure 2 of the paper this writes, under about/example/:
 
 - requests.json: the requests the figure's four blocks make, each key with
   the view of its block, read from the paper itself (the blocks' keys, and
@@ -8,7 +8,7 @@ For Figure 1 of the paper this writes, under about/example/:
   constant About.figureRequests, which Section 2 shows;
 - bundle.json: the bundle the extractor writes for those requests alone, by
   running it (the bundle the paper's Theorem 1.1 is about);
-- figure.tex: the TeX of Figure 1, as the paper's source has it;
+- figure.tex: the TeX of Figure 2, as the paper's source has it;
 - readings.txt: each formula of the figure, as the validator's parser reads
   it back while the extractor writes the bundle: its readings, and the one
   the renderer expected (Pollack-consistency is that they are one and the
@@ -233,7 +233,7 @@ def readings_band(ax, x: float, w: float, top: float, lines: list[tuple[str, str
     h = 0.24 + len(lines) * LINE_IN
     ax.add_patch(FancyBboxPatch((x, top - h), w, h, boxstyle="round,pad=0.01,rounding_size=0.03",
                                 facecolor="#f3f6fa", edgecolor="#8da2bb", linewidth=0.5))
-    ax.text(x + 0.05, top - 0.05, "read back by the validator's parser: each formula, and its one reading",
+    ax.text(x + 0.05, top - 0.05, "$\\mathsf{world}(X)$: read back by the validator's parser, each formula and its one reading",
             ha="left", va="top", fontsize=5.6, color=BLUE, style="italic")
     for n, (formula, reading) in enumerate(lines):
         y = top - 0.18 - n * LINE_IN
@@ -263,23 +263,23 @@ def diagram(lean: list[Line], notation: list[Line], bundle: list[Line], tex: lis
     gap = (WIDTH_IN - 0.04 - 3 * w) / 2
     xs = [0.02, 0.02 + w + gap, 0.02 + 2 * (w + gap)]
     top = height - 0.4
-    heading(ax, xs[0], w, top, "The development", "Lean, and the paper's notation")
+    heading(ax, xs[0], w, top, "The development $X$", "Lean, and the paper's notation")
     page(ax, xs[0], w, top, lean_h, [("", False)] + lean, "Stlc.lean")
     notation_top = top - lean_h - between
     page(ax, xs[0], w, notation_top, body_h - lean_h - between, [("", False)] + notation, "StlcTeX.lean")
-    heading(ax, xs[1], w, top, "The bundle", "bundle.json, for Figure 1")
+    heading(ax, xs[1], w, top, "The bundle $b = \\mathsf{extract}_X(\\mathit{rs})$", "bundle.json, for the five requests $\\mathit{rs}$ of Figure 2")
     page(ax, xs[1], w, top, body_h, bundle)
-    heading(ax, xs[2], w, top, "The paper", "the TeX of Figure 1")
+    heading(ax, xs[2], w, top, "The paper $d = \\mathsf{splice}_b(d_0)$", "the TeX of Figure 2, its blocks from $b$")
     page(ax, xs[2], w, top, body_h, tex)
     y = top - body_h / 2
-    arrow(ax, xs[0] + w + 0.03, xs[1] - 0.03, y, "extract", "Lean")
-    arrow(ax, xs[1] + w + 0.03, xs[2] - 0.03, y, "build", "TeX")
+    arrow(ax, xs[0] + w + 0.03, xs[1] - 0.03, y, "$\\mathsf{extract}_X$", "extractor")
+    arrow(ax, xs[1] + w + 0.03, xs[2] - 0.03, y, "$\\mathsf{splice}_b$", "splicer")
     # Under the development and the bundle: what the extractor checks of each
     # rendering before it writes it, with arrows from the bundle's rendering
     # down into the parser, and from the readings up to the statement.
     band_top = top - body_h - gap_v
     readings_band(ax, xs[0], xs[1] + w - xs[0], band_top, band)
-    ax.text(xs[2] + w / 2, band_top - 0.12, "Pollack-consistency:\nevery formula has one reading,\nand it is the one it was\nrendered from",
+    ax.text(xs[2] + w / 2, band_top - 0.12, "$\\mathsf{world}(X) \\models b$ (Theorem 1.1), and\n$\\mathsf{check}_b(d) = []$, so $\\mathsf{world}(X) \\models d$\nand $\\mathsf{pollack}_X(d)$ (Theorem 1.3):\nevery formula has one reading,\nand it is the one it was\nrendered from",
             ha="center", va="top", fontsize=5.6, color=BLUE, style="italic", linespacing=1.3)
     for x, (y0, y1), label in [(xs[1] + w / 2, (top - body_h, band_top), "each rendering"),
                                (xs[0] + w / 2, (band_top, top - body_h), "the statement's")]:
@@ -295,7 +295,7 @@ def main() -> None:
     fig = figure_tex(paper)
     rs = figure_requests(fig)
     if rs != lean_requests():
-        raise SystemExit(f"Figure 1's blocks make the requests {rs}, but About.figureRequests says {lean_requests()}")
+        raise SystemExit(f"Figure 2's blocks make the requests {rs}, but About.figureRequests says {lean_requests()}")
     bundle, readings = run_extractor(rs)
     OUT.mkdir(exist_ok=True)
     (OUT / "requests.json").write_text(json.dumps({k: {"views": vs} for k, vs in rs}, indent=2) + "\n")
