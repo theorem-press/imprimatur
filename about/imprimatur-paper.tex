@@ -219,6 +219,99 @@ statement it was checked against therefore assumes that no two statements
 in question share those 48 bits: safe against accident, but not against a
 forger. And the prose is only as right as the person who checked it.
 
+\subsection{Contributions}\label{sec:contributions}
+
+Several tools print a prover's statements into a paper, and Wiedijk has
+proposed reading a printed term back (Section~\ref{sec:related}). This
+paper adds the following.
+
+\begin{enumerate}
+\item \emph{A stated and proved guarantee for a checked paper.} We give the
+  file between the prover and the paper a type and a meaning, and prove in
+  Lean that a paper that checks clean against a true bundle is true of the
+  development (Theorems~\ref{thm:Extraction-is-true}
+  and~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}),
+  for a model of the splicer and for the code the binary runs
+  (Section~\ref{sec:code}). The tools closest in function check less, and
+  say so informally: \texttt{checkdecls} that each name
+  exists~\cite{Massot20}, LeanArchitect that no dependency is
+  \texttt{sorryAx}~\cite{Zhu26}, Isabelle that an antiquotation is
+  well-typed in its context~\cite{Wenzel26}, and Cog that a file would not
+  change if generated again~\cite{Batchelder25}. Comparator states what
+  it guarantees of a proof~\cite{Boving25}, but no tool of
+  Section~\ref{sec:related} that puts statements into a document states
+  what a successful check guarantees of the document, or proves it.
+\item \emph{Generated statements that keep their place in a paper people
+  write.} The splicer rewrites only the blocks of the authors' own
+  \TeX{}, keeps the text they write in a block's slots, and is proved
+  local, idempotent and slot-preserving, with a fixed point at which
+  nothing is stale (Section~\ref{sec:laws}). HOL4's munger, like Ott's
+  filter, writes a separate \verb|.tex| from a hand-written source on every
+  run~\cite{HOL25,Sewell10}, and Isabelle generates the document from its
+  theories, where the printed form ``may even fluctuate a bit as the
+  underlying theory is changed''~\cite{Wenzel26}; none of the three can
+  tell a stale rendering from a fresh one, since each regenerates them
+  all. Cog has the
+  splicer's shape, regenerating in place with checksums against hand
+  edits~\cite{Batchelder25}, but its output is any text, and its check asks
+  only that it be fresh. imprimatur's check asks also that the statement
+  rendered be proved with trusted axioms only, and that it read back.
+\item \emph{Prose tied to the meaning of a statement.} A \verb|\leancheck|
+  records a hash of a statement's meaning, its type with every definition
+  it depends on, beside a second hash of the statement as written; the
+  check then tells a renaming from a change of meaning, including the
+  change a reader cannot see, in a definition the statement depends on
+  (Section~\ref{sec:attested}). LeanArchitect's statement text is
+  written in the attribute that tags a declaration, and not compared with
+  its type~\cite{Zhu26}; plectis records the wording of each claim with its
+  declarations and compares digests of passages and their sources, where,
+  as its author notes, a matching digest establishes agreement with
+  recorded bytes~\cite{Cook26}.
+\item \emph{Pollack-consistency of a whole paper, in its own notation.}
+  Each formula is read back in a grammar built from the paper's notation
+  rules, with Lean's types on their holes, and must have one reading, the
+  statement it was rendered from (Section~\ref{sec:faithful}); the prose
+  and rules views are taken apart by parsers proved to undo their layouts,
+  so the guarantee covers sentences and figures, formula by formula
+  (Section~\ref{sec:views}). Wiedijk proposes printing a term and reading
+  it back, falling back to a fail-safe syntax~\cite{Wiedijk12}; Adams
+  suggests adding such a check to HOL Zero's printers, and observes that
+  Pollack-consistency alone is not faithfulness~\cite{Adams16}. imprimatur
+  makes the check for the notation an author defines, which is where
+  Wiedijk's weak failures live; it compares the one reading with the
+  statement, which is faithfulness and not only that no two terms print
+  alike, wherever the expected reading is definite; and it refuses a
+  formula rather than print it another way. The parser that reads back is
+  proved sound and complete (Theorems~\ref{thm:The-parser-is-sound}
+  and~\ref{thm:The-parser-is-complete}): as with Tristan and Leroy's
+  validators~\cite{Tristan08}, what is proved is the checker, not the
+  printer. Of the tools of Section~\ref{sec:related} that print into a
+  document, none reads what it printed back; the nearest is HOL4's guard
+  that its plain-text output can be read in again~\cite{HOL25}.
+\item \emph{Hidden coercions, bounded.} A grammar that hides coercions in
+  unbounded chains has puns that the renderer's grammar does not
+  (Theorems~\ref{thm:Unbounded-chains-make-a-pun}
+  and~\ref{thm:The-chain-rule-leaves-the-pun-out}); the renderer shows any
+  coercion the rule would not read, so the grammar holds every rendering.
+  Hidden coercions are among the ways Wiedijk shows provers to fail
+  Pollack-consistency~\cite{Wiedijk12}.
+\end{enumerate}
+
+\noindent The evidence is this paper, every displayed definition and
+theorem of which is generated, and its claims about the development
+attested (Section~\ref{sec:example}); and a twenty-page paper about
+another Lean development, in which the check found six misreads when the
+renderer was made to drop the parentheses its holes need, and compares
+610 of the 662 formulas with one reading in full
+(Section~\ref{sec:faithful}).
+
+Some of the design is not new. Splicing between markers, with a checksum
+against hand edits, is Cog's; the view options follow Isabelle's
+antiquotations and HOL4's \verb|\HOLthm|, and splitting a definition into
+inference rules follows Ott; printing and reading back is Wiedijk's
+proposal; and checking each run, with a proved validator, is translation
+validation~\cite{Pnueli98,Tristan08}.
+
 \section{The running example}\label{sec:example}
 
 The development is a simply typed
@@ -1730,7 +1823,8 @@ arguments, coercions, proofs, the names of hypotheses and bound variables,
 and the premises and synonyms it names. That is what the world's
 $\mathit{reads}$ stands for.
 
-imprimatur checks this for each formula, by translation validation. As the
+imprimatur checks this for each formula, by translation
+validation~\cite{Pnueli98}. As the
 extractor renders a formula, it also builds the reading the formula should
 have: an atom reads as itself, and a rule's rendering as the rule's pattern
 with its holes' readings. It then parses the typeset formula, and records
@@ -1865,23 +1959,114 @@ them has the grammar the formulas were checked in.
 
 \section{Related work}\label{sec:related}
 
-Ringer et al.\ survey proof engineering for program correctness,
-including how proofs must change as the programs they are about
-change~\cite{Ringer19}.
+imprimatur keeps two sources in step, a Lean development and a paper that
+people write. Related work prints a prover's statements, ties a document to
+a Lean development, keeps generated text in step with its source, or asks
+whether a printed formula means what was proved.
 
-Pollack asks how a reader can believe a machine-checked proof, and
-separates whether it is a derivation from whether what it derives means
-what is claimed; for the second, the reader reads a printed formula, so
-the parser and printer must be trusted as well as the
-kernel~\cite{Pollack98}. Wiedijk makes the printer's part precise as
+\paragraph{Statements printed from a prover.} Isabelle produces a document
+from theory sources, in which antiquotations such as \verb|@{thm}| and
+\verb|@{term}| print a theorem or a term, checked in the theory's context,
+with print modes and styles for the notation~\cite{Wenzel26,Wenzel18};
+\verb|@{thm[mode=Rule]}| sets a theorem as an inference
+rule~\cite{Haftmann26}. Its manual warns that the printed output ``is not
+under direct control of the author, it may even fluctuate a bit as the
+underlying theory is changed''~\cite[\S4.2]{Wenzel26}. HOL4's munger
+filters a hand-written \verb|.htex| file into a \verb|.tex| file, expanding
+\verb|\HOLthm{|\emph{theory}\verb|.|\emph{name}\verb|}| with options such as
+\verb|def|, \verb|rule| and \verb|nostile|, and with overrides that give
+each token its \LaTeX{} and its width~\cite{HOL25}. Ott and Lem compile a
+semantic definition, written in their own languages, both to \LaTeX{} and to
+provers' definitions; Ott also filters a \LaTeX{} file, parsing and
+printing the terms written in it~\cite{Sewell10,Mulligan14}, and Redex
+typesets models as pictures~\cite{Klein12}. lhs2TeX formats a literate
+Haskell file after only lexing it~\cite{Hinze25}; Agda highlights the source
+of a literate file it has checked~\cite{Agda26}; coqdoc prints Coq tokens
+by a lexer of its own, and warns ``garbage in, garbage
+out''~\cite{CoqDoc20}. Alectryon rewrites the marked blocks of a document,
+recording what Coq answers to the code in each~\cite{PitClaudel20}.
+Formalized Mathematics prints each Mizar article in English, generated
+from the article~\cite{Bancerek18}, and Coscoy, Kahn and Théry render Coq
+proofs as text~\cite{Coscoy95}. These tools check what they print from:
+the theory, the definition, or the term the author wrote. None reads the
+printed formula back, and none records a rendering to tell, later, that it
+is stale; each prints again on every build. imprimatur takes its view
+options from Isabelle and HOL4, and from Ott the splitting of a definition
+into rules.
+
+\paragraph{Lean and blueprints.} A blueprint is an informal account of a
+proof, written to guide its formalisation~\cite{Hales12}. leanblueprint,
+written for the sphere eversion project, ties each statement of a
+blueprint to Lean names with \verb|\lean|; the author marks it formalised
+with \verb|\leanok|, and \texttt{checkdecls} checks only that the names
+exist~\cite{VanDoorn23,Massot20}. Tao reports updating the marks by hand,
+and a hypothesis that the formalisation needed and the \LaTeX{} statement
+lacked~\cite{Tao23}. LeanArchitect sets the marks from the Lean
+development: a statement's \verb|\leanok| follows from \texttt{sorryAx} not
+being among its dependencies, and its text, written in the attribute that
+tags it, is \verb|\input| into the blueprint, but is not compared with its
+type~\cite{Zhu26}. Verso writes the whole document in Lean, and Verso
+Blueprint the blueprint~\cite{Christiansen23,GallegoArias26}; doc-gen4
+produces a library's documentation in HTML~\cite{Boving21}. Miller's
+LeanTeX prints a Lean expression as \LaTeX{} by rules of the author's, much
+as imprimatur's renderer does, but writes into no document~\cite{Miller23}.
+Comparator checks that a proof proves a challenge's statement, with only
+the axioms permitted~\cite{Boving25}; the Lean reference names what it
+leaves to people, a ``misleading presentation of the theorem statement
+\ldots{} in particular with regard to custom notation''~\cite{LeanFRO26},
+and Hales asks that a human audit of statement fidelity come before a
+proof is accepted~\cite{Hales26}. Cook's plectis registers each claim's
+wording with its Lean declarations, and checks hashes of marked passages
+against their sources~\cite{Cook26}, as a \verb|\leancheck| does in the
+paper itself. imprimatur renders the statement from Lean instead of having
+it written, and reads each formula back, so that what is audited is what
+was proved.
+
+\paragraph{Semantic markup.} sTeX ties a paper's formulas to formal symbols
+by macros the author writes~\cite{Kohlhase08}. Its authors report that it
+never gained much traction outside their group~\cite{Kohlhase21}, and that
+semantic annotation costs up to 25--30\% of a document's
+development~\cite{Mueller22}; imprimatur asks for notation rules and no
+markup. Naproche reverses the direction: its \LaTeX{} is the formal input,
+but the macros that only typeset are ignored by the logic, so the printed
+formula is not checked against it~\cite{Lichtnau21}.
+
+\paragraph{Text kept in step.} Knuth's \textsc{web} derives a program and
+its documentation from one source~\cite{Knuth84}. Cog regenerates text
+between markers in place, stops when a checksum shows the output was
+edited, and with \verb|--check| fails a build whose file is
+stale~\cite{Batchelder25}. imprimatur's splicer has this shape, with the
+generator outside the paper, slots for the authors' text inside a block,
+and a check that asks more of a block than that it is fresh. Ringer et al.\ survey proof
+engineering for program correctness, including how proofs must change as
+the programs they are about change~\cite{Ringer19}; a paper is one more
+artifact that must change with them.
+
+\paragraph{Checking a printer.} Pollack asks how a reader can believe a
+machine-checked proof, and separates whether it is a derivation from
+whether what it derives means what is claimed; for the second, the reader
+reads a printed formula, so the parser and printer must be trusted as well
+as the kernel~\cite{Pollack98}. Wiedijk makes the printer's part precise as
 Pollack-consistency, shows by hidden types, coercions and notation that
 HOL Light, Isabelle, Coq and Mizar fail it, and proposes printing each
 term, parsing it back, and falling back to a fail-safe syntax when the two
-differ~\cite{Wiedijk12}. imprimatur's printer is a paper's notation and its
-reader is a person, so it parses back in a grammar that stands in for the
-reader, and checks each formula rather than proving the printer; the prose
-layout it proves
-(Theorem~\ref{thm:The-prose-parser-undoes-the-layout}).
+differ~\cite{Wiedijk12}. Adams fixes HOL Zero's printer by design, by
+lexical marking and minimal type annotation; he notes that a printer that
+swapped \emph{true} and \emph{false} would be Pollack-consistent but not
+faithful, and suggests adding to the printers a check that printing parses
+back~\cite{Adams16}. Danielsson proves in Agda that a pretty-printer's
+output parses back to its input, given a grammar unambiguous for that
+output~\cite{Danielsson13}; Rendel and Ostermann derive a parser and a
+printer from one description~\cite{Rendel10}. Translation validation
+checks each run of a translator instead of proving the
+translator~\cite{Pnueli98,Necula00}, and a validator that is itself proved
+gives guarantees as strong as a proved translator's~\cite{Tristan08}.
+imprimatur's printer is a paper's notation and its reader is a person, so
+it parses back in a grammar that stands in for the reader, checks that the
+one reading is the statement rendered, and checks each formula rather
+than proving the printer. It proves the parser that reads back, and the prose layout's
+(Theorems~\ref{thm:The-parser-is-sound}
+and~\ref{thm:The-prose-parser-undoes-the-layout}).
 
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{imprimatur-paper}
