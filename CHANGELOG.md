@@ -5,6 +5,18 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The dependency cone and the axioms are computed once per constant for a
+  whole export, not once per entry: a cone's members are memoised as nodes
+  (their canonical text and what the walk follows from them, trusted
+  constants left out), a group's cones are united by a set, and the axioms
+  a constant depends on are kept across entries. LLMbda's paper exports in
+  21 s instead of 112 s, with the same bundle. The axioms are now walked by
+  imprimatur rather than by Lean's `collectAxioms`, whose per-module table
+  can hold a partial answer for a constant in a cycle (an inductive type
+  whose constructor's type depends on an axiom reported none, while its
+  constructor reported it); the walk keeps no answer that met a cycle in
+  progress, so such a constant now reports its axioms. A custom view that
+  needs a constant's axioms should call `Imprimatur.Axioms.collect`.
 - `imprimatur build --timing` (and `check`, `accept`, `show`) records where
   the time goes, in `.imprimatur/timing.jsonl`, and ends with a summary: the
   splicer's phases; the extractor's load, entries and write; each entry's

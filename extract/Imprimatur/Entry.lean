@@ -9,6 +9,7 @@ import Imprimatur.Compat
 import Imprimatur.Requests
 import Imprimatur.Views.Lean
 import Imprimatur.Trust
+import Imprimatur.Axioms
 import Imprimatur.Packs
 import Imprimatur.Views.Math
 import Imprimatur.Views.Rules
@@ -73,7 +74,7 @@ def sourceOf (root : System.FilePath) (n : Name) : MetaM (Option (String × Nat)
 
 /-- The axioms a constant depends on, sorted. -/
 def axiomsOf (n : Name) : MetaM (Array Name) := do
-  let ax ← collectAxioms n
+  let ax ← Axioms.collect n
   return ax.qsort (·.toString < ·.toString)
 
 /-- The macros a piece of TeX uses, sorted and without repeats. -/

@@ -115,6 +115,51 @@
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{Swap the components: an explicit binder and an implicit one.}"
       }
     },
+    "Basic.Wrap": {
+      "axioms": ["Classical.choice"],
+      "cone": {
+        "reasons": {},
+        "size": 5,
+        "untrusted": []
+      },
+      "decl": "Basic.Wrap",
+      "doc": "An inductive type in a cycle with its constructors, one of whose types\ndepends on an axiom through `pick`. Its axioms are `Classical.choice`,\nwhichever of the type and the constructor is asked first; Lean's own\n`collectAxioms` can answer none for the type.",
+      "kind": "inductive",
+      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource"],
+      "sigHash": "bb25d4bba9787b603473d846806dba1fabade8a65c0518cad982a3ffe1e0dd90",
+      "sorry": false,
+      "source": {
+        "line": 69,
+        "path": "Basic/Defs.lean"
+      },
+      "stmtHash": "b692347d3823f4721621604c7b356aebf396b8bc94068767704baec8f9c8ca00",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{inductive} \\LeanConst{Wrap} : \\LeanSort{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Classical.choice}{\\LeanSorryFree}{An inductive type in a cycle with its constructors, one of whose types\ndepends on an axiom through \\LeanCodeInline{pick}. Its axioms are \\LeanCodeInline{Classical.choice},\nwhichever of the type and the constructor is asked first; Lean's own\n\\LeanCodeInline{collectAxioms} can answer none for the type.}"
+      }
+    },
+    "Basic.Wrap.leaf": {
+      "axioms": ["Classical.choice"],
+      "cone": {
+        "reasons": {},
+        "size": 5,
+        "untrusted": []
+      },
+      "decl": "Basic.Wrap.leaf",
+      "kind": "constructor",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanMeta", "\\LeanSorryFree", "\\leanmetasource"],
+      "sigHash": "b8305f953d157a5d174cf3289e4ecca57ce29dd668ee7b97a2acb6ff1fcfc5b8",
+      "sorry": false,
+      "source": {
+        "line": 70,
+        "path": "Basic/Defs.lean"
+      },
+      "stmtHash": "a3f3a7bfe40f6f4ffbf64695db29895b53a0ee8f627d57ad17ea1d3def1722cc",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanConst{Wrap.leaf} (\\LeanBound{h} : \\LeanConst{pick} = \\LeanConst{pick}) : \\LeanConst{Wrap}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{Classical.choice}{\\LeanSorryFree}{}"
+      }
+    },
     "Basic.add_comm'": {
       "axioms": [],
       "cone": {
@@ -337,7 +382,7 @@
       "sigHash": "c6a7fa174bd29672889941a1355c9419810d90ef89889f0f057a8d08cb4495b9",
       "sorry": false,
       "source": {
-        "line": 67,
+        "line": 78,
         "path": "Basic/Defs.lean"
       },
       "stmtHash": "7ee9224f3516adf875bfdda5d2fd0b76b1ea1effa5c6ae10d2187f60f0d7cc51",
@@ -360,7 +405,7 @@
       "sigHash": "74b22aaa5f982a032555d7dd36f112371c93b7400c49d8bb3f71da8ffa631b39",
       "sorry": false,
       "source": {
-        "line": 65,
+        "line": 76,
         "path": "Basic/Defs.lean"
       },
       "stmtHash": "fd7335658139e616d5833d93890890ded5a340718db88898f1847e18df326c20",

@@ -46,7 +46,8 @@ def fixtures : Array Fixture := #[
     keys := #["Basic.Pair", "Basic.Pair.swap", "Basic.Pair.fst", "Basic.add_comm'", "Basic.Even",
       "Basic.Even.step", "Basic.oracle", "Basic.uses_oracle", "Basic.unfinished", "Basic.my_fun'",
       "Basic.long_statement", "Basic.secret", "Basic.instInhabitedPair", "Basic.em'",
-      "topLevel", "no_doc", "Basic.no_such_thing"] },
+      "topLevel", "no_doc", "Basic.no_such_thing",
+      "Basic.Wrap.leaf", "Basic.Wrap"] },
   { dir := "ModuleSys", module := `ModuleSys, strip := #[`ModuleSys],
     keys := #["ModuleSys.pub_thm", "ModuleSys.honest", "ModuleSys.via_all", "ModuleSys.plain_user"] },
   { dir := "Manifests", module := `Manifests, strip := #[`Cat],
@@ -279,6 +280,10 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     checkEq "extract/trust/custom-axiom" (axioms r.bundle "Basic.uses_oracle") #["Basic.oracle"]
     checkEq "extract/trust/classical-axioms" (axioms r.bundle "Basic.em'")
       #["Classical.choice", "Quot.sound", "propext"]
+    -- A cycle: the type's axioms include what its constructor's type depends
+    -- on, and asking the constructor first (the keys' order) changes nothing.
+    checkEq "extract/trust/cycle-axioms" (axioms r.bundle "Basic.Wrap") #["Classical.choice"]
+    checkEq "extract/trust/axioms-order" (axioms r.bundle "Basic.Wrap.leaf") #["Classical.choice"]
     checkEq "extract/trust/direct-sorry" (usesSorry r.bundle "Basic.unfinished") (some true)
     checkEq "extract/trust/no-sorry" (usesSorry r.bundle "Basic.add_comm'") (some false)
   | "ModuleSys" =>

@@ -193,6 +193,86 @@ def mentionsSorry (e : Expr) : Bool :=
 error rather than exploring a whole library. -/
 def maxCone : Nat := 2000
 
+/-- A constant as a member of a cone: its canonical text, the constants the
+walk follows from it, and its issues. It depends on the constant, the
+environment and the trusted prefixes alone, not on the declaration whose
+cone is walked, so it is computed once per export (`nodes`). -/
+structure Node where
+  /-- The canonical serialisation of what represents the constant. -/
+  text : String
+  /-- What the walk follows from it: each once, none trusted, not `sorryAx`. -/
+  next : Array Name
+  /-- Why it is untrusted, if it is. -/
+  issues : Array Issue
+
+/-- The nodes computed so far. The entries of one export share one
+environment; `resetMemo` clears it before an export in another. -/
+initialize nodes : IO.Ref (NameMap Node) ← IO.mkRef {}
+
+/-- Forget the nodes: the environment is about to change. -/
+def resetMemo : IO Unit := nodes.set {}
+
+/-- A short tag for the kind of constant. -/
+def kindTag : ConstantInfo → String
+  | .defnInfo _ => "def" | .thmInfo _ => "thm" | .axiomInfo _ => "ax" | .opaqueInfo _ => "opaque"
+  | .inductInfo _ => "ind" | .ctorInfo _ => "ctor" | .recInfo _ => "rec" | .quotInfo _ => "quot"
+
+/-- Sorted by the name's text, which is computed once per element. -/
+def sortByName {α : Type} (xs : Array (Name × α)) : Array (Name × α) :=
+  ((xs.map fun (n, a) => (n.toString, n, a)).qsort fun x y => decide (x.1 < y.1)).map fun (_, n, a) => (n, a)
+
+/-- The node of a constant, computed once. -/
+def node (prefixes : Array Name) (ci : ConstantInfo) : MetaM Node := do
+  let c := ci.name
+  if let some n := (← nodes.get).find? c then return n
+  let env ← getEnv
+  let ps := ci.levelParams
+  -- What represents the constant, and what the walk follows from it.
+  let mut parts : Array Expr := #[ci.type]
+  let mut next : Array Name := #[]
+  match ci with
+  | .defnInfo d =>
+    if isAux env c then
+      -- A matcher or recursor helper is determined by its type.
+      pure ()
+    else if isRecursive env c then
+      -- Compiled recursion differs between toolchains; its equations don't.
+      let eqns ← try getEqnsFor? c catch _ => pure none
+      match eqns with
+      | some es =>
+        for e in es do
+          parts := parts.push (← getConstInfo e).type
+      | none => parts := parts.push d.value
+    else
+      -- A non-recursive body is what the author wrote. (Generating
+      -- equations for it can be very expensive, spike S2 notwithstanding.)
+      parts := parts.push d.value
+  | .inductInfo i => next := next ++ i.ctors.toArray
+  | .ctorInfo i => next := next.push i.induct
+  | .recInfo i => next := next.push i.getMajorInduct
+  | _ => pure ()
+  let text := String.join (parts.toList.map (ser ps)) ++ s!" [{kindTag ci}]"
+  for p in parts do
+    next := next ++ p.getUsedConstants
+  -- A proof mentions the same constants many times over, most of them in
+  -- trusted modules: the walk is spared them.
+  let mut once : NameSet := {}
+  let mut kept : Array Name := #[]
+  for d in next do
+    if once.contains d || isTrusted env prefixes d || d == ``sorryAx then continue
+    once := once.insert d
+    kept := kept.push d
+  next := kept
+  -- Problems with this constant.
+  let mut issues : Array Issue := #[]
+  if parts.any mentionsSorry then issues := issues.push .usesSorry
+  if ci.isUnsafe then issues := issues.push .unsafe_
+  if isPartial env ci then issues := issues.push .partial_
+  if ci matches .axiomInfo .. then issues := issues.push .axiom_
+  let n := { text, next, issues }
+  nodes.modify (·.insert c n)
+  return n
+
 /-- The cone of a declaration. For a theorem or an axiom, the statement is
 its type, so the walk starts from the type's constants: the proof doesn't
 count. For anything else (a definition, an inductive type, …), what the
@@ -218,49 +298,11 @@ partial def cone (prefixes : Array Name) (ci : ConstantInfo) : MetaM Cone := do
     let some ci := env.find? c | continue
     if (← (IO.getEnv "IMPRIMATUR_TRACE" : IO _)) == some "1" then
       IO.eprintln s!"imprimatur-export:   cone {members.size}: {c} ({← IO.monoMsNow})"
-    let ps := ci.levelParams
-    -- What represents the constant, and what the walk follows from it.
-    let mut parts : Array Expr := #[ci.type]
-    let mut next : Array Name := #[]
-    match ci with
-    | .defnInfo d =>
-      if isAux env c then
-        -- A matcher or recursor helper is determined by its type.
-        pure ()
-      else if isRecursive env c then
-        -- Compiled recursion differs between toolchains; its equations don't.
-        let eqns ← try getEqnsFor? c catch _ => pure none
-        match eqns with
-        | some es =>
-          for e in es do
-            parts := parts.push (← getConstInfo e).type
-        | none => parts := parts.push d.value
-      else
-        -- A non-recursive body is what the author wrote. (Generating
-        -- equations for it can be very expensive, spike S2 notwithstanding.)
-        parts := parts.push d.value
-    | .inductInfo i => next := next ++ i.ctors.toArray
-    | .ctorInfo i => next := next.push i.induct
-    | .recInfo i => next := next.push i.getMajorInduct
-    | _ => pure ()
-    let text := String.join (parts.toList.map (ser ps)) ++ s!" [{kindTag ci}]"
-    members := members.push (c, text)
-    for p in parts do
-      next := next ++ p.getUsedConstants
-    todo := todo ++ next
-    -- Problems with this constant.
-    if parts.any mentionsSorry then issues := issues.push (c, .usesSorry)
-    if ci.isUnsafe then issues := issues.push (c, .unsafe_)
-    if isPartial env ci then issues := issues.push (c, .partial_)
-    if ci matches .axiomInfo .. then issues := issues.push (c, .axiom_)
-  let byName := fun (a b : Name × String) => decide (a.1.toString < b.1.toString)
-  return { members := members.qsort byName,
-           issues := issues.qsort (fun a b => decide (a.1.toString < b.1.toString)) }
-where
-  /-- A short tag for the kind of constant. -/
-  kindTag : ConstantInfo → String
-    | .defnInfo _ => "def" | .thmInfo _ => "thm" | .axiomInfo _ => "ax" | .opaqueInfo _ => "opaque"
-    | .inductInfo _ => "ind" | .ctorInfo _ => "ctor" | .recInfo _ => "rec" | .quotInfo _ => "quot"
+    let n ← node prefixes ci
+    members := members.push (c, n.text)
+    todo := todo ++ n.next
+    issues := issues ++ n.issues.map (c, ·)
+  return { members := sortByName members, issues := sortByName issues }
 
 /-- The canonical text whose hash is `stmtHash`: the type, then each member
 of the cone with its name. -/
@@ -270,10 +312,9 @@ def stmtText (ci : ConstantInfo) (c : Cone) : String :=
 
 /-- The union of two cones, sorted. -/
 def Cone.union (a b : Cone) : Cone :=
-  { members := (a.members ++ b.members.filter fun (n, _) => !a.members.any (·.1 == n)).qsort
-      fun x y => decide (x.1.toString < y.1.toString),
-    issues := (a.issues ++ b.issues.filter fun i => !a.issues.any (· == i)).qsort
-      fun x y => decide (x.1.toString < y.1.toString) }
+  let names : NameSet := a.members.foldl (fun s (n, _) => s.insert n) {}
+  { members := sortByName (a.members ++ b.members.filter fun (n, _) => !names.contains n),
+    issues := sortByName (a.issues ++ b.issues.filter fun i => !a.issues.any (· == i)) }
 
 /-- The canonical text whose hash is a group's `stmtHash`: its members' types,
 then each member of their united cone with its name. A group states what

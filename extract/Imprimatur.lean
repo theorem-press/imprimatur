@@ -11,6 +11,7 @@ import Imprimatur.TeX
 import Imprimatur.Compat
 import Imprimatur.Sha256
 import Imprimatur.Trust
+import Imprimatur.Axioms
 import Imprimatur.Notation
 import Imprimatur.Commands
 import Imprimatur.Packs
