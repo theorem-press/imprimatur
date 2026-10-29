@@ -18,7 +18,7 @@ latex_style categories := strict
 latex_style lists := literal
 
 -- The splicer's functions.
-latex_notation SpliceModel.apply b d => r"\mathsf{apply}_{#b}(#d)"
+latex_notation SpliceModel.apply b d => r"\mathsf{splice}_{#b}(#d)"
 latex_notation SpliceModel.check b d => r"\mathsf{check}_{#b}(#d)"
 latex_notation SpliceModel.accept b d => r"\mathsf{accept}_{#b}(#d)"
 latex_notation SpliceModel.regen b p => r"\mathsf{regen}_{#b}(#p)"
@@ -431,6 +431,6 @@ latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound
 latex_entry "Prose shows the statement" => SpliceModel.prose_true
 latex_entry "Rules show the predicate" => SpliceModel.rules_true
 latex_entry "Extraction is true" => SpliceModel.Validated.extract_true
-latex_entry "The requests of Figure 1" => About.figureRequests
+latex_entry "The requests of Figure 2" => About.figureRequests
 latex_entry "Building regenerates blocks, once" => SpliceModel.apply_laws
 latex_entry "A paper that checks clean is true and reads only as Lean's" => SpliceModel.Validated.paper_true

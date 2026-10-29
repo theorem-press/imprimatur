@@ -68,6 +68,8 @@ FILES: list[tuple[str, list[str]]] = [
         "extract/Imprimatur/Doc.lean",
         "extract/Imprimatur/Entry.lean",
         "extract/Imprimatur/Export.lean",
+        "extract/Imprimatur/Axioms.lean",
+        "extract/Imprimatur/Timing.lean",
         "extract/Imprimatur/Requests.lean",
         "extract/Imprimatur/Sha256.lean",
         "extract/Imprimatur/Trust.lean",
@@ -101,6 +103,7 @@ FILES: list[tuple[str, list[str]]] = [
         "splice/Splice/Cli.lean",
         "splice/Splice/Version.lean",
         "splice/Splice/Wrapper.lean",
+        "splice/Splice/Timing.lean",
     ]),
     ("Model\nand laws", [
         "splice/SpliceModel.lean",
@@ -139,6 +142,7 @@ FILES: list[tuple[str, list[str]]] = [
         "splice/test/SpliceTest/Props.lean",
         "splice/test/SpliceTest/Reference.lean",
         "splice/test/SpliceTest/Unit.lean",
+        "splice/test/SpliceTest/Timing.lean",
     ]),
     ("This paper:\nexample, notation", [
         "about/lean/About.lean",
