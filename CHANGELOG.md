@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `imprimatur build --timing` (and `check`, `accept`, `show`) records where
+  the time goes, in `.imprimatur/timing.jsonl`, and ends with a summary: the
+  splicer's phases; the extractor's load, entries and write; each entry's
+  stages; each view, with the time its context and grammar took; and, when
+  formulas are validated, each formula with its tokens and the parser's
+  steps. The summary names the slowest entries, views and formulas, so that
+  the first thing to make faster is on the console (#85).
 - A premise that `latex_metavar_convention` hides is no longer lost: the
   `prose` view binds the variable it names in the predicate, `Let
   $\val \in \mathit{Val}$` for a hidden `IsValue v`, instead of in its

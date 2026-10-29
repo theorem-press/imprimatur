@@ -210,6 +210,11 @@ def algebra : SortAlgebra := leanSorts
 def readBack (g : Grammar) (ts : Array String) (s : String) : Array Reading × Flags :=
   readBackWith algebra g ts s
 
+/-- `readBack`, with the parser's steps: its work, against its budget. -/
+def readBackSteps (g : Grammar) (ts : Array String) (s : String) : Array Reading × Flags × Nat :=
+  let p := (readings algebra g ts s).run {}
+  (p.1, p.2.flags g, p.2.steps)
+
 /-- `readBack`, with a log of what was read where. -/
 def readBackLog (g : Grammar) (ts : Array String) (s : String) : Array Reading × Array String :=
   readBackLogWith algebra g ts s

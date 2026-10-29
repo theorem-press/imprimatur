@@ -6,6 +6,7 @@ import SpliceTest.Unit
 import SpliceTest.Golden
 import SpliceTest.Props
 import SpliceTest.Diff
+import SpliceTest.Timing
 import Testkit
 
 /-!
@@ -29,3 +30,4 @@ def main : IO UInt32 :=
     SpliceTest.Golden.tests
     SpliceTest.Props.tests
     SpliceTest.Diff.tests
+    SpliceTest.Timing.tests

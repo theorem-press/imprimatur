@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Cli
+import Splice.Timing
 
 /-!
 # The `imprimatur` command
@@ -23,6 +24,8 @@ How the extractor runs depends on the mode (DESIGN §6.3):
   doesn't change and isn't built.
 
 Requests and the bundle go in `.imprimatur/` next to `imprimatur.toml`.
+With `--timing`, so does `timing.jsonl`, where the splicer and the extractor
+record where the time went, summarised at the end (`Splice.Timing`).
 -/
 
 namespace Splice.Wrapper
@@ -31,16 +34,18 @@ open Cli Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
-  "usage: imprimatur [--config FILE] build [apply options]
-       imprimatur [--config FILE] check [check options]
+  "usage: imprimatur [--config FILE] build [--timing] [apply options]
+       imprimatur [--config FILE] check [--timing] [check options]
        imprimatur [--config FILE] accept KEY... | --all
-       imprimatur [--config FILE] show KEY [--view VIEW]...
+       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing]
        imprimatur toolchain install VERSION   (for mode = \"external\")
        imprimatur [--config FILE] scan|apply|check|strip|migrate-slots ...  (see imprimatur-splice --help)"
 
-/-- Run `lake` in `dir`; on failure, return its output as an error. -/
-def lake (dir : System.FilePath) (args : Array String) : ExceptT String IO String := do
-  let out ← IO.Process.output { cmd := "lake", args, cwd := dir }
+/-- Run `lake` in `dir`, with `env` added to the environment; on failure,
+return its output as an error. -/
+def lake (dir : System.FilePath) (args : Array String) (env : Array (String × Option String) := #[]) :
+    ExceptT String IO String := do
+  let out ← IO.Process.output { cmd := "lake", args, cwd := dir, env }
   if out.exitCode != 0 then
     throw s!"`lake {" ".intercalate args.toList}` failed in {dir}:\n{out.stdout}{out.stderr}"
   return out.stdout ++ out.stderr
@@ -102,6 +107,21 @@ def docViews (doc : Doc) (key : String) : Option (Array String) := Id.run do
         unless vs.contains v do vs := vs.push v
   return if vs.isEmpty then none else some vs
 
+/-- The timing log of a run with `--timing`, relative to `root`. -/
+def timingFile : String := ".imprimatur/timing.jsonl"
+
+/-- Record a phase of the splicer's in the timing log, if there is one. -/
+def timingEvent (root : System.FilePath) (a : Args) (phase : String) (ms : Nat) : IO Unit := do
+  unless a.timing do return
+  let h ← IO.FS.Handle.mk (root / timingFile) .append
+  h.putStrLn s!"\{\"at\": \"splice\", \"phase\": \"{phase}\", \"ms\": {ms}}"
+
+/-- The summary of the timing log, if there is one, for the end of the output. -/
+def timingSummary (root : System.FilePath) (a : Args) : IO String := do
+  unless a.timing do return ""
+  let text ← IO.FS.readFile (root / timingFile)
+  return Timing.summary text timingFile
+
 /-- Load the document, write requests (all of the document's, or `only`
 one key's), and run the extractor. Returns the bundle's path relative to
 `root`, and the extractor's warnings; or, if the document has errors, those
@@ -113,7 +133,9 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   let cfg ← match Config.parse cfgText with
     | .ok c => pure c
     | .error e => throw s!"{cfgFile}: {e}"
+  let tScan ← IO.monoMsNow
   let doc ← (Doc.loadIO cfg root : IO Doc)
+  let scanMs := (← IO.monoMsNow) - tScan
   if cfg.imports.isEmpty && doc.manifests.all (·.solutionModule.isNone) then
     throw s!"{cfgFile}: set imports, the Lean modules to read declarations from"
   if hasErrors doc.diags then
@@ -123,6 +145,13 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   let workAbs ← IO.FS.realPath work
   let reqs := workAbs / "requests.json"
   let bundle := workAbs / "bundle.json"
+  -- A run's timing log starts empty; the extractor appends to it.
+  let timing := workAbs / "timing.jsonl"
+  let env : Array (String × Option String) ← if a.timing then do
+      if ← timing.pathExists then IO.FS.removeFile timing
+      timingEvent root a "scan" scanMs
+      pure #[("IMPRIMATUR_TIMING", some timing.toString)]
+    else pure #[]
   let only := only.map fun (k, vs) =>
     (k, if vs.isEmpty then (docViews doc k).getD #["math"] else vs)
   writeAtomic reqs (requests doc only)
@@ -130,6 +159,7 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   unless ← leanDir.pathExists do throw s!"lean_project {cfg.leanProject} does not exist"
   let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString,
     "--base", (← IO.FS.realPath root).toString]
+  let tExport ← IO.monoMsNow
   let exportOut ← if cfg.mode == "external" then
       -- External mode (DESIGN §6.3 A): a cached extractor built with the host's
       -- toolchain runs under the host's `lake env`. Nothing in the host changes,
@@ -140,14 +170,15 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
       let exe ← cachedExtractor version
       unless ← exe.pathExists do
         throw s!"no extractor for Lean {version}; run: imprimatur toolchain install {version}"
-      lake leanDir (#["env", exe.toString] ++ exportArgs)
+      lake leanDir (#["env", exe.toString] ++ exportArgs) env
     else do
       -- In-project and sidecar modes: the package requires imprimatur.
       let modules := doc.manifests.foldl (fun acc m =>
         (match m.solutionModule with | some sm => acc.push sm | none => acc) |>
         fun acc => match m.challengeModule with | some cm => acc.push cm | none => acc) cfg.imports
       discard <| lake leanDir (#["build", "-q"] ++ modules)
-      lake leanDir (#["exe", "imprimatur-export"] ++ exportArgs)
+      lake leanDir (#["exe", "imprimatur-export"] ++ exportArgs) env
+  timingEvent root a "export" ((← IO.monoMsNow) - tExport)
   -- Only warnings are of interest: the extractor's, and Lean's about the
   -- notation files it elaborates (`file:line:col: warning: …`).
   let warnings := (exportOut.splitOn "\n").filter fun l =>
@@ -160,8 +191,10 @@ def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × Stri
   match ← runExport root a with
   | .error r => return r
   | .ok (_, rel, warnings) =>
+    let t0 ← IO.monoMsNow
     let (code, out) ← (Cli.run (cliArgs a rel) root : IO _)
-    return (code, warnings ++ out)
+    timingEvent root a (if a.command == "build" then "apply" else a.command) ((← IO.monoMsNow) - t0)
+    return (code, warnings ++ out ++ (← timingSummary root a))
 where
   /-- The splicer's arguments for the same run. -/
   cliArgs (a : Args) (bundle : String) : List String :=
@@ -206,7 +239,8 @@ def «show» (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × 
     if e.verdict.usesSorry then out := out ++ "uses sorry\n"
     let n := (e.statement.views.filter (wanted.contains ·.1)).size
     return (if e.statement.errors.isEmpty then 0 else 1,
-      out ++ s!"show: {n} view{if n == 1 then "" else "s"}, {problems} problem{if problems == 1 then "" else "s"}\n")
+      out ++ s!"show: {n} view{if n == 1 then "" else "s"}, {problems} problem{if problems == 1 then "" else "s"}\n" ++
+        (← timingSummary root a))
 
 /-- Run `imprimatur` with arguments `args` in directory `root`. -/
 def run (args : List String) (root : System.FilePath) : IO (UInt32 × String) := do

@@ -188,6 +188,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§4 | (7) environments are imported at `private` level | `extract/modules/private-sorry-seen`, `extract/modules/sorry-through-import-all`, `extract/golden/ModuleSys` | M2 |
 | D§5 | extractor and splicer communicate only through the bundle | `splice/version/schema`, `extract/version/schema` | M1 |
 | D§5 | `imprimatur build` runs scan, export, apply; `check` passes after it | `e2e/minimal`, `e2e/sidecar` | M2 |
+| D§5 | `--timing` logs the splicer's and the extractor's phases, entries, views and formulas, and the summary names the slowest | `splice/timing/summary-phases`, `splice/timing/summary-slowest-formula`, `e2e/external` | — |
 | D§6.1 | `imprimatur.toml` is parsed; unknown keys and bad values are reported | `splice/toml/parses`, `splice/toml/duplicate-key`, `splice/toml/error-line`, `splice/config/parses`, `splice/config/unknown-key`, `splice/config/alias-needs-view`, `splice/config/url-needs-template`, `splice/golden/config-errors` | M1 |
 | D§6.2 | the notation module is elaborated and its names resolved, in-project and as a file in external mode | `extract/golden/Notation`, `e2e/minimal`, `e2e/external` | M4 |
 | D§6.3 | sidecar and in-project modes | `e2e/minimal`, `e2e/sidecar` | M2 |

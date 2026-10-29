@@ -83,9 +83,11 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
             Views.indexViews.contains (parseViewSpec v).base
         if group.isSome || disp.isSome || custom then
           let act : CoreM (Entry (Image TeX) Verdict) := (groupEntry s r group used extra root disp).run' {} {}
+          let t0 ← IO.monoMsNow
           match ← (act.toIO coreCtx { env }).toBaseIO with
           | .ok (j, _) => entries := entries.push (r.key, j)
           | .error e => warnings := warnings.push s!"{r.key}: {e}"
+          Timing.event "entry" ((← IO.monoMsNow) - t0) [("key", Lean.toJson r.key)]
         else warnings := warnings.push s!"{r.key}: no declaration or group with this name"
         continue
     let act : CoreM (Entry (Image TeX) Verdict) := do
@@ -100,6 +102,7 @@ def exportEntries (env : Environment) (root : System.FilePath) (s : Settings)
         IO.eprintln s!"imprimatur-export: {r.key}: cone {size}, {(← IO.monoMsNow) - t0} ms"
     catch e =>
       warnings := warnings.push s!"{r.key}: {e}"
+    Timing.event "entry" ((← IO.monoMsNow) - t0) [("key", Lean.toJson r.key)]
   return (entries, warnings)
 
 /-- The text of a bundle: the file is the JSON of the type (`Imprimatur.Bundle`). -/

@@ -2,4 +2,5 @@
 !(cd host && lake build -q)
 build
 accept --all
-check
+# With the timing log and its summary; nothing in the document changes.
+check --timing
