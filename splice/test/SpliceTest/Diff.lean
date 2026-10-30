@@ -40,7 +40,7 @@ def textAgrees (t : String) : Except String Unit := do
 /-- The `.tex` files of the corpus, relative to this directory. -/
 partial def corpus : IO (Array System.FilePath) := do
   let mut out := #[]
-  for root in ["../../test/tex", "../../examples", "../../about"] do
+  for root in ["../../test/tex", "../../examples"] do
     out := out ++ (← walk root)
   return out.qsort (·.toString < ·.toString)
 where
@@ -120,17 +120,17 @@ def timeScan (f : Unit → String) : IO (Nat × Nat) := do
   let t1 ← IO.monoMsNow
   return (t1 - t0, n)
 
-/-- The timing gate (docs/verified-splicer.md, Performance): on the about
-paper repeated to about 0.7 MB and 1.4 MB, the scanner is at most five times
-slower than the reference, and doubling the input at most about doubles its
-time. The largest also checks that the scanner's recursion is not as deep as
-the file. -/
+/-- The timing gate (docs/verified-splicer.md, Performance): on the built
+semantics example repeated to about 0.8 MB and 1.6 MB, the scanner is at
+most five times slower than the reference, and doubling the input at most
+about doubles its time. The largest also checks that the scanner's recursion
+is not as deep as the file. -/
 def scanSpeed : TestM Unit := do
-  let path : System.FilePath := "../../about/imprimatur-paper.tex"
+  let path : System.FilePath := "../../examples/semantics/expected/paper.tex"
   let base ← IO.FS.readFile path
   let cfg ← configFor path
   let mut times : Array Nat := #[]
-  for k in [8, 16] do
+  for k in [64, 128] do
     let s := Splice.Src.ofString "big.tex" (String.join (List.replicate k base))
     let (tn, n1) ← timeScan fun _ => scanShown (Splice.scanSrcWith cfg s #[] true)
     let (to, n2) ← timeScan fun _ => scanShown (Reference.scanSrcWith cfg s #[] true)

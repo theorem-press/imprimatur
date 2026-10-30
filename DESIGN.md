@@ -1024,7 +1024,6 @@ imprimatur/
   tex/imprimatur.sty
   docs/                           blocks.md notation.md views.md trust.md TESTING.md spikes/
   examples/                       minimal/ sidecar/ external/ semantics/
-  about/                          a paper about imprimatur, and lean/, its model of the splicer
   .github/workflows/              ci.yml (the toolchain matrix), pages.yml
 ```
 
@@ -1171,8 +1170,8 @@ strings and so can be proved in Lean, where the splicer is written:
 - **slot preservation:** slot text survives regeneration.
 
 They are proved in Lean for a model of the splicer, in which a document is
-already parsed into pieces (`splice/SpliceModel`, presented in
-`about/imprimatur-paper.tex`, a paper built and checked with imprimatur),
+already parsed into pieces (`splice/SpliceModel`, presented in a paper
+about imprimatur, built and checked with imprimatur, in its own repository),
 and for the splicer's own code, the functions the binary runs
 (docs/verified-splicer.md): its scanner is lossless
 (`Splice.Core.Scan.print_scan`); an ordinary slot merge is the model's

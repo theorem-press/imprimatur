@@ -68,11 +68,11 @@ While the splicer is rewritten as a verified core (docs/verified-splicer.md),
 each rewritten function is run beside the code it replaces, kept verbatim in
 `splice/test/SpliceTest/Reference.lean`, and the two must agree: on
 generated input (`splice/diff/text`), and on every `.tex` file of the test
-cases, the examples and the about paper (`splice/diff/text-corpus`). A
+cases and the examples (`splice/diff/text-corpus`). A
 function's reference copy goes when its phase is complete. The scanner is
 compared on whole scan results, for typeset and untypeset files, with and
 without switches (`splice/diff/scan*`), and timed against the reference on
-the about paper repeated to 0.7 and 1.4 MB: at most five times slower, and
+the built semantics example repeated to 0.8 and 1.6 MB: at most five times slower, and
 no worse than linear (`splice/diff/scan-speed-*`, `splice/diff/scan-linear`).
 The timing gate caught a block reader that measured the rest of the file
 for every block, which made scanning quadratic.
@@ -103,8 +103,7 @@ for every block, which made scanning quadratic.
 
 **Everything is in this repository.** Every test runs from this repository
 alone, so anyone can contribute without access to the papers imprimatur is
-used for. The fixtures, examples and the paper about imprimatur stand in for
-them, with no Mathlib. Projects that use imprimatur check their own papers
+used for. The fixtures and examples stand in for them, with no Mathlib. Projects that use imprimatur check their own papers
 with it, in their own repositories.
 
 ## Running the tests
@@ -212,13 +211,13 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.5 | the bundle records the macros each rendering uses | `extract/golden/Notation` | M4 |
 | D§7.5 | binder patterns, partial applications, `flatten` with `sep`, `assoc`, `latex_style`, `latex_entry`, Greek letters, several notation files | `extract/golden/Notation` (`math:binders`), `extract/golden/Semantics` | M5 |
 | D§7.5 | `break`: a long rendering breaks the line before a rule's operator | `extract/notation/break-before-operator` | M6 |
-| D§18.2 | the splicer's laws and Theorem 1, proved for a model of the splicer; the paper presenting them is built and checked with no warnings | `e2e/about` | M5 |
+| D§18.2 | the splicer's laws and Theorem 1, proved for a model of the splicer (`splice/SpliceModel`, built with the splicer); the paper presenting them is built and checked in its own repository | `lint/verified` | M5 |
 | D§18.4 | translation validation: tokens, productions of rules, readings counted up to two, sorts and type variables, coercions, chains, the built-in forms | `extract/validate/tokens`, `extract/validate/tokens-code`, `extract/validate/production`, `extract/validate/production-atomic`, `extract/validate/production-coercion`, `extract/validate/ambiguous`, `extract/validate/no-reading-without-parens`, `extract/validate/one-reading-with-parens`, `extract/validate/assoc-left`, `extract/validate/assoc-none`, `extract/validate/sorts`, `extract/validate/coercion-one-reading`, `extract/validate/flatten`, `extract/validate/builtin-implies`, `extract/validate/builtin-forall`, `extract/validate/tyvar-ill-sorted`, `extract/validate/tyvar-unknown`, `extract/validate/tyvar-binds`, `extract/validate/sort-arrow`, `extract/validate/sort-arrow-differs`, `extract/validate/sort-args-differ`, `extract/validate/sort-args-open`, `extract/validate/coercion-sorts`, `extract/validate/coercion-sorts-needed`, `extract/validate/application-curried`, `extract/validate/synonym`, `extract/validate/unmodelled` | M5 |
 | D§18.4 | chains of hidden coercions: the renderer hides a coercion only where the reader's chain rule allows it, so the reader reads what it prints; the counterexample of docs/coercion-chains.md prints apart | `extract/chain/pun-printed-apart`, `extract/prop/chain-rule-reads-renderings` | M6 |
 | D§7.6 | a premise a metavariable convention hides is still said: the prose view binds the variable in the predicate, and the table of conventions lists the convention with where the predicate is shown | `extract/index/convention-binds`, `extract/index/convention-row`, `extract/index/convention-shown`, `extract/index/golden` | M6 |
 | D§18.4 | an application has the function's codomain for its sort, and a function of a named type or of unknown sort still applies | `extract/validate/application-typed`, `extract/validate/application-named`, `extract/validate/application-unknown`, `extract/validate/application-ill-typed` | M6 |
 | D§18.4 | list literals, and types such as `[n]` not read as lists; `Sort*`; a constant applied is one reading | `extract/validate/list-literal`, `extract/validate/list-or-type`, `extract/validate/type-not-list`, `extract/validate/sort-star-type`, `extract/validate/sort-star-not-value`, `extract/validate/app-constant` | M5 |
-| D§18.3 | side condition 5: a variable that prints as another type's category letter is reported | `extract/golden/Semantics` (`Stlc.size_pos`), `e2e/about` | M5 |
+| D§18.3 | side condition 5: a variable that prints as another type's category letter is reported | `extract/golden/Semantics` (`Stlc.size_pos`) | M5 |
 | D§18.4 | the bundle records each view's problems; `check` warns at typeset blocks only, for the view they show | `extract/golden/Notation`, `extract/golden/Semantics`, `splice/golden/validation` | M5 |
 | D§18.4 | a template that drops a pattern variable is a warning | the `#guard_msgs` test in `extract/test/ExtractTest/Validate.lean` | M5 |
 | D§7.5 | `latex_style pattern_matching` and `lists`; case patterns and λ binders renamed when in scope; unused binders `_`; proof λs hidden; constructors shown in patterns; equation binders named by category or parameter, authors' names kept | `extract/golden/Patterns`, `extract/golden/Semantics`, `e2e/semantics` | M5 |
