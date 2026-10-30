@@ -20,6 +20,8 @@ introduction's:
 - `extract_true`: the bundle the extractor writes is true;
 - `clean_true`: a document that checks clean against a true bundle is true
   of the development;
+- `check_sound`: and reads only as Lean's: the second arrow of the
+  introduction's diagram, of a true bundle;
 - `apply_laws`: building changes the document's blocks only, at once, and
   leaves nothing stale;
 - `paper_true`: a document that checks clean against the bundle the
@@ -118,13 +120,23 @@ theorem pollack_of_check (hX : X.Prints) {b : Bundle} {d : Doc} (hb : b.True X.w
   · unfold ReadsAs
     split <;> simp_all
 
+/-- **Checking is sound.** If the extractor prints as it is trusted to and
+`check` reports nothing against a bundle that is true of the development,
+the document is true of it, and each of its formulas reads only as the part
+of the statement it was printed from: what the second arrow of the
+introduction's diagram claims, given the first. -/
+theorem check_sound (hX : X.Prints) {b : Bundle} {d : Doc} (hb : b.True X.world id)
+    (hc : check b d = []) : d.True X.world ∧ X.Pollack d :=
+  ⟨X.clean_true hb hc, X.pollack_of_check hX hb hc⟩
+
 /-- **A paper that checks clean is true, and reads only as Lean's.** If the
 extractor prints as it is trusted to and `check` reports nothing against the
 bundle it writes, the document is true of the development, and each of its
-formulas reads only as the part of the statement it was printed from. -/
+formulas reads only as the part of the statement it was printed from: the
+two arrows of the introduction's diagram, composed. -/
 theorem paper_true (hX : X.Prints) {rs : List (Key × List View)} {b : Bundle} {d : Doc}
     (hb : b = X.extract rs) (hc : check b d = []) : d.True X.world ∧ X.Pollack d :=
-  ⟨X.clean_true (X.extract_true hb) hc, X.pollack_of_check hX (X.extract_true hb) hc⟩
+  X.check_sound hX (X.extract_true hb) hc
 
 end Validated
 
