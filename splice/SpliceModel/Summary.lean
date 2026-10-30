@@ -18,6 +18,8 @@ it was printed from), and composes the paper's theorems into the
 introduction's:
 
 - `extract_true`: the bundle the extractor writes is true;
+- `clean_true`: a document that checks clean against a true bundle is true
+  of the development;
 - `apply_laws`: building changes the document's blocks only, at once, and
   leaves nothing stale;
 - `paper_true`: a document that checks clean against the bundle the
@@ -88,6 +90,13 @@ theorem extract_true {rs : List (Key × List View)} {b : Bundle} (hb : b = X.ext
     · assumption
     · simp at h
 
+/-- **A paper that checks clean is true.** If `check` reports nothing against a
+bundle that is true of the development, the document is true of it: the
+splicer's main theorem (`document_true`), for the world of a development. -/
+theorem clean_true {b : Bundle} {d : Doc} (hb : b.True X.world id) (hc : check b d = []) :
+    d.True X.world :=
+  document_true hb hc
+
 /-- A document that checks clean against a true bundle is Pollack-consistent. -/
 theorem pollack_of_check (hX : X.Prints) {b : Bundle} {d : Doc} (hb : b.True X.world id)
     (hc : check b d = []) : X.Pollack d := by
@@ -115,7 +124,7 @@ bundle it writes, the document is true of the development, and each of its
 formulas reads only as the part of the statement it was printed from. -/
 theorem paper_true (hX : X.Prints) {rs : List (Key × List View)} {b : Bundle} {d : Doc}
     (hb : b = X.extract rs) (hc : check b d = []) : d.True X.world ∧ X.Pollack d :=
-  ⟨document_true (X.extract_true hb) hc, X.pollack_of_check hX (X.extract_true hb) hc⟩
+  ⟨X.clean_true (X.extract_true hb) hc, X.pollack_of_check hX (X.extract_true hb) hc⟩
 
 end Validated
 
