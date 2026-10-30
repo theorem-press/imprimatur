@@ -156,40 +156,49 @@ splicer's, and the argument is what it is asked about:
   $\mathsf{check}_{b}(d) = []$.
 \end{itemize}
 The paper's results are about these three, and each is proved in Lean. The
-first two say that each program does its part:
+first two are the relations beneath the arrows:
 
 \begin{leantheorem}[sum=ohIfXYzy6m]{Extraction is true}{Extraction is true}
 \label{thm:Extraction-is-true}
 \LeanProse{Let $X \in \texttt{Validated}$, $\mathit{rs} \in \mathsf{List}(\mathit{Key} \times \mathsf{List}(\mathit{View}))$ and $b \in \mathit{Bundle}$. Assume $b = \mathsf{extract}_{X}(\mathit{rs})$. Then $\mathsf{world}(X) \models b$.}
 \end{leantheorem}
 
+\begin{leantheorem}[sum=AlJ52tDsqN]{A paper that checks clean is true}{A paper that checks clean is true}
+\label{thm:A-paper-that-checks-clean-is-true}
+\LeanProse{Let $X \in \texttt{Validated}$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{world}(X) \models b$ and $\mathsf{check}_{b}(d) = []$. Then $\mathsf{world}(X) \models d$.}
+\end{leantheorem}
+
+\noindent The bundle says of each key what Lean states and whether its
+proof is trusted, and each view it does not flag reads back as the
+statement (Section~\ref{sec:meaning}). A paper that checks clean against
+such a bundle is true of the development: every generated block is the
+rendering of its key's statement, the key is proved with trusted axioms,
+and every attested sentence carries the hash of the statement it was
+checked against (Sections~\ref{sec:check} and~\ref{sec:attested}). This
+is the paper's main theorem
+(Theorem~\ref{thm:The-typeset-mathematics-is-true}), which holds of any
+bundle that is true, here the one extraction makes; we prove it twice: for
+a model of the splicer, in which a document is already parsed into pieces,
+and for the splicer's own code, which the model abstracts
+(Section~\ref{sec:code}). The third says that building does its part:
+
 \begin{leantheorem}[sum=IQM5E09fop]{Building regenerates blocks, once}{Building regenerates blocks, once}
 \label{thm:Building-regenerates-blocks,-once}
 \LeanProse{Let $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{wf}(b)$. Then (1)~$\lfloor \mathsf{splice}_{b}(d) \rfloor = \lfloor d \rfloor$, (2)~$\mathsf{splice}_{b}(\mathsf{splice}_{b}(d)) = \mathsf{splice}_{b}(d)$ and (3)~$\forall k : \mathit{Key},\ \mathsf{stale}(k) \notin \mathsf{check}_{b}(\mathsf{splice}_{b}(d))$.}
 \end{leantheorem}
 
-\noindent The bundle says of each key what Lean states and whether its
-proof is trusted, and each view it does not flag reads back as the
-statement (Section~\ref{sec:meaning}).
-
-Building rewrites only the generated
-blocks, keeping the authors' text in their slots, once, and leaves nothing
-stale (Section~\ref{sec:laws}). The third says that together they make the
-paper true:
+\noindent Building rewrites only the generated blocks, keeping the
+authors' text in their slots, once, and leaves nothing stale
+(Section~\ref{sec:laws}). The fourth puts the first two together, and adds
+that the paper reads only as Lean's:
 
 \begin{leantheorem}[sum=sWXEMdMl7w]{A paper that checks clean is true and reads only as Lean's}{A paper that checks clean is true and reads only as Lean's}
 \label{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
 \LeanProse{Let $X \in \texttt{Validated}$, $\mathit{rs} \in \mathsf{List}(\mathit{Key} \times \mathsf{List}(\mathit{View}))$, $b \in \mathit{Bundle}$ and $d \in \mathit{Doc}$. Assume $\mathsf{prints}(X)$, $b = \mathsf{extract}_{X}(\mathit{rs})$ and $\mathsf{check}_{b}(d) = []$. Then (1)~$\mathsf{world}(X) \models d$ and (2)~$\mathsf{pollack}_{X}(d)$.}
 \end{leantheorem}
 
-\noindent Its first half is the paper's main theorem
-(Theorem~\ref{thm:The-typeset-mathematics-is-true}): every generated block
-is the rendering of its key's statement, the key is proved with trusted
-axioms, and every attested sentence carries the hash of the statement it
-was checked against (Sections~\ref{sec:check} and~\ref{sec:attested}). It
-holds of any bundle that is true, and we prove it twice: for a model of the
-splicer, in which a document is already parsed into pieces, and for the
-splicer's own code, which the model abstracts (Section~\ref{sec:code}). Its
+\noindent Its first half is Theorem~\ref{thm:A-paper-that-checks-clean-is-true}
+by Theorem~\ref{thm:Extraction-is-true}. Its
 second half is Pollack-consistency~\cite{Pollack98,Wiedijk12}, of the whole
 document:
 
@@ -211,8 +220,8 @@ which we prove sound and complete (Section~\ref{sec:faithful}). What is left
 to trust is what $\mathsf{prints}(X)$ assumes: that the extractor prints a
 statement as the notation and its layouts say.
 
-Section~\ref{sec:example} works the three theorems through for the running
-example.
+Section~\ref{sec:example} works the introduction's theorems through for
+the running example.
 
 \subsection{The trusted base}\label{sec:trusted}
 
@@ -304,8 +313,8 @@ paper adds the following.
   file between the prover and the paper a type and a meaning, and prove in
   Lean that a paper that checks clean against a true bundle is true of the
   development (Theorems~\ref{thm:Extraction-is-true}
-  and~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}),
-  for a model of the splicer and for the code the binary runs
+  and~\ref{thm:A-paper-that-checks-clean-is-true}), for a model of the
+  splicer and for the code the binary runs
   (Section~\ref{sec:code}). The tools closest in function check less, and
   say so informally: \texttt{checkdecls} that each name
   exists~\cite{Massot20}, LeanArchitect that no dependency is
@@ -526,7 +535,7 @@ spans, shown in full for $r_{3}$. Only the grammar has slots.}
 
 The figure is the example's thread through the paper: what the bundle says of the theorem, what that means, what the
 paper claims, and what happens when the development changes. We begin
-by working the three theorems of Section~\ref{sec:intro} through for it.
+by working the theorems of Section~\ref{sec:intro} through for it.
 Figure~\ref{fig:pipeline} follows the theorem from its Lean, through the
 bundle, into the paper's \TeX; Appendix~\ref{app:example} gives the three
 in full.
@@ -566,19 +575,19 @@ stale.
 
 \subsection{What the paper says}\label{sec:example-paper}
 
-Theorem~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
-is about the paper. Take for $d$ the five blocks of
+Theorems~\ref{thm:A-paper-that-checks-clean-is-true}
+and~\ref{thm:A-paper-that-checks-clean-is-true-and-reads-only-as-Lean's}
+are about the paper. Take for $d$ the five blocks of
 Figure~\ref{fig:example}, as this paper's source writes them, and for $b$
 the bundle $\mathsf{extract}_{X}(\mathit{rs}_{1})$. Against it
-\texttt{check} reports nothing, so the theorem applies, and its two halves
-say different things about the figure. The first is about what each block
-shows. Each key names a statement that Lean proved, with trusted axioms,
+\texttt{check} reports nothing, so both apply, and they say different
+things about the figure. The first is about what each block shows. Each key names a statement that Lean proved, with trusted axioms,
 and each block is that statement's rendering, with the authors' text kept
 in its slots: the grammar is the rendering of \texttt{Stlc.Tm}, with the
 descriptions the authors wrote beside its forms (``an abstraction''), the
 two figures of rules are the renderings of the constructors of
 \texttt{Stlc.IsValue} and \texttt{Stlc.Step}, and the sentence of \emph{Values are final} is the
-rendering of \texttt{Stlc.values\_final}. The second half is about how they
+rendering of \texttt{Stlc.values\_final}. The second is about how they
 read, and it is about the \TeX{} itself. The prose parser takes the body
 of \emph{Values are final}, the string below, apart into formulas, each a
 string of \TeX{} too:
@@ -2136,12 +2145,12 @@ type is written with it. The tables are generated from the notation module:
 first the metavariables, then each piece of notation the definitions and
 results use.
 
-\begin{leanconventions}[sum=E5WVfvIsup, dflt=FUUstDVqN2]{Conventions}{Metavariables and the types they range over}
+\begin{leanconventions}[sum=Q60hOQqpp3, dflt=FUUstDVqN2]{Conventions}{Metavariables and the types they range over}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.4\linewidth}@{\quad}l@{}}
 \textit{Variable} & \textit{Type} & & \textit{Shown in}\\
 \hline\endhead
 $X$ & $\texttt{Validated}$ & \leanslot{SpliceModel.Validated}{A world with the anatomy of its statements and a validator for the parts: what the extractor is, with \LeanCodeInline{base.Reads} set aside for the validator's} & \textit{Extraction is true}, p.~\pageref{thm:Extraction-is-true}\\
-$d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{Building regenerates blocks, once}, p.~\pageref{thm:Building-regenerates-blocks,-once}\\
+$d$ & $\mathit{Doc}$ & \leanslot{SpliceModel.Doc}{A document} & \textit{A paper that checks clean is true}, p.~\pageref{thm:A-paper-that-checks-clean-is-true}\\
 $M$ & $\mathit{Term}$ & \leanslot{Stlc.Tm}{Terms, with de Bruijn variables} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
 $A$ & $\mathit{Type}$ & \leanslot{Stlc.Ty}{Types} & \textit{Tm}, p.~\pageref{gram:Stlc.Tm}\\
 $k$ & $\mathit{Key}$ & \leanslot{Imprimatur.Key}{A key: what a document cites, the name of a constant or the title of a group} & \textit{Names}\\

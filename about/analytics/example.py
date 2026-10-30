@@ -279,7 +279,7 @@ def diagram(lean: list[Line], notation: list[Line], bundle: list[Line], tex: lis
     # down into the parser, and from the readings up to the statement.
     band_top = top - body_h - gap_v
     readings_band(ax, xs[0], xs[1] + w - xs[0], band_top, band)
-    ax.text(xs[2] + w / 2, band_top - 0.12, "$\\mathsf{world}(X) \\models b$ (Theorem 1.1), and\n$\\mathsf{check}_b(d) = []$, so $\\mathsf{world}(X) \\models d$\nand $\\mathsf{pollack}_X(d)$ (Theorem 1.3):\nevery formula has one reading,\nand it is the one it was\nrendered from",
+    ax.text(xs[2] + w / 2, band_top - 0.12, "$\\mathsf{world}(X) \\models b$ (Theorem 1.1), and\n$\\mathsf{check}_b(d) = []$, so $\\mathsf{world}(X) \\models d$\nand $\\mathsf{pollack}_X(d)$ (Theorems 1.2, 1.4):\nevery formula has one reading,\nand it is the one it was\nrendered from",
             ha="center", va="top", fontsize=5.6, color=BLUE, style="italic", linespacing=1.3)
     for x, (y0, y1), label in [(xs[1] + w / 2, (top - body_h, band_top), "each rendering"),
                                (xs[0] + w / 2, (band_top, top - body_h), "the statement's")]:

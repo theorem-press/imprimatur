@@ -431,6 +431,7 @@ latex_entry "A rules rendering shows its predicate" => SpliceModel.Anatomy.Sound
 latex_entry "Prose shows the statement" => SpliceModel.prose_true
 latex_entry "Rules show the predicate" => SpliceModel.rules_true
 latex_entry "Extraction is true" => SpliceModel.Validated.extract_true
+latex_entry "A paper that checks clean is true" => SpliceModel.Validated.clean_true
 latex_entry "The requests of Figure 2" => About.figureRequests
 latex_entry "Building regenerates blocks, once" => SpliceModel.apply_laws
 latex_entry "A paper that checks clean is true and reads only as Lean's" => SpliceModel.Validated.paper_true
