@@ -1,8 +1,0 @@
-[project]
-name = "about-analytics"
-version = "0.1.0"
-description = "The chart of imprimatur's Lean, for the paper's appendix"
-requires-python = ">=3.13"
-dependencies = [
-    "matplotlib>=3.10.8",
-]

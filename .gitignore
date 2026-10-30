@@ -13,21 +13,3 @@ _site/
 /examples/**/*.synctex.gz
 /examples/**/*.out
 /examples/*/host/lake-manifest.json
-# The paper about imprimatur: its build files, and the bundle imprimatur makes
-/about/.imprimatur/
-/about/*.aux
-/about/*.log
-/about/*.fls
-/about/*.fdb_latexmk
-/about/*.pdf
-# but not the diagram of the running example, an input of the paper
-!/about/example-diagram.pdf
-/about/*.synctex.gz
-/about/*.out
-/about/*.bbl
-/about/*.blg
-# PDFs fetched by the add-citation skill (third-party; not redistributed)
-/Papers/
-/about/.refresh-*.log
-/about/analytics/.venv/
-/about/analytics/__pycache__/

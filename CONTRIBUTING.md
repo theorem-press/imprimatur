@@ -45,7 +45,6 @@ milestones.*
 | `test/` | fixtures shared by the tests: Lean projects, TeX documents, bundles |
 | `bundle/` | the bundle's type, one module, copied into `extract/` and `splice/` under one module name (`lint/bundle-copies` keeps the copies equal) |
 | `schema/` | the bundle's JSON schema |
-| `about/` | the paper about imprimatur, with the model of the splicer it is proved for |
 | `scripts/` | `test-all.sh`, `lint.sh`, `e2e.sh` and the lint checks |
 | `docs/` | documentation; `docs/spikes/` holds spike write-ups |
 

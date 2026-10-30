@@ -337,7 +337,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
        ("tex", toJson (String.ofList (tex.toList.take 120)))]
   -- IMPRIMATUR_VALIDATE_READINGS=1 prints each formula, as one tab-separated
   -- line: its key, its TeX, the readings the parser found, and the reading
-  -- the renderer expected (about/analytics/example.py draws them).
+  -- the renderer expected (the about paper's example diagram draws them).
   if (← (IO.getEnv "IMPRIMATUR_VALIDATE_READINGS" : IO _)) == some "1" then
     IO.eprintln s!"reading\t{(← read).key}\t{tex}\t{" | ".intercalate (rs.toList.map (·.text))}\t{expected.text}"
   -- IMPRIMATUR_VALIDATE_STATS=1 counts the questions each formula asks, and

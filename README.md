@@ -98,7 +98,7 @@ a view it could not render, a hash it could not compute, never something
 false; where it is silent, `check` reports the silence.
 
 That is enough for one theorem, proved in Lean for a model of the splicer
-([about/](about/)):
+(`splice/SpliceModel`):
 
 > **If `imprimatur check` reports nothing, and the bundle is true, then the
 > paper is true:** every displayed formula is a statement Lean proved,
@@ -165,9 +165,9 @@ longer one on a λ-calculus.
 Usable now from source: build it from `main`, as in Getting started above.
 It works on Lean v4.28.0-rc1 to v4.35.0, and builds the papers of two
 programming-language projects, whose grammars, rules and results are
-generated, and a paper about imprimatur itself ([about/](about/)), whose
+generated, and a paper about imprimatur itself (in preparation), whose
 theorems about the splicer, and about the extractor's layouts, are proved
-in Lean.
+in Lean (`splice/SpliceModel`).
 
 There is no tagged release yet, so pin a commit if you depend on it. The
 first release, v0.5.0, adds an index of every result a paper cites,

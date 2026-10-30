@@ -5,6 +5,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The paper about imprimatur, `about/`, moves to its own repository, which
+  requires the splice package from this one by git at a pinned revision;
+  the model it presents, `splice/SpliceModel`, stays here. `e2e/about` goes
+  with it, and the scanner's timing gate runs on the semantics example.
 - The dependency cone and the axioms are computed once per constant for a
   whole export, not once per entry: a cone's members are memoised as nodes
   (their canonical text and what the walk follows from them, trusted
