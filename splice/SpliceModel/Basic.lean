@@ -135,6 +135,15 @@ inductive Diag where
   | drift (k : Key)
   deriving DecidableEq
 
+/-- Whether a diagnostic is *stale*: the one `apply` answers. -/
+def Diag.isStale : Diag → Bool
+  | .stale _ => true
+  | _ => false
+
+/-- The diagnostics that are not *stale*: those about the bundle and the
+document's outline, which `apply` cannot change. -/
+def unstale (ds : List Diag) : List Diag := ds.filter fun x => !x.isStale
+
 /-- What `check` reports about a piece. -/
 def diags (b : Bundle) : Piece → List Diag
   | .text _ => []
