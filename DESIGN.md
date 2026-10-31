@@ -1166,7 +1166,10 @@ strings and so can be proved in Lean, where the splicer is written:
 
 - **locality:** `apply` changes nothing outside generated regions and `sum=`;
 - **idempotence:** `apply(apply(d, b), b) = apply(d, b)`;
-- **fixed point:** `check(apply(d, b), b)` reports nothing stale;
+- **fixed point:** `check(apply(d, b), b)` reports nothing stale; in the
+  model, more: it reports exactly what `check(d, b)` did less *stale*, and a
+  document `check` passes is one `apply` leaves alone (`check_apply`,
+  `apply_of_check_nil`, together `build_settles`);
 - **slot preservation:** slot text survives regeneration.
 
 They are proved in Lean for a model of the splicer, in which a document is

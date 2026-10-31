@@ -39,6 +39,16 @@ theorem apply_laws {b : Bundle} (hb : WF b) (d : Doc) :
       ∀ k, Diag.stale k ∉ check b (apply b d) :=
   ⟨apply_outline b d, apply_apply hb d, not_stale_after_apply hb d⟩
 
+/-- **Building settles.** On a well-formed bundle, `apply` keeps the document's
+outline; what `check` then reports is what it reported before, less *stale*,
+so a build answers exactly the stale blocks and leaves what is the bundle's or
+the authors' to answer; and a document `check` passes is one `apply` leaves
+alone. -/
+theorem build_settles {b : Bundle} (hb : WF b) (d : Doc) :
+    (apply b d).map outline = d.map outline ∧ check b (apply b d) = unstale (check b d) ∧
+      (check b d = [] → apply b d = d) :=
+  ⟨apply_outline b d, check_apply hb d, apply_of_check_nil⟩
+
 namespace Validated
 
 variable (X : Validated)

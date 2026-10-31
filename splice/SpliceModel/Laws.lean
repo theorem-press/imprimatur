@@ -157,6 +157,77 @@ theorem not_stale_after_apply {b : Bundle} (hb : WF b) (d : Doc) (k : Key) :
       simp only [regen, diags, he] at hx
       cases ht : e.verdict <;> cases hh : e.statement.stmtHash <;> simp [ht, hh] at hx
 
+/-- What `check` reports of a regenerated piece is what it reported of the
+piece, less *stale*: every other diagnostic is about the bundle and the
+piece's outline. -/
+theorem diags_regen {b : Bundle} (hb : WF b) (p : Piece) :
+    diags b (regen b p) = unstale (diags b p) := by
+  cases p with
+  | block k v body =>
+    cases he : b.find? k with
+    | none => simp [regen, rendering, diags, he, unstale, Diag.isStale]
+    | some e =>
+      cases hv : e.statement.view? v with
+      | none =>
+        simp only [regen, rendering, he, hv, Option.bind_some, diags, unstale]
+        cases e.verdict <;> simp [Diag.isStale]
+      | some r =>
+        have hr : rendering b k v = some r := by simp [rendering, he, hv]
+        simp only [regen, hr, diags, he, hv, fill_fill (hb k v r hr), unstale]
+        by_cases hs : body = fill (slots body) r
+        · rw [ite_eq_left hs]
+          by_cases hp : e.statement.problems v = #[] <;> cases e.verdict <;> simp [hp, Diag.isStale]
+        · rw [ite_eq_right hs]
+          by_cases hp : e.statement.problems v = #[] <;> cases e.verdict <;> simp [hp, Diag.isStale]
+  | text _ => rfl
+  | check k h =>
+    cases he : b.find? k with
+    | none => simp [regen, diags, he, unstale, Diag.isStale]
+    | some e =>
+      simp only [regen, diags, he, unstale]
+      cases e.verdict <;> cases e.statement.stmtHash with
+      | none => simp [Diag.isStale]
+      | some h' => by_cases hh : h' = h <;> simp [hh, Diag.isStale]
+
+/-- **Building settles `check`.** After `apply`, `check` reports what it
+reported before, less *stale*: regeneration answers exactly the stale
+blocks, and leaves what is the bundle's or the authors' to answer. -/
+theorem check_apply {b : Bundle} (hb : WF b) (d : Doc) :
+    check b (apply b d) = unstale (check b d) := by
+  induction d with
+  | nil => rfl
+  | cons p d ih =>
+    rw [show apply b (p :: d) = regen b p :: apply b d from rfl, check, diags_regen hb, ih]
+    simp [check, unstale, List.filter_append]
+
+/-- A block `check` does not report as stale is one `regen` leaves alone. -/
+theorem regen_of_not_stale {b : Bundle} {k : Key} {v : View} {body : Body}
+    (h : Diag.stale k ∉ diags b (.block k v body)) : regen b (.block k v body) = .block k v body := by
+  cases he : b.find? k with
+  | none => simp [regen, rendering, he]
+  | some e =>
+    cases hv : e.statement.view? v with
+    | none => simp [regen, rendering, he, hv]
+    | some r =>
+      have hr : rendering b k v = some r := by simp [rendering, he, hv]
+      simp only [diags, he, hv] at h
+      simp only [regen, hr]
+      by_cases hs : body = fill (slots body) r
+      · rw [← hs]
+      · exfalso
+        apply h
+        cases e.verdict <;> simp [hs]
+
+/-- **A clean document is a fixed point.** A document `check` passes is
+one `apply` leaves alone. -/
+theorem apply_of_check_nil {b : Bundle} {d : Doc} (hc : check b d = []) : apply b d = d := by
+  rw [check_eq_nil] at hc
+  refine (List.map_congr_left fun p hp => ?_).trans (List.map_id d)
+  cases p with
+  | block k v body => exact regen_of_not_stale (by simp [hc _ hp])
+  | text _ => rfl
+  | check _ _ => rfl
+
 /-- After `accept`, `check` reports no drift. -/
 theorem not_drift_after_accept (b : Bundle) (d : Doc) (k : Key) :
     Diag.drift k ∉ check b (accept b d) := by

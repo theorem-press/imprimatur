@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The model proves that building settles (`SpliceModel.build_settles`):
+  after `apply`, `check` reports what it reported before less *stale*, so a
+  build answers exactly the stale blocks and leaves what is the bundle's or
+  the authors' to answer (`check_apply`); and a document `check` passes is
+  one `apply` leaves alone (`apply_of_check_nil`). With locality and the
+  fixed point these are the laws of a well-behaved lens, the paper's
+  outline its constant complement.
 - The paper about imprimatur, `about/`, moves to its own repository, which
   requires the splice package from this one by git at a pinned revision;
   the model it presents, `splice/SpliceModel`, stays here. `e2e/about` goes
