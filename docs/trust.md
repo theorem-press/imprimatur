@@ -4,12 +4,13 @@
 development disagree. [DESIGN.md](../DESIGN.md) §7.7 and §10.3 give the
 reasoning behind these checks.*
 
-`imprimatur check` reports four kinds of problem with the results a paper
+`imprimatur check` reports five kinds of problem with the results a paper
 cites:
 
 | Code | Meaning |
 |---|---|
 | `untrusted` | the result depends on `sorry`, uses an axiom outside `allowed_axioms`, or has an untrusted constant in its dependency cone |
+| `unchecked` | `[trust].checker` asks for a verified checker, and it did not accept the development (below) |
 | `broken-ref` | the key names no declaration |
 | `drift` | the statement changed since an author last checked the prose against it |
 | `sig-changed` (warning) | the statement reads differently (a binder renamed, notation changed), but means the same |
@@ -33,6 +34,45 @@ untrusted if it:
 **Why this matters.** Without the cone check, a hypothesis definition could
 be changed to `True`. The theorem would become trivial, while its statement
 read exactly as before.
+
+## A verified checker
+
+The checks above take Lean's word for what is proved. Lean v4.35 and later
+ship [con-leche](https://github.com/leanprover/con-leche), an external
+checker verified in Lean: a theorem says that whatever it accepts has a
+model in set theory, so a theorem it accepts is true in that model, not
+just accepted by a program. To have it check the development too:
+
+```toml
+[trust]
+checker = "con-leche"
+```
+
+Then `imprimatur build` exports the modules in `imports` with `leanexport`
+and runs `con-leche` on the export, alongside the extractor, and writes the
+verdict into the bundle. `imprimatur check` reports `unchecked` unless the
+verdict is *accepted*:
+
+- con-leche **declines** a development that uses `sorry` anywhere (even in
+  a declaration the paper never cites), an axiom beyond `propext`,
+  `Classical.choice` and `Quot.sound`, or a feature it does not implement;
+  the message names the declaration;
+- it **rejects** one with an invalid declaration, which Lean's kernel
+  should never have let through.
+
+**What it costs.** About a minute for the export and the check together on
+a small development, more with each package it depends on, and around ten
+minutes of checking for all of Mathlib on a machine with many cores. The
+verdict is kept in `.imprimatur/checker.json` with a
+fingerprint of the development, so a run that changes only the paper
+reads it back in well under a second; only a rebuilt development is checked
+again. `--timing` shows the checker's time.
+
+**Switching it off.** `imprimatur build --no-checker` (and `check`, `show`)
+skips it for a run: the bundle carries no verdict, and `check` goes by
+Lean's verdict alone. Removing the `checker` line does the same for good.
+A development con-leche declines, say for a `sorry` in work in progress,
+is checked this way until the `sorry` is gone.
 
 ## Tying prose to Lean: `\leancheck` and `accept`
 

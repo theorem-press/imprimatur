@@ -84,6 +84,13 @@ def testConfig : TestM Unit := group "config" do
     (Config.parse "schema = 1\nmain = \"a\"\n[profile.p]\nsource_links = \"url\"\n") "url_template"
   checkError "splice/config/unknown-profile"
     (Config.parse "schema = 1\nmain = \"a\"\ndefault_profile = \"p\"\n") "not a profile"
+  -- The verified checker (DESIGN §7.8): off unless asked for, and only con-leche.
+  checkEq "splice/config/checker-off" (Config.parse ok |>.toOption.bind (·.checker)) none
+  checkEq "splice/config/checker"
+    (Config.parse "schema = 1\nmain = \"a\"\n[trust]\nchecker = \"con-leche\"\n" |>.toOption.bind (·.checker))
+    (some "con-leche")
+  checkError "splice/config/checker-unknown"
+    (Config.parse "schema = 1\nmain = \"a\"\n[trust]\nchecker = \"nanoda\"\n") "must be con-leche"
 
 /-- Reading bundles. -/
 def testBundle : TestM Unit := group "bundle" do
@@ -121,6 +128,18 @@ def testBundle : TestM Unit := group "bundle" do
     (Bundle.parse "{\"schema\": \"imprimatur-bundle/1\", \"producer\": {}, \"entries\": {\"A\": \
       {\"kind\": \"theorem\", \"decl\": \"A\"}}}") "views"
   checkError "splice/bundle/not-json" (Bundle.parse "{") "not valid JSON"
+  -- A checker's verdict (DESIGN §7.8) is read, and survives parse and render.
+  let checked := "{\"schema\": \"imprimatur-bundle/1\", \"producer\": {}, \"entries\": {}, \
+    \"checker\": {\"tool\": \"con-leche\", \"verdict\": \"accepted\", \"modules\": [\"M\"], \"report\": \"ok\"}}"
+  match Bundle.parse checked with
+  | .error e => fail "splice/bundle/checker" e
+  | .ok b =>
+    checkEq "splice/bundle/checker" (b.checker.map (·.verdict)) (some .accepted)
+    check "splice/bundle/checker-accepted" (b.acceptedBy "con-leche" && !b.acceptedBy "nanoda")
+    checkEq "splice/bundle/checker-round-trip" (Bundle.parse b.render |>.toOption.map (·.render)) (some b.render)
+  checkError "splice/bundle/checker-verdict"
+    (Bundle.parse "{\"schema\": \"imprimatur-bundle/1\", \"producer\": {}, \"entries\": {}, \
+      \"checker\": {\"tool\": \"con-leche\", \"verdict\": \"maybe\"}}") "accepted, rejected or declined"
 
 /-- SHA-256 against published test vectors, and normalisation. -/
 def testHash : TestM Unit := group "checksums" do

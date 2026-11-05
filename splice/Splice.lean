@@ -17,4 +17,5 @@ import Splice.Apply
 import Splice.Check
 import Splice.Strip
 import Splice.Cli
+import Splice.Checker
 import Splice.Wrapper

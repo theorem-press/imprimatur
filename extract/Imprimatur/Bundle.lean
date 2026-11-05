@@ -157,13 +157,62 @@ structure Producer where
   project : Option String := none
   deriving DecidableEq, Repr
 
+/-- A checker's verdict on a stream of declarations, as the Lean kernel
+arena's exit codes name it. -/
+inductive Checker.Verdict where
+  /-- every declaration checked (exit 0) -/
+  | accepted
+  /-- a declaration is invalid (exit 1) -/
+  | rejected
+  /-- the stream uses something the checker does not support, so nothing is
+  claimed of it (exit 2) -/
+  | declined
+  deriving DecidableEq, Repr
+
+/-- The verdict's name. -/
+def Checker.Verdict.toString : Checker.Verdict → String
+  | .accepted => "accepted"
+  | .rejected => "rejected"
+  | .declined => "declined"
+
+instance : ToString Checker.Verdict := ⟨Checker.Verdict.toString⟩
+
+/-- A verdict from its name. -/
+def Checker.Verdict.ofString? : String → Option Checker.Verdict
+  | "accepted" => some .accepted
+  | "rejected" => some .rejected
+  | "declined" => some .declined
+  | _ => none
+
+/-- What a verified checker said of the development (DESIGN §7.8): one
+verdict on the stream of every declaration the modules import, so on every
+entry at once. -/
+structure Checker where
+  /-- the checker: `con-leche` -/
+  tool : String
+  /-- its verdict -/
+  verdict : Checker.Verdict
+  /-- the modules whose import closure was checked -/
+  modules : Array String := #[]
+  /-- the checker's own verdict line -/
+  report : String := ""
+  deriving DecidableEq, Repr
+
 /-- A bundle: an entry for each key a document cites. -/
 structure Bundle (σ π : Type) where
   /-- who made it -/
   producer : Producer
   /-- the entries, sorted by key -/
   entries : Array (Key × Entry σ π)
+  /-- a verified checker's verdict on the development, when one was asked -/
+  checker : Option Checker := none
   deriving Repr
+
+/-- Whether `tool` accepted the development the bundle is about. -/
+def Bundle.acceptedBy {σ π : Type} (b : Bundle σ π) (tool : String) : Bool :=
+  match b.checker with
+  | some c => c.tool == tool && c.verdict == .accepted
+  | none => false
 
 /-- The entry of a key. -/
 def Bundle.find? {σ π : Type} (b : Bundle σ π) (k : Key) : Option (Entry σ π) :=
@@ -272,7 +321,11 @@ whether its proof is trusted; how a statement is hashed and rendered; and
 when TeX reads back as a statement, up to what the notation makes invisible
 (DESIGN §18.3). A world has statements and verdicts but no proofs: an image
 is a function of the statement alone, so nothing in a bundle depends on how
-a theorem was proved, only on whether it was. -/
+a theorem was proved, only on whether it was. Whether a key's proof is
+trusted is a Bool here, whoever decided it: Lean's kernel with the
+extractor's cone walk, or, when the bundle carries a verified checker's
+acceptance of the development (`Checker`, DESIGN §7.8), that checker's
+model of it as well. -/
 
 /-- A world: an environment, as the extractor presents it, rendered as `τ`. -/
 structure World (τ : Type) where
@@ -382,14 +435,20 @@ def Entry.toJson (e : Entry (Image TeX) Verdict) : Json :=
     (if validation.isEmpty then [] else
       [("validation", Json.mkObj (validation.toList.map fun (v, ps) => (v, strs ps)))])
 
+/-- The JSON of a checker's verdict. -/
+def Checker.toJson (c : Checker) : Json :=
+  Json.mkObj [("tool", .str c.tool), ("verdict", .str c.verdict.toString),
+    ("modules", strs c.modules), ("report", .str c.report)]
+
 /-- The JSON of a bundle. -/
 def Bundle.toJson (b : Bundle (Image TeX) Verdict) : Json :=
-  Json.mkObj [
+  Json.mkObj <| [
     ("schema", .str bundleSchema),
     ("producer", Json.mkObj <|
       [("tool", .str b.producer.tool), ("version", .str b.producer.version)] ++
-      opt "lean" (b.producer.lean.map .str) ++ opt "project" (b.producer.project.map .str)),
-    ("entries", Json.mkObj (b.entries.toList.map fun (k, e) => (k, e.toJson)))]
+      opt "lean" (b.producer.lean.map .str) ++ opt "project" (b.producer.project.map .str))] ++
+    opt "checker" (b.checker.map Checker.toJson) ++
+    [("entries", Json.mkObj (b.entries.toList.map fun (k, e) => (k, e.toJson)))]
 
 /-- JSON as the file holds it: deterministic, and the same on every
 toolchain. -/
@@ -499,6 +558,17 @@ private def entryOfJson (key : String) (j : Json) : Except String (Entry (Image 
     statement := { stmtHash, sigHash, views, errors, validation, macros },
     verdict := { axioms, usesSorry, cone } }
 
+/-- A checker's verdict read from its JSON. -/
+def Checker.ofJson (j : Json) : Except String Checker := do
+  let w := "checker"
+  let tool ← str s!"{w}.tool" (← field w j "tool")
+  let verdictName ← str s!"{w}.verdict" (← field w j "verdict")
+  let some verdict := Checker.Verdict.ofString? verdictName
+    | throw s!"{w}.verdict must be accepted, rejected or declined, not {repr verdictName}"
+  let modules ← (optional j "modules" (strsOf s!"{w}.modules")).map (·.getD #[])
+  let report ← (optional j "report" (str s!"{w}.report")).map (·.getD "")
+  return { tool, verdict, modules, report }
+
 /-- A bundle read from the text of its file, checked against the schema's
 rules. The producer's fields are taken as they come, so a bundle from a
 tool that says less about itself still reads. -/
@@ -515,9 +585,10 @@ def Bundle.parse (text : String) : Except String (Bundle (Image TeX) Verdict) :=
     version := ((optional p "version" (str "producer.version")).toOption.bind id).getD ""
     lean := (optional p "lean" (str "producer.lean")).toOption.bind id
     project := (optional p "project" (str "producer.project")).toOption.bind id }
+  let checker ← optional j "checker" Checker.ofJson
   let entries ← match (← field "the bundle" j "entries").getObj? with
     | .ok kvs => kvs.toArray.mapM fun (k, v) => do return (k, ← entryOfJson k v)
     | .error _ => throw "entries must be an object"
-  return { producer, entries := entries.qsort (·.1 < ·.1) }
+  return { producer, entries := entries.qsort (·.1 < ·.1), checker }
 
 end Imprimatur

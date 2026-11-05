@@ -123,8 +123,10 @@ by the proof.
   [docs/notation.md](docs/notation.md).
 - **Trust checks:** results that disappear, depend on `sorry` or a
   disallowed axiom, or whose statement changed since `\leancheck` recorded
-  it. Comparator manifests and leanblueprint's `\lean{…}` are read too. See
-  [docs/trust.md](docs/trust.md).
+  it. Comparator manifests and leanblueprint's `\lean{…}` are read too.
+  With `checker = "con-leche"`, the development must also be accepted by
+  the verified checker the Lean toolchain ships, whose acceptance is proved
+  to give it a model. See [docs/trust.md](docs/trust.md).
 - **Translation validation:** each formula is parsed back in the notation's
   grammar, and one that is ambiguous, cannot be read back, or reads as
   something other than its statement is reported where it is. The parser is

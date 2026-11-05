@@ -29,7 +29,7 @@ commands:
       [--force KEY]... [--keep-stale] [--rename-slot OLD=NEW]...
       [--profile P] [--commit SHA]
   check --bundle B.json        report, without writing, what apply would change
-      [--diff] [--check-fail-msg MSG] [--keep-stale] [--profile P]
+      [--diff] [--check-fail-msg MSG] [--keep-stale] [--profile P] [--no-checker]
   strip -o DIR                 write a copy with imprimatur's markers removed
   migrate-slots --bundle B.json
                                rewrite slots declared by position as \\leanslot
@@ -73,6 +73,9 @@ structure Args where
   views : Array String := #[]
   /-- `--timing`: log where the time goes, and summarise it. -/
   timing : Bool := false
+  /-- `--no-checker`: go by Lean's verdict alone this run, whatever
+  `[trust].checker` says (DESIGN §7.8). -/
+  noChecker : Bool := false
 
 /-- Parse the arguments. -/
 partial def parseArgs (args : List String) (a : Args := {}) : Except String Args :=
@@ -95,6 +98,7 @@ partial def parseArgs (args : List String) (a : Args := {}) : Except String Args
   | "--all" :: rest => parseArgs rest { a with all := true }
   | "--view" :: v :: rest => parseArgs rest { a with views := a.views.push v }
   | "--timing" :: rest => parseArgs rest { a with timing := true }
+  | "--no-checker" :: rest => parseArgs rest { a with noChecker := true }
   | arg :: rest =>
     if arg.startsWith "-" then .error s!"unknown or incomplete option {arg}"
     else if a.command.isEmpty then parseArgs rest { a with command := arg }
@@ -188,7 +192,8 @@ def runIn (root : System.FilePath) (a : Args) : ExceptT String CliM UInt32 := do
             let q := (p.parent.getD dir) / c
             if ← (q.isDir : IO _) then continue
             if ← (q.pathExists : IO _) then queue := queue.push q
-      let ds := checkDoc doc bundle opts extra a.diff
+      let ds := checkDoc doc bundle opts extra a.diff ++
+        checkerDiags cfg (a.config.getD "imprimatur.toml") a.noChecker bundle
       report ds
       let failed := hasErrors ds
       if failed then

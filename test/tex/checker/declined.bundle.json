@@ -1,0 +1,25 @@
+{
+  "checker": {
+    "modules": ["Demo"],
+    "report": "con-leche: not implemented yet: use of the sorryAx axiom [at def Demo.Level3, fold position 23131] (--verified) t=5.6s",
+    "tool": "con-leche",
+    "verdict": "declined"
+  },
+  "entries": {
+    "Demo.sound": {
+      "axioms": [],
+      "decl": "Demo.sound",
+      "kind": "theorem",
+      "macros": [],
+      "sorry": false,
+      "views": {
+        "lean": "Demo.sound"
+      }
+    }
+  },
+  "producer": {
+    "tool": "test",
+    "version": "0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

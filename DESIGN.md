@@ -207,6 +207,7 @@ leangrammar = { view = "grammar" }
 [trust]
 allowed_axioms   = ["propext", "Classical.choice", "Quot.sound"]
 trusted_prefixes = ["Mathlib", "Std", "Batteries", "Lean", "Init"]   # module prefixes (§7.7)
+checker          = "con-leche"            # the verified checker must accept the development (§7.8); off when absent
 
 [manifests]                               # §10.5
 comparator = []                           # e.g. ["ComparatorChallenges/*.json"]
@@ -594,6 +595,73 @@ For every entry, the extractor imports the environment at `private` level
   by commas. `imprimatur accept KEY…` (or `--all`) writes them. The
   details for authors are in [docs/trust.md](docs/trust.md).
 
+### 7.8 The verified checker
+
+Everything in §7.7 reads Lean's own verdict: a key is trusted when Lean's
+kernel accepted its proof and the cone walk found nothing to object to.
+What "accepted" means is then what the kernel, a C++ program, does. Since
+Lean v4.35 the toolchain ships con-leche, an external checker written and
+verified in Lean: `model_exists` proves that every stream of declarations
+it accepts has a model in a set theory (ZF without infinity and choice,
+with an ω-chain of universes), in which `False` is the empty set and each
+accepted theorem's statement is inhabited. With
+
+```toml
+[trust]
+checker = "con-leche"
+```
+
+the development is checked by it as well, and the paper's world(X) (§18.1)
+has a definition of truth behind it: a model, rather than a program.
+
+- **What runs.** Alongside the extractor, and on the same modules (`imports`
+  and the manifests' solution modules), `imprimatur build` runs
+  `leanexport` under the host's `lake env`, which writes the import closure
+  as one stream of declarations, and `con-leche --verified` on the stream.
+  Neither is configured further: the stream is what Lean exports, the
+  verdict is what the verified mode gives, and a reader can reproduce it
+  with the two commands.
+- **The verdict is on the development as a whole.** con-leche accepts,
+  rejects or declines a stream (the Lean kernel arena's exit codes 0, 1
+  and 2; 3 is an error of the run, which fails the build). It declines a
+  stream that uses `sorryAx` anywhere, or an axiom beyond Lean's three, or
+  a feature it does not implement. The bundle records it once, at the top
+  level (`checker`: the tool, the verdict, the modules, and the checker's
+  own verdict line; §8), not per entry: a per-key verdict would claim more
+  than the checker said.
+- **`check` requires acceptance.** With `checker` set, a bundle without
+  con-leche's `accepted` is an error, `unchecked`, reported once at the
+  configuration that asks for it, with the checker's line when it declined
+  or rejected. So a document that checks clean has every key's `trusted`
+  backed by both verdicts, and Theorem 2's world is one the checker has a
+  model of. `\leancheck`, `\leanok` and the manifests go on reading Lean's
+  per-key verdict, which the global one strengthens rather than replaces.
+- **Switching it off** is `--no-checker` on a run (`build`, `check`,
+  `show`): nothing runs, the bundle carries no verdict, and `check` does not
+  ask for one. Unsetting `checker` is the same for good. The default is off:
+  a paper that never asks is as it was.
+- **Cost.** `leanexport` and `con-leche` take about a minute together on a
+  small development (the semantics example: 58,000 declarations, nearly
+  all of them Init's, 57 s), more with each package it depends on, and the
+  checker alone about ten minutes on all of Mathlib with many cores. So the
+  verdict is kept, in `.imprimatur/checker.json`, with a fingerprint of
+  what it was about: the toolchain, the modules, and every `.olean` on the
+  project's search path (Lake's hash of each, or its size and modification
+  time). A run whose fingerprint matches reads the verdict back, which
+  takes well under a second; only a changed development is checked again.
+  The stream itself (hundreds of megabytes) is written to `.imprimatur/`
+  and removed when the checker has read it. `--timing` shows the checker's
+  time, and whether the verdict was kept.
+- **What it does not do.** The statement a view renders is still the
+  extractor's reading of the environment, through Lean's `importModules`;
+  con-leche's `checkDecls_consts` ties the types it checked to the exported
+  bytes, but nothing yet ties the extractor's `Expr` to those bytes. That
+  would be a second step: a statement hash taken from the export record and
+  compared with `stmtHash`. The verdict is also per development rather than
+  per key, until con-leche's `--constant` mode, which checks one constant's
+  cone, ships with a toolchain; a development it declines is then answered
+  by Lean's verdict alone, with `--no-checker`.
+
 ## 8. The bundle (`imprimatur-bundle/1`)
 
 The bundle is a Lean type, `Bundle (Image TeX) Verdict` in
@@ -849,6 +917,10 @@ to TeX environments.
   and manifest keys, meaning the key doesn't exist;
 - **untrusted** results: any key whose dependency cone (§7.7) contains
   `sorry`, a disallowed axiom, or an untrusted `unsafe` declaration;
+- **unchecked**: `[trust].checker` names a verified checker (§7.8), and the
+  bundle does not carry its acceptance of the development, because it
+  declined or rejected it, or was not run. Once per run; `--no-checker`
+  silences it;
 - **drift**: a `\leancheck[stmt=…]` whose hash differs from `stmtHash`. The
   statement, or something in the project it depends on, has changed since a
   person last checked the prose against it. `imprimatur accept <key>` records
@@ -925,8 +997,8 @@ repository URL.
 | Command | What it does |
 |---|---|
 | `imprimatur toolchain install <ver>` | build the extractor for a toolchain (external mode) |
-| `imprimatur build [--profile p] [--commit sha] [--force key] [--keep-stale] [--rename-slot old=new]` | scan, then export, then apply |
-| `imprimatur check [--profile p] [--diff] [--check-fail-msg m] [--keep-stale]` | the checks in §10.3 |
+| `imprimatur build [--profile p] [--commit sha] [--force key] [--keep-stale] [--rename-slot old=new] [--no-checker]` | scan, then export (with the verified checker, §7.8, unless `--no-checker`), then apply |
+| `imprimatur check [--profile p] [--diff] [--check-fail-msg m] [--keep-stale] [--no-checker]` | the checks in §10.3 |
 | `imprimatur accept <key>… \| --all` | record the current statement hash in `\leancheck` |
 | `imprimatur show <key> [--view v]…` | print one key's renderings and their validation problems, writing nothing; for working on notation |
 | `imprimatur strip -o dir` | write a copy with the markers removed |
@@ -1370,7 +1442,11 @@ which side condition 2 excludes.
 
 ### 18.5 The trusted base
 
-The Lean kernel and compiler; the extractor's reading of the environment,
+The Lean kernel and compiler (with `[trust].checker`, §7.8, the kernel's
+verdict is joined by con-leche's, whose acceptance is proved to give the
+development a model, so the kernel leaves the base for what is proved and
+the compiler, `leanexport` and the Lean runtime's `Nat` stay);
+the extractor's reading of the environment,
 which gathers what a view says (binders, `isProp`, notation matching,
 `inferType`) and builds the reading it expects of a formula
 (docs/verified-extractor.md and docs/verified-validator.md say what is

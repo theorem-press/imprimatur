@@ -1,0 +1,25 @@
+{
+  "checker": {
+    "modules": ["Demo"],
+    "report": "con-leche: rejected: type mismatch at theorem Demo.sound (--verified)",
+    "tool": "con-leche",
+    "verdict": "rejected"
+  },
+  "entries": {
+    "Demo.sound": {
+      "axioms": [],
+      "decl": "Demo.sound",
+      "kind": "theorem",
+      "macros": [],
+      "sorry": false,
+      "views": {
+        "lean": "Demo.sound"
+      }
+    }
+  },
+  "producer": {
+    "tool": "test",
+    "version": "0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

@@ -37,7 +37,7 @@ commands:
       [--force KEY]... [--keep-stale] [--rename-slot OLD=NEW]...
       [--profile P] [--commit SHA]
   check --bundle B.json        report, without writing, what apply would change
-      [--diff] [--check-fail-msg MSG] [--keep-stale] [--profile P]
+      [--diff] [--check-fail-msg MSG] [--keep-stale] [--profile P] [--no-checker]
   strip -o DIR                 write a copy with imprimatur's markers removed
   migrate-slots --bundle B.json
                                rewrite slots declared by position as \leanslot

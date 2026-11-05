@@ -5,6 +5,18 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `[trust] checker = "con-leche"` has the development checked by con-leche,
+  the external checker the Lean toolchain ships from v4.35, verified in
+  Lean to accept only developments that have a set-theoretic model. `build`
+  exports the modules with `leanexport` and runs the checker alongside the
+  extractor; the bundle records the verdict (`checker`, at the top level,
+  since it is on the development as a whole); and `check` reports
+  `unchecked` unless the verdict is *accepted*, with the checker's own line
+  when it declined (a `sorry` anywhere, an axiom beyond Lean's three) or
+  rejected. The verdict is kept in `.imprimatur/checker.json` with a
+  fingerprint of the toolchain, the modules and the `.olean` files, so only
+  a changed development is checked again; `--no-checker` skips it for a
+  run, and the default is off (DESIGN §7.8, docs/trust.md).
 - The model proves that building settles (`SpliceModel.build_settles`):
   after `apply`, `check` reports what it reported before less *stale*, so a
   build answers exactly the stale blocks and leaves what is the bundle's or

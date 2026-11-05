@@ -1,0 +1,26 @@
+$ imprimatur-splice check --bundle accepted.bundle.json
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle declined.bundle.json
+imprimatur.toml: error[unchecked]: con-leche declined the development (Demo): con-leche: not implemented yet: use of the sorryAx axiom [at def Demo.Level3, fold position 23131] (--verified) t=5.6s
+check: 0 stale, 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice check --bundle rejected.bundle.json
+imprimatur.toml: error[unchecked]: con-leche rejected the development (Demo): con-leche: rejected: type mismatch at theorem Demo.sound (--verified)
+check: 0 stale, 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice check --bundle none.bundle.json
+imprimatur.toml: error[unchecked]: [trust].checker = "con-leche", but the bundle has no verdict from it; run imprimatur build (or check with --no-checker to go by Lean's verdict alone)
+check: 0 stale, 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice check --bundle none.bundle.json --no-checker
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\leancheck{Demo.sound}
+

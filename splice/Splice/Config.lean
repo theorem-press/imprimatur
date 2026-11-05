@@ -107,6 +107,9 @@ structure Config where
   stripNamespaces : Array String := #[]
   /-- Module prefixes whose declarations end a dependency cone (DESIGN §7.7). -/
   trustedPrefixes : Array String := #["Mathlib", "Std", "Batteries", "Lean", "Init"]
+  /-- The verified checker that must accept the development, `con-leche`;
+  none means Lean's own verdict is enough (DESIGN §7.8). -/
+  checker : Option String := none
   /-- Comparator manifests: paths, with `*` allowed in the file name. -/
   comparator : Array String := #[]
   /-- Notation packs (DESIGN §7.5); `none` means the extractor's default. -/
@@ -235,11 +238,16 @@ def Config.parse (text : String) : Except String Config := do
       cfg := { cfg with aliases := cfg.aliases.push (← parseAlias name v) }
   if let some t := root.find? "trust" then
     let tk ← expectTable "[trust]" t
-    checkKeys "[trust]" tk ["allowed_axioms", "trusted_prefixes"]
+    checkKeys "[trust]" tk ["allowed_axioms", "trusted_prefixes", "checker"]
     if let some ax := t.find? "allowed_axioms" then
       cfg := { cfg with allowedAxioms := ← expectStrs "[trust].allowed_axioms" ax }
     if let some tp := t.find? "trusted_prefixes" then
       cfg := { cfg with trustedPrefixes := ← expectStrs "[trust].trusted_prefixes" tp }
+    if let some c := t.find? "checker" then
+      let c ← expectStr "[trust].checker" c
+      unless c == "con-leche" do
+        throw s!"[trust].checker must be con-leche, not {repr c}"
+      cfg := { cfg with checker := some c }
   if let some m := root.find? "manifests" then
     let mk ← expectTable "[manifests]" m
     checkKeys "[manifests]" mk ["comparator", "blueprint"]

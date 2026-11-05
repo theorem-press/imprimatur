@@ -120,6 +120,35 @@ if [ -d e2e-out/semantics ]; then
   fi
   [ "$(sha256sum e2e-out/semantics/paper.tex)" = "$before" ] || { echo "  FAIL: show changed the paper"; status=1; }
 fi
+# e2e/checker: the verified checker (DESIGN §7.8) on the semantics example as
+# built above. With [trust].checker set, `build` has con-leche accept the
+# host and records it in the bundle; `check` passes with the verdict kept
+# from the last run; `--no-checker` leaves the bundle without a verdict, and
+# the splicer on its own then reports it unchecked. Skipped on a toolchain
+# without con-leche.
+echo "== e2e/checker"
+if [ -d e2e-out/semantics ]; then
+  work=e2e-out/checker
+  rm -rf "$work"; cp -r e2e-out/semantics "$work"
+  printf '\n[trust]\nchecker = "con-leche"\n' >> "$work/imprimatur.toml"
+  if (cd "$work/host" && lake env con-leche --help > /dev/null 2>&1); then
+    (cd "$work" && "$IMPRIMATUR" build --timing > build.log 2>&1) || { echo "  FAIL: build with the checker"; sed 's/^/    /' "$work/build.log"; status=1; }
+    grep -q '^checker: con-leche: accepted' "$work/build.log" || { echo "  FAIL: build did not report con-leche's acceptance"; status=1; }
+    grep -q '"verdict": "accepted"' "$work/.imprimatur/bundle.json" || { echo "  FAIL: the bundle has no accepted verdict"; status=1; }
+    (cd "$work" && "$IMPRIMATUR" check --timing > check.log 2>&1) || { echo "  FAIL: check with the checker"; sed 's/^/    /' "$work/check.log"; status=1; }
+    grep -q 'the verdict kept from the last run' "$work/check.log" || { echo "  FAIL: check did not reuse the kept verdict"; status=1; }
+    (cd "$work" && "$IMPRIMATUR" build --no-checker > nocheck.log 2>&1) || { echo "  FAIL: build --no-checker"; status=1; }
+    if grep -q '"checker"' "$work/.imprimatur/bundle.json"; then echo "  FAIL: --no-checker left a verdict in the bundle"; status=1; fi
+    (cd "$work" && "$IMPRIMATUR" check --no-checker > nocheck.log 2>&1) || { echo "  FAIL: check --no-checker"; sed 's/^/    /' "$work/nocheck.log"; status=1; }
+    if (cd "$work" && "$IMPRIMATUR" check --bundle .imprimatur/bundle.json > unchecked.log 2>&1); then
+      echo "  FAIL: check passed without a verdict"; status=1
+    elif ! grep -q 'error\[unchecked\]' "$work/unchecked.log"; then
+      echo "  FAIL: check without a verdict did not report unchecked"; sed 's/^/    /' "$work/unchecked.log"; status=1
+    fi
+  else
+    echo "  SKIP: the toolchain has no con-leche"
+  fi
+fi
 # e2e/fixture-views: every math, prose, rules and grammar view of the
 # Notation and Semantics fixtures' golden bundles typesets with both engines.
 echo "== e2e/fixture-views"

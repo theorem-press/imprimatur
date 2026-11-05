@@ -1,0 +1,19 @@
+{
+  "entries": {
+    "Demo.sound": {
+      "axioms": [],
+      "decl": "Demo.sound",
+      "kind": "theorem",
+      "macros": [],
+      "sorry": false,
+      "views": {
+        "lean": "Demo.sound"
+      }
+    }
+  },
+  "producer": {
+    "tool": "test",
+    "version": "0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

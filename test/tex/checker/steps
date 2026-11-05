@@ -1,0 +1,5 @@
+check --bundle accepted.bundle.json
+check --bundle declined.bundle.json
+check --bundle rejected.bundle.json
+check --bundle none.bundle.json
+check --bundle none.bundle.json --no-checker

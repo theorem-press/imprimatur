@@ -173,6 +173,29 @@ def auditManifests (doc : Doc) (bundle : Bundle (Image TeX) Verdict) : Array Dia
       | none => ds.push (Diag.err "broken-ref" m.path s!"{key} has no entry in the bundle")
       | some e => ds ++ (trustProblems allowed key e).map (Diag.err "untrusted" m.path ·)
 
+/-- The verified checker (DESIGN §7.8): with `[trust].checker` set, the
+bundle must carry that checker's acceptance of the development. One
+diagnostic, at the configuration that asks for it, since the verdict is on
+the development as a whole; `skipped` (`--no-checker`) reports nothing. -/
+def checkerDiags (cfg : Config) (cfgFile : String) (skipped : Bool)
+    (bundle : Bundle (Image TeX) Verdict) : Array Diag :=
+  match cfg.checker with
+  | none => #[]
+  | some tool =>
+    if skipped then #[] else
+    match bundle.checker with
+    | some c =>
+      if c.tool != tool then
+        #[Diag.err "unchecked" cfgFile s!"[trust].checker = {repr tool}, but the bundle's verdict is {c.tool}'s; \
+          run imprimatur build"]
+      else match c.verdict with
+      | .accepted => #[]
+      | v => #[Diag.err "unchecked" cfgFile
+          s!"{tool} {v} the development ({", ".intercalate c.modules.toList}): {c.report}"]
+    | none =>
+      #[Diag.err "unchecked" cfgFile s!"[trust].checker = {repr tool}, but the bundle has no verdict from it; \
+        run imprimatur build (or check with --no-checker to go by Lean's verdict alone)"]
+
 /-- Broken references, trust problems, drift and blueprint `\leanok`s. -/
 def audit (doc : Doc) (bundle : Bundle (Image TeX) Verdict) : Array Diag :=
   doc.files.foldl (init := #[]) (fun ds f =>

@@ -17,6 +17,17 @@
         "project": { "type": "string" }
       }
     },
+    "checker": {
+      "description": "A verified checker's verdict on the development the entries are about: the import closure of `modules`, checked as one stream (DESIGN §7.8).",
+      "type": "object",
+      "required": ["tool", "verdict"],
+      "properties": {
+        "tool": { "type": "string" },
+        "verdict": { "enum": ["accepted", "rejected", "declined"] },
+        "modules": { "type": "array", "items": { "type": "string" } },
+        "report": { "type": "string" }
+      }
+    },
     "entries": {
       "type": "object",
       "additionalProperties": { "$ref": "#/$defs/entry" }

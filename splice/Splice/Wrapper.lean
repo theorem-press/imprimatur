@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Cli
+import Splice.Checker
 import Splice.Timing
 
 /-!
@@ -13,6 +14,10 @@ extractor, then `apply`. `imprimatur check` and `imprimatur accept` do the
 same with `check` or `accept` instead of `apply`. `imprimatur show KEY`
 runs the extractor for one key and prints its renderings, writing nothing.
 Every other command is the splicer's.
+
+With `[trust].checker` set, the verified checker runs alongside the
+extractor, on the same modules, and its verdict is written into the bundle
+(`Splice.Checker`, DESIGN §7.8); `--no-checker` leaves it out for a run.
 
 How the extractor runs depends on the mode (DESIGN §6.3):
 
@@ -34,10 +39,10 @@ open Cli Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
-  "usage: imprimatur [--config FILE] build [--timing] [apply options]
-       imprimatur [--config FILE] check [--timing] [check options]
+  "usage: imprimatur [--config FILE] build [--timing] [--no-checker] [apply options]
+       imprimatur [--config FILE] check [--timing] [--no-checker] [check options]
        imprimatur [--config FILE] accept KEY... | --all
-       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing]
+       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing] [--no-checker]
        imprimatur toolchain install VERSION   (for mode = \"external\")
        imprimatur [--config FILE] scan|apply|check|strip|migrate-slots ...  (see imprimatur-splice --help)"
 
@@ -160,7 +165,21 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString,
     "--base", (← IO.FS.realPath root).toString]
   let tExport ← IO.monoMsNow
-  let exportOut ← if cfg.mode == "external" then
+  -- The verified checker (DESIGN §7.8) reads the modules the extractor
+  -- imports, alongside it, once they are built: the export phase is the
+  -- wait for both.
+  let modules := doc.manifests.foldl (fun acc m => match m.solutionModule with
+    | some sm => if acc.contains sm then acc else acc.push sm
+    | none => acc) cfg.imports
+  let startChecker : IO (Option (Task (Except IO.Error (Except String (Checker × Bool) × Nat)))) :=
+    match cfg.checker with
+    | some tool => if a.noChecker then pure none else
+      some <$> IO.asTask do
+        let t0 ← IO.monoMsNow
+        let r ← (Checker.run leanDir workAbs tool modules).run
+        return (r, (← IO.monoMsNow) - t0)
+    | none => pure none
+  let (exportOut, checking) ← if cfg.mode == "external" then
       -- External mode (DESIGN §6.3 A): a cached extractor built with the host's
       -- toolchain runs under the host's `lake env`. Nothing in the host changes,
       -- and the host is not built: it must be built already.
@@ -170,21 +189,39 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
       let exe ← cachedExtractor version
       unless ← exe.pathExists do
         throw s!"no extractor for Lean {version}; run: imprimatur toolchain install {version}"
-      lake leanDir (#["env", exe.toString] ++ exportArgs) env
+      let checking ← startChecker
+      pure (← lake leanDir (#["env", exe.toString] ++ exportArgs) env, checking)
     else do
       -- In-project and sidecar modes: the package requires imprimatur.
       let modules := doc.manifests.foldl (fun acc m =>
         (match m.solutionModule with | some sm => acc.push sm | none => acc) |>
         fun acc => match m.challengeModule with | some cm => acc.push cm | none => acc) cfg.imports
       discard <| lake leanDir (#["build", "-q"] ++ modules)
-      lake leanDir (#["exe", "imprimatur-export"] ++ exportArgs) env
+      let checking ← startChecker
+      pure (← lake leanDir (#["exe", "imprimatur-export"] ++ exportArgs) env, checking)
+  -- The checker's verdict goes into the bundle, and one line to the console.
+  let mut notes := ""
+  if let some t := checking then
+    let ((c, kept), ms) ← match ← IO.wait t with
+      | .ok (.ok r, ms) => pure (r, ms)
+      | .ok (.error e, _) => throw e
+      | .error e => throw s!"{e}"
+    if a.timing then
+      let h ← IO.FS.Handle.mk (root / timingFile) .append
+      h.putStrLn s!"\{\"at\": \"checker\", \"phase\": \"{c.tool}\", \"ms\": {ms}, \"kept\": {kept}}"
+    let text ← (IO.FS.readFile bundle : IO String)
+    let b ← match Bundle.parse text with
+      | .ok b => pure b
+      | .error e => throw s!"{bundle}: {e}"
+    writeAtomic bundle (Bundle.render { b with checker := some c })
+    notes := s!"checker: {c.report}{if kept then " (from the last run; the development is unchanged)" else ""}\n"
   timingEvent root a "export" ((← IO.monoMsNow) - tExport)
   -- Only warnings are of interest: the extractor's, and Lean's about the
   -- notation files it elaborates (`file:line:col: warning: …`).
   let warnings := (exportOut.splitOn "\n").filter fun l =>
     l.startsWith "imprimatur-export: warning" || (l.splitOn ": warning: ").length > 1
   let rel := (bundle.toString.drop ((← IO.FS.realPath root).toString.length + 1)).toString
-  return .ok (doc, rel, String.join (warnings.map (· ++ "\n")))
+  return .ok (doc, rel, notes ++ String.join (warnings.map (· ++ "\n")))
 
 /-- The whole flow: export, then the splicer's `apply`, `check` or `accept`. -/
 def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × String) := do
@@ -203,6 +240,7 @@ where
     a.keys.toList ++ (if a.all then ["--all"] else []) ++
     (a.force.toList.flatMap (["--force", ·])) ++
     (if a.keepStale then ["--keep-stale"] else []) ++
+    (if a.noChecker then ["--no-checker"] else []) ++
     (a.renames.toList.flatMap fun (o, n) => ["--rename-slot", s!"{o}={n}"]) ++
     (match a.profile with | some p => ["--profile", p] | none => []) ++
     (match a.commit with | some c => ["--commit", c] | none => []) ++
