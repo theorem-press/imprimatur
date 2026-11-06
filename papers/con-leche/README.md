@@ -11,6 +11,18 @@ built development, in external mode, so con-leche's repository does not
 change. `[trust] checker = "con-leche"` has con-leche check its own
 development.
 
+## Licence
+
+The README is by Joachim Breitner and the con-leche authors, under the
+[Apache License 2.0](https://github.com/leanprover/con-leche/blob/master/LICENSE),
+the licence of this repository too (its `LICENSE`). That licence allows
+copying and modifying, provided the copy carries the licence, keeps the
+original's attribution notices (the README has none; the authorship is
+stated in `main.tex` and on the title page) and states that it was changed.
+The changes: Markdown converted to LaTeX, the three Lean code blocks
+replaced by generated ones, generated blocks added after the declarations
+the prose names. The words are unchanged.
+
 ## Building
 
 ```sh
