@@ -196,6 +196,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§7.2 | notation matches `Expr`; unmatched subterms are rendered as functions, or delaborated | `extract/golden/Notation`, `extract/notation/no-render-errors` | M4 |
 | D§7.3 | `lean` view, with semantic token macros | `extract/tokens/line`, `extract/tokens/subscripts-and-primes`, `extract/names/strip`, `extract/golden/Basic` | M2 |
 | D§7.3 | the `lean` view heads a class with `class` or `class inductive`, not with the kind Lean stores it as | `extract/lean/class`, `extract/lean/class-inductive` | M2 |
+| D§7.3 | `\usepackage[colour]{imprimatur}` colours the `lean` view's tokens, and typesets with both engines | `e2e/external` | M2 |
 | D§6.3 | external mode: the host's modules come before the extractor's own on the search path, so a host `Main` (its executable) is the one a paper cites | `e2e/external` (`main`) | M3 |
 | D§7.3 | `meta` view; the splicer fills its source location per profile | `extract/markdown/code`, `extract/markdown/maths`, `extract/markdown/unbalanced-maths`, `extract/golden/Basic`, `splice/golden/meta-source` | M2 |
 | D§7.3 | `prose` labels only hypotheses the paper refers to (`\leanhypref`) | `extract/prose/hyp-referred-labelled`, `extract/prose/hyp-unreferred-unlabelled`, `splice/golden/hyprefs` | M5 |

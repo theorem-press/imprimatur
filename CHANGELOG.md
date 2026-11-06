@@ -5,6 +5,9 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `\usepackage[colour]{imprimatur}` colours the `lean` view's tokens as the
+  Lean 4 VS Code theme does, by restyling the semantic macros the view
+  already wraps every token in (docs/views.md).
 - `papers/con-leche`: con-leche's README as a paper whose Lean statements
   imprimatur generates, every theorem and definition the README names shown
   from the built development (external mode), with con-leche checking its

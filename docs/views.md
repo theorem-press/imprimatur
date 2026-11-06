@@ -29,6 +29,18 @@ The whole view is wrapped in `\LeanCode{…}`:
 There is no verbatim environment, so the view also works inside
 `\leaninline` and inside macro arguments.
 
+**Colour.** `\usepackage[colour]{imprimatur}` (or `color`) colours the
+tokens as the Lean 4 VS Code theme does: keywords purple, sorts blue,
+constants teal, bound variables dark blue, numbers green, strings red. The
+classification is Lean's pretty-printer's, so this is a restyling of the
+macros above, not a lexer: a `listings` language for Lean would guess
+token classes from keyword lists and could not tell a constant from a
+bound variable. The colours are named `leankeyword`, `leansort`,
+`leanconst`, `leanbound`, `leannumber` and `leanstring`, so a document can
+change one with `\colorlet`, or redefine a macro after loading the package.
+The option loads `xcolor`; a document that wants `xcolor`'s own options
+loads it first.
+
 **Settings.**
 - **Names.** Namespaces listed in `strip_namespaces` are left out of names,
   as if they were open.

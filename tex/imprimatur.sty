@@ -10,6 +10,13 @@
 \NeedsTeXFormat{LaTeX2e}[2020/10/01]
 \ProvidesPackage{imprimatur}[2026/10/17 v0.0.0 Lean declarations in LaTeX]
 
+% Options: colour (or color) colours the tokens of the lean view (below).
+\newif\ifimprimatur@colour
+\DeclareOption{colour}{\imprimatur@colourtrue}
+\DeclareOption{color}{\imprimatur@colourtrue}
+\DeclareOption*{\PackageWarning{imprimatur}{Unknown option `\CurrentOption'}}
+\ProcessOptions\relax
+
 \RequirePackage{amsmath}
 % amssymb's symbols, unless a math font package (newtxmath, as acmart loads)
 % has defined them already.
@@ -114,6 +121,26 @@
 \newcommand\LeanNumber[1]{#1}
 \newcommand\LeanString[1]{#1}
 \newcommand\LeanCodeInline[1]{{\LeanCodeFont\LeanCodeSpecials #1}}
+% With the colour option, the tokens are coloured as the Lean 4 VS Code
+% theme colours them: the classification is Lean's pretty-printer's, so this
+% is a restyling, not a lexer. The colours are named so a document can
+% change one (\colorlet{leanconst}{...}); a document that wants xcolor's
+% own options loads xcolor before this package.
+\ifimprimatur@colour
+  \RequirePackage{xcolor}
+  \definecolor{leankeyword}{HTML}{AF00DB}
+  \definecolor{leansort}{HTML}{0000FF}
+  \definecolor{leanconst}{HTML}{267F99}
+  \definecolor{leanbound}{HTML}{001080}
+  \definecolor{leannumber}{HTML}{098658}
+  \definecolor{leanstring}{HTML}{A31515}
+  \renewcommand\LeanKeyword[1]{\textcolor{leankeyword}{\textbf{#1}}}
+  \renewcommand\LeanSort[1]{\textcolor{leansort}{\textbf{#1}}}
+  \renewcommand\LeanConst[1]{\textcolor{leanconst}{#1}}
+  \renewcommand\LeanBound[1]{\textcolor{leanbound}{\textsl{#1}}}
+  \renewcommand\LeanNumber[1]{\textcolor{leannumber}{#1}}
+  \renewcommand\LeanString[1]{\textcolor{leanstring}{#1}}
+\fi
 
 % The meta view: source location, axioms, sorry status, docstring.
 \newcommand\LeanSorryFree{sorry-free}

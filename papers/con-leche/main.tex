@@ -17,25 +17,10 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 \usepackage[hidelinks]{hyperref}
-\usepackage{imprimatur}
-\usepackage{xcolor}
+% The colour option colours the generated Lean's tokens (keyword, sort,
+% constant, bound variable, literal) as Lean's pretty-printer classified them.
+\usepackage[colour]{imprimatur}
 \newunicodechar{ω}{\ensuremath{\omega}}
-% Syntax colouring of the generated Lean. The lean view wraps every token in a
-% semantic macro (keyword, sort, constant, bound variable, literal), classified
-% by Lean's own pretty-printer, so colouring is a matter of restyling them, in
-% the colours of the Lean 4 VS Code theme.
-\definecolor{leankeyword}{HTML}{AF00DB}
-\definecolor{leansort}{HTML}{0000FF}
-\definecolor{leanconst}{HTML}{267F99}
-\definecolor{leanbound}{HTML}{001080}
-\definecolor{leanliteral}{HTML}{098658}
-\definecolor{leanstring}{HTML}{A31515}
-\renewcommand\LeanKeyword[1]{\textcolor{leankeyword}{\textbf{#1}}}
-\renewcommand\LeanSort[1]{\textcolor{leansort}{\textbf{#1}}}
-\renewcommand\LeanConst[1]{\textcolor{leanconst}{#1}}
-\renewcommand\LeanBound[1]{\textcolor{leanbound}{\textsl{#1}}}
-\renewcommand\LeanNumber[1]{\textcolor{leanliteral}{#1}}
-\renewcommand\LeanString[1]{\textcolor{leanstring}{#1}}
 \newcommand\code[1]{\texttt{#1}}
 
 \title{con-leche – a CONsistent LEan CHEcker}
