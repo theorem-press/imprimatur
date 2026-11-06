@@ -1,0 +1,18 @@
+schema = 1
+main = "main.tex"
+# con-leche's own repository, checked out beside imprimatur's; it must be
+# built (`lake build ConLeche.MainTheorem ... con-leche`) before `imprimatur build`.
+lean_project = "../../../con-leche"
+mode = "external"
+imports = [
+  "ConLeche.MainTheorem",
+  "ConLeche.Verify.Frontend.Prepare",
+  "ConLeche.Model.StreamConsts",
+  "ConLeche.Frontend.Olean.View",
+  "Main",
+]
+strip_namespaces = ["ConLeche"]
+
+# con-leche checks con-leche: the verified checker on its own development (DESIGN §7.8).
+[trust]
+checker = "con-leche"

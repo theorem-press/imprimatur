@@ -1,5 +1,53 @@
 {
   "entries": {
+    "Patterns.Side": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 3,
+        "untrusted": []
+      },
+      "decl": "Patterns.Side",
+      "doc": "A class inductive, headed `class inductive`.",
+      "kind": "inductive",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource", "\\mathrm", "\\to"],
+      "sigHash": "721ad17e666bb48ad4f89c296aa7802e546b62da07841df0aee645902ecf9b5f",
+      "sorry": false,
+      "source": {
+        "line": 46,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "1b229bff1c6fbc4a6f98d371920e68ee72a3e37d150a70c586b814fb4a07187e",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{class inductive} \\LeanConst{Side} (\\LeanBound{α} : \\LeanSort{Type}) : \\LeanSort{Type}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Side} : \\mathrm{Type} \\to \\mathrm{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A class inductive, headed \\LeanCodeInline{class inductive}.}"
+      }
+    },
+    "Patterns.Tagged": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 2,
+        "untrusted": []
+      },
+      "decl": "Patterns.Tagged",
+      "doc": "A class, which the `lean` view heads with `class`, not `structure`.",
+      "kind": "structure",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\leanmetasource", "\\mathrm", "\\to"],
+      "sigHash": "cebca065e6ef97624b299f6ed72d993db000e3190b038ec013487ce5ea718c9c",
+      "sorry": false,
+      "source": {
+        "line": 42,
+        "path": "Patterns/Defs.lean"
+      },
+      "stmtHash": "c69cafe0ca86fd337f075eb58bd3f29f6914bc3dd2258827818c1f04dd936e81",
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{class} \\LeanConst{Tagged} (\\LeanBound{α} : \\LeanSort{Type}) : \\LeanSort{Type}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Tagged} : \\mathrm{Type} \\to \\mathrm{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A class, which the \\LeanCodeInline{lean} view heads with \\LeanCodeInline{class}, not \\LeanCodeInline{structure}.}"
+      }
+    },
     "Patterns.ident": {
       "axioms": [],
       "cone": {

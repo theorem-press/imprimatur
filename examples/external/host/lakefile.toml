@@ -1,7 +1,11 @@
 # A host project that knows nothing of imprimatur. In external mode
 # (DESIGN §6.3 A) nothing in it changes.
 name = "shapes"
-defaultTargets = ["Shapes"]
+defaultTargets = ["Shapes", "shapes"]
 
 [[lean_lib]]
 name = "Shapes"
+
+[[lean_exe]]
+name = "shapes"
+root = "Main"

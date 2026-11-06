@@ -13,3 +13,13 @@ _site/
 /examples/**/*.synctex.gz
 /examples/**/*.out
 /examples/*/host/lake-manifest.json
+# Papers under papers/ are built in place: the spliced .tex is committed, the rest is not
+/papers/**/.imprimatur/
+/papers/**/out/
+/papers/**/*.aux
+/papers/**/*.log
+/papers/**/*.fls
+/papers/**/*.fdb_latexmk
+/papers/**/*.pdf
+/papers/**/*.synctex.gz
+/papers/**/*.out

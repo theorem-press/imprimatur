@@ -49,9 +49,12 @@ unsafe def main (args : List String) : IO UInt32 := do
   -- IMPRIMATUR_TIMING=FILE logs where the time goes (`Imprimatur.Timing`).
   Timing.start
   let tStart ← IO.monoMsNow
-  -- The host's search path (from `lake env`), and this program's own library,
-  -- which a notation module may import (external mode, DESIGN §6.3 A).
-  Lean.initSearchPath (← Lean.findSysroot) [(← IO.appDir) / ".." / "lib" / "lean"]
+  -- The host's search path (from `lake env`), then this program's own library,
+  -- which a notation module may import (external mode, DESIGN §6.3 A). The
+  -- host's comes first: both have a module `Main` (the host's executable, and
+  -- this one), and the host's is the one a paper can cite.
+  Lean.initSearchPath (← Lean.findSysroot)
+  Lean.searchPathRef.modify (· ++ [(← IO.appDir) / ".." / "lib" / "lean"])
   let root ← IO.currentDir
   let main := reqs.filter (!·.key.endsWith challengeSuffix)
   -- Notation files (external mode) are elaborated, with the imports; otherwise

@@ -5,6 +5,15 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `papers/con-leche`: con-leche's README as a paper whose Lean statements
+  imprimatur generates, every theorem and definition the README names shown
+  from the built development (external mode), with con-leche checking its
+  own development through `[trust] checker`. The experiment found two
+  extractor faults, fixed: the extractor's own library came first on the
+  module search path, so a host's `Main` module (its executable) was
+  shadowed by the extractor's, and a paper citing the host's `main` got the
+  extractor's; and the `lean` view wrote `structure` for a class (now
+  `class`, and `class inductive`).
 - `[trust] checker = "con-leche"` has the development checked by con-leche,
   the external checker the Lean toolchain ships from v4.35, verified in
   Lean to accept only developments that have a set-theoretic model. `build`

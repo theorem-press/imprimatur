@@ -67,7 +67,7 @@ def fixtures : Array Fixture := #[
       "clauses", "grammar|display"] },
   { dir := "Patterns", module := `Patterns, strip := #[`Patterns],
     keys := #["Patterns.three", "Patterns.nested", "Patterns.side", "Patterns.safeHead",
-      "Patterns.konst", "Patterns.ident"],
+      "Patterns.konst", "Patterns.ident", "Patterns.Tagged", "Patterns.Side"],
     views := #["math|def="] },
   { dir := "Trust", module := `Trust, strip := #[`Trust],
     keys := #["Trust.double_even", "Trust.double_even_renamed", "Trust.pairMap_fst",
@@ -342,6 +342,13 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     -- A constant applied only to implicit arguments is no misread (`id`).
     checkEq "extract/validate/implicit-only-application"
       ((entry? r.bundle "Patterns.ident").bind (·.getObjVal? "validation" |>.toOption) |>.map (·.compress)) none
+    -- The lean view heads a class with `class`, not with the kind Lean stores it as.
+    let view (k v : String) : String :=
+      ((entry? r.bundle k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String v)).toOption).getD ""
+    check "extract/lean/class"
+      ((view "Patterns.Tagged" "lean").startsWith "\\LeanCode{%\n\\LeanKeyword{class} ") (view "Patterns.Tagged" "lean")
+    check "extract/lean/class-inductive"
+      ((view "Patterns.Side" "lean").startsWith "\\LeanCode{%\n\\LeanKeyword{class inductive} ") (view "Patterns.Side" "lean")
   | "Trust" =>
     checkEq "extract/trust/same-hash-renamed-binder"
       (field r.bundle "Trust.double_even" "stmtHash") (field r.bundle "Trust.double_even_renamed" "stmtHash")

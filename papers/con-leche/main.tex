@@ -1,0 +1,347 @@
+% The README of con-leche (https://github.com/leanprover/con-leche), as a
+% paper whose Lean statements imprimatur generates: every theorem and
+% definition the README names is shown as Lean prints it, from the built
+% development. The prose is the README's, unchanged; its Markdown code
+% blocks are replaced by generated blocks, and a generated block follows
+% each mention of a declaration that the README only links to.
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[hidelinks]{hyperref}
+\usepackage{imprimatur}
+\newunicodechar{ω}{\ensuremath{\omega}}
+\newcommand\code[1]{\texttt{#1}}
+
+\title{con-leche – a CONsistent LEan CHEcker}
+\author{\parbox{0.85\textwidth}{\centering\normalsize\itshape The README of
+  \href{https://github.com/leanprover/con-leche}{con-leche} at commit
+  7cb7a45 (2026-11-05), unchanged; the Lean statements are generated from the
+  development by imprimatur.}}
+\date{}
+
+\begin{document}
+\maketitle
+
+This is an external checker for the Lean theorem prover that is proven (in Lean) to be consistent in that it does not accept a proof of False.
+
+The core idea of this project is: What if we allow the checker implementation to do extra work (type comparisons) that is not strictly necessary for soundness, but makes the proof easier.
+
+\section*{Status}
+
+The checker is practically useful and has good performance. I consider it production ready.
+
+It was implemented and proven to be consistent by Claude (Fable and Opus), under heavy supervision by Joachim Breitner at the Lean FRO. See the git history for all the detours and dead ends it took.
+
+This README is actually human written (with AI only doing copy-editing, fact checking and filling in numbers). It is probably the only human written thing in this repository.
+
+There is an AI-written overview of the project in \href{https://github.com/leanprover/con-leche/blob/master/OVERVIEW.md}{OVERVIEW.md}.
+
+\section*{Design of the checker implementation}
+
+\begin{itemize}
+\item The checker is implemented in Lean.
+\item It uses its own term representation, so it does not rely on Lean’s \code{Lean.Expr}, and thus does not rely on the unverified C++ routines for that type.
+\item Term representation is locally nameless, with open variables represented as deBruijn level + type (inspired by \href{https://github.com/ammkrn/nanoda_lib}{nanoda}).
+\item Memoization of core checker routines via hash maps and hashes pre-computed using \code{@[computed\_field]}, like in the official checker and \href{https://github.com/digama0/lean4lean/}{lean4lean}.
+\item The checker has a uniform strategy for handling inductive types, including mutual and nested, based on a positivity analysis. It does not perform the nested-to-mutual reduction that the official kernel uses. (Early versions of con-leche used an extensional modelling approach based on \href{https://github.com/nomeata/lean-inductive-models}{lean-inductive-models}, but has since phased that out.)
+\item In anticipation of \href{https://github.com/leanprover/lean4/pull/14896}{lean4\#14896}, theorem bodies are opaque. A k-rule like hack for \code{And} allows processing proofs built by Lean versions before that change.
+\item Accelerated Nat operations are performed using Lean’s \code{Nat} type.
+\item It accepts only the three standard Lean axioms in the input stream.
+
+  For practicality reasons, it silently \emph{ignores} the \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Cached/ParsedC.lean#L236-L237}{\code{sorryAx}} axiom declarations from the standard library, but will complain it is actually used. The (deprecated) \code{trustCompiler}, \code{ofReduceBool} and \code{ofReduceNat} axioms are replaced with simple definitions of the same type.
+
+\begin{leanblock}[view=lean, sum=vc-0rVPx4v]{sorryAx}{}
+\LeanCode{%
+\LeanKeyword{axiom} \LeanConst{sorryAx}.\{\LeanBound{u}\} (\LeanBound{α} : \LeanSort{Sort} \LeanBound{u}) (\LeanBound{synthetic} : \LeanConst{Bool}) : \LeanBound{α}}
+\end{leanblock}
+
+  The checker (at the moment) will reject any other axiom.
+\item The checker processes files in three phases: \emph{parsing} the input stream, \emph{installing} all declarations into the environment and then \emph{checking}. All stages can use parallelism with \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Driver/Cli.lean#L131}{\code{-{}-jobs}}.
+\item The JSON and olean parsers are fast agentic-hand-written parsers over the input bytes (verified with respect to naive ones, see below).
+\end{itemize}
+
+\section*{Design of the checker proof}
+
+The idea of the consistency proof is that we define a model in set theory, classical and extensional, and show that our checker only accepts Lean terms that have a model in that world.
+
+Depending on your background and your level of interest you may want to look at the Main Corollary or the Main Theorem.
+
+\subsection*{The Main Corollary}
+
+In \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/MainTheorem.lean}{\code{ConLeche/MainTheorem.lean}} we prove that an export file containing a \code{theorem … : False := …} declaration (in JSON), with arbitrary declarations before and after, will not be accepted by \code{con-leche}:
+
+\begin{leanblock}[view=lean, sum=gBGlbkLscY]{ConLeche.no_False_declaration}{}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{no\_False\_declaration}.\{\LeanBound{w}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{w}) [\LeanConst{SetTheory} \LeanBound{V}]\LeanNewline
+\LeanIndent{2}(\LeanBound{pins} : \LeanConst{List} \LeanConst{NatOpPinSet}) (\LeanBound{chunks} : \LeanConst{List} \LeanConst{ByteArray})\LeanNewline
+\LeanIndent{2}(\LeanBound{h} : \LeanConst{jsonWithTheoremFalse} \LeanBound{chunks}) :\LeanNewline
+\LeanIndent{2}∃ \LeanBound{e},\LeanNewline
+\LeanIndent{4}(\LeanKeyword{do}\LeanNewline
+\LeanIndent{8}\LeanKeyword{let} \LeanBound{pre} ← \LeanConst{Frontend.builtinPreludeE}\LeanNewline
+\LeanIndent{8}\LeanKeyword{let} \LeanBound{r} ← \LeanConst{Frontend.parseChunks} \LeanBound{chunks}\LeanNewline
+\LeanIndent{8}\LeanKeyword{have} \LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration} := \LeanConst{Frontend.preparePrelude} \LeanBound{pre} \LeanBound{r}.decls\LeanNewline
+\LeanIndent{8}\LeanConst{Cached.checkDecls} \LeanConst{CheckMode.verified} \LeanBound{pins} \LeanBound{ds}) =\LeanNewline
+\LeanIndent{6}\LeanConst{Except.error} \LeanBound{e}}
+\end{leanblock}
+
+The meaning of \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Kernel/Basis/False.lean#L50-L51}{\code{False}} is hard-coded, so no tricks involving odd definitions for \code{False} will confuse the checker. This is a meaningful theorem if you assume that worrisome kernel implementation bugs or flaws in the theory are those that can be used to prove anything, in particular \code{False}.
+
+\begin{leanblock}[view=lean, sum=JXvtPVRWXF]{ConLeche.falseBasis}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{falseBasis} : \LeanConst{List} \LeanConst{ConstantInfo}}
+\end{leanblock}
+
+\subsection*{The Main Theorem}
+
+The theorem \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/MainTheorem.lean#L114-L121}{\code{no\_False\_declaration}} is mostly a corollary of a stronger statement, namely that every accepted environment has a model in a suitable set theory. This theorem is also found in \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/MainTheorem.lean}{\code{ConLeche/MainTheorem.lean}}:
+
+\begin{leanblock}[view=lean, sum=UuWemHidbh]{ConLeche.model_exists}{}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{model\_exists}.\{\LeanBound{w}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{w}) [\LeanConst{SetTheory} \LeanBound{V}] (\LeanBound{pins} : \LeanConst{List} \LeanConst{NatOpPinSet})\LeanNewline
+\LeanIndent{2}(\LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration}) (\LeanBound{env} : \LeanConst{Env})\LeanNewline
+\LeanIndent{2}(\LeanBound{accepted} : \LeanConst{Cached.checkDecls} \LeanConst{CheckMode.verified} \LeanBound{pins} \LeanBound{ds} = \LeanConst{Except.ok} \LeanBound{env}) :\LeanNewline
+\LeanIndent{2}\LeanConst{Nonempty} (\LeanConst{Model} \LeanBound{V} \LeanBound{env})}
+\end{leanblock}
+
+This is the interesting theorem if you want to be sure that con-leche interprets your Lean terms and types the way you intend them. The relation \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Denotes.lean#L248-L268}{\code{Model V env}} (in \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Denotes.lean}{ConLeche/Denotes.lean}) states that every constant in the environment denotes a member of its type's denotation (and that \code{False} denotes the empty set and that \code{Eq} denotes set equality). In particular, every accepted theorem's statement is true in the model.
+
+\begin{leanblock}[view=lean, sum=Ndz2kjaXmL]{ConLeche.Model}{}
+\LeanCode{%
+\LeanKeyword{structure} \LeanConst{Model}.\{\LeanBound{w}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{w}) [\LeanConst{SetTheory} \LeanBound{V}] (\LeanBound{env} : \LeanConst{Env}) : \LeanSort{Type} \LeanBound{w}}
+\end{leanblock}
+
+Denotation of terms and types is captured by the inductive relation \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Denotes.lean#L123-L124}{\code{Denotes}} in the same file. It depends on some set-theoretical constructions (e.g. function spaces).
+
+\begin{leanblock}[view=lean, sum=ucRzn2CvLG]{ConLeche.Denotes}{}
+\LeanCode{%
+\LeanKeyword{inductive} \LeanConst{Denotes}.\{\LeanBound{w}\} \{\LeanBound{V} : \LeanSort{Type} \LeanBound{w}\} [\LeanConst{SetTheory} \LeanBound{V}]\LeanNewline
+\LeanIndent{2}(\LeanBound{cval} : \LeanConst{Name} → (\LeanConst{LevelParam} → \LeanConst{Nat}) → \LeanBound{V}) (\LeanBound{env} : \LeanConst{Env}) (\LeanBound{φ} : \LeanConst{LevelParam} → \LeanConst{Nat}) :\LeanNewline
+\LeanIndent{2}(\LeanConst{BVarIdx} → \LeanBound{V}) → \LeanConst{Expr} → \LeanBound{V} → \LeanSort{Prop}}
+\end{leanblock}
+
+The \code{Model} relation is \emph{not} the strongest property proven (and carried through the induction) about the environment, but a simplified one. For example, it does not contain the delta and iota equations – but since they can easily be added as an explicit \code{theorem : lhs = rhs := rfl}, this is hopefully not an oversimplification.
+
+This theorem only talks about \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Cached/Installed.lean#L329-L334}{\code{checkDecls}} and its output \code{env}, which has the form that we define our semantics about. You may want to look through the code and consult additional theorems that relate this to your input in a meaningful way. You may want to check that
+
+\begin{leanblock}[view=lean, sum=1aXqqVvB_x]{ConLeche.Cached.checkDecls}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{Cached.checkDecls} (\LeanBound{mode} : \LeanConst{CheckMode}) (\LeanBound{pins} : \LeanConst{List} \LeanConst{NatOpPinSet})\LeanNewline
+\LeanIndent{2}(\LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration}) : \LeanConst{Except} (\LeanConst{CheckError} × \LeanConst{Nat}) \LeanConst{Env}}
+\end{leanblock}
+
+\begin{itemize}
+\item The parser is faithful.
+\item \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Frontend/Prepare.lean#L165-L172}{\code{preparePrelude}} only reorders declarations and adds missing prelude declarations, but does not drop any (see \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Verify/Frontend/Prepare.lean#L157-L162}{\code{theorem Frontend.preparePrelude\_perm}}).
+
+\begin{leanblock}[view=lean, sum=oN41eIlo0i]{ConLeche.Frontend.preparePrelude}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{Frontend.preparePrelude} (\LeanBound{pre} : \LeanConst{Frontend.PreludeIx})\LeanNewline
+\LeanIndent{2}(\LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration}) : \LeanConst{Array} \LeanConst{Declaration}}
+\end{leanblock}
+
+\begin{leanblock}[view=lean, sum=3Tv7O4SdoJ]{ConLeche.Frontend.preparePrelude_perm}{}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{Frontend.preparePrelude\_perm} (\LeanBound{pre} : \LeanConst{Frontend.PreludeIx})\LeanNewline
+\LeanIndent{2}(\LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration}) :\LeanNewline
+\LeanIndent{2}∃ \LeanBound{extra},\LeanNewline
+\LeanIndent{4}(∀ (\LeanBound{d} : \LeanConst{Declaration}), \LeanBound{d} ∈ \LeanBound{extra} → \LeanBound{d} ∈ \LeanBound{pre}.decls.toList) ∧\LeanNewline
+\LeanIndent{6}(\LeanConst{Frontend.preparePrelude} \LeanBound{pre} \LeanBound{ds}).toList.Perm (\LeanBound{ds}.toList ++ \LeanBound{extra})}
+\end{leanblock}
+
+\item The definitions, theorem statements and axioms in the output of \code{checkDecls} are as they are in the input, up to dropping the \code{sorryAx} declaration (see \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Model/StreamConsts.lean#L237-L242}{\code{theorem checkDecls\_consts}}).
+
+\begin{leanblock}[view=lean, sum=B6mCq7hRr3]{ConLeche.Cached.checkDecls_consts}{}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{Cached.checkDecls\_consts}.\{\LeanBound{w}\} \{\LeanBound{pins} : \LeanConst{List} \LeanConst{NatOpPinSet}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{w})\LeanNewline
+\LeanIndent{2}[\LeanConst{SetTheory} \LeanBound{V}] \{\LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration}\} \{\LeanBound{env} : \LeanConst{Env}\}\LeanNewline
+\LeanIndent{2}(\LeanBound{accepted} : \LeanConst{Cached.checkDecls} \LeanConst{CheckMode.verified} \LeanBound{pins} \LeanBound{ds} = \LeanConst{Except.ok} \LeanBound{env})\LeanNewline
+\LeanIndent{2}\{\LeanBound{pd} : \LeanConst{Declaration}\} (\LeanBound{hmem} : \LeanBound{pd} ∈ \LeanBound{ds}) \{\LeanBound{cv} : \LeanConst{ConstantVal}\}\LeanNewline
+\LeanIndent{2}(\LeanBound{hcv} : \LeanConst{Cached.Declaration.Declares} \LeanBound{pd} \LeanBound{cv}) :\LeanNewline
+\LeanIndent{2}∃ \LeanBound{c},\LeanNewline
+\LeanIndent{4}\LeanBound{env}.find? \LeanBound{cv}.name = \LeanConst{some} \LeanBound{c} ∧\LeanNewline
+\LeanIndent{6}\LeanBound{c}.toConstantVal.levelParams = \LeanBound{cv}.levelParams ∧\LeanNewline
+\LeanIndent{8}\LeanBound{c}.toConstantVal.type = \LeanBound{cv}.type}
+\end{leanblock}
+
+\end{itemize}
+
+\subsection*{The IO parts}
+
+The theorems above talk about the pure checker code. That pure code is embedded in a driver: parsing arguments, reading files, parallelism, all in the \code{IO} monad. This is out of reach for a rigorous verification, but we can still do something that helps to rule out more implementation bugs.
+
+To that end the driver function \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Driver/Cli.lean#L446}{\code{runArgs}} runs in a generic monad with a \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Frontend/CheckerIO.lean#L120}{\code{CheckerIO}} type class modelling three kinds of operations:
+
+\begin{leanblock}[view=lean, sum=gGO-WB3het]{ConLeche.Driver.runArgs}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{Driver.runArgs} \{\LeanBound{m} : \LeanSort{Type} → \LeanSort{Type}\} [\LeanConst{CheckerIO} \LeanBound{m}] (\LeanBound{args} : \LeanConst{List} \LeanConst{String}) :\LeanNewline
+\LeanIndent{2}\LeanBound{m} \LeanConst{UInt8}}
+\end{leanblock}
+
+\begin{leanblock}[view=lean, sum=j6URszxujI]{ConLeche.CheckerIO}{}
+\LeanCode{%
+\LeanKeyword{class} \LeanConst{CheckerIO} (\LeanBound{m} : \LeanSort{Type} → \LeanSort{Type}) : \LeanSort{Type} \LeanNumber{1}}
+\end{leanblock}
+
+\begin{itemize}
+\item File access (existence, reading)
+\item A \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Frontend/CheckerIO.lean#L142}{\code{parMapExcept}} operator for parallelism
+
+\begin{leanblock}[view=lean, sum=t8J_xaEFUQ]{ConLeche.CheckerIO.parMapExcept}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{CheckerIO.parMapExcept} \{\LeanBound{m} : \LeanSort{Type} → \LeanSort{Type}\} [\LeanBound{self} : \LeanConst{CheckerIO} \LeanBound{m}]\LeanNewline
+\LeanIndent{2}\{\LeanBound{α} \LeanBound{β} \LeanBound{ε} : \LeanSort{Type}\} (\LeanBound{jobs} : \LeanConst{Nat}) :\LeanNewline
+\LeanIndent{2}(\LeanBound{α} → \LeanBound{m} (\LeanConst{Except} \LeanBound{ε} \LeanBound{β})) → \LeanConst{List} \LeanBound{α} → \LeanBound{m} (\LeanConst{Except} \LeanBound{ε} (\LeanConst{List} \LeanBound{β}))}
+\end{leanblock}
+
+\item Running other \code{IO} with \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Frontend/CheckerIO.lean#L150}{\code{liftIO}}
+
+\begin{leanblock}[view=lean, sum=vQo8WPlkTq]{ConLeche.CheckerIO.liftIO}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{CheckerIO.liftIO} \{\LeanBound{m} : \LeanSort{Type} → \LeanSort{Type}\} [\LeanBound{self} : \LeanConst{CheckerIO} \LeanBound{m}] \{\LeanBound{α} : \LeanSort{Type}\} :\LeanNewline
+\LeanIndent{2}\LeanConst{IO} \LeanBound{α} → \LeanBound{m} \LeanBound{α}}
+\end{leanblock}
+
+\end{itemize}
+
+We can then prove something about such generic code in an idealized (pure, nondeterministic) model, \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Frontend/CheckerIO.lean#L262}{\code{ModelIO}}. These proofs are meaningful under some assumptions, which are not enforced:
+
+\begin{leanblock}[view=lean, sum=0LPg9llNwT]{ConLeche.ModelIO}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{ModelIO} (\LeanBound{α} : \LeanSort{Type}) : \LeanSort{Type}}
+\end{leanblock}
+
+\begin{itemize}
+\item The files accessed are not changing under our nose. Later reads during the process see the same state of the file system.
+\item The code run by \code{liftIO} has no side effects affecting the file reading operations and does not exit with code 0. We use this method for (otherwise pure) concurrency, diagnostic output and measuring time.
+\end{itemize}
+
+In the model, we assume nothing about \code{liftIO a} or its return value, except of course its type. Using a subtype there allows us to run, say, parallel code and still know that the result is what we need for the proof (e.g. \code{checkDeclsIO} returning a subtype mentioning \code{checkDecls}).
+
+\begin{leanblock}[view=lean, sum=MOXlOOgsz_]{ConLeche.Driver.checkDeclsIO}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{Driver.checkDeclsIO} (\LeanBound{mode} : \LeanConst{CheckMode}) (\LeanBound{err} : \LeanConst{IO.FS.Stream})\LeanNewline
+\LeanIndent{2}(\LeanBound{stride} \LeanBound{total} \LeanBound{t0} \LeanBound{tParse} \LeanBound{jobs} : \LeanConst{Nat}) (\LeanBound{ds} : \LeanConst{Array} \LeanConst{Declaration}) :\LeanNewline
+\LeanIndent{2}\LeanConst{IO}\LeanNewline
+\LeanIndent{4}(\LeanConst{Except} (\LeanConst{CheckError} × \LeanConst{Nat})\LeanNewline
+\LeanIndent{6}\{ \LeanBound{env} // \LeanConst{Cached.checkDecls} \LeanBound{mode} \LeanConst{natOpPinSets} \LeanBound{ds} = \LeanConst{Except.ok} \LeanBound{env} \})}
+\end{leanblock}
+
+In this setting we can \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/MainTheorem.lean#L149-L151}{lift the main corollary} to cover the driver as well:
+
+\begin{leanblock}[view=lean, sum=WmZxtFae_4]{ConLeche.main_no_False}{}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{main\_no\_False}.\{\LeanBound{w}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{w}) [\LeanConst{SetTheory} \LeanBound{V}] \{\LeanBound{file} : \LeanConst{String}\} \{\LeanBound{fs} : \LeanConst{FS}\}\LeanNewline
+\LeanIndent{2}\{\LeanBound{b} : \LeanConst{ByteArray}\} (\LeanBound{hb} : \LeanBound{fs}.file \{ \LeanConst{toString} := \LeanBound{file} \} = \LeanConst{some} \LeanBound{b})\LeanNewline
+\LeanIndent{2}(\LeanBound{hF} : \LeanConst{jsonWithTheoremFalse} [\LeanBound{b}]) :\LeanNewline
+\LeanIndent{2}¬\LeanConst{Driver.runArgs} [\LeanString{"--"}, \LeanBound{file}] \LeanBound{fs} (\LeanConst{Except.ok} \LeanNumber{0})}
+\end{leanblock}
+
+The real \href{https://github.com/leanprover/con-leche/blob/master/Main.lean#L84}{\code{main}} calls the generic \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Driver/Cli.lean#L446}{\code{runArgs}} at the \code{IO} instance, and additionally takes care of \href{https://github.com/leanprover/con-leche/blob/master/Main.lean#L29}{enabling the linearity protection}, flushing the output and exiting the process.
+
+\begin{leanblock}[view=lean, sum=bbUsUwjZXN]{main}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{main} (\LeanBound{args} : \LeanConst{List} \LeanConst{String}) : \LeanConst{IO} \LeanConst{Unit}}
+\end{leanblock}
+
+\begin{leanblock}[view=lean, sum=sitnpaXY4D]{enableAbortOnNonlinear}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{enableAbortOnNonlinear} : \LeanConst{IO} \LeanConst{Unit}}
+\end{leanblock}
+
+\subsection*{Set theory assumption}
+
+The set model we assume in \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/SetTheory/Core.lean#L95-L133}{\code{[SetTheory V]}} is fairly standard. It assumes ZF without infinity and choice (extensionality, pairing, union, power set, regularity, replacement) plus an ω-chain of Grothendieck universes \code{univ 0 ∈ univ 1 ∈ …}, stated in Tarski's form. Choice is inherited from Lean as the meta-logic. See \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/SetTheory/Core.lean}{\code{ConLeche/SetTheory/Core.lean}} for the precise formulation of our set theory.
+
+\begin{leanblock}[view=lean, sum=1ogm3JcOEU]{ConLeche.SetTheory}{}
+\LeanCode{%
+\LeanKeyword{class} \LeanConst{SetTheory}.\{\LeanBound{u}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{u}) : \LeanSort{Type} \LeanBound{u}}
+\end{leanblock}
+
+The interface is instantiated on Mathlib's \code{ZFSet} from the ω-many-inaccessible-cardinals hypothesis of Carneiro's consistency analysis in \href{https://github.com/digama0/lean4lean-model}{lean4lean-model}: see the theorem \href{https://github.com/leanprover/con-leche/blob/master/bridge/lean4lean-model/ConLecheBridge/Carneiro.lean#L200-L202}{\code{carneiro\_implies\_conleche}} in \href{https://github.com/leanprover/con-leche/tree/master/bridge/lean4lean-model}{\code{bridge/lean4lean-model}} (separate package due to the Mathlib dependency).
+
+Future work: The assumption that we need a ω-chain is maybe unnecessarily strong. Every concrete stream has an upper bound of universe levels it needs, and we could assume only a chain of length \code{k}. For every concrete \code{k} we can prove their existence in lean without further assumptions, just not for all \code{k}.
+
+\subsection*{Interpreting Pi and the certification tax}
+
+In our set interpretation, false propositions are \emph{∅} and true propositions are \emph{\{•\}} for a special point \emph{•}, so proof irrelevance and propositional extensionality is built in. This causes problems when interpreting Lean’s \code{∀}: If the pi type is building a proposition we need to model this differently than if we are building a type. But we want the interpretation to be syntax directed, and \emph{not} depend on type inference!
+
+For most types \code{∀ (x : A), B x}, we can look at the semantic values \code{[B] x} for all \code{x ∈ [A]}: If they are all propositions, then we interpret the pi type as a proposition, else as a proper dependent function.
+
+Unfortunately, this rule can make a function type look like it is a proposition: If \code{[A]} is the empty set, then there is no value to peek at, so we have no choice but to interpret such a function as \emph{•}, even if syntactically it produces a type. This allows a syntax-driven interpretation.
+
+A consequence of this is we have a bit less structure in the semantic value of a function type than we would like to. In particular, we may not be able to read the domain off a value in \code{[∀ (x : Empty), B x]}. The proof still goes through if we do some extra calls to \code{infer} and \code{defeq}. For example when comparing two \code{.lambda} expressions we additionally check whether their bodies have the same type.
+
+We call this extra work the \emph{certification tax} of our proof: Work we only do because our proof is not better. The checker can be run in \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Driver/Cli.lean#L114}{\code{-{}-trusted}} mode where these checks are omitted to quantify the cost.
+
+\subsection*{Nat operations}
+
+The checker performs fast reduction of \code{Nat} operations on literals, using Lean's own \code{Nat} type. When functions like \code{Nat.add} are declared it checks if the definition is defeq to the expected definition (embedded at build time based on the functions in the building toolchain) for this to be sound. The checker embeds versions of these definitions from different toolchain releases to be able to accept proofs from more than just its own toolchain.
+
+Bugs in the Lean runtime support for \code{Nat} can lead to unsoundness here. It should be straightforward to hook up a different (verified) bignum implementation.
+
+\subsection*{The proof idea}
+
+We have an (AI written) account of \href{https://leanprover.github.io/con-leche/con-leche-proof-idea.html}{the core proof idea}, in the shape of something resembling a research paper. If this leaves questions open, please let me know.
+
+\section*{Relation to lean4lean}
+
+This project intentionally explores a different point in the design space than \href{https://github.com/digama0/lean4lean/}{lean4lean}: We compromise on the checker implementation (extra checks) so that we can have a direct model-based proof of consistency that does not need some of the hard-to-prove metatheoretical properties of Lean.
+
+The lean4lean project aims at something bigger: Produce a verified checker that does \emph{not} do steps that we assume to be not necessary, and understand the metatheory of the Lean logic, beyond just consistency.
+
+Additionally, this project relies on Mario Carneiro's thesis (\emph{The Type Theory of Lean}, master's thesis, Carnegie Mellon University, 2019) for much of the set theoretical modelling.
+
+\section*{The JSON parser}
+
+The fast byte-wise parser is proven equivalent (\code{@[csimp]}) to a naive reference parser, and is covered by the Main Corollary mentioned above, which is stated in terms of the actual bytes entering the pipeline. (The Main Theorem does not cover the parser; it is not clear how to express the main theorem in terms of the raw input bytes.)
+
+\section*{The \code{.olean} parser}
+
+In addition to reading the official export format (\code{.ndjson}), \code{con-leche} can also read \code{.olean} files directly. This avoids the need to run \code{lean4export}. You can either check all modules reachable from a root module, or just the dependencies of a specific constant. See the usage section in \href{https://github.com/leanprover/con-leche/blob/master/OVERVIEW.md#0-using-the-checker}{OVERVIEW.md} for how to use it.
+
+The main corollary from above can be stated about \code{-{}-olean} as well, saying that if the module or any module it imports, transitively, declares in its private view a theorem of type \code{False}, the program will reject:
+
+\begin{leanblock}[view=lean, sum=UUXVP5eCTg]{ConLeche.main_oleans_no_False}{}
+\LeanCode{%
+\LeanKeyword{theorem} \LeanConst{main\_oleans\_no\_False}.\{\LeanBound{w}\} (\LeanBound{V} : \LeanSort{Type} \LeanBound{w}) [\LeanConst{SetTheory} \LeanBound{V}]\LeanNewline
+\LeanIndent{2}\{\LeanBound{dirs} \LeanBound{root} : \LeanConst{String}\} \{\LeanBound{r} \LeanBound{m} : \LeanConst{Name}\} \{\LeanBound{fs} : \LeanConst{FS}\} \{\LeanBound{d} : \LeanConst{Frontend.Olean.ModDecoded}\}\LeanNewline
+\LeanIndent{2}\{\LeanBound{c} : \LeanConst{Frontend.Olean.CEntryF} \LeanConst{Name} \LeanConst{Expr}\} \{\LeanBound{v} : \LeanConst{Expr}\} \{\LeanBound{all} : \LeanConst{List} \LeanConst{Name}\}\LeanNewline
+\LeanIndent{2}(\LeanBound{hr} : \LeanConst{Frontend.Olean.parseModName} \LeanBound{root} = \LeanConst{some} \LeanBound{r})\LeanNewline
+\LeanIndent{2}(\LeanBound{hcl} : \LeanConst{Frontend.Olean.InClosure} (\LeanConst{Driver.searchPathOf} \LeanBound{dirs}) \LeanBound{fs} \#[\LeanBound{r}] \LeanBound{m})\LeanNewline
+\LeanIndent{2}(\LeanBound{hv} : \LeanConst{Frontend.Olean.ViewOf} (\LeanConst{Driver.searchPathOf} \LeanBound{dirs}) \LeanBound{fs} \LeanBound{m} \LeanBound{d})\LeanNewline
+\LeanIndent{2}(\LeanBound{hmem} : \LeanBound{c} ∈ \LeanBound{d}.constants) (\LeanBound{hk} : \LeanBound{c}.kind = \LeanConst{Frontend.Olean.CKindF.thm} \LeanBound{v} \LeanBound{all})\LeanNewline
+\LeanIndent{2}(\LeanBound{hty} : \LeanBound{c}.type = \LeanConst{Expr.const} \LeanConst{falseName} []) :\LeanNewline
+\LeanIndent{2}¬\LeanConst{Driver.runArgs} [\LeanString{"--olean"}, \LeanString{"--search-path="} ++ \LeanBound{dirs}, \LeanString{"--"}, \LeanBound{root}] \LeanBound{fs}\LeanNewline
+\LeanIndent{6}(\LeanConst{Except.ok} \LeanNumber{0})}
+\end{leanblock}
+
+The \code{.olean} “format” is not well-specified. We ship our own “naive” parser \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Frontend/Olean/View.lean#L81}{\code{decodeModuleSpec}} as a specification, and then prove that the actual parsers we use (which are optimized, and may read partial data as needed) are correct with regard to that one. We cannot prove that \code{decodeModuleSpec} matches how Lean interprets its data structures, only test it (using the \href{https://github.com/leanprover/con-leche/blob/master/OleanCompare.lean}{\code{olean-compare}} tool).
+
+\begin{leanblock}[view=lean, sum=iVnydHMawr]{ConLeche.Frontend.Olean.decodeModuleSpec}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{Frontend.Olean.decodeModuleSpec} (\LeanBound{f} : \LeanConst{Frontend.Olean.ModFiles})\LeanNewline
+\LeanIndent{2}(\LeanBound{level} : \LeanConst{Frontend.Olean.OLeanLevel}) : \LeanConst{Option} \LeanConst{Frontend.Olean.ModDecoded}}
+\end{leanblock}
+
+\section*{Performance}
+
+This checker is usually faster than the official kernel, and competitive with other external checkers. It supports parallelism and should scale to large proofs. See \href{https://github.com/leanprover/con-leche/blob/master/PERF.md}{\code{PERF.md}} and the \href{https://arena.lean-lang.org/}{Kernel Arena} for more details.
+
+This required pulling some low-level stunts that the kernel does in C++ in Lean, in particular around the memo tables (peeking at the RC to decide if something is worth caching, implementing whole expression traversals without touching the RC field and using pointer addresses for hashing). This is possible, to some extent, with functions like \href{https://leanprover-community.github.io/mathlib4_docs/Init/Util.html#withPtrAddr}{\code{withPtrAddr}} that expose such runtime information to safe code, given a proof that this runtime information cannot affect the logical result of the function. This is also already anticipating that a safe \code{withExclusive} (\href{https://github.com/leanprover/lean4/issues/15235}{RFC \#15235}) will become part of the standard library; until then we have \href{https://github.com/leanprover/con-leche/blob/master/ConLeche/Kernel/Exclusive.lean}{this code here}.
+
+\begin{leanblock}[view=lean, sum=7Wyq4GRE8w]{withPtrAddr}{}
+\LeanCode{%
+\LeanKeyword{def} \LeanConst{withPtrAddr}.\{\LeanBound{u}, \LeanBound{v}\} \{\LeanBound{α} : \LeanSort{Type} \LeanBound{u}\} \{\LeanBound{β} : \LeanSort{Type} \LeanBound{v}\} (\LeanBound{a} : \LeanBound{α}) (\LeanBound{k} : \LeanConst{USize} → \LeanBound{β})\LeanNewline
+\LeanIndent{2}(\LeanBound{h} : ∀ (\LeanBound{u₁} \LeanBound{u₂} : \LeanConst{USize}), \LeanBound{k} \LeanBound{u₁} = \LeanBound{k} \LeanBound{u₂}) : \LeanBound{β}}
+\end{leanblock}
+
+\section*{Acknowledgements}
+
+Joachim would like to thank Mario Carneiro for all the groundwork this builds on, and Arthur Adjedj for helpful discussions to understand what I actually built here.
+
+\section*{Contributions}
+
+Code contributions are likely not useful. Issues are welcome, and the more detailed and precise they are, the more likely is that I will let an agent work on them.
+
+\end{document}

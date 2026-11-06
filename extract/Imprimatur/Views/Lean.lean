@@ -177,7 +177,9 @@ def declKeyword (env : Environment) (c : ConstantInfo) : Option String :=
   | .axiomInfo _ => some "axiom"
   | .opaqueInfo _ => some "opaque"
   | .defnInfo _ => some (if isInstanceCore env c.name then "instance" else "def")
-  | .inductInfo _ => some (if isStructure env c.name then "structure" else "inductive")
+  | .inductInfo _ =>
+    let kw := if isStructure env c.name then "structure" else "inductive"
+    some (if isClass env c.name then (if kw == "structure" then "class" else "class inductive") else kw)
   | _ => none
 
 /-- Drop the longest of `namespaces` that prefixes `n`. -/

@@ -38,4 +38,13 @@ def konst (x : Nat) : List (Nat → Nat → Nat) := [fun _ _ => x, fun x _ => x 
 no argument and reads back as an atom. -/
 def ident : Nat → Nat := id
 
+/-- A class, which the `lean` view heads with `class`, not `structure`. -/
+class Tagged (α : Type) where
+  tag : α → Nat
+
+/-- A class inductive, headed `class inductive`. -/
+class inductive Side (α : Type) where
+  | left (a : α)
+  | right (a : α)
+
 end Patterns
