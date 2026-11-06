@@ -85,4 +85,5 @@ expected:
 
 imprimatur has no way to cite a declaration as the subject of discussion
 rather than as a result the paper relies on; the README does both with the
-same backticks. That is a gap the experiment shows.
+same backticks. That is a gap the experiment shows:
+[#109](https://github.com/theorem-press/imprimatur/issues/109).
