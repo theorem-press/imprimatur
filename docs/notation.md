@@ -232,6 +232,18 @@ takes a segment when it takes a string:
 warning[unfaithful-rendering]: SpliceModel.Seg (grammar): the variable s prints as $s$, which stands for SpliceModel.Seg (latex_category), but has type String: name it differently, or change the metavariable $s$
 ```
 
+**A sentence or a figure that is not plain** is reported too. The `prose`
+view's sentence comes apart into its formulas at the dollars, and the `rules`
+view's figure into its rules at the newlines, so a template that prints a
+dollar (`\text{\$}`), or a name with a comma-space, or a label with a
+closing brace, would make the sentence read back wrongly; a rule, a label or
+a mark with a newline likewise. The extractor decides this before it writes
+the block, and reports it where the formulas are:
+
+```
+warning[unfaithful-rendering]: Cats.lower_eq (prose): not plain: $\text{\$}\mathsf{lower}(q)\text{\$} = r$ holds a dollar, so the sentence does not come apart into its formulas
+```
+
 **Synonyms.** Two rules may write equal things alike on purpose: `Nat.card R`
 and `Fintype.card R` as `|R|`, or a definition and what it unfolds to. Mark
 one `synonym`, and the two readings are one.

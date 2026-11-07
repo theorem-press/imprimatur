@@ -208,21 +208,23 @@ constructor, in order. -/
 def Anatomy.Rules (r : Body) (S : W.Stmt) : Prop :=
   ∃ fs qs, figure (Body.text r).toList = some fs ∧ A.ctors S = some qs ∧ A.ReadsRules fs qs
 
-/-- The anatomy is the world's. What the notation prints is plain; the
-world prints prose and rules as the anatomy does, with the extractor's
-layouts; and a rendering that reads back reads back formula by formula,
-which is what the validator checks. -/
+/-- The anatomy is the world's. The world prints prose and rules as the
+anatomy does, with the extractor's layouts; and a rendering that reads back
+is plain, and reads back formula by formula, which is what the validator
+checks. -/
 structure Anatomy.Sound : Prop where
-  /-- what the notation prints of a statement is plain: no dollar in a
-  formula, and a group's names come apart from each other and their type -/
-  plain : ∀ S u, A.gather S = some u → (u.map A.print).Plain
+  /-- what the notation prints of a statement that reads back is plain: no
+  dollar in a formula, and a group's names come apart from each other and
+  their type -/
+  plain : ∀ S r, W.render "prose" S = some r → W.Reads r S → ∀ u, A.gather S = some u → (u.map A.print).Plain
   /-- the world prints prose as the anatomy does -/
   prose : ∀ S r, W.render "prose" S = some r → A.PrintsProse S r
   /-- a prose rendering that reads back reads back formula by formula -/
   formulas : ∀ S r, W.render "prose" S = some r → W.Reads r S → A.Faithful S
-  /-- what the notation prints of a predicate's rules is plain: no newline
-  in a formula or a label, and a mark the lexer takes apart -/
-  rulesPlain : ∀ S qs, A.ctors S = some qs → ∀ q ∈ qs, (q.map A.print).Plain
+  /-- what the notation prints of a predicate's rules that read back is
+  plain: no newline in a formula or a label, and a mark the lexer takes
+  apart -/
+  rulesPlain : ∀ S r, W.render "rules" S = some r → W.Reads r S → ∀ qs, A.ctors S = some qs → ∀ q ∈ qs, (q.map A.print).Plain
   /-- the world prints rules as the anatomy does -/
   rules : ∀ S r, W.render "rules" S = some r → A.PrintsRules S r
   /-- a rules rendering that reads back reads back formula by formula -/
@@ -316,10 +318,11 @@ and each reads back as its part. -/
 theorem Anatomy.Sound.proseShows {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
     (hr : W.render "prose" S = some r) (hR : W.Reads r S) : A.Prose r S := by
   have hF := hA.formulas S r hr hR
+  have hpl := hA.plain S r hr hR
   obtain ⟨u, hu, rfl⟩ := hA.prose S r hr
   refine ⟨u.map A.print, u, ?_, hu, A.readsProse_map (hF u hu)⟩
   rw [Body.text_gen, proseLayout, String.toList_ofList]
-  exact proseSentence_proseChars (hA.plain S u hu)
+  exact proseSentence_proseChars (hpl u hu)
 
 /-- A rules rendering has no slots. -/
 theorem Anatomy.Sound.rulesIds {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
@@ -333,12 +336,13 @@ reads back as its constructor. -/
 theorem Anatomy.Sound.rulesShow {W : World} {A : Anatomy W} (hA : A.Sound) {S : W.Stmt} {r : Body}
     (hr : W.render "rules" S = some r) (hR : W.Reads r S) : A.Rules r S := by
   have hF := hA.ruleFormulas S r hr hR
+  have hpl := hA.rulesPlain S r hr hR
   obtain ⟨qs, hqs, rfl⟩ := hA.rules S r hr
   refine ⟨qs.map (Layout.Rule.map A.print), qs, ?_, hqs, A.readsRules_map (hF qs hqs)⟩
   rw [Body.text_gen]
   exact figure_figureLayout fun q hq => by
     obtain ⟨q', hq', rfl⟩ := List.mem_map.mp hq
-    exact hA.rulesPlain S qs hqs q' hq'
+    exact hpl qs hqs q' hq'
 
 section
 variable {W : World} {A : Anatomy W} {b : Bundle} {d : Doc}

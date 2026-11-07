@@ -5,6 +5,21 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The model keeps the extractor's two inputs apart: the development `L`
+  (what each key states and proves, and which subterms each view shows)
+  and the notation `N` (how a part is printed, and the grammar it is read
+  back in), `SpliceModel.Development` and `Notation`, in place of
+  `Validated`; the world they present renders by definition as the anatomy
+  says. The one assumption the top-level theorems made of the extractor,
+  `Validated.Prints`, is gone: its layout clauses hold by definition, and
+  its plainness clauses are now checked by the extractor, which decides
+  before writing a `prose` sentence or a `rules` figure that it is plain
+  (`Layout.Prose.plain`, `Rule.plain`, proved to decide the model's
+  `Plain`) and otherwise reports it as not validated
+  (`unfaithful-rendering`: "not plain"). `Development.check_sound` and
+  `paper_true` have no hypothesis about the extractor, and
+  Pollack-consistency now covers the views that show one formula too
+  (`document_pollack_formula`). docs/notation.md, DESIGN §18.4.
 - `\usepackage[colour]{imprimatur}` colours the `lean` view's tokens as the
   Lean 4 VS Code theme does, by restyling the semantic macros the view
   already wraps every token in (docs/views.md).

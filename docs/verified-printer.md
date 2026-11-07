@@ -184,9 +184,11 @@ token.
 and the formula printed from `form q`: one function of a part, `form`, in
 place of two that the model must assume agree. `Anatomy.Sound`'s
 `formulas` and `ruleFormulas` are already theorems for the validator's
-world (`Validated.sound`). The paper's `Validated.Prints` keeps only its
+world (then `Validated.sound`). The paper's `Validated.Prints` kept only its
 layout clauses (`prose`, `rules`, `plain`, `rulesPlain`), since that the
-grammar holds every rendering is now Theorem P. Theorem 1.3 of the paper
+grammar holds every rendering is now Theorem P; it has since gone
+altogether (`Development.sound` has no hypothesis: the world renders by
+definition as the anatomy says, and the extractor checks plainness). Theorem 1.3 of the paper
 then rests on less: the layouts, which are already proved to read back,
 and the meaning of a reading.
 

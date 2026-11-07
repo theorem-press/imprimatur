@@ -43,15 +43,16 @@ to the plan below, each taken because the proof asked for it:
   conditional triple needs at every bind, is proved in the same induction
   as completeness rather than in a second one.
 - **Phase E** instantiates the model with a world whose `Reads` is that the
-  validator accepts each formula printed of a statement (`Validated`), and
-  proves `Anatomy.Sound`'s two reading-back assumptions of it
-  (`Validated.sound`, `document_pollack`); the renderer's expected reading
-  stays the hypothesis it was.
+  validator accepts each formula printed of a statement (then `Validated`,
+  now the world a `Development` presents in a `Notation`), and proves
+  `Anatomy.Sound`'s two reading-back assumptions of it (now
+  `Development.sound`, with no hypothesis; `document_pollack`); the
+  renderer's expected reading stays the hypothesis it was.
 
 The theorems are `SpliceModel.readBack_complete`, `readBack_unique`,
 `pollack` (`splice/SpliceModel/ReadBackComplete.lean`), and
-`Validated.sound`, `document_pollack`, `document_pollack_rules`
-(`Validator.lean`); the goldens are byte-identical throughout, and
+`Development.sound` (formerly `Validated.sound`), `document_pollack`,
+`document_pollack_rules` (`Validator.lean`); the goldens are byte-identical throughout, and
 `lint/axioms` finds the standard axioms only.
 
 Status: proposal. Continues docs/verified-validator.md, whose phases 0–3

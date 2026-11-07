@@ -364,9 +364,34 @@ def gatherProse (c : ConstantInfo) : RenderM (Layout.Prose (List Char)) := do
       hs := hs.push { label, formula := ← formulaChars h }
     return .statement { vars := gs.toList, hyps := hs.toList, concl := ← gatherConcl concl }
 
-/-- The `prose` view of a constant: what it says, laid out. -/
+/-- The formulas of a sentence, for a report. -/
+private def proseFormulas : Layout.Prose (List Char) → List (List Char)
+  | .define f => [f]
+  | .statement s =>
+    (s.vars.flatMap fun g => g.names ++ match g.kind with | .ofType t => [t] | _ => []) ++
+      s.hyps.map (·.formula) ++ conclFormulas s.concl
+where
+  conclFormulas : Layout.Concl (List Char) → List (List Char)
+    | .formula f => [f]
+    | .conjuncts fs => fs
+    | .iff l r => [l, r]
+    | .exists_ w body => w :: conclFormulas body
+
+/-- The `prose` view of a constant: what it says, laid out. The parser reads
+the sentence back only when it is plain (`Layout.Prose.Plain`: no dollar in
+a formula, no comma-space in a name, no `\in` among a group's names, no
+closing brace in a label), so a sentence that is not plain is reported as
+not validated (DESIGN §18.4), where the formulas are. -/
 def proseView (c : ConstantInfo) (width : Nat) : RenderM String := do
   let _ := width
-  return Layout.proseLayout (← gatherProse c)
+  let pr ← gatherProse c
+  if let some problems := (← read).problems then
+    unless pr.plain do
+      let dollars := ((proseFormulas pr).filter (·.contains '$') |>.map String.ofList).eraseDups
+      let what := if dollars.isEmpty then
+          "a name holds a comma-space or a group's names \\in, a group has no name, a conjunction no conjunct, or a label a closing brace"
+        else s!"{", ".intercalate (dollars.map fun f => s!"${f}$")} {if dollars.length == 1 then "holds" else "hold"} a dollar"
+      problems.modify (·.push s!"not plain: {what}, so the sentence does not come apart into its formulas")
+  return Layout.proseLayout pr
 
 end Imprimatur.Views

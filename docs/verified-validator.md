@@ -8,11 +8,13 @@ flag is set, every reading in the grammar is among those returned), the
 matcher decides structural matching (`matches_iff`), and so a validated
 formula has in the grammar no reading but the one it was rendered from,
 wherever the expected reading is definite (`pollack`); and for the world
-as the validator sees it, whose `Reads` is that it accepts each formula
-printed of a statement, the two reading-back assumptions of a sound
-anatomy are theorems (`Validated.sound`), so each formula of a block that
-checks clean reads only as the part it was printed from
-(`document_pollack`, `document_pollack_rules`). Completeness was planned
+a development presents in a notation (`SpliceModel.Development`,
+`Notation`: the extractor's two inputs, kept apart), whose `Reads` is that
+the validator accepts everything printed of a statement, each formula and
+the plainness of the sentence or figure, the anatomy is sound with no
+hypothesis (`Development.sound`), so each formula of a block that checks
+clean reads only as the part it was printed from (`document_pollack`,
+`document_pollack_rules`, `document_pollack_formula`). Completeness was planned
 in docs/pollack-consistency.md, which records how the design changed on
 the way; the proofs are `splice/SpliceModel/ReadBack.lean` (the
 specification), `ReadBackSound.lean`, `Pruning.lean`,
@@ -259,7 +261,7 @@ paper byte-identical unless it says otherwise.
 | 2 | **The module.** Tokens, productions, grammars, the parser and the matcher move to the shared module, total, with the algebra as a parameter and the `pruned` flag; the extractor's `Validate` keeps the algebra, `ofRule` and the messages. `lint/verified` covers it. | Goldens byte-identical; builds on the toolchain matrix; read-back time on projects A and B within 10 %. |
 | 3 | **Specification and soundness.** `Parses`, `Matches`; Theorems 1, 3, 5. | Done: `Exp`/`Seq`/`Tail`, `readBack_sound`, `matches_iff`; Theorem 5 (tokens) not stated. |
 | 4 | **Completeness up to two.** Theorem 2, with the memo invariant. | Done (docs/pollack-consistency.md): `readBack_complete`, with the invariant that every remembered answer holds every reading of its question, in triples that hold when the flags end clear. |
-| 5 | **Validation, model, paper.** Theorem 4; `Anatomy.Sound` restated; §9 and the trusted base restated; DESIGN §18.4; #22 closed. | Done: `pollack`; `Anatomy.Sound` kept, and its two reading-back assumptions proved of the validator's world (`Validated.sound`, `document_pollack`); §9, the trusted base and DESIGN §18.4 say so. |
+| 5 | **Validation, model, paper.** Theorem 4; `Anatomy.Sound` restated; §9 and the trusted base restated; DESIGN §18.4; #22 closed. | Done: `pollack`; `Anatomy.Sound` kept, and its two reading-back assumptions proved of the validator's world (then `Validated.sound`, now `Development.sound` with no hypothesis, the layout clauses holding by definition and plainness checked by the extractor; `document_pollack`); §9, the trusted base and DESIGN §18.4 say so. |
 
 ## Risks
 

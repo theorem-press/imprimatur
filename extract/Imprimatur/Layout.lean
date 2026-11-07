@@ -710,6 +710,71 @@ def Prose.Plain : Prose (List Char) → Prop
   | .define f => Layout.Plain f
   | .statement s => (∀ g ∈ s.vars, g.Plain) ∧ (∀ hy ∈ s.hyps, hy.Plain) ∧ s.concl.Plain
 
+/-! ### Deciding it
+
+The extractor decides plainness of each sentence it lays out, before it
+writes the sentence, and reports one that is not plain as not validated
+(DESIGN §18.4): the model then has it that a rendering the validator
+accepts is plain, and the parser undoes its layout. -/
+
+/-- Whether a formula is plain. -/
+def plain (f : List Char) : Bool := !f.contains '$'
+
+theorem plain_iff {f : List Char} : plain f = true ↔ Plain f := by
+  simp [plain, Plain]
+
+/-- Whether a name comes apart from the others. -/
+def plainName (n : List Char) : Bool := plain n && !hasSub commaSep n
+
+theorem plainName_iff {n : List Char} : plainName n = true ↔ PlainName n := by
+  simp [plainName, PlainName, Layout.plain_iff]
+
+/-- Whether a conclusion's formulas are plain. -/
+def Concl.plain : Concl (List Char) → Bool
+  | .formula f => Layout.plain f
+  | .conjuncts fs => !fs.isEmpty && fs.all Layout.plain
+  | .iff lhs rhs => Layout.plain lhs && Layout.plain rhs
+  | .exists_ w body => Layout.plain w && body.plain
+
+theorem Concl.plain_iff {c : Concl (List Char)} : c.plain = true ↔ c.Plain := by
+  induction c with
+  | formula f => exact Layout.plain_iff
+  | conjuncts fs => simp [Concl.plain, Concl.Plain, Layout.plain_iff, List.all_eq_true]
+  | iff lhs rhs => simp [Concl.plain, Concl.Plain, Layout.plain_iff]
+  | exists_ w body ih => simp [Concl.plain, Concl.Plain, Layout.plain_iff, ih]
+
+/-- Whether a group's names are plain, and its type is, if it has one. -/
+def VarGroup.plain (g : VarGroup (List Char)) : Bool :=
+  !g.names.isEmpty && g.names.all plainName &&
+    match g.kind with
+    | .ofType ty => Layout.plain ty && !hasSub inWord (joinComma g.names)
+    | _ => true
+
+theorem VarGroup.plain_iff {g : VarGroup (List Char)} : g.plain = true ↔ g.Plain := by
+  unfold VarGroup.plain VarGroup.Plain
+  cases g.kind <;> simp [plainName_iff, Layout.plain_iff, List.all_eq_true, and_assoc]
+
+/-- Whether a hypothesis's formula is plain, and its label has no closing
+brace. -/
+def Hyp.plain (hy : Hyp (List Char)) : Bool :=
+  Layout.plain hy.formula && match hy.label with
+    | some n => !n.contains '}'
+    | none => true
+
+theorem Hyp.plain_iff {hy : Hyp (List Char)} : hy.plain = true ↔ hy.Plain := by
+  unfold Hyp.plain Hyp.Plain
+  cases hy.label <;> simp [Layout.plain_iff]
+
+/-- Whether a sentence's parts are plain. -/
+def Prose.plain : Prose (List Char) → Bool
+  | .define f => Layout.plain f
+  | .statement s => s.vars.all VarGroup.plain && s.hyps.all Hyp.plain && s.concl.plain
+
+theorem Prose.plain_iff : ∀ {pr : Prose (List Char)}, pr.plain = true ↔ pr.Plain
+  | .define _ => Layout.plain_iff
+  | .statement _ => by
+    simp [Prose.plain, Prose.Plain, List.all_eq_true, VarGroup.plain_iff, Hyp.plain_iff, Concl.plain_iff, and_assoc]
+
 /-! ## The rules figure
 
 The `rules` view of an inductive predicate is a mathpartir figure: one
@@ -1059,5 +1124,28 @@ def Rule.Plain (ru : Rule (List Char)) : Prop :=
     match ru.mark with
     | some m => m.Plain
     | none => True
+
+/-! #### Deciding it
+
+As for prose: the extractor decides plainness of each rule before it writes
+the figure, and reports a rule that is not plain as not validated. -/
+
+/-- Whether a mark is one the lexer takes apart. -/
+def Mark.plain (m : Mark) : Bool :=
+  !m.name.contains '\n' && !m.name.contains '{' && !m.key.contains '\n' && !m.key.contains '}'
+
+theorem Mark.plain_iff {m : Mark} : m.plain = true ↔ m.Plain := by
+  simp [Mark.plain, Mark.Plain, and_assoc]
+
+/-- Whether a rule's lines each hold one line. -/
+def Rule.plain (ru : Rule (List Char)) : Bool :=
+  !ru.label.contains '\n' && ru.premises.all (fun pm => !pm.contains '\n') && !ru.concl.contains '\n' &&
+    match ru.mark with
+    | some m => m.plain
+    | none => true
+
+theorem Rule.plain_iff {ru : Rule (List Char)} : ru.plain = true ↔ ru.Plain := by
+  unfold Rule.plain Rule.Plain
+  cases ru.mark <;> simp [Mark.plain_iff, List.all_eq_true, and_assoc]
 
 end Imprimatur.Layout

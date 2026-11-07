@@ -162,8 +162,17 @@ def gatherRules (ctors : Array Name) : RenderM (List (Layout.Item (List Char))) 
   return out.toList
 
 /-- The `rules` view of constructors: what the figure shows, laid out by
-`Imprimatur.Layout.figureLayout`. -/
-def rulesView (ctors : Array Name) : RenderM String :=
-  return Layout.figureLayout (← gatherRules ctors)
+`Imprimatur.Layout.figureLayout`. The parser reads a rule back only when it
+is plain (`Layout.Rule.Plain`: no newline in a formula, a label or a mark,
+no brace in a mark's name or key), so a rule that is not plain is reported
+as not validated (DESIGN §18.4), where the formulas are. -/
+def rulesView (ctors : Array Name) : RenderM String := do
+  let items ← gatherRules ctors
+  if let some problems := (← read).problems then
+    for item in items do
+      if let .rule ru := item then
+        unless ru.plain do
+          problems.modify (·.push s!"not plain: the rule {String.ofList ru.label} holds a newline in a formula, its label or its mark, or a brace in its mark, so the figure does not come apart into its rules")
+  return Layout.figureLayout items
 
 end Imprimatur.Views

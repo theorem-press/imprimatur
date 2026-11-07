@@ -266,6 +266,35 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
     ((problems clash "Cats.lower_eq").any (·.startsWith "category: the metavariable $P$ stands for Cats.Prog, Cats.Rep"))
     (toString (problems clash "Cats.lower_eq"))
 
+/-- A sentence that is not plain is reported, on the `Categories` fixture:
+`Dollar` writes `lower` with a dollar in the template, so the `prose` view's
+sentence does not come apart into its formulas, and the extractor reports it
+as not validated (DESIGN §18.4); `Strict`'s sentence is plain and clean. -/
+unsafe def plainTest : TestM Unit := group "plain" do
+  let dir := fixturesDir / "Categories"
+  let lib := dir / ".lake" / "build" / "lib" / "lean"
+  initSearchPath (← findSysroot) [lib]
+  let run (m : Name) : IO String := do
+    let env ← Compat.importPrivate #[m]
+    let settings : Settings := { imports := #[m], stripNamespaces := #[`Cats] }
+    let reqs := #[{ key := "Cats.lower_eq", views := #["prose", "math"] }]
+    let (entries, _) ← exportEntries env dir settings reqs
+    return renderBundle entries none
+  let problems (b k v : String) : Array String :=
+    ((entry? b k).bind fun e =>
+      (e.getObjVal? "validation" >>= (·.getObjValAs? (Array String) v)).toOption).getD #[]
+  let dollar ← run `Categories.Dollar
+  check "extract/plain/dollar-reported"
+    ((problems dollar "Cats.lower_eq" "prose").any (·.startsWith "not plain: $\\text{\\$}\\mathsf{lower}(q)\\text{\\$} = r$ holds a dollar"))
+    (toString (problems dollar "Cats.lower_eq" "prose"))
+  -- The check is the sentence's: a `math` block is one formula, in dollars
+  -- of its own, and is read back whole.
+  check "extract/plain/dollar-sentence-only"
+    (!(problems dollar "Cats.lower_eq" "math").any (·.startsWith "not plain"))
+    (toString (problems dollar "Cats.lower_eq" "math"))
+  let strict ← run `Categories.Strict
+  checkEq "extract/plain/clean" (problems strict "Cats.lower_eq" "prose") #[]
+
 /-- The golden bundle of one fixture, and the checks on it. -/
 unsafe def goldenTest (f : Fixture) : TestM Unit := do
   IO.FS.createDirAll "out"
@@ -369,7 +398,7 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
 environments accumulate in a process, so the driver (`ExtractTests.lean`)
 runs each part in a process of its own (`--part NAME`). -/
 unsafe def parts : Array (String × TestM Unit) :=
-  #[("drift", driftTest), ("index", indexTest), ("categories", categoriesTest),
+  #[("drift", driftTest), ("index", indexTest), ("categories", categoriesTest), ("plain", plainTest),
     ("challenges", challengeTest)] ++ fixtures.map fun f => (f.dir, goldenTest f)
 
 /-- Every fixture test, in this process. -/

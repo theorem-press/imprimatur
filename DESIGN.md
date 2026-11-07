@@ -1410,12 +1410,24 @@ typeset block as a warning, `unfaithful-rendering`, where the block is.
   narrowing of it (docs/coercion-chains.md, route A). The matcher decides structural matching, so a validated formula
   (one reading, no flag, matching the expected reading) has in the grammar
   no reading but the expected one, wherever that is definite
-  (`SpliceModel.pollack`); for the world as the validator sees it, whose
-  `Reads` is that it accepts each formula printed of a statement, the two
-  reading-back assumptions of a sound anatomy (§18.2's `Anatomy.Sound`)
-  are theorems (`Validated.sound`), and so each formula of a block that
-  checks clean reads only as the part it was printed from
-  (`document_pollack`). Trusted still: where the expected reading has a
+  (`SpliceModel.pollack`). The model keeps the extractor's two inputs
+  apart: the development `L` (what each key states and proves, and which
+  subterms each view shows) and the notation `N` (how a part is printed,
+  and the grammar that is read as), both written by others
+  (`SpliceModel.Development`, `Notation`). The world they present renders
+  by definition as the anatomy says, and a rendering reads back when the
+  validator accepts everything printed of the statement: each formula with
+  one reading, no flag set, matching the expected one, and the sentence or
+  figure *plain*, so that the parser undoes the layout
+  (`Development.AcceptsAll`; the extractor decides plainness before it
+  writes, `Layout.Prose.plain` and `Rule.plain`, and reports a failure as
+  not validated). So the anatomy is sound with no hypothesis
+  (`Development.sound`), and each formula of a block that checks clean,
+  in any view, reads only as the part it was printed from
+  (`document_pollack`, `document_pollack_rules`,
+  `document_pollack_formula`); the top-level theorems
+  (`Development.check_sound`, `paper_true`) assume nothing of the
+  extractor beyond the model itself. Trusted still: where the expected reading has a
   `⁇`, that `Validate.ofRule` follows `Render.fillTemplate`; the
   precedence each hole needs is one function they share, `Doc.holeNeeds`
   in the module `Imprimatur.Layout`, so that part holds by construction.
@@ -1448,7 +1460,9 @@ development a model, so the kernel leaves the base for what is proved and
 the compiler, `leanexport` and the Lean runtime's `Nat` stay);
 the extractor's reading of the environment,
 which gathers what a view says (binders, `isProp`, notation matching,
-`inferType`) and builds the reading it expects of a formula
+`inferType`), builds the reading it expects of a formula, and renders as the
+model's `Development.render` says, the layouts around the notation's
+formulas
 (docs/verified-extractor.md and docs/verified-validator.md say what is
 proved instead: the prose and rules layouts, the emitter's parentheses and
 the holes' precedences are the shared module `Imprimatur.Layout`, the
