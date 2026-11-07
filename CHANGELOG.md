@@ -30,7 +30,10 @@ All notable changes to imprimatur are recorded here. Versions follow
   extractor faults, fixed: the extractor's own library came first on the
   module search path, so a host's `Main` module (its executable) was
   shadowed by the extractor's, and a paper citing the host's `main` got the
-  extractor's; and the `lean` view wrote `structure` for a class (now
+  extractor's (a host directory that holds the shared modules, an
+  `Imprimatur/` with no `Imprimatur.olean`, as the paper about imprimatur's
+  does, still goes after the extractor's own, so as not to shadow its
+  library); and the `lean` view wrote `structure` for a class (now
   `class`, and `class inductive`).
 - `[trust] checker = "con-leche"` has the development checked by con-leche,
   the external checker the Lean toolchain ships from v4.35, verified in

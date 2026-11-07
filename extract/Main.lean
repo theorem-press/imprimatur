@@ -52,9 +52,22 @@ unsafe def main (args : List String) : IO UInt32 := do
   -- The host's search path (from `lake env`), then this program's own library,
   -- which a notation module may import (external mode, DESIGN §6.3 A). The
   -- host's comes first: both have a module `Main` (the host's executable, and
-  -- this one), and the host's is the one a paper can cite.
+  -- this one), and the host's is the one a paper can cite. Lean resolves a
+  -- module from the first directory holding its root as a directory or a
+  -- file, so a host that carries the shared modules (`Imprimatur.Bundle`,
+  -- `Layout`, `ReadBack`: the splicer's package, as the paper about
+  -- imprimatur does) has an `Imprimatur/` directory and no `Imprimatur.olean`,
+  -- and would shadow this program's library. Such a directory goes after it;
+  -- the shared modules are byte for byte the same in both.
   Lean.initSearchPath (← Lean.findSysroot)
-  Lean.searchPathRef.modify (· ++ [(← IO.appDir) / ".." / "lib" / "lean"])
+  let own := (← IO.appDir) / ".." / "lib" / "lean"
+  let shadows (p : System.FilePath) : IO Bool :=
+    (· && !·) <$> (p / "Imprimatur").isDir <*> (p / "Imprimatur.olean").pathExists
+  let mut plain : Lean.SearchPath := []
+  let mut shadowing : Lean.SearchPath := []
+  for p in (← Lean.searchPathRef.get) do
+    if ← shadows p then shadowing := shadowing ++ [p] else plain := plain ++ [p]
+  Lean.searchPathRef.set (plain ++ [own] ++ shadowing)
   let root ← IO.currentDir
   let main := reqs.filter (!·.key.endsWith challengeSuffix)
   -- Notation files (external mode) are elaborated, with the imports; otherwise
