@@ -274,7 +274,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
     decl := { kind := .group, name := r.key },
     statement := {
       stmtHash := if coneOk && !cis.isEmpty then some (Trust.sha (Trust.groupStmtText cis cone)) else none,
-      views, errors, validation, macros := macrosOf allTeX },
+      views, errors, validation := if s.validate then validation else #[], macros := macrosOf allTeX },
     verdict := {
       axioms := #[], usesSorry := axioms.contains ``sorryAx,
       cone := if cis.isEmpty then none else some {
@@ -378,7 +378,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
       -- reports `no-hash` rather than comparing against a partial one.
       stmtHash := if coneR matches .ok _ then some (Trust.sha (Trust.stmtText c cone)) else none,
       sigHash := some (Trust.sha leanText),
-      views, errors, validation, macros := macrosOf allTeX },
+      views, errors, validation := if s.validate then validation else #[], macros := macrosOf allTeX },
     verdict := {
       axioms := axioms.map (·.toString), usesSorry,
       cone := some {

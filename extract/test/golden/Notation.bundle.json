@@ -18,6 +18,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "2ed1dde6d3441816e75a036da4c1008c81736345d7bb8f1781eb73a5b2d78c23",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{arith} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} : \\LeanConst{Nat}) (\\LeanBound{i} : \\LeanConst{Int}) (\\LeanBound{spec} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} - \\LeanBound{c} * \\LeanNumber{2} / \\LeanNumber{1} \\% \\LeanNumber{3} = \\LeanBound{b} \\textasciicircum{} \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{4}-\\LeanBound{i} ≠ \\LeanBound{i} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{a} < \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanBound{a} ≤ \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanBound{b} > \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{12}\\LeanBound{b} ≥ \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{14}\\LeanBound{a}.succ = \\LeanBound{a} + \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{16}(\\LeanConst{id} ∘ \\LeanConst{id}) \\LeanBound{a} = \\LeanBound{a} ∧ (\\LeanBound{a}, \\LeanBound{b}) = (\\LeanBound{a}, \\LeanBound{b}) ∧ ↑\\LeanBound{spec} = ↑\\LeanBound{i} ∧ ⟨\\LeanBound{a}, ⋯⟩.val = \\LeanBound{a}}",
         "math": "\\LeanMath{a + b - c \\cdot 2 / 1 \\bmod 3 = b^{2} \\wedge -i \\ne i \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
@@ -45,6 +51,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "cbf57ca2ac2c1a288bed379a97bc1a2199e85c57d7213acfa5fb8d64c46b1717",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{bare} : \\LeanConst{True}}",
         "math": "\\LeanMath{\\top}",
@@ -72,6 +84,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c095ee9dc585cc229fc3cd1f6e17d9cd485c4e6f08a1050766450e95ab513f66",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{binderRules} (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat}) (\\LeanBound{p} : \\LeanSort{Prop}) :\\LeanNewline\n\\LeanIndent{2}(∃ \\LeanBound{a} \\LeanBound{b}, \\LeanBound{a} = \\LeanBound{b}) ∧\\LeanNewline\n\\LeanIndent{4}(∀ (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}), \\LeanBound{a} = \\LeanBound{a} → \\LeanBound{b} = \\LeanBound{b} → \\LeanBound{p}) ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanConst{bigsum} \\LeanKeyword{fun} \\LeanBound{k} => \\LeanBound{k} + \\LeanNumber{1}) = \\LeanConst{bigsum} \\LeanBound{f} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n}) \\LeanNumber{1} = \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{10}(\\LeanBound{p} ∧ \\LeanBound{p}) ∧ ¬∃ \\LeanBound{c}, \\LeanBound{c} = \\LeanBound{c} ∧ ¬\\LeanBound{p} ∧ ∀ (\\LeanBound{acc₁} : \\LeanConst{Nat}), \\LeanBound{acc₁} = \\LeanBound{acc₁}}",
         "math": "\\LeanMath{(\\exists a,\\ \\exists b,\\ a = b) \\wedge (\\forall a : \\mathbb{N},\\ \\forall b : \\mathbb{N},\\ a = a \\implies b = b \\implies p) \\wedge \\LeanMathConst{bigsum}\\,(\\lambda k.\\,k + 1) = \\LeanMathConst{bigsum}\\,f \\LeanBreak \\wedge (\\lambda n.\\,n)\\,1 = 1 \\wedge (p \\wedge p) \\wedge \\neg (\\exists c,\\ c = c \\wedge \\neg p \\wedge (\\forall a_{1} : \\mathbb{N},\\ a_{1} = a_{1}))}",
@@ -99,6 +117,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "71ee4b16740c5764d1999502855cb7cf083e7e86e202cf4dfb7185cb6eb081fc",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{binders} (\\LeanBound{s} : \\LeanConst{MySet} \\LeanConst{Nat}) (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h} : ∀ (\\LeanBound{x} : \\LeanConst{Nat}), \\LeanBound{x} ∈ \\LeanBound{s} → \\LeanBound{f} \\LeanBound{x} = \\LeanBound{x}) :\\LeanNewline\n\\LeanIndent{2}(∃ \\LeanBound{y}, \\LeanBound{y} ∈ \\LeanBound{s} ∧ \\LeanBound{f} \\LeanBound{y} = \\LeanBound{y}) →\\LeanNewline\n\\LeanIndent{4}(∃ \\LeanBound{z}, \\LeanBound{z} = \\LeanBound{f} \\LeanNumber{0}) ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} + \\LeanNumber{1}) \\LeanNumber{0} = \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanKeyword{match} \\LeanBound{f} \\LeanNumber{0} \\LeanKeyword{with}\\LeanNewline\n\\LeanIndent{12}| \\LeanNumber{0} => \\LeanConst{true}\\LeanNewline\n\\LeanIndent{12}| \\LeanBound{x} => \\LeanConst{false}) =\\LeanNewline\n\\LeanIndent{12}\\LeanConst{true} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{true} ≠ \\LeanConst{false}}",
         "math": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
@@ -126,6 +150,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "ebe62c77e7806d9cd0c9e45e1a4907bb2ffc09e047bdaf984f6c984d1eec08b2",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{hypsOnly} (\\LeanBound{h} : \\LeanNumber{1} = \\LeanNumber{1}) (\\LeanBound{h'} : \\LeanNumber{2} = \\LeanNumber{2}) : \\LeanConst{True} ↔ \\LeanConst{True}}",
         "math": "\\LeanMath{1 = 1 \\wedge 2 = 2 \\implies (\\top \\iff \\top)}",
@@ -153,6 +183,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "7095017a9ab620bc22fa869986d271f119381c11984b2bbde23c9f616f1f26fd",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{joins}\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{alpha} \\LeanBound{beta} \\LeanBound{gamma} \\LeanBound{delta} \\LeanBound{epsilon} \\LeanBound{zeta} \\LeanBound{eta} \\LeanBound{theta} \\LeanBound{iota} \\LeanBound{kappa} \\LeanBound{lambda'} \\LeanBound{mu} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanNumber{0} <\\LeanNewline\n\\LeanIndent{4}\\LeanConst{join}\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{join} (\\LeanConst{join} (\\LeanConst{join} \\LeanBound{alpha} \\LeanBound{beta}) (\\LeanConst{join} \\LeanBound{gamma} \\LeanBound{delta}))\\LeanNewline\n\\LeanIndent{10}(\\LeanConst{join} (\\LeanConst{join} \\LeanBound{epsilon} \\LeanBound{zeta}) (\\LeanConst{join} \\LeanBound{eta} \\LeanBound{theta})))\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{join} (\\LeanConst{join} \\LeanBound{iota} \\LeanBound{kappa}) (\\LeanConst{join} \\LeanBound{lambda'} \\LeanBound{mu})) +\\LeanNewline\n\\LeanIndent{6}\\LeanNumber{1}}",
         "math": "\\LeanMath{0 < \\mathit{alpha} \\sqcup \\mathit{beta} \\sqcup (\\mathit{gamma} \\sqcup \\mathit{delta}) \\sqcup (\\mathit{epsilon} \\sqcup \\mathit{zeta} \\sqcup (\\mathit{eta} \\sqcup \\mathit{theta})) \\LeanBreak \\sqcup (\\mathit{iota} \\sqcup \\mathit{kappa} \\sqcup (\\mathit{lambda}' \\sqcup \\mathit{mu})) + 1}",
@@ -180,6 +216,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "7399614943f4c79d8ffcd534bf0d61af276c669167cbaaa7e0c9fb80333b6394",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{logic} (\\LeanBound{p} \\LeanBound{q} : \\LeanSort{Prop}) : \\LeanBound{p} ∧ \\LeanBound{q} ∨ ¬\\LeanBound{p} ↔ \\LeanConst{True} ∨ \\LeanConst{False}}",
         "math": "\\LeanMath{p \\wedge q \\vee \\neg p \\iff \\top \\vee \\bot}",
@@ -207,6 +249,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "577dc99fc70b512c185a34e65f85c1ec2a4fd7938bb99da02bdfdb4c6a484708",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{long} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} \\LeanBound{d} \\LeanBound{e} \\LeanBound{f} \\LeanBound{g} : \\LeanConst{Nat}) (\\LeanBound{h₁} : \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} = \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h₂} : \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} = \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d}) (\\LeanBound{h₃} : \\LeanBound{a} * \\LeanBound{b} * \\LeanBound{c} * \\LeanBound{d} = \\LeanBound{e} * \\LeanBound{f} * \\LeanBound{g}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} + \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} = \\LeanBound{e} + \\LeanBound{f} + \\LeanBound{g} + \\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} + \\LeanBound{d} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanBound{a} + \\LeanBound{b} + \\LeanBound{c} = \\LeanBound{c} + \\LeanBound{b} + \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{c} + \\LeanBound{d} + \\LeanBound{e} = \\LeanBound{e} + \\LeanBound{d} + \\LeanBound{c} ∧ \\LeanBound{a} * \\LeanBound{b} * \\LeanBound{c} * \\LeanBound{d} * \\LeanBound{e} = \\LeanBound{e} * \\LeanBound{d} * \\LeanBound{c} * \\LeanBound{b} * \\LeanBound{a}}",
         "math": "\\LeanMath{a + b + c + d = e + f + g \\wedge e + f + g = a + b + c + d \\wedge a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g \\LeanBreak \\implies a + b + c + d + e + f + g = e + f + g + a + b + c + d \\LeanBreak \\wedge a + b + c = c + b + a \\wedge c + d + e = e + d + c \\wedge a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a}",
@@ -234,6 +282,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "81e79f11e397fa3ccaea03d9240cadce174b2b075274ff86307d80551b241e99",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{order} (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}) : \\LeanConst{max} \\LeanBound{a} \\LeanBound{b} = \\LeanConst{min} \\LeanBound{a} \\LeanBound{b}}",
         "math": "\\LeanMath{\\max(a, b) = \\min(a, b)}",
@@ -261,6 +315,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "ebdc7fc42b37dc31c0069f33f5eabacdac639dc909b8df1aab32a7e2e7f3e594",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{project} (\\LeanBound{n} \\LeanBound{m} \\LeanBound{k} : \\LeanConst{Nat}) (\\LeanBound{ρ} : \\LeanConst{Fin} \\LeanNumber{0} → \\LeanConst{Nat}) (\\LeanBound{spec} : \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{hd} : \\LeanConst{double} \\LeanBound{n} = \\LeanBound{m}) (\\LeanBound{hr} : ¬\\LeanConst{Realize} \\LeanBound{n} \\LeanBound{m} \\LeanBound{ρ}) (\\LeanBound{hl} : \\LeanConst{lub} (\\LeanConst{lub} \\LeanBound{n} \\LeanBound{m}) (\\LeanConst{lub} \\LeanBound{k} \\LeanBound{n}) = \\LeanBound{k})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{hz} : \\LeanConst{zeroish} = \\LeanNumber{0}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{cons} \\LeanBound{n} (\\LeanConst{cons} \\LeanBound{m} \\LeanBound{k}) = \\LeanConst{cons} (\\LeanConst{cons} \\LeanBound{n} \\LeanBound{m}) \\LeanBound{k} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanConst{Judg} \\LeanBound{spec} ∧ (\\LeanBound{n} = \\LeanBound{m} → \\LeanConst{Realize} \\LeanBound{n} \\LeanBound{m} \\LeanConst{Fin.elim0})}",
         "math": "\\LeanMath{2n = m \\wedge \\neg \\LeanMathConst{Realize}\\,n\\,m\\,\\rho \\wedge \\lub{n, m, k, n} = k \\wedge \\mathbf{0} = 0 \\LeanBreak \\implies n \\mathbin{\\triangleright} (m \\mathbin{\\triangleright} k) = n \\mathbin{\\triangleright} m \\mathbin{\\triangleright} k \\wedge \\vdash L \\wedge (n = m \\implies n \\models m)}",
@@ -288,6 +348,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "401c792355f000d211954ca797d7d007f31080c27e3fdb6b904435560d48181f",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} \\{\\LeanBound{α} : \\LeanSort{Type}\\} (\\LeanBound{s} \\LeanBound{t} : \\LeanConst{MySet} \\LeanBound{α}) (\\LeanBound{a} : \\LeanBound{α}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} ∈ \\LeanBound{s} ∪ \\LeanBound{t} ∩ (\\LeanBound{s} \\textbackslash{} \\LeanBound{t}) ∧ \\LeanBound{s} ⊆ \\LeanBound{t} ∧ \\LeanBound{s} ⊂ \\LeanBound{t} ∧ ∅ ⊆ \\{\\LeanBound{a}\\}}",
         "math": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}}",
@@ -315,6 +381,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c7fde288a4c19a27c6a82b67a2e9b8271fd766dd8776b81e947e4c2dfa8d0c90",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{triple} (\\LeanBound{n} : \\LeanConst{Nat}) : \\LeanConst{Nat}}",
         "math": "\\LeanMath{\\LeanMathConst{triple}\\,n \\mathrel{:=} 2n + n}",
@@ -342,6 +414,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c9972ac218916daa784efa844e6fe4762ac942c117e213910c76be2dc9543c50",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{typed} (\\LeanBound{s} \\LeanBound{t} : \\LeanConst{MySet} \\LeanConst{Nat}) (\\LeanBound{m} \\LeanBound{n} : \\LeanConst{Nat}) : \\LeanBound{s} ≤ \\LeanBound{t} ∧ \\LeanBound{m} ≤ \\LeanBound{n}}",
         "math": "\\LeanMath{s \\sqsubseteq t \\wedge m \\le n}",
@@ -369,6 +447,12 @@
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "d87f370e2af19f39552d16f9c9bd3dbcccd63d556ef1c6ecc67378e3a965ac6a",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{witnesses} (\\LeanBound{n} : \\LeanConst{Nat}) : ∃ \\LeanBound{m} \\LeanBound{k}, \\LeanBound{m} = \\LeanBound{n} ∧ \\LeanBound{k} = \\LeanBound{m}}",
         "math": "\\LeanMath{\\exists m,\\ \\exists k,\\ m = n \\wedge k = m}",

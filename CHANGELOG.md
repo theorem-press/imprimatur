@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The bundle records the validator's verdict on every view it read back,
+  an empty list when nothing was wrong, where before a clean view left no
+  trace and could not be told from one never read back (`lean`, `meta`,
+  or any view under `validate = false`, which still have no entry). The
+  paper about imprimatur's Figure 1 showed a bundle entry with no verdict
+  in it. `check` is unchanged. DESIGN §18.4.
 - The model keeps the extractor's two inputs apart: the development `L`
   (what each key states and proves, and which subterms each view shows)
   and the notation `N` (how a part is printed, and the grammar it is read

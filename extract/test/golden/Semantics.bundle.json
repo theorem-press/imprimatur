@@ -23,6 +23,12 @@
       "macros": ["\\Gamma", "\\LeanClause", "\\LeanCodeInline", "\\LeanMathConst", "\\begin", "\\deq", "\\end", "\\lambda", "\\leanslot", "\\textsf"],
       "sorry": false,
       "stmtHash": "9646ccca0e62aeb34bac35add63666386fb31d88ce4b0393dfe0af672c630067",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": []
+      },
       "views": {
         "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{lookup}\\,\\Gamma\\,i \\;\\deq\\; \\LeanMathConst{GetElem?.getElem?}\\,\\Gamma\\,i}{\\leanslot{Stlc.lookup}{Lookup in a context}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
         "fixture.rulelist": "\\textsf{Lookup and size}"
@@ -54,6 +60,16 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "a89b1dbdcec418d3aed4cb5fa598881a30819d69a4bd5e0006f63648a3dec5d2",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Preservation}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{step\\_app} \\{\\LeanBound{e₁} \\LeanBound{e₁'} \\LeanBound{e₂} : \\LeanConst{Tm}\\} (\\LeanBound{h} : \\LeanConst{Step} \\LeanBound{e₁} \\LeanBound{e₁'}) (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{e₂}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Step} (\\LeanBound{e₁}.app \\LeanBound{e₂}) (\\LeanBound{e₁'}.app \\LeanBound{e₂})}",
@@ -86,6 +102,12 @@
       "macros": ["\\LeanCategory", "\\LeanEntry", "\\LeanMathConst", "\\begin", "\\end", "\\in", "\\leanslot", "\\mathsf", "\\tau", "\\textsf", "\\to"],
       "sorry": false,
       "stmtHash": "d19cac7ea59c8bfca71dd1d5660d58a6a09c49ccd248b8a09c603bf42c1c491d",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Prod}",
         "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}",
@@ -113,6 +135,19 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "69713b9806cea917f9d537d4f29cd56ad1bfe803367a25a404b590c06957b355",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Claim}: mk",
         "grammar": "\\begin{LeanGrammar}\n\\LeanStructure{\\mathit{Claim}}{A typing claim.}\n\\LeanField{tm}{\\LeanMathConst{Tm}}{\\leanslot{Stlc.Claim.tm}{the term}}\n\\LeanField{ty}{\\LeanMathConst{Ty}}{\\leanslot{Stlc.Claim.ty}{its type}}\n\\end{LeanGrammar}",
@@ -150,6 +185,19 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "bcd5ea338db26567bb6b94bdb39bb976c43ce9cc88b3cfdf909cb0e25c08eb36",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.HasType}: var, lam, app, unit",
         "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{a \\vdash e : \\tau}{\\leanslot{Stlc.HasType}{Typing}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.var}}{\\leanslot{Stlc.HasType.var}{T-Var: a variable has its type in the context}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.lam}}{\\leanslot{Stlc.HasType.lam}{T-Abs: abstraction}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.app}}{\\leanslot{Stlc.HasType.app}{T-App: application}}\\\\\n\\LeanEntry{\\LeanMathConst{HasType.unit}}{\\leanslot{Stlc.HasType.unit}{T-Unit}}\n\\end{LeanDisplay}",
@@ -187,7 +235,17 @@
       },
       "stmtHash": "e76370a2950fdd08ee59ebd5aa660ed4a3f08a206b7de94adeceed2c40323e36",
       "validation": {
-        "grammar|display": ["variables e and e both print as $e$, in $e \\longrightarrow e$"]
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": ["variables e and e both print as $e$, in $e \\longrightarrow e$"],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
       },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Step}: beta, app_left, app_right",
@@ -224,6 +282,19 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "8cfc6f91ea41d3a118e34916502a747519762ee3516598d311beff5f21dae928",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Tm}: var, lam, app, unit",
         "grammar": "\\begin{LeanGrammar}\n\\LeanProduction{e}{Terms, with de Bruijn variables.}{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable.}}\n\\LeanAlternative{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction.}}\n\\LeanAlternative{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application.}}\n\\LeanAlternative{()}{\\leanslot{Stlc.Tm.unit}{The unit value.}}\n\\end{LeanGrammar}",
@@ -260,6 +331,19 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "d19cac7ea59c8bfca71dd1d5660d58a6a09c49ccd248b8a09c603bf42c1c491d",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.Ty}: base, arrow",
         "grammar": "\\begin{LeanGrammar}\n\\LeanProduction{\\tau}{Types.}{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type.}}\n\\LeanAlternative{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions.}}\n\\end{LeanGrammar}",
@@ -300,6 +384,16 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "1023a99e325d3da1e08812cdb3962a3e3e4f6cf68660997333e3a8967a0d3b63",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": []
+      },
       "views": {
         "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
         "fixture.rulelist": "\\textsf{Stlc.size}",
@@ -338,6 +432,10 @@
       },
       "stmtHash": "d0a319c63731ab4a768538cb0ec931fbfc204910d44cfe74bf7bf6518b79433d",
       "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
         "math|def=": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"],
         "math|forall=": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"],
         "math|names=full": ["the variable τ prints as $\\tau$, which stands for Stlc.Ty (latex_category), but has type Nat: name it differently, or change the metavariable $\\tau$"],
@@ -379,6 +477,16 @@
         "path": "Semantics/Lang.lean"
       },
       "stmtHash": "a89b1dbdcec418d3aed4cb5fa598881a30819d69a4bd5e0006f63648a3dec5d2",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Stlc.step_app}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{step\\_app} \\{\\LeanBound{e₁} \\LeanBound{e₁'} \\LeanBound{e₂} : \\LeanConst{Tm}\\} (\\LeanBound{h} : \\LeanConst{Step} \\LeanBound{e₁} \\LeanBound{e₁'}) (\\LeanBound{hv} : \\LeanConst{IsValue} \\LeanBound{e₂}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Step} (\\LeanBound{e₁}.app \\LeanBound{e₂}) (\\LeanBound{e₁'}.app \\LeanBound{e₂})}",
@@ -411,6 +519,12 @@
       "macros": ["\\LeanCategory", "\\LeanEntry", "\\LeanMathConst", "\\begin", "\\end", "\\in", "\\lambda", "\\leanslot", "\\mathsf", "\\tau", "\\textsf", "\\to"],
       "sorry": false,
       "stmtHash": "a2aa2a46dc71fde644ebe9e8e6fd6907384ef0082d2b210dde96aeee5ddf2f9a",
+      "validation": {
+        "clauses": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Types and terms}",
         "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\\\\[.5ex]\n\\LeanCategory{e \\in \\LeanMathConst{Tm}}{\\leanslot{Stlc.Tm}{Terms, with de Bruijn variables}}\\\\\n\\LeanEntry{x_{i}}{\\leanslot{Stlc.Tm.var}{A variable}}\\\\\n\\LeanEntry{\\lambda{:}t.\\, e}{\\leanslot{Stlc.Tm.lam}{An abstraction}}\\\\\n\\LeanEntry{e_{1}\\; e_{2}}{\\leanslot{Stlc.Tm.app}{An application}}\\\\\n\\LeanEntry{()}{\\leanslot{Stlc.Tm.unit}{The unit value}}\n\\end{LeanDisplay}",
@@ -438,6 +552,12 @@
       "macros": ["\\Gamma", "\\and", "\\begin", "\\end", "\\inferrule", "\\lambda", "\\longrightarrow", "\\rulelabel", "\\textsf", "\\to", "\\val", "\\vdash"],
       "sorry": false,
       "stmtHash": "981bb15b0df4b39234559546fee28da43f1012b69afb781e82db268b3efac418",
+      "validation": {
+        "fixture.rulelist": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
+      },
       "views": {
         "fixture.rulelist": "\\textsf{Typing and evaluation}",
         "rules": "\\begin{mathpar}\n\n\\inferrule[T-App]\n  {\n    \\Gamma \\vdash e_{1} : t_{1} \\to t_{2} \\\\\n    \\Gamma \\vdash e_{2} : t_{1}\n  }\n  { \\Gamma \\vdash e_{1}\\; e_{2} : t_{2} }\n\n\\and\n\n\\rulelabel{Beta}{($\\longrightarrow$-Beta)}%\n\\inferrule[($\\longrightarrow$-Beta)]\n  { }\n  { (\\lambda{:}t.\\, e)\\; \\val \\longrightarrow e[\\val] }\n\n\\and\n\n\\rulelabel{AppLeft}{($\\longrightarrow$-App Left)}%\n\\inferrule[($\\longrightarrow$-App Left)]\n  {\n    e_{1} \\longrightarrow e_{1}'\n  }\n  { e_{1}\\; e_{2} \\longrightarrow e_{1}'\\; e_{2} }\n\n\\end{mathpar}",

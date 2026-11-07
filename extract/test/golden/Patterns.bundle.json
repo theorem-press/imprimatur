@@ -18,6 +18,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "1b229bff1c6fbc4a6f98d371920e68ee72a3e37d150a70c586b814fb4a07187e",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{class inductive} \\LeanConst{Side} (\\LeanBound{α} : \\LeanSort{Type}) : \\LeanSort{Type}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Side} : \\mathrm{Type} \\to \\mathrm{Type}}",
@@ -42,6 +45,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "c69cafe0ca86fd337f075eb58bd3f29f6914bc3dd2258827818c1f04dd936e81",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{class} \\LeanConst{Tagged} (\\LeanBound{α} : \\LeanSort{Type}) : \\LeanSort{Type}}",
         "math|def=": "\\LeanMath{\\LeanMathConst{Tagged} : \\mathrm{Type} \\to \\mathrm{Type}}",
@@ -66,6 +72,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "0809ac25efe67013a129d25ce805a152a492663b0b446c819ffa597af710a4bf",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{ident} : \\LeanConst{Nat} → \\LeanConst{Nat}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{ident} &= \\LeanMathConst{id}\\end{aligned}}",
@@ -90,6 +99,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "8972f6a60a300174968d2d2aae7f5c7c33c853e5f6cb1eddd9b1ed01a9ca42f4",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{konst} (\\LeanBound{x} : \\LeanConst{Nat}) : \\LeanConst{List} (\\LeanConst{Nat} → \\LeanConst{Nat} → \\LeanConst{Nat})}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{konst}\\,x &= [\\lambda \\_.\\,\\lambda \\_.\\,x,\\ \\lambda x_{1}.\\,\\lambda \\_.\\,x_{1} + 1]\\end{aligned}}",
@@ -114,6 +126,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "3d5de668ab6c173fc4d2ff77927b5080a82ea4454600e3f6af53153e009cc409",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{nested} (\\LeanBound{o} \\LeanBound{p} : \\LeanConst{Option} (\\LeanConst{Nat} × \\LeanConst{Nat})) : \\LeanConst{Nat}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{nested}\\,o\\,p &= \\mathsf{case}\\ \\LeanMathConst{id}\\,o\\ \\mathsf{of}\\ \\mathsf{some}\\,(x, \\_) \\Rightarrow (\\mathsf{case}\\ \\LeanMathConst{id}\\,p\\ \\mathsf{of}\\ \\mathsf{some}\\,(x_{1}, y) \\Rightarrow x_{1} + y \\mid \\mathsf{none} \\Rightarrow x) \\mid \\mathsf{none} \\Rightarrow 0\\end{aligned}}",
@@ -138,6 +153,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "d50600551dbd39aff150dbb37a9420fafd2bf9bb4317955216a5608ca2a7d2ca",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{safeHead} (\\LeanBound{l} : \\LeanConst{List} \\LeanConst{Nat}) : \\LeanConst{Nat}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{safeHead}\\,l &= \\mathsf{if}\\ l \\ne [\\,]\\ \\mathsf{then}\\ \\mathsf{head}(l)\\ \\mathsf{else}\\ 0\\end{aligned}}",
@@ -162,6 +180,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "460b2e88800c61b3a74b40bc4cc283f695176db5ecdfecf628c3dd133a1addd3",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{side} : \\LeanConst{Nat} ⊕ \\LeanConst{Nat} → \\LeanConst{Bool}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{side}\\,(\\mathsf{inl}\\,\\_) &= \\mathrm{true} \\\\ \\LeanMathConst{side}\\,(\\mathsf{inr}\\,\\_) &= \\mathrm{false}\\end{aligned}}",
@@ -186,6 +207,9 @@
         "path": "Patterns/Defs.lean"
       },
       "stmtHash": "24f03e81dbeeb28b5be72619e573b37eb237f6343733011f9a28f539bfe46ea6",
+      "validation": {
+        "math|def=": []
+      },
       "views": {
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{three} : \\LeanConst{List} \\LeanConst{Nat}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{three} &= [1,\\ 2,\\ 3]\\end{aligned}}",

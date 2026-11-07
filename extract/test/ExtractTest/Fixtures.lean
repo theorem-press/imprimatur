@@ -364,13 +364,18 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     check "extract/grammar/structure-header-notation"
       (((view "Stlc.Claim" "grammar").splitOn "\\LeanStructure{\\mathit{Claim}}").length == 2)
       (view "Stlc.Claim" "grammar")
+    -- Each display was read back and found clean: a verdict, the empty list.
     checkEq "extract/display/validated"
       (#["Lookup and size", "Types and terms"].filter fun k =>
-        ((entry? r.bundle k).bind (·.getObjVal? "validation" |>.toOption)).isSome) #[]
+        !(((entry? r.bundle k).bind (·.getObjVal? "validation" |>.toOption)).map fun v =>
+          (v.getObj?.toOption.map fun kvs => kvs.toArray.all fun (_, ps) => ps == Json.arr #[]).getD false).getD false)
+      #[]
   | "Patterns" =>
-    -- A constant applied only to implicit arguments is no misread (`id`).
+    -- A constant applied only to implicit arguments is no misread (`id`): the
+    -- view was read back, and its verdict is the empty list.
     checkEq "extract/validate/implicit-only-application"
-      ((entry? r.bundle "Patterns.ident").bind (·.getObjVal? "validation" |>.toOption) |>.map (·.compress)) none
+      ((entry? r.bundle "Patterns.ident").bind (·.getObjVal? "validation" |>.toOption) |>.map (·.compress))
+      (some "{\"math|def=\":[]}")
     -- The lean view heads a class with `class`, not with the kind Lean stores it as.
     let view (k v : String) : String :=
       ((entry? r.bundle k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String v)).toOption).getD ""

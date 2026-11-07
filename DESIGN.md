@@ -1345,8 +1345,12 @@ readings is structural. #50 is for a proof of the emitter.
 
 **Translation validation.** The extractor reads back every formula a view
 renders, as it renders it, and records what it finds in the bundle
-(`validation`, per view). `imprimatur check` reports each problem in a
-typeset block as a warning, `unfaithful-rendering`, where the block is.
+(`validation`, per view: every view read back has an entry, an empty list
+when nothing was wrong, so that a reader of the file can tell a view
+validated and found clean from one never read back, `lean`, `meta`, or any
+under `validate = false`, which has none). `imprimatur check` reports each
+problem in a typeset block as a warning, `unfaithful-rendering`, where the
+block is.
 
 - **The grammar** is `G_N` over TeX tokens: a production for each rule, with
   its holes at the precedences the emitter gives them; the built-in forms

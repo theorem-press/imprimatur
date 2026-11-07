@@ -74,7 +74,7 @@
         "views": { "type": "object", "additionalProperties": { "type": "string" } },
         "errors": { "type": "object", "additionalProperties": { "type": "string" } },
         "validation": {
-          "description": "For each view, the formulas in it that do not read back faithfully (DESIGN §18.4).",
+          "description": "For each view read back, the formulas in it that do not read back faithfully, an empty list when none; a view not read back has no entry (DESIGN §18.4).",
           "type": "object",
           "additionalProperties": { "type": "array", "items": { "type": "string" } }
         }

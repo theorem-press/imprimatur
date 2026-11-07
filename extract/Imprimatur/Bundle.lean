@@ -418,7 +418,11 @@ private def opt (k : String) : Option Json → List (String × Json)
 def Entry.toJson (e : Entry (Image TeX) Verdict) : Json :=
   let i := e.statement
   let v := e.verdict
-  let validation := i.validation.filter (!·.2.isEmpty)
+  -- Every view that was read back is recorded, an empty list when nothing
+  -- was wrong: a reader of the file can then tell a view that was validated
+  -- and found clean from one that was not read back (`lean`, `meta`, or
+  -- any view under `validate = false`), which has no entry here.
+  let validation := i.validation
   Json.mkObj <|
     [("kind", .str e.decl.kind.toString), ("decl", .str e.decl.name)] ++
     opt "source" (e.decl.source.map fun s =>
