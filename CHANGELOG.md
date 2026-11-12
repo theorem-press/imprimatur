@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- CI keeps a chart of imprimatur's run time (docs/ci-timing.md): every
+  end-to-end build runs with `--timing`, `scripts/timing-fold.py` folds the
+  files to one line per paper, the nightly appends it to the `timing`
+  branch and redraws `chart.svg` there, every run's summary shows the
+  numbers against the nightly medians, and the nightly fails when a paper
+  takes twice its median. `e2e/con-leche` builds papers/con-leche for its
+  time.
 - The bundle records the validator's verdict on every view it read back,
   an empty list when nothing was wrong, where before a clean view left no
   trace and could not be told from one never read back (`lean`, `meta`,

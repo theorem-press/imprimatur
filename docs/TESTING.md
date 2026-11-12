@@ -275,6 +275,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§13 | the same declaration has the same `stmtHash` on every toolchain | `extract/golden/Trust`, `extract/golden/Basic`, `extract/golden/Manifests` | M3 |
 | D§13 | the splicer accepts the current and previous bundle schema | `splice/version/schema`, `splice/bundle/schema-version` | M1 |
 | D§14 | testing (this file) | — | n/a |
+| D§14 | the run time of every e2e build, and of papers/con-leche, folded to one line per paper, logged nightly and charted (docs/ci-timing.md) | `e2e/con-leche` | M6 |
 | D§15 | repository layout | — | n/a |
 | D§16 | adoption in the motivating projects; each is checked in its own repository, so that imprimatur's tests need nothing outside this one | — | n/a |
 | D§17 | roadmap | — | n/a |

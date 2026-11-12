@@ -1,6 +1,10 @@
 # Proposal: a chart of imprimatur's run time, from CI
 
-Status: proposal (2026-11-12). Uses `--timing` (CHANGELOG 0.5, docs/blocks.md)
+Status: implemented (2026-11-12, the same day as the proposal): parts 1 to 4
+in `scripts/e2e.sh`, `scripts/timing-fold.py`, `scripts/timing-chart.py` and
+the e2e job of `ci.yml`; the page is docs/timing.md; the about paper's
+repository does the same in its `refresh.sh` and CI. Differences from the
+proposal are noted where they are. Uses `--timing` (CHANGELOG 0.5, docs/blocks.md)
 and the end-to-end script (`scripts/e2e.sh`, docs/TESTING.md). The harness of
 the about paper (`imprimatur-paper/harness/DESIGN.md`) is the precedent for an
 append-only log that a chart and a sentence are computed from.
@@ -55,12 +59,15 @@ Four parts, in the order to build them. Each is useful without the next.
 
 ### 1. Measure: every build in e2e with `--timing`, folded to one line per paper
 
-`scripts/e2e.sh` runs each `imprimatur build` with `--timing` (the flag sets
-`IMPRIMATUR_TIMING` to `.imprimatur/timing.jsonl` in the work directory; it
-already does so in `e2e/checker`), and adds `e2e/con-leche`: `papers/con-leche`
-built as the examples are, with its checker. After the examples,
-`scripts/timing-fold.py` reads every `e2e-out/*/.imprimatur/timing.jsonl`
-and writes `e2e-out/timing.jsonl`, one line per paper:
+`scripts/e2e.sh` runs each imprimatur step with `--timing` (the flag writes
+`.imprimatur/timing.jsonl` in the work directory, one command at a time: a
+command starts the file afresh), keeps the last `build`'s and `check`'s files
+as `timing-build.jsonl` and `timing-check.jsonl`, and adds `e2e/con-leche`:
+`papers/con-leche` built as the examples are, with its checker, when
+con-leche is checked out and built beside the repository (the nightly clones
+and builds it; a pull request's run skips it). After the examples,
+`scripts/timing-fold.py fold` reads every `e2e-out/*/timing-build.jsonl` and
+writes `e2e-out/timing.jsonl`, one line per paper:
 
 ```json
 {"date": "2026-11-12", "sha": "e6695e9", "event": "schedule",
@@ -122,7 +129,8 @@ read-back). The page links the raw log. matplotlib under `uv`, as
 
 After the append, the nightly compares each paper's `total` with the median
 of its last ten nightly points and fails the job when it exceeds
-`max(2 × median, median + 10 s)`, saying which paper and which phase grew,
+`max(2 × median, median + 2 s)` (the proposal said 10 s, which no example
+could reach), saying which paper and which phase grew,
 unless `entries` or `formulas` also grew by as much (a bigger paper). The
 threshold and the window live in one place at the top of
 `timing-fold.py`. A failing nightly already reaches the people who watch
@@ -134,9 +142,10 @@ Wall time on a shared runner varies. What keeps the chart readable: only
 imprimatur's phases are measured (Lake and TeX are outside the interval);
 the nightly uses one image, recorded per point; `steps` counts the parser's
 work independent of the machine, so a slower parser shows in `steps` as well
-as in `ms`; and the e2e build of each example runs twice, with the second
-measured, so the extractor's toolchain cache and the memo tables are warm,
-which is the state a paper's author sees. If the scatter still hides a step
+as in `ms`; and the extractor is installed before the examples are built,
+so each build runs with a warm toolchain cache, which is the state a paper's
+author sees (the proposal's second build was not needed: the memo tables
+are per process, and a build is what is measured). If the scatter still hides a step
 of less than a factor of two, the fallback is a fixed reference build
 (`minimal`) whose time divides the others.
 
