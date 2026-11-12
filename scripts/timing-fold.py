@@ -254,7 +254,12 @@ def summary(log, lines):
            "Seconds of `imprimatur build` per paper, imprimatur's own phases only (docs/ci-timing.md).", ""]
     out += rows
     for line in lines:
-        points = nightly_points(log, line["paper"]) + ([line] if line.get("event") not in ("schedule", "workflow_dispatch") else [])
+        # The run's own point comes last: a nightly's summary is written
+        # before its line is appended to the log, and a pull request's line
+        # is never appended.
+        points = nightly_points(log, line["paper"])
+        if not any(p.get("date") == line.get("date") and p.get("sha") == line.get("sha") for p in points):
+            points = points + [line]
         chart = mermaid_chart(points, line["paper"])
         if chart:
             out += ["", chart]
