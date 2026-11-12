@@ -1,0 +1,86 @@
+#!/usr/bin/env python3
+# Copyright (c) 2026 The imprimatur authors.
+# Released under Apache 2.0 license as described in the file LICENSE.
+"""The chart of imprimatur's run time (docs/ci-timing.md, part 3).
+
+    timing-chart.py LOG OUT_DIR
+
+reads the append-only log `timing-fold.py` keeps (one JSON line per paper
+per run) and writes OUT_DIR/chart.svg and OUT_DIR/chart.png: above, each
+paper's `imprimatur build` total in seconds against the night; below, the
+largest paper's phases stacked, since a regression lands in one of them.
+Only nightly points (`event` schedule or workflow_dispatch) are drawn.
+Needs matplotlib.
+"""
+import collections
+import datetime
+import json
+import pathlib
+import sys
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+PHASES = ["scan", "load", "entries", "write", "checker", "apply", "check"]
+# `export` contains the extractor's phases and the checker; what is left of it
+# is the splicer's own wait, shown as `export (other)`.
+
+
+def main(log_path, out_dir):
+    points = collections.defaultdict(list)
+    for line in pathlib.Path(log_path).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        l = json.loads(line)
+        if l.get("event") in ("schedule", "workflow_dispatch") and "ms" in l:
+            points[l["paper"]].append(l)
+    if not points:
+        print("timing-chart: no nightly points yet", file=sys.stderr)
+        return 0
+    out = pathlib.Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    fig, (top, bottom) = plt.subplots(2, 1, figsize=(9, 7), height_ratios=[3, 2])
+    for paper, ls in sorted(points.items()):
+        xs = [datetime.date.fromisoformat(l["date"]) for l in ls]
+        ys = [l["ms"]["total"] / 1000 for l in ls]
+        top.plot(xs, ys, marker="o", markersize=3, linewidth=1, label=f"{paper} ({ls[-1].get('entries', '?')} entries)")
+    top.set_ylabel("imprimatur build, seconds")
+    top.set_ylim(bottom=0)
+    top.grid(True, linewidth=0.3)
+    top.legend(fontsize=8, loc="upper left")
+    top.set_title("imprimatur's run time, one point a night (docs/ci-timing.md)", fontsize=10)
+
+    largest = max(points, key=lambda p: points[p][-1].get("entries", 0))
+    ls = points[largest]
+    xs = [datetime.date.fromisoformat(l["date"]) for l in ls]
+    stacks, labels = [], []
+    for p in PHASES:
+        ys = [l["ms"].get(p, 0) / 1000 for l in ls]
+        if any(ys):
+            stacks.append(ys)
+            labels.append(p)
+    other = [max(0, l["ms"].get("export", 0) - sum(l["ms"].get(p, 0) for p in ("load", "entries", "write", "checker"))) / 1000 for l in ls]
+    if any(other):
+        stacks.append(other)
+        labels.append("export (other)")
+    if stacks:
+        bottom.stackplot(xs, stacks, labels=labels, linewidth=0)
+        bottom.legend(fontsize=8, loc="upper left", ncol=3)
+    bottom.set_ylabel(f"{largest}: phases, seconds")
+    bottom.grid(True, linewidth=0.3)
+    fig.autofmt_xdate()
+    fig.tight_layout()
+    fig.savefig(out / "chart.svg")
+    fig.savefig(out / "chart.png", dpi=110)
+    print(f"timing-chart: wrote {out / 'chart.svg'} and {out / 'chart.png'} "
+          f"({sum(len(v) for v in points.values())} points, {len(points)} papers)")
+    return 0
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print(__doc__, file=sys.stderr)
+        sys.exit(2)
+    sys.exit(main(sys.argv[1], sys.argv[2]))

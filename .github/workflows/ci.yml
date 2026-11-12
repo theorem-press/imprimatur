@@ -88,6 +88,9 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # The nightly appends the run time to the `timing` branch (docs/ci-timing.md).
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Install elan
@@ -110,8 +113,65 @@ jobs:
             extract/.lake
           key: e2e-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-${{ github.sha }}
           restore-keys: e2e-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-
+      # con-leche, for papers/con-leche (e2e/con-leche): the nightly only, since
+      # its modules take a while to build the first time; the cache keeps them.
+      - name: Check out and build con-leche (nightly)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          CON_LECHE_REV: ${{ vars.CON_LECHE_REV || 'master' }}
+        run: |
+          git clone -q --depth 1 --branch "$CON_LECHE_REV" https://github.com/leanprover/con-leche.git ../con-leche \
+            || git clone -q https://github.com/leanprover/con-leche.git ../con-leche
+          echo "CON_LECHE_SHA=$(git -C ../con-leche rev-parse HEAD)" >> "$GITHUB_ENV"
+      - uses: actions/cache@v4
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        with:
+          path: ../con-leche/.lake
+          key: con-leche-${{ env.CON_LECHE_SHA }}
+      - name: Build con-leche's modules (nightly)
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        run: |
+          cd ../con-leche && lake build -q ConLeche.MainTheorem ConLeche.Verify.Frontend.Prepare \
+            ConLeche.Model.StreamConsts ConLeche.Frontend.Olean.View Main con-leche
       - name: End-to-end (examples/, both modes, pdflatex and lualatex)
         run: scripts/e2e.sh
+      # The run time (docs/ci-timing.md): the lines e2e.sh folded, kept as an
+      # artifact on every run and shown against the nightly log in the summary.
+      - name: Upload the run time
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: timing-${{ github.sha }}
+          path: e2e-out/timing.jsonl
+          if-no-files-found: ignore
+      - name: The nightly log of run times
+        if: always()
+        run: |
+          git fetch -q origin timing 2>/dev/null && git show origin/timing:log.jsonl > timing-log.jsonl || : > timing-log.jsonl
+      - name: Summary
+        if: always()
+        run: |
+          [ -f e2e-out/timing.jsonl ] && python3 scripts/timing-fold.py summary --log timing-log.jsonl e2e-out/timing.jsonl >> "$GITHUB_STEP_SUMMARY" || true
+      - name: Append tonight's run time to the timing branch, and redraw the chart (nightly)
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && hashFiles('e2e-out/timing.jsonl') != ''
+        run: |
+          pip install -q matplotlib
+          rm -rf timing-branch
+          if git fetch -q origin timing 2>/dev/null; then
+            git worktree add -q timing-branch origin/timing
+          else
+            git worktree add -q --detach timing-branch && git -C timing-branch checkout -q --orphan timing && git -C timing-branch rm -rfq . 2>/dev/null || true
+          fi
+          python3 scripts/timing-fold.py append --log timing-branch/log.jsonl e2e-out/timing.jsonl
+          python3 scripts/timing-chart.py timing-branch/log.jsonl timing-branch
+          cd timing-branch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add log.jsonl chart.svg chart.png
+          git commit -q -m "timing: $(date -u +%F), ${GITHUB_SHA::7}" && git push -q origin HEAD:timing
+      - name: The alarm (nightly)
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && hashFiles('e2e-out/timing.jsonl') != ''
+        run: python3 scripts/timing-fold.py check --log timing-branch/log.jsonl e2e-out/timing.jsonl
 
   # The Developer Certificate of Origin: every commit of a pull request is
   # signed off by its author (CONTRIBUTING.md, Licensing and sign-off).

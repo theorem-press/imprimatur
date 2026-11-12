@@ -11,6 +11,9 @@
 #      undefined control sequences or missing glyphs;
 #   5. compare pdftotext's output (in content order) with examples/X/expected/{pdflatex,lualatex}.txt.
 # UPDATE_GOLDEN=1 rewrites the expected files; review the diff.
+# Every imprimatur step runs with --timing; the last build's and check's
+# timing files are kept as e2e-out/X/timing-{build,check}.jsonl, and the end
+# folds them to e2e-out/timing.jsonl, one line per paper (docs/ci-timing.md).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT=$PWD
@@ -42,6 +45,14 @@ compare() {  # compare GOT EXPECTED-FILE NAME [loose]
 normalise() {  # pdftotext output, independent of small TeX differences
   sed -e 's/ﬁ/fi/g; s/ﬂ/fl/g; s/ﬀ/ff/g; s/ﬃ/ffi/g; s/ﬄ/ffl/g' -e 's/[[:space:]]*$//' \
     | tr -d '\f' | cat -s
+}
+
+timed() {  # timed build|check|accept|show ARGS...: whether to add --timing
+  case "$1" in build|check|accept|show) [[ " $* " != *" --timing "* ]] ;; *) false ;; esac
+}
+keep_timing() {  # keep_timing WORK COMMAND: a build's or a check's timing file, kept
+  case "$2" in build|check) [ -f "$1/.imprimatur/timing.jsonl" ] && cp "$1/.imprimatur/timing.jsonl" "$1/timing-$2.jsonl" ;; esac
+  return 0
 }
 
 # One test per example, named so docs/TESTING.md can refer to it. An example
@@ -79,10 +90,11 @@ for dir in examples/*/; do
   failed=0
   while IFS= read -r step; do
     [ -z "$step" ] && continue
-    if [[ $step == !* ]]; then cmd=(bash -c "${step#!}"); else read -ra words <<< "$step"; cmd=("$IMPRIMATUR" "${words[@]}"); fi
+    if [[ $step == !* ]]; then cmd=(bash -c "${step#!}"); else read -ra words <<< "$step"; cmd=("$IMPRIMATUR" "${words[@]}"); timed "${words[@]}" && cmd+=(--timing); fi
     if ! (cd "$work" && "${cmd[@]}" > step.log 2>&1); then
       echo "  FAIL: $step"; sed 's/^/    /' "$work/step.log"; status=1; failed=1; break
     fi
+    [[ $step != !* ]] && keep_timing "$work" "${words[0]}"
     # A shell step stands for the host's owners (building it, say), so the
     # host is fingerprinted again after it: only imprimatur's steps are judged.
     if [ -n "$host" ] && [[ $step == !* ]]; then before=$(fingerprint); fi
@@ -154,6 +166,26 @@ if [ -d e2e-out/semantics ]; then
     echo "  SKIP: the toolchain has no con-leche"
   fi
 fi
+# e2e/con-leche: papers/con-leche (23 entries, the verified checker on its
+# own development) built for its time, the largest paper in this repository
+# (docs/ci-timing.md). Its check reports three `untrusted` errors by design
+# (#109: subjects, not results), so only `build` must succeed and `check`
+# must find nothing stale. Skipped unless con-leche is checked out beside
+# this repository and its modules are built (papers/con-leche/README.md).
+echo "== e2e/con-leche"
+cl_host="$ROOT/../con-leche"
+if [ -f "$cl_host/.lake/build/lib/lean/ConLeche/MainTheorem.olean" ] && (cd "$cl_host" && lake env con-leche --help > /dev/null 2>&1); then
+  work=e2e-out/con-leche
+  rm -rf "$work"; mkdir -p "$work"
+  (cd papers/con-leche && tar --exclude=out --exclude='*.pdf' --exclude='*.aux' --exclude='*.log' --exclude='*.fls' --exclude='*.fdb_latexmk' --exclude='*.out' --exclude='*.synctex.gz' -cf - .) | (cd "$work" && tar -xf -)
+  (cd "$work" && "$IMPRIMATUR" build --timing > build.log 2>&1) || { echo "  FAIL: build"; sed 's/^/    /' "$work/build.log"; status=1; }
+  keep_timing "$work" build
+  (cd "$work" && "$IMPRIMATUR" check --timing > check.log 2>&1) || true
+  keep_timing "$work" check
+  grep -q '^check: 0 stale,' "$work/check.log" || { echo "  FAIL: check after build found stale blocks"; tail -5 "$work/check.log" | sed 's/^/    /'; status=1; }
+else
+  echo "  SKIP: con-leche is not checked out and built beside this repository"
+fi
 # e2e/fixture-views: every math, prose, rules and grammar view of the
 # Notation and Semantics fixtures' golden bundles typesets with both engines.
 echo "== e2e/fixture-views"
@@ -180,6 +212,21 @@ for engine in pdflatex lualatex; do
     echo "  FAIL: $engine log has undefined macros or missing glyphs"; status=1
   fi
 done
+
+# The run time, one line per paper (docs/ci-timing.md): folded from the
+# timing files kept above, and shown.
+dirs=(); for d in e2e-out/*/; do [ -f "$d/timing-build.jsonl" ] && dirs+=("$d"); done
+if [ ${#dirs[@]} -gt 0 ]; then
+  echo "== timing"
+  python3 scripts/timing-fold.py fold "${dirs[@]}" --out e2e-out/timing.jsonl
+  python3 - e2e-out/timing.jsonl <<'PY' | sed 's/^/  /'
+import json, sys
+for l in open(sys.argv[1]):
+    j = json.loads(l); m = j["ms"]
+    print(f"{j['paper']:<12} build {m['total']/1000:6.2f} s  (load {m.get('load',0)/1000:.2f}, entries {m.get('entries',0)/1000:.2f}, export {m.get('export',0)/1000:.2f})"
+          f"  {j.get('entries',0)} entries, {j.get('formulas',0)} formulas")
+PY
+fi
 
 [ $status = 0 ] && echo "e2e: all examples passed"
 exit $status
