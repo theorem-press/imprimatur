@@ -65,11 +65,24 @@ def main(log_path, out_dir):
     if any(other):
         stacks.append(other)
         labels.append("export (other)")
-    if stacks:
+    if stacks and len(xs) > 1:
         bottom.stackplot(xs, stacks, labels=labels, linewidth=0)
+        bottom.legend(fontsize=8, loc="upper left", ncol=3)
+    elif stacks:
+        # One night: a stacked bar, since a stack plot of one point is empty.
+        base = 0
+        for ys, label in zip(stacks, labels):
+            bottom.bar(xs, ys, bottom=base, width=0.6, label=label)
+            base += ys[0]
         bottom.legend(fontsize=8, loc="upper left", ncol=3)
     bottom.set_ylabel(f"{largest}: phases, seconds")
     bottom.grid(True, linewidth=0.3)
+    # The axis spans the nights there are, and a few days around them, rather
+    # than the years matplotlib pads a lone point with.
+    days = sorted({datetime.date.fromisoformat(l["date"]) for ls in points.values() for l in ls})
+    pad = datetime.timedelta(days=max(2, (days[-1] - days[0]).days // 20 + 1))
+    for ax in (top, bottom):
+        ax.set_xlim(days[0] - pad, days[-1] + pad)
     fig.autofmt_xdate()
     fig.tight_layout()
     fig.savefig(out / "chart.svg")
