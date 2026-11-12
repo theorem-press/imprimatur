@@ -30,13 +30,15 @@ PHASES = ["scan", "load", "entries", "write", "apply", "check"]
 
 
 def main(log_path, out_dir):
-    points = collections.defaultdict(list)
+    # One point a night per paper: the last, when a day has several.
+    by_day = collections.defaultdict(dict)
     for line in pathlib.Path(log_path).read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         l = json.loads(line)
         if l.get("event") in ("schedule", "workflow_dispatch") and "ms" in l:
-            points[l["paper"]].append(l)
+            by_day[l["paper"]][l["date"]] = l
+    points = {paper: [days[d] for d in sorted(days)] for paper, days in by_day.items()}
     if not points:
         print("timing-chart: no nightly points yet", file=sys.stderr)
         return 0
