@@ -171,7 +171,7 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   let modules := doc.manifests.foldl (fun acc m => match m.solutionModule with
     | some sm => if acc.contains sm then acc else acc.push sm
     | none => acc) cfg.imports
-  let startChecker : IO (Option (Task (Except IO.Error (Except String (Checker × Bool) × Nat)))) :=
+  let startChecker : IO (Option (Task (Except IO.Error (Except String (Checker × Bool × Checker.Times) × Nat)))) :=
     match cfg.checker with
     | some tool => if a.noChecker then pure none else
       some <$> IO.asTask do
@@ -202,13 +202,15 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   -- The checker's verdict goes into the bundle, and one line to the console.
   let mut notes := ""
   if let some t := checking then
-    let ((c, kept), ms) ← match ← IO.wait t with
+    let ((c, kept, times), ms) ← match ← IO.wait t with
       | .ok (.ok r, ms) => pure (r, ms)
       | .ok (.error e, _) => throw e
       | .error e => throw s!"{e}"
     if a.timing then
+      -- One event: the whole wait, and its two halves when it was not kept.
       let h ← IO.FS.Handle.mk (root / timingFile) .append
-      h.putStrLn s!"\{\"at\": \"checker\", \"phase\": \"{c.tool}\", \"ms\": {ms}, \"kept\": {kept}}"
+      h.putStrLn s!"\{\"at\": \"checker\", \"phase\": \"{c.tool}\", \"ms\": {ms}, \"kept\": {kept}, \
+        \"leanexport_ms\": {times.export_ms}, \"check_ms\": {times.check_ms}}"
     let text ← (IO.FS.readFile bundle : IO String)
     let b ← match Bundle.parse text with
       | .ok b => pure b

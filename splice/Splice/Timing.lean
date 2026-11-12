@@ -13,7 +13,10 @@ time went, in `.imprimatur/timing.jsonl`, and ends with a summary of it.
 The file has one JSON object per line. The splicer writes its phases
 (`{"at": "splice", "phase": "scan" | "export" | "apply" | …, "ms": …}`),
 the verified checker's run, when there is one, which is within the export
-phase (`{"at": "checker", "phase": "con-leche", "ms": …, "kept": …}`),
+phase (`{"at": "checker", "phase": "con-leche", "ms": …, "kept": …,
+"leanexport_ms": …, "check_ms": …}`: the whole wait, and, when the verdict
+was not kept, its two halves, `leanexport` writing the stream and the
+checker reading it),
 and the extractor, with `IMPRIMATUR_TIMING` naming the file, writes its own
 (`Imprimatur.Timing`): `load`, `entries` and `write`; one `entry` per key;
 one `stage` per stage of an entry (`axioms`, `lean view`, `views`, `cone`);
@@ -55,6 +58,10 @@ structure Event where
   tex : String
   /-- Whether a checker's verdict was kept from the last run. -/
   kept : Bool
+  /-- A checker run's first half, when it was not kept: `leanexport` writing the stream. -/
+  leanexportMs : Nat := 0
+  /-- Its second half: the checker reading and checking the stream. -/
+  checkMs : Nat := 0
   deriving Inhabited
 
 /-- Parse one line; `none` for a line that is not an event. -/
@@ -65,7 +72,9 @@ def Event.parse (line : String) : Option Event := do
   return { at_ := str "at", phase := str "phase", ms := nat "ms", key := str "key",
            view := str "view", stage := str "stage", tokens := nat "tokens", steps := nat "steps",
            renderMs := nat "render_ms", setupMs := nat "setup_ms", tex := str "tex",
-           kept := (j.getObjValAs? Bool "kept").toOption.getD false }
+           kept := (j.getObjValAs? Bool "kept").toOption.getD false
+           leanexportMs := (j.getObjValAs? Nat "leanexport_ms").toOption.getD 0
+           checkMs := (j.getObjValAs? Nat "check_ms").toOption.getD 0 }
 
 /-- Milliseconds as seconds, to one decimal. -/
 def secs (ms : Nat) : String := s!"{ms / 1000}.{(ms % 1000) / 100} s"
@@ -107,7 +116,8 @@ def summary (text : String) (file : String) : String := Id.run do
   -- The checker runs alongside the extractor, so its time is within export's.
   for e in es.filter (·.at_ == "checker") do
     out := out.push s!"  checker: {e.phase} {secs e.ms}\
-      {if e.kept then " (the verdict kept from the last run)" else ", alongside the extractor"}"
+      {if e.kept then " (the verdict kept from the last run)"
+       else s!", alongside the extractor (leanexport {secs e.leanexportMs}, the check {secs e.checkMs})"}"
   unless extract.isEmpty do
     out := out.push s!"  export: extractor {secs (ephase "extractor")}: load {secs (ephase "load")}, \
       entries {secs (ephase "entries")}, write {secs (ephase "write")}"
