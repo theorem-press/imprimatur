@@ -22,9 +22,11 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-PHASES = ["scan", "load", "entries", "write", "checker", "apply", "check"]
-# `export` contains the extractor's phases and the checker; what is left of it
-# is the splicer's own wait, shown as `export (other)`.
+PHASES = ["scan", "load", "entries", "write", "apply", "check"]
+# `export` is the wait for the extractor and, alongside it, the verified
+# checker: the extractor's phases are stacked, what is left of `export` after
+# them is `export (other)`, and the checker, which runs in parallel, is a
+# line of its own rather than a layer.
 
 
 def main(log_path, out_dir):
@@ -61,10 +63,11 @@ def main(log_path, out_dir):
         if any(ys):
             stacks.append(ys)
             labels.append(p)
-    other = [max(0, l["ms"].get("export", 0) - sum(l["ms"].get(p, 0) for p in ("load", "entries", "write", "checker"))) / 1000 for l in ls]
+    other = [max(0, l["ms"].get("export", 0) - sum(l["ms"].get(p, 0) for p in ("load", "entries", "write"))) / 1000 for l in ls]
     if any(other):
         stacks.append(other)
         labels.append("export (other)")
+    checker = [l["ms"].get("checker", 0) / 1000 for l in ls]
     if stacks and len(xs) > 1:
         bottom.stackplot(xs, stacks, labels=labels, linewidth=0)
         bottom.legend(fontsize=8, loc="upper left", ncol=3)
@@ -74,6 +77,9 @@ def main(log_path, out_dir):
         for ys, label in zip(stacks, labels):
             bottom.bar(xs, ys, bottom=base, width=0.6, label=label)
             base += ys[0]
+        bottom.legend(fontsize=8, loc="upper left", ncol=3)
+    if any(checker):
+        bottom.plot(xs, checker, color="black", linestyle="--", marker="o", markersize=3, linewidth=1, label="checker (alongside)")
         bottom.legend(fontsize=8, loc="upper left", ncol=3)
     bottom.set_ylabel(f"{largest}: phases, seconds")
     bottom.grid(True, linewidth=0.3)
