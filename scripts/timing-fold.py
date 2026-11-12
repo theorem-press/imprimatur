@@ -177,8 +177,13 @@ def read_log(path):
 
 
 def nightly_points(log, paper):
-    """The paper's nightly points in the log, oldest first."""
-    return [l for l in log if l.get("paper") == paper and l.get("event") in ("schedule", "workflow_dispatch")]
+    """The paper's nightly points in the log, oldest first: one a night, the
+    last when a day has several (a dispatch after the schedule, say)."""
+    by_day = {}
+    for l in log:
+        if l.get("paper") == paper and l.get("event") in ("schedule", "workflow_dispatch"):
+            by_day[l.get("date")] = l
+    return [by_day[d] for d in sorted(by_day)]
 
 
 def median_total(points):
