@@ -38,7 +38,9 @@ def main(log_path, out_dir):
         l = json.loads(line)
         if l.get("event") in ("schedule", "workflow_dispatch") and "ms" in l:
             by_day[l["paper"]][l["date"]] = l
-    points = {paper: [days[d] for d in sorted(days)] for paper, days in by_day.items()}
+    # (`checker` was the semantics example again, with the checker on, in the
+    # first nights' lines; the fold no longer writes it.)
+    points = {paper: [days[d] for d in sorted(days)] for paper, days in by_day.items() if paper != "checker"}
     if not points:
         print("timing-chart: no nightly points yet", file=sys.stderr)
         return 0
@@ -46,15 +48,24 @@ def main(log_path, out_dir):
     out.mkdir(parents=True, exist_ok=True)
 
     fig, (top, bottom) = plt.subplots(2, 1, figsize=(9, 7), height_ratios=[3, 2])
-    for paper, ls in sorted(points.items()):
+    ymax = max(l["ms"]["total"] for ls in points.values() for l in ls) / 1000
+    # The legend carries each paper's last value, so that the papers whose
+    # lines hug the axis are read there; a line gets labels on its points only
+    # when it is high enough for them to be read, and the last point's label
+    # names the commit. Labels of the last points are staggered so that they
+    # do not pile up when several papers end near one value.
+    rank = 0
+    for paper, ls in sorted(points.items(), key=lambda kv: -kv[1][-1]["ms"]["total"]):
         xs = [datetime.date.fromisoformat(l["date"]) for l in ls]
         ys = [l["ms"]["total"] / 1000 for l in ls]
-        top.plot(xs, ys, marker="o", markersize=3, linewidth=1, label=f"{paper} ({ls[-1].get('entries', '?')} entries)")
-        # Each point says what it is: its seconds, and on the last point the
-        # commit it measured.
-        for l, x, y in zip(ls, xs, ys):
-            label = f"{y:.1f} s" if l is not ls[-1] else f"{y:.1f} s @ {l.get('sha') or '?'}"
-            top.annotate(label, (x, y), textcoords="offset points", xytext=(4, 4), fontsize=6.5)
+        top.plot(xs, ys, marker="o", markersize=3, linewidth=1,
+                 label=f"{paper} ({ls[-1].get('entries', '?')} entries): last {ys[-1]:.1f} s")
+        if max(ys) >= 0.05 * ymax:
+            for l, x, y in zip(ls[:-1], xs[:-1], ys[:-1]):
+                top.annotate(f"{y:.1f} s", (x, y), textcoords="offset points", xytext=(4, 4), fontsize=6.5)
+            top.annotate(f"{ys[-1]:.1f} s @ {ls[-1].get('sha') or '?'}", (xs[-1], ys[-1]),
+                         textcoords="offset points", xytext=(6, 4 + 9 * rank), fontsize=6.5)
+            rank += 1
     top.set_ylabel("seconds of imprimatur build")
     top.set_ylim(bottom=0)
     top.grid(True, linewidth=0.3)
@@ -94,11 +105,12 @@ def main(log_path, out_dir):
         tail = (f"  (leanexport {run.get('leanexport_ms', 0) / 1000:.0f} s + check {run.get('check_ms', 0) / 1000:.0f} s)"
                 if run.get("check_ms") else ("  (verdict kept)" if run.get("kept") else ""))
         bottom.annotate(f"checker {checker[-1]:.0f} s{tail}", (xs[-1], checker[-1]),
-                        textcoords="offset points", xytext=(4, 4), fontsize=6.5)
-        bottom.legend(fontsize=8, loc="upper left", ncol=3)
+                        textcoords="offset points", xytext=(6, -12), fontsize=6.5)
+        bottom.legend(fontsize=7, loc="upper left", ncol=4)
     bottom.set_ylabel(f"{largest}: seconds by part")
-    bottom.set_title(f"{largest}, the largest paper: the extractor's parts stacked (scan, load, entries, write, "
-                     "export other, apply); the checker as a line, since it runs beside them", fontsize=8)
+    bottom.set_title(f"{largest}, the largest paper: the extractor's parts stacked; "
+                     "the verified checker as a line, since it runs beside them", fontsize=9)
+    bottom.set_ylim(top=max(bottom.get_ylim()[1], (max(checker) if any(checker) else 0) * 1.35))
     bottom.grid(True, linewidth=0.3)
     # The axis spans the nights there are, and a few days around them, rather
     # than the years matplotlib pads a lone point with.
