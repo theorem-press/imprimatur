@@ -110,8 +110,13 @@ is not proposed now.
 
 **The job summary.** Every e2e run writes to `$GITHUB_STEP_SUMMARY`: a table
 of tonight's `total` per paper beside the median of the last ten nightly
-points and the ratio, and a Mermaid `xychart-beta` line chart of `total` per
-paper over the last thirty nights. GitHub renders Mermaid in summaries, so
+points and the ratio; under it, for each paper, a folded table of the parts
+of its build (the extractor's phases; the stages inside `entries`: cone,
+axioms, the Lean view, the views; the checker's wait and its two halves;
+`apply`; the separate `check`) and the five slowest entries, views and
+formulas; a chart of the largest paper's total, checker and entries as
+three lines; and a Mermaid `xychart-beta` line chart of `total` per paper
+over the last thirty nights, this run's point last. GitHub renders Mermaid in summaries, so
 the chart is on the run's page with nothing hosted; a pull request's run
 shows its own numbers against the nightly medians, without appending.
 
@@ -119,10 +124,13 @@ shows its own numbers against the nightly medians, without appending.
 Markdown; the repository is public, so it is served) shows
 `timing/chart.svg`, drawn by `scripts/timing-chart.py` in the nightly after
 the append and committed to the `timing` branch beside the log: one line per
-paper, `total` in seconds against date, with the phases as a stacked area on
-a second chart for the largest paper, since a step is in one phase (`load`
-for notation elaboration, `entries` for the cone and axioms, `export` for
-read-back). The page links the raw log. matplotlib under `uv`, as
+paper, `total` in seconds against date, each point labelled with its seconds
+and the last with its commit, with the extractor's phases as a stacked area
+on a second chart for the largest paper, since a step is in one phase (`load`
+for notation elaboration, `entries` for the cone and axioms, `export (other)`
+for the splicer's wait beyond them), and the verified checker as a line
+beside the stack, since it runs alongside the extractor. One point a night
+per paper: the last, when a day has a dispatch after the schedule. The page links the raw log. matplotlib under `uv`, as
 `analytics/chart.py` in the about paper does.
 
 ### 4. Alarm: the nightly fails when a paper slows

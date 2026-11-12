@@ -110,26 +110,37 @@ def hint : String :=
   "\n(leanexport and con-leche come with Lean v4.35 and later; to go by Lean's own verdict \
    instead, unset [trust].checker, or run with --no-checker)"
 
+/-- The two halves of a run that was not kept, in milliseconds: `leanexport`
+writing the stream, and the checker reading it. Both zero for a kept verdict. -/
+structure Times where
+  /-- `leanexport` writing the stream of the modules. -/
+  export_ms : Nat := 0
+  /-- The checker reading and checking it. -/
+  check_ms : Nat := 0
+
 /-- Check the development with `tool`: the kept verdict when the development
 has not changed, else `leanexport` of the modules into `work`, read by the
-checker, and the verdict kept. Returns the verdict and whether it was
-kept from before. -/
+checker, and the verdict kept. Returns the verdict, whether it was kept
+from before, and the time each half took. -/
 def run (leanDir work : System.FilePath) (tool : String) (modules : Array String) :
-    ExceptT String IO (Checker × Bool) := do
+    ExceptT String IO (Checker × Bool × Times) := do
   let fp ← fingerprint leanDir tool modules
-  if let some c ← cached work fp then return (c, true)
+  if let some c ← cached work fp then return (c, true, {})
   let stream := work / "export.ndjson"
   try
+    let t0 ← IO.monoMsNow
     let (code, err) ← spawnToFile leanDir (#["leanexport"] ++ modules) stream
+    let t1 ← IO.monoMsNow
     if code != 0 then
       throw s!"`lake env leanexport {" ".intercalate modules.toList}` failed in {leanDir}:\n{err}{hint}"
     let out ← lakeEnv leanDir #[tool, stream.toString]
+    let t2 ← IO.monoMsNow
     let report := lastLine (out.stdout ++ "\n" ++ out.stderr)
     let some verdict := verdictOfExit out.exitCode
       | throw s!"`lake env {tool}` failed in {leanDir}:\n{out.stdout}{out.stderr}{hint}"
     let c : Checker := { tool, verdict, modules, report }
     keep work fp c
-    return (c, false)
+    return (c, false, { export_ms := t1 - t0, check_ms := t2 - t1 })
   finally
     if ← stream.pathExists then IO.FS.removeFile stream
 

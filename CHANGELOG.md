@@ -11,7 +11,12 @@ All notable changes to imprimatur are recorded here. Versions follow
   branch and redraws `chart.svg` there, every run's summary shows the
   numbers against the nightly medians, and the nightly fails when a paper
   takes twice its median. `e2e/con-leche` builds papers/con-leche for its
-  time.
+  time. The summary shows the parts of each build: the extractor's phases,
+  the stages inside `entries` (cone, axioms, the views), the checker's two
+  halves, and the five slowest entries, views and formulas.
+- `--timing`'s checker event carries `leanexport_ms` and `check_ms`, the
+  two halves of a verified check that was not kept, and the console
+  summary prints them.
 - The bundle records the validator's verdict on every view it read back,
   an empty list when nothing was wrong, where before a clean view left no
   trace and could not be told from one never read back (`lean`, `meta`,

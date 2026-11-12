@@ -50,11 +50,18 @@ def main(log_path, out_dir):
         xs = [datetime.date.fromisoformat(l["date"]) for l in ls]
         ys = [l["ms"]["total"] / 1000 for l in ls]
         top.plot(xs, ys, marker="o", markersize=3, linewidth=1, label=f"{paper} ({ls[-1].get('entries', '?')} entries)")
-    top.set_ylabel("imprimatur build, seconds")
+        # Each point says what it is: its seconds, and on the last point the
+        # commit it measured.
+        for l, x, y in zip(ls, xs, ys):
+            label = f"{y:.1f} s" if l is not ls[-1] else f"{y:.1f} s @ {l.get('sha') or '?'}"
+            top.annotate(label, (x, y), textcoords="offset points", xytext=(4, 4), fontsize=6.5)
+    top.set_ylabel("seconds of imprimatur build")
     top.set_ylim(bottom=0)
     top.grid(True, linewidth=0.3)
-    top.legend(fontsize=8, loc="upper left")
-    top.set_title("imprimatur's run time, one point a night (docs/ci-timing.md)", fontsize=10)
+    top.legend(fontsize=8, loc="upper left", title="paper (entries)", title_fontsize=8)
+    top.set_title("imprimatur's run time: one point per paper per night, the last nightly run of the day\n"
+                  "(seconds of `imprimatur build`, imprimatur's own phases; Lake and TeX excluded; docs/ci-timing.md)",
+                  fontsize=9)
 
     largest = max(points, key=lambda p: points[p][-1].get("entries", 0))
     ls = points[largest]
@@ -81,9 +88,17 @@ def main(log_path, out_dir):
             base += ys[0]
         bottom.legend(fontsize=8, loc="upper left", ncol=3)
     if any(checker):
-        bottom.plot(xs, checker, color="black", linestyle="--", marker="o", markersize=3, linewidth=1, label="checker (alongside)")
+        bottom.plot(xs, checker, color="black", linestyle="--", marker="o", markersize=3, linewidth=1,
+                    label="verified checker (runs alongside)")
+        run = ls[-1].get("checker_run") or {}
+        tail = (f"  (leanexport {run.get('leanexport_ms', 0) / 1000:.0f} s + check {run.get('check_ms', 0) / 1000:.0f} s)"
+                if run.get("check_ms") else ("  (verdict kept)" if run.get("kept") else ""))
+        bottom.annotate(f"checker {checker[-1]:.0f} s{tail}", (xs[-1], checker[-1]),
+                        textcoords="offset points", xytext=(4, 4), fontsize=6.5)
         bottom.legend(fontsize=8, loc="upper left", ncol=3)
-    bottom.set_ylabel(f"{largest}: phases, seconds")
+    bottom.set_ylabel(f"{largest}: seconds by part")
+    bottom.set_title(f"{largest}, the largest paper: the extractor's parts stacked (scan, load, entries, write, "
+                     "export other, apply); the checker as a line, since it runs beside them", fontsize=8)
     bottom.grid(True, linewidth=0.3)
     # The axis spans the nights there are, and a few days around them, rather
     # than the years matplotlib pads a lone point with.
