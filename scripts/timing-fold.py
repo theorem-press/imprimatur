@@ -196,7 +196,7 @@ def nightly_points(log, paper):
     last when a day has several (a dispatch after the schedule, say)."""
     by_day = {}
     for l in log:
-        if l.get("paper") == paper and l.get("event") in ("schedule", "workflow_dispatch"):
+        if l.get("paper") == paper and paper != "checker" and l.get("event") in ("schedule", "workflow_dispatch"):
             by_day[l.get("date")] = l
     return [by_day[d] for d in sorted(by_day)]
 
