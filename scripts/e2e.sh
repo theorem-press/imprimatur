@@ -20,15 +20,20 @@ IMPRIMATUR="$ROOT/splice/.lake/build/bin/imprimatur"
 status=0
 
 compare() {  # compare GOT EXPECTED-FILE NAME [loose]
-  # With "loose", spaces within lines are ignored: pdftotext versions differ
-  # in where they put spaces (`(m + n )` against `(m + n)`).
+  # With "loose", whitespace is ignored altogether: pdftotext versions differ
+  # in where they put spaces (`(m + n )` against `(m + n)`) and in where they
+  # break lines (poppler 25.x, in the ubuntu-26.04 runner image of November
+  # 2026, joins `free` and `name` across a line end as `freename`). The text
+  # in content order is what the test is about, so the files are compared
+  # with every space and newline removed; the diff shown is the line one,
+  # which is readable.
   local got=$1 want=$2 name=$3 loose=${4:-}
-  local opts=-u
-  [ "$loose" = loose ] && opts="-u --ignore-all-space"
   if [ "${UPDATE_GOLDEN:-}" = 1 ]; then
     mkdir -p "$(dirname "$want")"
     if ! cmp -s "$got" "$want" 2>/dev/null; then cp "$got" "$want"; echo "  updated $want"; fi
-  elif ! diff $opts "$want" "$got" > "$got.diff" 2>&1; then
+  elif [ "$loose" = loose ] && cmp -s <(tr -d '[:space:]' < "$want") <(tr -d '[:space:]' < "$got"); then
+    :
+  elif ! diff -u "$want" "$got" > "$got.diff" 2>&1; then
     echo "  FAIL: $name differs from $want:"; head -40 "$got.diff" | sed 's/^/    /'
     status=1
   fi
