@@ -126,7 +126,8 @@ jobs:
       - uses: actions/cache@v4
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         with:
-          path: ../con-leche/.lake
+          # Absolute: actions/cache rejects a path with `..` in it.
+          path: ${{ runner.workspace }}/con-leche/.lake
           key: con-leche-${{ env.CON_LECHE_SHA }}
       - name: Build con-leche's modules (nightly)
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
