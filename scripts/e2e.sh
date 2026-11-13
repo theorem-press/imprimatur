@@ -215,7 +215,9 @@ done
 
 # The run time, one line per paper (docs/ci-timing.md): folded from the
 # timing files kept above, and shown.
-dirs=(); for d in e2e-out/*/; do [ -f "$d/timing-build.jsonl" ] && dirs+=("$d"); done
+# (e2e/checker is the semantics example again, with the checker on: not a
+# second paper, so not a line.)
+dirs=(); for d in e2e-out/*/; do [ "$d" != e2e-out/checker/ ] && [ -f "$d/timing-build.jsonl" ] && dirs+=("$d"); done
 if [ ${#dirs[@]} -gt 0 ]; then
   echo "== timing"
   python3 scripts/timing-fold.py fold "${dirs[@]}" --out e2e-out/timing.jsonl

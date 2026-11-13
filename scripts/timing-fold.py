@@ -42,6 +42,7 @@ WINDOW = 10
 RATIO = 2.0
 SLACK_MS = 2_000
 CHART_POINTS = 30
+SLOWEST = 5  # the slowest entries, views and formulas a line keeps
 
 # The phases a line records, in the order they happen. `total` is the sum
 # of the splicer's phases, which contain the extractor's.
@@ -50,13 +51,17 @@ EXTRACT_PHASES = ["load", "entries", "write", "extractor"]
 PHASES = SPLICE_PHASES + EXTRACT_PHASES + ["checker"]
 # The phases a regression is attributed to: `export` less what it contains.
 INSIDE_EXPORT = ["load", "entries", "write", "checker"]
-ATTRIBUTED = ["scan", "load", "entries", "write", "checker", "export (other)", "apply", "check"]
+ATTRIBUTED = ["scan", "load", "entries", "write", "checker: leanexport", "checker: check", "checker",
+              "export (other)", "apply", "check"]
 
 
 def phase_ms(line, phase):
     ms = line.get("ms", {})
     if phase == "export (other)":
         return max(0, ms.get("export", 0) - sum(ms.get(p, 0) for p in INSIDE_EXPORT))
+    if phase.startswith("checker: "):
+        run = line.get("checker_run") or {}
+        return run.get("leanexport_ms" if phase.endswith("leanexport") else "check_ms", 0)
     return ms.get(phase, 0)
 
 
@@ -73,35 +78,41 @@ def fold_events(events):
     """The phases, sizes and slowest items of one command's events."""
     ms = {}
     sizes = {"entries": 0, "views": 0, "formulas": 0, "tokens": 0, "steps": 0}
-    slowest = {}
-
-    def slower(kind, name, t):
-        if name is not None and (kind not in slowest or t > slowest[kind][1]):
-            slowest[kind] = [name, t]
+    stages = {}
+    checker = {}
+    candidates = {"entry": [], "view": [], "formula": []}
 
     for e in events:
         at, phase, t = e.get("at"), e.get("phase"), int(e.get("ms", 0))
         if at == "splice" and phase in SPLICE_PHASES:
             ms[phase] = ms.get(phase, 0) + t
         elif at == "checker":
+            # One event: the whole wait, and, when the verdict was not kept,
+            # its two halves (leanexport, then the check).
             ms["checker"] = ms.get("checker", 0) + t
+            checker = {"tool": phase, "kept": bool(e.get("kept", False)),
+                       "leanexport_ms": int(e.get("leanexport_ms", 0)), "check_ms": int(e.get("check_ms", 0))}
         elif at == "extract":
             if phase in EXTRACT_PHASES:
                 ms[phase] = ms.get(phase, 0) + t
                 if phase == "entries":
                     sizes["entries"] = int(e.get("count", 0))
+            elif phase == "stage":
+                stages[e.get("stage")] = stages.get(e.get("stage"), 0) + t
             elif phase == "entry":
-                slower("entry", e.get("key"), t)
+                candidates["entry"].append([e.get("key"), t])
             elif phase == "view":
                 sizes["views"] += 1
-                slower("view", e.get("view"), t)
+                candidates["view"].append([f"{e.get('key')} {e.get('view')}" if e.get("key") else e.get("view"), t])
             elif phase == "formula":
                 sizes["formulas"] += 1
                 sizes["tokens"] += int(e.get("tokens", 0))
                 sizes["steps"] += int(e.get("steps", 0))
-                slower("formula", e.get("tex"), t)
+                candidates["formula"].append([e.get("tex"), t])
     ms["total"] = sum(ms.get(p, 0) for p in SPLICE_PHASES)
-    return ms, sizes, slowest
+    slowest = {k: sorted((c for c in v if c[0] is not None), key=lambda c: -c[1])[:SLOWEST]
+               for k, v in candidates.items() if v}
+    return ms, sizes, slowest, stages, checker
 
 
 def toolchain_of(directory):
@@ -135,6 +146,7 @@ def provenance():
         image = f"{os.environ['ImageOS']}/{os.environ.get('ImageVersion', '')}"
     return {
         "date": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d"),
+        "time": datetime.datetime.now(datetime.timezone.utc).strftime("%H:%M"),
         "sha": sha[:7] if sha else None,
         "event": os.environ.get("GITHUB_EVENT_NAME", "local"),
         "image": image,
@@ -149,7 +161,7 @@ def fold_dir(directory, paper):
         build = d / ".imprimatur" / "timing.jsonl"
     if not build.exists():
         return None
-    ms, sizes, slowest = fold_events(read_events(build))
+    ms, sizes, slowest, stages, checker = fold_events(read_events(build))
     line = dict(provenance())
     line.update({"paper": paper, "toolchain": toolchain_of(d)})
     toml = d / "imprimatur.toml"
@@ -159,8 +171,11 @@ def fold_dir(directory, paper):
         line["checker"] = "checker" in ms
     line.update(sizes)
     line["ms"] = {p: ms[p] for p in PHASES + ["total"] if p in ms}
+    line["stages"] = stages
+    if checker:
+        line["checker_run"] = checker
     if check.exists():
-        cms, _, _ = fold_events(read_events(check))
+        cms, _, _, _, _ = fold_events(read_events(check))
         line["check_ms"] = cms.get("total", 0)
     line["slowest"] = slowest
     return line
@@ -177,8 +192,13 @@ def read_log(path):
 
 
 def nightly_points(log, paper):
-    """The paper's nightly points in the log, oldest first."""
-    return [l for l in log if l.get("paper") == paper and l.get("event") in ("schedule", "workflow_dispatch")]
+    """The paper's nightly points in the log, oldest first: one a night, the
+    last when a day has several (a dispatch after the schedule, say)."""
+    by_day = {}
+    for l in log:
+        if l.get("paper") == paper and paper != "checker" and l.get("event") in ("schedule", "workflow_dispatch"):
+            by_day[l.get("date")] = l
+    return [by_day[d] for d in sorted(by_day)]
 
 
 def median_total(points):
@@ -213,7 +233,10 @@ def verdicts(log, lines):
                 # `export` contains the extractor's phases and the checker,
                 # so what is left of it after them is judged on its own.
                 worst, worst_by = None, 0
+                halves = bool((line.get("checker_run") or {}).get("check_ms"))
                 for p in ATTRIBUTED:
+                    if p == "checker" and halves:
+                        continue
                     now = phase_ms(line, p)
                     past = [phase_ms(q, p) for q in points[-WINDOW:] if "ms" in q]
                     pm = statistics.median(past) if past else 0
@@ -236,12 +259,75 @@ def mermaid_chart(points, paper):
     return "\n".join([
         "```mermaid",
         "xychart-beta",
-        f'    title "{paper}: imprimatur build, seconds, last {len(pts)} nights"',
+        f'    title "{paper}: seconds of imprimatur build per night ({len(pts)} nights, this run last)"',
         f"    x-axis [{xs}]",
         f'    y-axis "seconds" 0 --> {top * 1.2:.2f}',
         f"    line [{ys}]",
         "```",
     ])
+
+
+def secs(ms):
+    return f"{ms / 1000:.1f} s" if ms else ""
+
+
+def details(line):
+    """The parts of one paper's build, as Markdown: phases, stages, the
+    checker's halves, and the slowest entries, views and formulas."""
+    ms, run, stages = line.get("ms", {}), line.get("checker_run") or {}, line.get("stages") or {}
+    out = [f"<details><summary><b>{line['paper']}</b>: {secs(ms.get('total', 0))} in all, "
+           f"{line.get('entries', 0)} entries, {line.get('formulas', 0)} formulas"
+           + (f", the checker {secs(ms.get('checker', 0))}" if ms.get("checker") else "") + "</summary>", ""]
+    out += ["| Part | Seconds | What it is |", "|---|---:|---|"]
+    out.append(f"| scan | {secs(ms.get('scan', 0))} | reading the document |")
+    out.append(f"| load | {secs(ms.get('load', 0))} | elaborating the notation module |")
+    out.append(f"| entries | {secs(ms.get('entries', 0))} | the {line.get('entries', 0)} entries, in the stages below |")
+    for st, what in (("cone", "the dependency cone of each entry"), ("axioms", "the axioms each depends on"),
+                     ("lean view", "Lean's own rendering"), ("views", "the paper's views, with the formulas read back")):
+        if st in stages:
+            out.append(f"| &nbsp;&nbsp;{st} | {secs(stages[st])} | {what} |")
+    out.append(f"| write | {secs(ms.get('write', 0))} | the bundle |")
+    other = phase_ms(line, "export (other)")
+    if other:
+        out.append(f"| export, other | {secs(other)} | the splicer's wait beyond the extractor's phases |")
+    if ms.get("checker"):
+        kept = " (the verdict kept from the last run)" if run.get("kept") else ""
+        out.append(f"| checker | {secs(ms['checker'])} | {run.get('tool', 'the verified checker')}, alongside the extractor{kept} |")
+        if run.get("check_ms"):
+            out.append(f"| &nbsp;&nbsp;leanexport | {secs(run.get('leanexport_ms', 0))} | writing the stream of the modules |")
+            out.append(f"| &nbsp;&nbsp;{run.get('tool', 'check')} | {secs(run['check_ms'])} | reading and checking it |")
+    for p, what in (("apply", "writing the blocks"), ("check", "comparing the blocks")):
+        if ms.get(p):
+            out.append(f"| {p} | {secs(ms[p])} | {what} |")
+    if line.get("check_ms") is not None:
+        out.append(f"| `check` after `build` | {secs(line['check_ms'])} | the separate command |")
+    slow = line.get("slowest") or {}
+    for kind, title in (("entry", "Slowest entries"), ("view", "Slowest views"), ("formula", "Slowest formulas")):
+        items = slow.get(kind)
+        if not items:
+            continue
+        if isinstance(items[0], str):  # an older line: one pair, not a list of them
+            items = [items]
+        out += ["", f"**{title}.** " + "; ".join(f"`{str(name)[:60]}` {secs(t) or f'{t} ms'}" for name, t in items)]
+    out += ["", "</details>", ""]
+    return out
+
+
+def mermaid_lines_chart(points, paper):
+    """The largest paper's total, checker and entries as three lines."""
+    pts = points[-CHART_POINTS:]
+    if len(pts) < 2:
+        return ""
+    xs = ", ".join(f'"{p["date"][5:]}"' for p in pts)
+    series = [("total", [p["ms"]["total"] for p in pts]), ("checker", [p["ms"].get("checker", 0) for p in pts]),
+              ("entries", [p["ms"].get("entries", 0) for p in pts])]
+    series = [(n, ys) for n, ys in series if any(ys)]
+    top = max(max(ys) for _, ys in series) / 1000
+    return "\n".join([
+        "```mermaid", "xychart-beta",
+        f'    title "{paper}, seconds per night: ' + ", then ".join(n for n, _ in series) + '"',
+        f"    x-axis [{xs}]", f'    y-axis "seconds" 0 --> {top * 1.2:.2f}']
+        + [f"    line [{', '.join(f'{y / 1000:.2f}' for y in ys)}]" for _, ys in series] + ["```"])
 
 
 def summary(log, lines):
@@ -251,10 +337,30 @@ def summary(log, lines):
                     f"| {line['ms']['total'] / 1000:.1f} s | {'' if med is None else f'{med / 1000:.1f} s'} "
                     f"| {'' if ratio is None else f'{ratio:.2f}'}{' **slow**' if reason else ''} |")
     out = ["## imprimatur's run time", "",
-           "Seconds of `imprimatur build` per paper, imprimatur's own phases only (docs/ci-timing.md).", ""]
+           "Seconds of `imprimatur build` per paper, imprimatur's own phases only (Lake's build of the "
+           "development and `latexmk` are outside the interval; docs/ci-timing.md). The median is of the "
+           f"last {WINDOW} nightly points, one a night; a ratio above {RATIO:g} with the paper no bigger is "
+           "**slow**. Each chart's points are nights, oldest left, this run last.", ""]
     out += rows
+    out += ["", "### The parts of each build", ""]
     for line in lines:
-        points = nightly_points(log, line["paper"]) + ([line] if line.get("event") not in ("schedule", "workflow_dispatch") else [])
+        out += details(line)
+    largest = max(lines, key=lambda l: l.get("entries", 0)) if lines else None
+    if largest:
+        points = nightly_points(log, largest["paper"])
+        if not any(p.get("date") == largest.get("date") and p.get("sha") == largest.get("sha") for p in points):
+            points = points + [largest]
+        chart = mermaid_lines_chart(points, largest["paper"])
+        if chart:
+            out += ["", "### The largest paper, by part", "", chart]
+    out += ["", "### Each paper, by night", ""]
+    for line in lines:
+        # The run's own point comes last: a nightly's summary is written
+        # before its line is appended to the log, and a pull request's line
+        # is never appended.
+        points = nightly_points(log, line["paper"])
+        if not any(p.get("date") == line.get("date") and p.get("sha") == line.get("sha") for p in points):
+            points = points + [line]
         chart = mermaid_chart(points, line["paper"])
         if chart:
             out += ["", chart]

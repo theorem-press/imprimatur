@@ -5,8 +5,11 @@ nightly builds, imprimatur's own phases only (Lake's build of the
 development and `latexmk` are outside the interval). Above, the total per
 paper; below, the largest paper's phases stacked, since a regression lands
 in one of them: `load` is the elaboration of the notation module, `entries`
-the dependency cones and axioms, `export (other)` the splicer's wait for
-the extractor beyond those, `checker` the verified checker.
+the dependency cones and axioms, `export (other)` the splicer's wait beyond
+the extractor's own phases. The verified checker runs alongside the
+extractor, so it is a dashed line rather than a layer: where the line is
+above the extractor's phases, the wait is for it (con-leche's first night:
+170 s of checker over 28 s of extractor).
 
 ![imprimatur's run time, one point a night](https://raw.githubusercontent.com/theorem-press/imprimatur/timing/chart.png)
 
