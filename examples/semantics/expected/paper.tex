@@ -4,7 +4,12 @@
 \usepackage{url}
 \usepackage{imprimatur}
 % With hyperref, a block built with the public profile links to its Lean.
-\usepackage[colorlinks]{hyperref}
+% Links are coloured, but quietly: a muted blue for the Lean sources and other
+% URLs, a dark slate for cross-references and citations.
+\usepackage{xcolor}
+\definecolor{leansource}{RGB}{43,91,140}
+\definecolor{crossref}{RGB}{55,65,85}
+\usepackage[colorlinks,urlcolor=leansource,linkcolor=crossref,citecolor=crossref]{hyperref}
 \newtheorem{theorem}{Theorem}
 \newtheorem{example}{Example}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
