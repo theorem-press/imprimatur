@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- README opens with "Try it in two minutes": one block of commands from
+  `git clone` to the PDF of examples/semantics, ending with `git diff`
+  of the generated TeX. The Pages workflow runs the block and publishes the
+  PDF at examples/semantics/paper.pdf on the site, so the block is tested
+  on every push to main. The `require` block and the modes moved to "Using
+  it in your own paper".
 - The repository is a Lake package at its root: the extractor,
   `extract/lakefile.toml` read from `extract/`, with the metadata Reservoir
   shows (description, keywords, homepage, licence, README). Reservoir

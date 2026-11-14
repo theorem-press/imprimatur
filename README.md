@@ -19,6 +19,35 @@ Lean 4 development.
 The `.tex` files stay ordinary LaTeX, so they compile on Overleaf and arXiv
 with no preprocessor. The host Lean project doesn't need to change.
 
+## Try it in two minutes
+
+You need [elan](https://github.com/leanprover/elan) (`curl -sSfL
+https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh`)
+and, for the PDF, a TeX distribution with `latexmk` (Debian and Ubuntu:
+`apt install texlive-latex-extra texlive-science latexmk`). The commands
+below build imprimatur, then a short paper on a typed λ-calculus from the
+Lean development that proves its theorems:
+
+```sh
+git clone --depth 1 https://github.com/theorem-press/imprimatur.git
+cd imprimatur/splice && lake build && export PATH="$PWD/.lake/build/bin:$PATH"
+cd ../examples/semantics
+(cd host && lake build)                 # the Lean development, as its owners build it
+imprimatur toolchain install v4.35.0    # the extractor for the host's Lean, once per version
+imprimatur build                        # render the grammar, rules and theorems into paper.tex
+imprimatur check                        # nothing stale, untrusted or unfaithful
+git diff paper.tex                      # the TeX imprimatur wrote into the empty blocks
+latexmk -pdf paper.tex                  # then open paper.pdf
+```
+
+The committed `paper.tex` has empty blocks, so the diff is exactly what
+imprimatur generated, with the hand-written prose around it untouched. The
+result is the
+[PDF](https://theorem-press.github.io/imprimatur/examples/semantics/paper.pdf)
+the site builds from these commands, and
+[expected/paper.tex](examples/semantics/expected/paper.tex). Clone to PDF
+took about a minute on one machine; the first run also downloads Lean v4.35.0.
+
 ## What it looks like
 
 In Lean, from [examples/semantics](examples/semantics/README.md):
@@ -138,20 +167,15 @@ by the proof.
   external, which leaves the host project untouched. See
   [docs/blocks.md](docs/blocks.md).
 
-## Getting started
+## Using it in your own paper
 
-You need [elan](https://github.com/leanprover/elan), a TeX distribution with
-`latexmk`, and a built Lean project.
-
-```sh
-git clone https://github.com/theorem-press/imprimatur.git
-cd imprimatur/splice && lake build
-export PATH="$PWD/.lake/build/bin:$PATH"
-```
-
-In-project and sidecar modes `require` the extractor from the host's
-lakefile; the repository is that package at its root, so no `subDir` is
-needed:
+imprimatur reads a built Lean project in one of three modes
+([docs/blocks.md](docs/blocks.md)): **external**, which reads the project as
+it is, as the example above does, with the notation in a file beside the
+paper; **sidecar**, a Lake package beside the host that requires it; or
+**in-project**, where the host's lakefile requires imprimatur. The
+repository is the extractor's package at its root, so the last two need no
+`subDir`:
 
 ```toml
 [[require]]
@@ -160,18 +184,19 @@ git = "https://github.com/theorem-press/imprimatur"
 rev = "main"   # pin a commit
 ```
 
-Then, in a paper's directory with an `imprimatur.toml`
-([docs/blocks.md](docs/blocks.md) explains it):
+A paper is a directory with an `imprimatur.toml` naming the main `.tex`
+file, the Lean project, the modules to import and the notation module. In
+it:
 
 ```sh
-imprimatur toolchain install v4.31.0   # external mode: once per Lean version
+imprimatur toolchain install v4.35.0   # external mode: the host's Lean version, once
 imprimatur build                       # render and splice the blocks
 imprimatur check                       # what is stale, untrusted or unfaithful
 latexmk -pdf paper.tex
 ```
 
-[examples/](examples/README.md) has four working papers: one for each mode, and a
-longer one on a λ-calculus.
+[examples/](examples/README.md) has four working papers: one for each mode, and the
+longer one on a λ-calculus built above.
 
 ## Status
 
