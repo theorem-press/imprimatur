@@ -12,8 +12,8 @@ as the end-to-end tests check it.
 | [external](external/paper.tex) | external: the host is read as it is, with a notation file outside it ([result](external/expected/paper.tex)) | a formula typeset from a notation file outside the host, which is read unchanged |
 | [semantics](semantics/) | external | a short paper on a typed λ-calculus: a generated grammar and rules, theorems as sentences, hand-written prose checked with `\leancheck` |
 
-To build one (see [Getting started](../README.md#getting-started) for
-installing imprimatur):
+To build one (see [Try it in two minutes](../README.md#try-it-in-two-minutes)
+for installing imprimatur, and the same commands on this example):
 
 ```sh
 cd examples/semantics
@@ -21,6 +21,7 @@ cd examples/semantics
 imprimatur toolchain install v4.35.0     # external mode: once per Lean version
 imprimatur build                         # fill in the blocks
 imprimatur check
+git diff paper.tex                       # what build wrote
 latexmk -pdf paper.tex
 ```
 

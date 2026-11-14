@@ -22,6 +22,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # The site links the PDF of examples/semantics, built here by the
+      # commands of README's "Try it in two minutes" (keep the two in step):
+      # so every push to main runs that block. Jekyll copies the PDF from
+      # where latexmk leaves it to /examples/semantics/paper.pdf.
+      - name: Install elan
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install TeX Live (pdflatex, latexmk)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -q -y --no-install-recommends latexmk texlive-latex-base \
+            texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
+            texlive-science lmodern
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            splice/.lake
+            ${{ runner.temp }}/imprimatur-cache
+          key: pages-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-${{ github.sha }}
+          restore-keys: pages-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-
+      - name: Build the PDF of examples/semantics (README's Try it block)
+        env:
+          IMPRIMATUR_CACHE: ${{ runner.temp }}/imprimatur-cache
+        run: |
+          (cd splice && lake build -q) && export PATH="$PWD/splice/.lake/build/bin:$PATH"
+          cd examples/semantics
+          (cd host && lake build -q)
+          imprimatur toolchain install v4.35.0
+          imprimatur build
+          imprimatur check
+          git diff --stat paper.tex
+          latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex
+          git checkout -- paper.tex   # the source stays as committed; the site gets the PDF
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
