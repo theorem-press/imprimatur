@@ -12,9 +12,13 @@ All notable changes to imprimatur are recorded here. Versions follow
   a small `↗` after it (`\LeanSourceTitle`, `\LeanSourceMark`,
   `\LeanSourceLine`, redefinable). `src=` follows the commit like
   `\leanref`: `apply` regenerates it, `check` never reports it stale, and the
-  other profiles remove it. The semantics example has a `public` profile,
-  and the PDF on the site is built with it, so each of its blocks links to
-  the Lean on GitHub.
+  other profiles remove it. The index views link row by row: the
+  `vocabulary` table's project constants and the `provenance` table's
+  locations are written `\LeanSourceRef{path}{line}{text}`, and the block
+  gets `srcbase=`, the template with the commit, from which each becomes a
+  link. The semantics example has a `public` profile, and the PDF on the
+  site is built with it, so each of its blocks, and each row of its index of
+  notation, links to the Lean on GitHub.
 - examples/semantics has two or three worked examples in each section,
   Lean theorems about particular terms (`host/Stlc/Examples.lean`) shown as
   sentences in an `example` environment: α-equivalent terms, a substitution

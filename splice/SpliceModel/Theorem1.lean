@@ -241,7 +241,13 @@ theorem planItem_clean {cfg : Config} {labels : Array (Nat × Nat × String)} {b
               (s.slice it.regionStart it.regionEnd) same with
           | some d => rw [hhe] at hd; exact absurd hd (push_ne_empty _ _)
           | none =>
-            rw [hhe] at hc
+            rw [hhe] at hd hc
+            simp only at hd hc
+            -- The base of the content's links: a missing commit is a diagnostic.
+            cases hb : baseFor o rc.content with
+            | error msg => rw [hb] at hd; exact absurd hd (push_ne_empty _ _)
+            | ok base =>
+            rw [hb] at hc
             simp only at hc
             split at hc
             · rename_i hedits

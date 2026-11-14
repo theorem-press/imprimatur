@@ -58,8 +58,8 @@ structure Change where
   new : String
   /-- Whether the content changes (otherwise only `sum=` does). -/
   contentChanged : Bool
-  /-- Whether only `src=` changes: a source link, regenerated like a
-  `\leanref`, that `check` does not report as stale (DESIGN §11). -/
+  /-- Whether only `src=` or `srcbase=` changes: a source link, regenerated
+  like a `\leanref`, that `check` does not report as stale (DESIGN §11). -/
   srcOnly : Bool := false
 
 /-- What `apply` would do. -/
@@ -98,22 +98,60 @@ def renderRef (links : SourceLinks) (commit : Option String) (key : String)
     let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
     return s!"\\url\{{url}}"
 
+/-- A URL as an option value: `#`, `%`, `&` and `~` escaped, so that the
+option list reads it and `\href` reads it back. -/
+def urlEscape (u : String) : String :=
+  (((u.replace "#" "\\#").replace "%" "\\%").replace "&" "\\&").replace "~" "\\~"
+
+/-- The commit a `url` template needs, or the empty string when it names
+none. -/
+def commitFor (tmpl : String) (commit : Option String) : Except String String :=
+  match commit with
+  | some c => pure c
+  | none =>
+    if (tmpl.splitOn "{commit}").length > 1 then throw "the url profile needs a commit (--commit)"
+    else pure ""
+
 /-- The value of an item's `src=` option (DESIGN §11): under the `url`
-profile, the permalink of the entry's declaration, with `#` and `%` escaped
-for the option list (`\href` reads them back); otherwise none. An entry
-without a source location gets no link. -/
+profile, the permalink of the entry's declaration, escaped for the option
+list; otherwise none. An entry without a source location gets no link. -/
 def srcOf (links : SourceLinks) (commit : Option String) (e : Entry (Image TeX) Verdict) :
     Except String (Option String) :=
   match links, e.decl.source with
   | .url tmpl, some src => do
-    let needsCommit := (tmpl.splitOn "{commit}").length > 1
-    let c ← match commit with
-      | some c => pure c
-      | none =>
-        if needsCommit then throw "the url profile needs a commit (--commit)" else pure ""
+    let c ← commitFor tmpl commit
     let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
-    return some ((url.replace "#" "\\#").replace "%" "\\%")
+    return some (urlEscape url)
   | _, _ => .ok none
+
+/-- `s` with each `ph` replaced by the control word `cs`, and a space after
+it where a letter follows (TeX would read the letter as part of the name). -/
+def controlWord (s ph cs : String) : String :=
+  match s.splitOn ph with
+  | [] => s
+  | first :: rest =>
+    rest.foldl (fun acc p => acc ++ cs ++ (if !p.isEmpty && p.front.isAlpha then " " else "") ++ p) first
+
+/-- The value of a block's `srcbase=` option (DESIGN §11): under the `url`
+profile, the template with the commit filled in and `{path}` and `{line}`
+left as the macros `\LeanSrcPath` and `\LeanSrcLine`, escaped like `src=`;
+otherwise none. `imprimatur.sty` completes each `\LeanSourceRef` of the
+block's content from it. -/
+def baseOf (links : SourceLinks) (commit : Option String) : Except String (Option String) :=
+  match links with
+  | .url tmpl => do
+    let c ← commitFor tmpl commit
+    let t := urlEscape (tmpl.replace "{commit}" c)
+    return some (controlWord (controlWord t "{path}" "\\LeanSrcPath") "{line}" "\\LeanSrcLine")
+  | _ => .ok none
+
+/-- Whether content completes links from `srcbase=`: it has a
+`\LeanSourceRef` (the index views write one on each row). -/
+def needsBase (content : String) : Bool := (content.splitOn "\\LeanSourceRef").length > 1
+
+/-- The `srcbase=` an item's content needs. -/
+def baseFor (o : ApplyOpts) (content : String) : Except String (Option String) :=
+  if needsBase content then baseOf o.links o.commit else .ok none
 
 /-- Where a view leaves the source location for the splicer to fill. -/
 def metaSourceMarker : String := "\\leanmetasource{}"
@@ -402,18 +440,24 @@ def sumOpts (it : Item) (rc : RegionContent) (sum : String) : Array (String × S
    | some d => if it.opt? "dflt" != some d then #[("dflt", d)] else #[]
    | none => #[])
 
-/-- The `src=` an item needs: set to `src`, or removed when the profile gives
-none (so a document built for the public loses its links when built for
-submission again). -/
-def srcOpts (it : Item) (src : Option String) : Array (String × String) × Array String :=
-  match src with
-  | some u => (if it.opt? "src" != some u then #[("src", u)] else #[], #[])
-  | none => (#[], if (it.opt? "src").isSome then #["src"] else #[])
+/-- The `src=` and `srcbase=` an item needs: set to `src` and `base`, or
+removed when the profile gives none (so a document built for the public
+loses its links when built for submission again). -/
+def srcOpts (it : Item) (src : Option String) (base : Option String := none) :
+    Array (String × String) × Array String :=
+  let one (k : String) (v : Option String) : Array (String × String) × Array String :=
+    match v with
+    | some u => (if it.opt? k != some u then #[(k, u)] else #[], #[])
+    | none => (#[], if (it.opt? k).isSome then #[k] else #[])
+  let (a, ra) := one "src" src
+  let (b, rb) := one "srcbase" base
+  (a ++ b, ra ++ rb)
 
-/-- How an item's content and options change; `src` is its source link. -/
+/-- How an item's content and options change; `src` is its source link and
+`base` the base of its content's links. -/
 def itemRewrite (s : Src) (it : Item) (rc : RegionContent) (same : Bool) (sum : String)
-    (src : Option String) : ItemRewrite :=
-  let (kvs, remove) := srcOpts it src
+    (src base : Option String) : ItemRewrite :=
+  let (kvs, remove) := srcOpts it src base
   { region := if !same then some rc.content else none,
     optEdits := optEdits s it (sumOpts it rc sum ++ kvs) remove }
 
@@ -475,8 +519,12 @@ def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bu
           match handEdited? o (itemSlots cfg it) loc it old same with
           | some d => { diags := rc.warnings.push d }
           | none =>
+            -- The base of the links a `\LeanSourceRef` in the content completes.
+            match baseFor o rc.content with
+            | .error msg => { diags := rc.warnings.push (Diag.err "bad-ref" loc msg) }
+            | .ok base =>
             let sum := checksum (itemSlots cfg it) rc.content
-            let rw := itemRewrite s it rc same sum src
+            let rw := itemRewrite s it rc same sum src base
             if rw.region.isNone && rw.optEdits.isEmpty then { diags := rc.warnings }
             else { diags := rc.warnings, rewrite := rw,
                    change := some { loc, key := it.key, old, new := rc.content, contentChanged := !same,

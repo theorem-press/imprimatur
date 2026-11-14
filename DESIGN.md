@@ -1008,6 +1008,14 @@ gets no link. Under the other profiles the splicer removes `src=`, so a
 paper built for the public and then for submission again holds no URL. A
 `rules` block over several constructors links to the inductive type.
 
+A block whose rows have sources of their own links row by row: the
+extractor writes `\LeanSourceRef{path}{line}{text}` around each of the
+project's constants in the `vocabulary` table and around the location in
+`provenance`, and under `url` the splicer gives such a block `srcbase=`, the
+template with the commit filled in and `\LeanSrcPath` and `\LeanSrcLine`
+for `{path}` and `{line}`, from which `imprimatur.sty` completes each link.
+`srcbase=` follows the commit, and is removed, like `src=`.
+
 Separately from the profile:
 
 - the bundle never contains absolute paths, user names, URLs or commit

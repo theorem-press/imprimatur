@@ -11,6 +11,13 @@
     "lean": "\\LeanConst{Demo.c}"
    }
   },
+  "Demo.index": {
+   "decl": "Demo.index",
+   "kind": "definition",
+   "views": {
+    "vocabulary": "\\begin{tabular}{ll}\n$c$ & \\LeanSourceRef{Demo/Basic.lean}{7}{\\texttt{c}}\\\\\n$x$ & \\LeanSourceRef{Odd\\_dir/A\\&B.lean}{3}{\\texttt{Under\\_score.x}}\\\\\n\\end{tabular}"
+   }
+  },
   "Demo.nested": {
    "decl": "Demo.nested",
    "kind": "theorem",
