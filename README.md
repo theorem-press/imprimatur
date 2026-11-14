@@ -50,6 +50,9 @@ untouched; and `latexmk` typesets `paper.pdf`. The result is the
 the site builds from these commands, and
 [expected/paper.tex](examples/semantics/expected/paper.tex). Clone to PDF
 took about a minute on one machine; the first run also downloads Lean v4.35.0.
+The site builds the PDF once more with `--profile public --commit`, so every
+theorem, example and checked sentence in it links to its Lean on GitHub
+([docs/blocks.md](docs/blocks.md#source-links)).
 
 ## What it looks like
 

@@ -317,9 +317,10 @@ def lineDiff (a b : String) : Array String := Id.run do
       out := out.push ("+" ++ ys[j]!); j := j + 1
   return out
 
-/-- The diagnostics for stale items. -/
+/-- The diagnostics for stale items. A change of `src=` alone is not one:
+source links follow the commit, like `\leanref` (DESIGN §11). -/
 def staleDiags (changes : Array Change) (diff : Bool) : Array Diag :=
-  changes.map fun ch =>
+  (changes.filter (!·.srcOnly)).map fun ch =>
     let what :=
       if ch.contentChanged then s!"the generated content of {ch.key} is out of date"
       else s!"{ch.key} has no up-to-date sum= or dflt= option"

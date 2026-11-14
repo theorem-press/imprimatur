@@ -5,6 +5,16 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Source links (#122): under a profile with `source_links = "url"`, every
+  block, inline item and `\leancheck` carries its declaration's permalink as
+  `src=`, and `imprimatur.sty` typesets it as a hyperlink when the paper
+  loads hyperref: a theorem's title becomes the link, and anything else gets
+  a small `↗` after it (`\LeanSourceTitle`, `\LeanSourceMark`,
+  `\LeanSourceLine`, redefinable). `src=` follows the commit like
+  `\leanref`: `apply` regenerates it, `check` never reports it stale, and the
+  other profiles remove it. The semantics example has a `public` profile,
+  and the PDF on the site is built with it, so each of its blocks links to
+  the Lean on GitHub.
 - examples/semantics has two or three worked examples in each section,
   Lean theorems about particular terms (`host/Stlc/Examples.lean`) shown as
   sentences in an `example` environment: α-equivalent terms, a substitution

@@ -136,6 +136,32 @@ for dir in examples/*/; do
     compare "$work/$engine.txt" "$dir/expected/$engine.txt" "$engine text" loose
   done
 done
+# e2e/source-links: the semantics example built for the public (DESIGN §11,
+# #122): every block, example and \leancheck gets src=, a permalink into this
+# repository at the given commit; `check` at another commit reports nothing
+# stale; the paper still typesets, now with links; and built for submission
+# again it is byte for byte the expected paper.
+echo "== e2e/source-links"
+if [ -d e2e-out/semantics ]; then
+  work=e2e-out/semantics
+  if ! (cd "$work" && "$IMPRIMATUR" build --profile public --commit 0123abc > links.log 2>&1); then
+    echo "  FAIL: build --profile public"; sed 's/^/    /' "$work/links.log"; status=1
+  else
+    n=$(grep -c 'src=https://github.com/theorem-press/imprimatur/blob/0123abc/examples/semantics/host/Stlc/[A-Za-z]*.lean\\#L[0-9]' "$work/paper.tex" || true)
+    [ "$n" -ge 25 ] || { echo "  FAIL: expected src= on every block and check, found $n"; status=1; }
+    if ! (cd "$work" && "$IMPRIMATUR" check --profile public --commit 4567def > links-check.log 2>&1); then
+      echo "  FAIL: check at another commit"; sed 's/^/    /' "$work/links-check.log"; status=1
+    fi
+    if ! (cd "$work" && latexmk -pdf -interaction=nonstopmode -halt-on-error -outdir=out-links paper.tex > latexmk-links.log 2>&1); then
+      echo "  FAIL: pdflatex with source links"; grep -A3 '^!' "$work/out-links/paper.log" | head -20 | sed 's/^/    /'; status=1
+    fi
+    if ! (cd "$work" && "$IMPRIMATUR" build > links-back.log 2>&1); then
+      echo "  FAIL: build back to the relative profile"; sed 's/^/    /' "$work/links-back.log"; status=1
+    fi
+    compare "$work/paper.tex" examples/semantics/expected/paper.tex "paper.tex after the round trip"
+  fi
+fi
+
 # e2e/show: `imprimatur show` on the semantics example as built above. It
 # prints the views the document uses for a key, with their problems, and
 # fails on a key that does not exist; it writes nothing to the paper.

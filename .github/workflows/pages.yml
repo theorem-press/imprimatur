@@ -56,6 +56,8 @@ jobs:
           imprimatur build
           imprimatur check
           git --no-pager diff --stat paper.tex
+          # The published PDF links every block to its Lean at this commit.
+          imprimatur build --profile public --commit "$GITHUB_SHA"
           latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex
           git checkout -- paper.tex   # the source stays as committed; the site gets the PDF
       - name: Build with Jekyll
