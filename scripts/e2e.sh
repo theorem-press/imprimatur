@@ -64,6 +64,18 @@ TESTS=(e2e/external e2e/minimal e2e/semantics e2e/sidecar)
 # a cache inside e2e-out, so the run touches nothing outside the repository.
 export IMPRIMATUR_CACHE="$ROOT/e2e-out/cache"
 mkdir -p e2e-out
+# e2e/no-install: with an empty cache, `check --no-install` fails naming the
+# install to run, and builds nothing (DESIGN §6.3 A). In a copy, since the
+# splicer writes .imprimatur/ before it reaches the extractor.
+echo "== e2e/no-install"
+work=e2e-out/no-install; rm -rf "$work"; mkdir -p "$work"
+(cd examples/external && tar --exclude=.lake --exclude=expected --exclude=steps -cf - .) | (cd "$work" && tar -xf -)
+if out=$(cd "$work" && IMPRIMATUR_CACHE="$ROOT/$work/cache" "$IMPRIMATUR" check --no-install 2>&1); then
+  echo "  FAIL: check --no-install succeeded with no extractor"; status=1
+elif ! grep -q 'no extractor for Lean .*; run: imprimatur toolchain install' <<< "$out"; then
+  echo "  FAIL: check --no-install: unexpected message:"; sed 's/^/    /' <<< "$out"; status=1
+fi
+[ -e "$work/cache" ] && { echo "  FAIL: check --no-install built an extractor"; status=1; }
 echo "== installing the extractor for external mode"
 "$IMPRIMATUR" toolchain install "$(sed 's/.*://' examples/external/host/lean-toolchain)" | sed 's/^/  /' 
 shopt -s nullglob

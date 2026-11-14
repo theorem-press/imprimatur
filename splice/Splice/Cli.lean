@@ -76,6 +76,9 @@ structure Args where
   /-- `--no-checker`: go by Lean's verdict alone this run, whatever
   `[trust].checker` says (DESIGN §7.8). -/
   noChecker : Bool := false
+  /-- `--no-install`: in external mode, fail when no extractor is cached for
+  the host's toolchain, instead of building one (DESIGN §6.3 A). -/
+  noInstall : Bool := false
 
 /-- Parse the arguments. -/
 partial def parseArgs (args : List String) (a : Args := {}) : Except String Args :=
@@ -99,6 +102,7 @@ partial def parseArgs (args : List String) (a : Args := {}) : Except String Args
   | "--view" :: v :: rest => parseArgs rest { a with views := a.views.push v }
   | "--timing" :: rest => parseArgs rest { a with timing := true }
   | "--no-checker" :: rest => parseArgs rest { a with noChecker := true }
+  | "--no-install" :: rest => parseArgs rest { a with noInstall := true }
   | arg :: rest =>
     if arg.startsWith "-" then .error s!"unknown or incomplete option {arg}"
     else if a.command.isEmpty then parseArgs rest { a with command := arg }

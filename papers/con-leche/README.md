@@ -29,8 +29,7 @@ the prose names. The words are unchanged.
 git clone https://github.com/leanprover/con-leche ../../../con-leche   # beside imprimatur
 (cd ../../../con-leche && lake build ConLeche.MainTheorem ConLeche.Verify.Frontend.Prepare \
    ConLeche.Model.StreamConsts ConLeche.Frontend.Olean.View con-leche)   # about 10 minutes
-imprimatur toolchain install v4.35.0
-imprimatur build        # the extractor, about 20 s; con-leche's own check besides, the first time
+imprimatur build        # the extractor, about 20 s (built first, the first time); con-leche's own check besides
 imprimatur check
 latexmk -pdf main.tex
 ```

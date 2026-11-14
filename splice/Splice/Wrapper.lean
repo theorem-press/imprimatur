@@ -24,9 +24,10 @@ How the extractor runs depends on the mode (DESIGN §6.3):
 - **in-project, sidecar:** `lake exe imprimatur-export`, run in `lean_project`,
   a package that requires `imprimatur` (the host itself, or a sidecar next to
   it). The modules in `imports` are built first.
-- **external:** an extractor built for the host's toolchain by
-  `imprimatur toolchain install`, run under the host's `lake env`. The host
-  doesn't change and isn't built.
+- **external:** an extractor built for the host's toolchain, by
+  `imprimatur toolchain install` ahead of time or by the first `build`,
+  `check` or `show` that finds none cached (`--no-install` fails instead),
+  run under the host's `lake env`. The host doesn't change and isn't built.
 
 Requests and the bundle go in `.imprimatur/` next to `imprimatur.toml`.
 With `--timing`, so does `timing.jsonl`, where the splicer and the extractor
@@ -39,11 +40,11 @@ open Cli Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
-  "usage: imprimatur [--config FILE] build [--timing] [--no-checker] [apply options]
-       imprimatur [--config FILE] check [--timing] [--no-checker] [check options]
+  "usage: imprimatur [--config FILE] build [--timing] [--no-checker] [--no-install] [apply options]
+       imprimatur [--config FILE] check [--timing] [--no-checker] [--no-install] [check options]
        imprimatur [--config FILE] accept KEY... | --all
-       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing] [--no-checker]
-       imprimatur toolchain install VERSION   (for mode = \"external\")
+       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing] [--no-checker] [--no-install]
+       imprimatur toolchain install VERSION   (external mode; build does it when none is cached)
        imprimatur [--config FILE] scan|apply|check|strip|migrate-slots ...  (see imprimatur-splice --help)"
 
 /-- Run `lake` in `dir`, with `env` added to the environment; on failure,
@@ -162,6 +163,23 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   writeAtomic reqs (requests doc only)
   let leanDir := root / cfg.leanProject
   unless ← leanDir.pathExists do throw s!"lean_project {cfg.leanProject} does not exist"
+  -- External mode's extractor (DESIGN §6.3 A): the one cached for the host's
+  -- toolchain, built now if there is none, unless `--no-install`. Before the
+  -- export phase is timed, so that a first run's build does not count as
+  -- export; and announced on stderr at once, since it takes a while.
+  let external : Option System.FilePath ← if cfg.mode == "external" then do
+      let tcFile := leanDir / "lean-toolchain"
+      unless ← tcFile.pathExists do throw s!"{cfg.leanProject} has no lean-toolchain file"
+      let version := toolchainVersion (← IO.FS.readFile tcFile)
+      let exe ← cachedExtractor version
+      unless ← exe.pathExists do
+        if a.noInstall then
+          throw s!"no extractor for Lean {version}; run: imprimatur toolchain install {version}"
+        IO.eprintln s!"imprimatur: no extractor for Lean {version}; building one in \
+          {← (cacheDir : IO _)}, once per version (imprimatur toolchain install {version} does it ahead of time)"
+        IO.eprint (← installToolchain version)
+      pure (some exe)
+    else pure none
   let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString,
     "--base", (← IO.FS.realPath root).toString]
   let tExport ← IO.monoMsNow
@@ -179,19 +197,14 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
         let r ← (Checker.run leanDir workAbs tool modules).run
         return (r, (← IO.monoMsNow) - t0)
     | none => pure none
-  let (exportOut, checking) ← if cfg.mode == "external" then
-      -- External mode (DESIGN §6.3 A): a cached extractor built with the host's
-      -- toolchain runs under the host's `lake env`. Nothing in the host changes,
-      -- and the host is not built: it must be built already.
-      let tcFile := leanDir / "lean-toolchain"
-      unless ← tcFile.pathExists do throw s!"{cfg.leanProject} has no lean-toolchain file"
-      let version := toolchainVersion (← IO.FS.readFile tcFile)
-      let exe ← cachedExtractor version
-      unless ← exe.pathExists do
-        throw s!"no extractor for Lean {version}; run: imprimatur toolchain install {version}"
+  let (exportOut, checking) ← match external with
+    | some exe =>
+      -- External mode (DESIGN §6.3 A): the cached extractor runs under the
+      -- host's `lake env`. Nothing in the host changes, and the host is not
+      -- built: it must be built already.
       let checking ← startChecker
       pure (← lake leanDir (#["env", exe.toString] ++ exportArgs) env, checking)
-    else do
+    | none => do
       -- In-project and sidecar modes: the package requires imprimatur.
       let modules := doc.manifests.foldl (fun acc m =>
         (match m.solutionModule with | some sm => acc.push sm | none => acc) |>

@@ -18,8 +18,7 @@ for installing imprimatur, and the same commands on this example):
 ```sh
 cd examples/semantics
 (cd host && lake build)                  # the Lean project, built by its owners
-imprimatur toolchain install v4.35.0     # external mode: once per Lean version
-imprimatur build                         # fill in the blocks
+imprimatur build                         # fill in the blocks (the first run builds the extractor)
 imprimatur check
 git diff paper.tex                       # what build wrote
 latexmk -pdf paper.tex
