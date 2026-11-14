@@ -60,6 +60,7 @@ imprimatur makes from it, and both compile in an editor (their
 | inline | `\leaninline{Key}{}` | regenerates the second argument |
 | reference | `\leanref{Key}{}` | fills the second argument with the source location, per profile |
 | check | `\leancheck{Key1, Key2}` | generates nothing; `check` reports missing keys and untrusted results |
+| source link | `[src=https://…]` on any of the above but `\leanref` | written under the `url` profile (below); typeset as a hyperlink when the document loads hyperref |
 | hypothesis reference | `\leanhypref{Key}{h}` | prints `(h)`, and makes the prose view of `Key` label its hypothesis `h` |
 | index | `\leanindex` | recognised; generated from M6 |
 | slot | `\leanslot{id}{text}` | inside generated content: text that belongs to the authors |
@@ -99,9 +100,9 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
   `[sum=…]` after the marker name.
 
 **Options** go in the optional argument: `view`, `wrap`, `label`, `sum`,
-`dflt`, `notation`, `include`, `exclude`, and the theorem modifiers `rule`,
+`dflt`, `src`, `notation`, `include`, `exclude`, and the theorem modifiers `rule`,
 `def`, `forall` and `names` ([views.md](views.md)). The splicer writes
-`sum=` and `dflt=` itself.
+`sum=`, `dflt=` and `src=` itself.
 
 ## Where generated content goes
 
@@ -158,6 +159,34 @@ either:
 **Editing a slot is always allowed.**
 
 References (`\leanref`) carry no checksum and are always regenerated.
+
+## Source links
+
+A profile with `source_links = "url"` (DESIGN §11) gives `\leanref` a
+permalink, and also writes one as `src=` on every block, inline item and
+`\leancheck`, from `url_template` with `{commit}`, `{path}` and `{line}`:
+
+```toml
+[profile.public]
+source_links = "url"
+url_template = "https://github.com/ORG/REPO/blob/{commit}/lean/{path}#L{line}"
+```
+
+```sh
+imprimatur build --profile public --commit "$(git rev-parse HEAD)"
+```
+
+`{path}` is the file inside the Lean project, so the template names the
+project's directory in the repository. With hyperref loaded by the paper, a
+wrapped block's title becomes the link, and a block without a title, a block
+without a wrap, an inline item and a `\leancheck` get a small marker,
+`\LeanSourceMarkText` (`↗`), after them; without hyperref nothing is
+typeset. `\LeanSourceTitle{url}{title}`, `\LeanSourceMark{url}` and
+`\LeanSourceLine{url}` set the style, and can be redefined. A key with no
+source location gets no link. `src=` follows the commit: `apply` always
+regenerates it, `check` never counts it as stale, and under the `relative`
+and `none` profiles it is removed, so a paper built for submission again
+holds no URL. `strip` drops it with the other options.
 
 ## Slots
 
@@ -223,7 +252,7 @@ Every message has a stable code.
 | `hand-edit` | error | generated content was edited by hand |
 | `missing-key` | error, or warning with `--keep-stale` | the bundle has no entry for the key |
 | `missing-view` | error | the entry has no such view, or the view failed to render (the reason is shown) |
-| `bad-ref` | error | a `\leanref` can't be rendered (no source location, or no `--commit` for a URL) |
+| `bad-ref` | error | a `\leanref` can't be rendered (no source location, or no `--commit` for a URL); or, under the `url` profile, a block, inline item or `\leancheck` has no `--commit` for its `src=` |
 | `bad-content` | error | generated text would break the document: unbalanced braces in an inline item, or `\end{env}` inside a block |
 | `broken-ref` | error | a `\leancheck` key has no entry in the bundle |
 | `untrusted` | error | the result depends on `sorry`, uses an axiom outside `allowed_axioms`, or has untrusted constants in its cone |

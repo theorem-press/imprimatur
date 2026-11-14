@@ -58,6 +58,9 @@ structure Change where
   new : String
   /-- Whether the content changes (otherwise only `sum=` does). -/
   contentChanged : Bool
+  /-- Whether only `src=` changes: a source link, regenerated like a
+  `\leanref`, that `check` does not report as stale (DESIGN §11). -/
+  srcOnly : Bool := false
 
 /-- What `apply` would do. -/
 structure Outcome where
@@ -95,28 +98,75 @@ def renderRef (links : SourceLinks) (commit : Option String) (key : String)
     let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
     return s!"\\url\{{url}}"
 
+/-- The value of an item's `src=` option (DESIGN §11): under the `url`
+profile, the permalink of the entry's declaration, with `#` and `%` escaped
+for the option list (`\href` reads them back); otherwise none. An entry
+without a source location gets no link. -/
+def srcOf (links : SourceLinks) (commit : Option String) (e : Entry (Image TeX) Verdict) :
+    Except String (Option String) :=
+  match links, e.decl.source with
+  | .url tmpl, some src => do
+    let needsCommit := (tmpl.splitOn "{commit}").length > 1
+    let c ← match commit with
+      | some c => pure c
+      | none =>
+        if needsCommit then throw "the url profile needs a commit (--commit)" else pure ""
+    let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
+    return some ((url.replace "#" "\\#").replace "%" "\\%")
+  | _, _ => .ok none
+
 /-- Where a view leaves the source location for the splicer to fill. -/
 def metaSourceMarker : String := "\\leanmetasource{}"
 
+/-- Where an option's key starts: back from its value over `=` and spaces,
+and the key itself. -/
+def optKeyStart (s : Src) (o : Opt) : Nat := Id.run do
+  let ws (c : Char) := c == ' ' || c == '\t' || c == '\n' || c == '\r'
+  let mut k := o.valueStart
+  while k > 0 && ws (s.get (k - 1)) do k := k - 1
+  if k > 0 && s.get (k - 1) == '=' then k := k - 1
+  while k > 0 && ws (s.get (k - 1)) do k := k - 1
+  return k - o.key.length
+
 /-- The edits that set options of an item: existing options get new values,
-and missing ones are added at the end of the options (or in a new `[…]`).
-Nothing else in the item changes. -/
-def optEdits (s : Src) (it : Item) (kvs : Array (String × String)) : Array Edit := Id.run do
+missing ones are added at the end of the options (or in a new `[…]`), and
+those named in `remove` are taken out with their separator. Nothing else in
+the item changes. -/
+def optEdits (s : Src) (it : Item) (kvs : Array (String × String)) (remove : Array String := #[]) :
+    Array Edit := Id.run do
   let mut edits := #[]
   let mut missing := #[]
   for (k, v) in kvs do
     match it.opts.find? (·.key == k) with
     | some o => if o.value != v then edits := edits.push { start := o.valueStart, stop := o.valueEnd, text := v }
     | none => missing := missing.push s!"{k}={v}"
-  unless missing.isEmpty do
-    let text := ", ".intercalate missing.toList
-    match it.optsSpan with
-    | some (a, b) =>
-      if (s.slice (a + 1) (b - 1)).trimAscii.isEmpty then
-        edits := edits.push { start := a + 1, stop := b - 1, text }
-      else
-        edits := edits.push { start := b - 1, stop := b - 1, text := ", " ++ text }
-    | none => edits := edits.push { start := it.insertAt, stop := it.insertAt, text := "[" ++ text ++ "]" }
+  let kept := it.opts.filter (fun o => !remove.contains o.key)
+  let removed := it.opts.filter (fun o => remove.contains o.key)
+  let text := ", ".intercalate missing.toList
+  match it.optsSpan with
+  | some (a, b) =>
+    if kept.isEmpty && !removed.isEmpty then
+      -- Every option goes: the additions replace the whole list, or the
+      -- brackets go too.
+      if missing.isEmpty then edits := edits.push { start := a, stop := b, text := "" }
+      else edits := edits.push { start := a + 1, stop := b - 1, text }
+    else
+      for o in removed do
+        let i := (it.opts.findIdx? (·.valueStart == o.valueStart)).getD 0
+        if i > 0 then
+          -- With the separator before it: `, src=…`.
+          edits := edits.push { start := it.opts[i - 1]!.valueEnd, stop := o.valueEnd, text := "" }
+        else
+          -- The first of several: up to the next option's key.
+          edits := edits.push { start := optKeyStart s o, stop := optKeyStart s it.opts[1]!, text := "" }
+      unless missing.isEmpty do
+        if (s.slice (a + 1) (b - 1)).trimAscii.isEmpty then
+          edits := edits.push { start := a + 1, stop := b - 1, text }
+        else
+          edits := edits.push { start := b - 1, stop := b - 1, text := ", " ++ text }
+  | none =>
+    unless missing.isEmpty do
+      edits := edits.push { start := it.insertAt, stop := it.insertAt, text := "[" ++ text ++ "]" }
   return edits
 
 /-- Whether braces in `t` balance. -/
@@ -345,20 +395,56 @@ def handEdited? (o : ApplyOpts) (spec : Option SlotSpec) (loc : String) (it : It
     | none => none
   else none
 
-/-- How an item's content and options change. -/
-def itemRewrite (s : Src) (it : Item) (rc : RegionContent) (same : Bool) (sum : String) : ItemRewrite :=
-  let opts : Array (String × String) :=
-    (if it.kind != .ref && it.opt? "sum" != some sum then #[("sum", sum)] else #[]) ++
-    (match rc.defaults with
-     | some d => if it.opt? "dflt" != some d then #[("dflt", d)] else #[]
-     | none => #[])
-  { region := if !same then some rc.content else none, optEdits := optEdits s it opts }
+/-- The `sum=` and `dflt=` an item needs. -/
+def sumOpts (it : Item) (rc : RegionContent) (sum : String) : Array (String × String) :=
+  (if it.kind != .ref && it.opt? "sum" != some sum then #[("sum", sum)] else #[]) ++
+  (match rc.defaults with
+   | some d => if it.opt? "dflt" != some d then #[("dflt", d)] else #[]
+   | none => #[])
+
+/-- The `src=` an item needs: set to `src`, or removed when the profile gives
+none (so a document built for the public loses its links when built for
+submission again). -/
+def srcOpts (it : Item) (src : Option String) : Array (String × String) × Array String :=
+  match src with
+  | some u => (if it.opt? "src" != some u then #[("src", u)] else #[], #[])
+  | none => (#[], if (it.opt? "src").isSome then #["src"] else #[])
+
+/-- How an item's content and options change; `src` is its source link. -/
+def itemRewrite (s : Src) (it : Item) (rc : RegionContent) (same : Bool) (sum : String)
+    (src : Option String) : ItemRewrite :=
+  let (kvs, remove) := srcOpts it src
+  { region := if !same then some rc.content else none,
+    optEdits := optEdits s it (sumOpts it rc sum ++ kvs) remove }
+
+/-- The source link of a `\leancheck`: that of the first of its keys whose
+entry has a source location. -/
+def srcOfKeys (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) (keys : Array String) :
+    Except String (Option String) :=
+  keys.foldlM (init := none) fun acc k =>
+    if acc.isSome then pure acc else
+    match bundle.find? k with
+    | some e => srcOf o.links o.commit e
+    | none => pure none
+
+/-- Plan a `\leancheck`: only its `src=` changes (DESIGN §11). -/
+def planCheck (bundle : Bundle (Image TeX) Verdict) (o : ApplyOpts) (s : Src) (it : Item) : ItemResult :=
+  let loc := s.locString it.start
+  match srcOfKeys bundle o it.keys with
+  | .error msg => { diags := #[Diag.err "bad-ref" loc msg] }
+  | .ok src =>
+    let (kvs, remove) := srcOpts it src
+    if kvs.isEmpty && remove.isEmpty then {} else
+    { rewrite := { optEdits := optEdits s it kvs remove },
+      change := some { loc, key := ", ".intercalate it.keys.toList, old := "", new := "",
+                       contentChanged := false, srcOnly := true } }
 
 /-- Plan one item: the `i`th of file `fi`, whose line endings are mostly
 `eol`. -/
 def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bundle (Image TeX) Verdict)
     (o : ApplyOpts) (s : Src) (fi : Nat) (eol : String) (it : Item) (ii : Nat) : ItemResult :=
-  if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then {}
+  if it.kind == .check || it.kind == .index || it.kind == .leanok || it.kind == .hypref then
+    (if it.kind == .check && it.name == "leancheck" then planCheck bundle o s it else {})
   else
   let loc := s.locString it.start
   match bundle.find? it.key with
@@ -369,6 +455,11 @@ def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bu
         Diag.err "missing-key" loc s!"no entry for {it.key} in the bundle \
           (is the name right, and was the extractor asked for it?)"] }
   | some e =>
+    -- The source link of a block or inline item; a `\leanref`'s content is
+    -- the location itself.
+    match (if it.kind == .ref then .ok none else srcOf o.links o.commit e) with
+    | .error msg => { diags := #[Diag.err "bad-ref" loc msg] }
+    | .ok src =>
     match generatedOf cfg o loc it e with
     | .error d => { diags := #[d] }
     | .ok g =>
@@ -384,10 +475,12 @@ def planItem (cfg : Config) (labels : Array (Nat × Nat × String)) (bundle : Bu
           match handEdited? o (itemSlots cfg it) loc it old same with
           | some d => { diags := rc.warnings.push d }
           | none =>
-            let rw := itemRewrite s it rc same (checksum (itemSlots cfg it) rc.content)
+            let sum := checksum (itemSlots cfg it) rc.content
+            let rw := itemRewrite s it rc same sum src
             if rw.region.isNone && rw.optEdits.isEmpty then { diags := rc.warnings }
             else { diags := rc.warnings, rewrite := rw,
-                   change := some { loc, key := it.key, old, new := rc.content, contentChanged := !same } }
+                   change := some { loc, key := it.key, old, new := rc.content, contentChanged := !same,
+                                    srcOnly := same && (sumOpts it rc sum).isEmpty } }
 
 /-- Rewrite a file's chunks: each item that changes, within its own
 characters. Text is left as it is. -/

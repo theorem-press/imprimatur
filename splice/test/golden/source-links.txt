@@ -1,0 +1,51 @@
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 4 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready
+main.tex:1:1: error[bad-ref]: the url profile needs a commit (--commit)
+main.tex:5:1: error[bad-ref]: the url profile needs a commit (--commit)
+main.tex:9:8: error[bad-ref]: the url profile needs a commit (--commit)
+main.tex:9:72: error[bad-ref]: the url profile needs a commit (--commit)
+main.tex:10:56: error[bad-ref]: the url profile needs a commit (--commit)
+apply: nothing written; 5 errors, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready --commit 0123abc
+apply: 5 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json --profile camera-ready --commit 4567def
+main.tex:10:56: error[stale]: the generated content of Demo.c is out of date
+check: 1 stale, 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready --commit 4567def
+apply: 5 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json --profile camera-ready --commit 4567def
+check: 0 stale, 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+main.tex:10:56: error[stale]: the generated content of Demo.c is out of date
+check: 1 stale, 1 error, 0 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 5 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+== main.tex
+\begin{leantheorem}[sum=wTRE7H6mZF]{Demo.thm}{Trivial}
+\LeanKeyword{theorem} \LeanConst{Demo.thm} : \LeanConst{True}
+\end{leantheorem}
+
+\begin{leanblock}[view=math, sum=G_fgbXQSE1]{Demo.thm}{}
+$\top$
+\end{leanblock}
+
+Inline \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}}, a check\leancheck{Demo.nested, Demo.thm}, one
+with no source\leancheck{Demo.nested}, and a reference \leanref{Demo.c}{Demo/Basic.lean:7}.
+

@@ -6,6 +6,12 @@ imports = ["Stlc"]
 notation = ["notation/StlcTeX.lean"]
 strip_namespaces = ["Stlc"]
 
+# The public version links every block, example and checked sentence to its
+# Lean on GitHub: imprimatur build --profile public --commit SHA (DESIGN §11).
+[profile.public]
+source_links = "url"
+url_template = "https://github.com/theorem-press/imprimatur/blob/{commit}/examples/semantics/host/{path}#L{line}"
+
 [aliases]
 # The paper's own environments, each with the view it shows.
 leangrammar = { view = "grammar", label = "gram:{key}", template = "\\label{{label}}{content}" }
