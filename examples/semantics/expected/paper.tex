@@ -4,10 +4,12 @@
 \usepackage{url}
 \usepackage{imprimatur}
 \newtheorem{theorem}{Theorem}
+\newtheorem{example}{Example}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
 \leanblockalias{leangrammar}{}
 \leanblockalias{leanrules}{}
 \leanblockalias{leantheorem}{theorem}
+\leanblockalias{leanexample}{example}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 % Conventions of the generated rules: \val is a value, and \rulelabel{Key}{label}
@@ -23,7 +25,11 @@
 This paper presents a simply-typed $\lambda$-calculus whose definitions and
 results are in Lean. Everything in a \texttt{lean...} environment below is
 generated from the Lean development by imprimatur; the rest is written by
-hand, and the hand-written statements are checked against Lean.
+hand, and the hand-written statements are checked against Lean. The
+examples are Lean theorems about particular terms, stated by imprimatur as
+sentences; their names $\mathtt{x}$, $\mathtt{y}$, $\mathtt{z}$ and
+$\mathtt{f}$ are set in typewriter, to tell them from the metavariables $x$
+and $y$ that stand for any name.
 
 \subsection{Syntax}
 
@@ -47,6 +53,20 @@ grammar, and uses the constructors' docstrings only for new ones.
 \LeanAlternative{()}{\leanslot{Stlc.Tm.unit}{the unit value}}
 \end{LeanGrammar}
 \end{leangrammar}
+
+Terms carry names, so two abstractions that differ only in the name they bind
+are different terms; $\alpha$-equivalence, in the next section, identifies
+them. A name is bound by the abstraction that carries it, and free otherwise.
+
+\begin{leanexample}[sum=-ZmF1RzDuQ]{Stlc.ex_names}{Names matter}
+\label{ex:Stlc.ex_names}
+\LeanProse{$(\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x}) \ne (\lambda \mathtt{y}{:}\mathsf{b}.\, \mathtt{y})$.}
+\end{leanexample}
+
+\begin{leanexample}[sum=58i_iI8ew9]{Stlc.ex_fv}{Bound and free names}
+\label{ex:Stlc.ex_fv}
+\LeanProse{(1)~$\mathtt{x} \notin \mathit{fv}{(\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x}\; \mathtt{y})}$ and (2)~$\mathtt{y} \in \mathit{fv}(\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x}\; \mathtt{y})$.}
+\end{leanexample}
 
 \subsection{Names, $\alpha$-equivalence and substitution}
 
@@ -100,12 +120,28 @@ bodies $\alpha$-equivalent:
 \end{mathpar}
 \end{leanrules}
 
+The two abstractions below bind their names in opposite orders. Swapping each
+binder with the fresh name $\mathtt{z}$ makes the bodies equal, so they are
+$\alpha$-equivalent.
+
+\begin{leanexample}[sum=WD7KrnrOnA]{Stlc.ex_alpha}{Two $\alpha$-equivalent terms}
+\label{ex:Stlc.ex_alpha}
+\LeanProse{$(\lambda \mathtt{x}{:}\mathsf{b}.\, \lambda \mathtt{y}{:}\mathsf{b}.\, \mathtt{x}) =_{\alpha} (\lambda \mathtt{y}{:}\mathsf{b}.\, \lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{y})$.}
+\end{leanexample}
+
 Substitution $e[u/x]$ is then defined by recursion on $e$. At an abstraction
 $\lambda a{:}\tau.\, e$ it first swaps $a$ with a name $c$ fresh for $x$,
 $a$, $e$ and $u$, so that no free name of $u$ is captured, and continues in
 $(a\ c) \cdot e$\leancheck[stmt=a457f283ff65, sig=3e2ddde53b5b]{Stlc.subst}. Swapping preserves the size of a
 term\leancheck[stmt=95b8589b3570, sig=c576560f0187]{Stlc.Tm.size_swap}, so the recursion terminates, although
-$(a\ c) \cdot e$ is not a subterm of the abstraction.
+$(a\ c) \cdot e$ is not a subterm of the abstraction. The renaming matters
+when the substituted term has a free name that the binder would capture: here
+$\mathtt{y}$, so the binder becomes the fresh name $\mathtt{z}$.
+
+\begin{leanexample}[sum=RfRJkVYbYV]{Stlc.ex_subst}{Substitution avoids capture}
+\label{ex:Stlc.ex_subst}
+\LeanProse{$(\lambda \mathtt{y}{:}\mathsf{b}.\, \mathtt{x})[\mathtt{y}/\mathtt{x}] = (\lambda \mathtt{z}{:}\mathsf{b}.\, \mathtt{y})$.}
+\end{leanexample}
 
 \subsection{Typing}
 
@@ -149,6 +185,21 @@ the notation module.
 \end{mathpar}
 \end{leanrules}
 
+In the first example $\mathtt{f}$ is a function in the context, applied to the bound
+variable, so every rule but T-Unit takes part in the derivation. The second
+is a non-example: the unit value has only the base type, so T-App cannot
+apply it, and the term has no type at all.
+
+\begin{leanexample}[sum=9sob_x5VgU]{Stlc.ex_typing}{A typing derivation}
+\label{ex:Stlc.ex_typing}
+\LeanProse{$\mathtt{f}{:}\mathsf{b} \to \mathsf{b} \vdash (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{f}\; \mathtt{x}) : \mathsf{b} \to \mathsf{b}$.}
+\end{leanexample}
+
+\begin{leanexample}[sum=dDOa2hR2cX]{Stlc.ex_untypable}{An ill-typed term}
+\label{ex:Stlc.ex_untypable}
+\LeanProse{$\neg (\exists \tau,\ \vdash ()\; () : \tau)$.}
+\end{leanexample}
+
 \subsection{Reduction}
 
 Reduction is call by value. A premise that a term is a value is left
@@ -185,6 +236,20 @@ reduces the function of an application.
 \end{mathpar}
 \end{leanrules}
 
+The identity applied to the unit value $\beta$-reduces at once. When the
+argument is itself an application, rule~\ref{rule:AppRight} reduces it first:
+the outer $\beta$-reduction waits until the argument is a value.
+
+\begin{leanexample}[sum=iLycR2llh0]{Stlc.ex_beta}{A $\beta$-reduction}
+\label{ex:Stlc.ex_beta}
+\LeanProse{$(\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x})\; () \longrightarrow ()$.}
+\end{leanexample}
+
+\begin{leanexample}[sum=Au9X2TsAWI]{Stlc.ex_cbv}{Call by value}
+\label{ex:Stlc.ex_cbv}
+\LeanProse{$(\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x})\; ((\lambda \mathtt{y}{:}\mathsf{b}.\, \mathtt{y})\; ()) \longrightarrow (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x})\; ()$.}
+\end{leanexample}
+
 \subsection{Results}
 
 A result can be generated, as a sentence; its key can be a title, declared
@@ -212,6 +277,21 @@ the base type, that is, if $\Gamma \vdash () : \tau$ then
 $\tau = \mathsf{b}$\leancheck[stmt=a39c03ca314b, sig=59daca2b7dd5]{Stlc.unit_type}. Should the Lean statement of
 \verb|unit_type| change, \texttt{imprimatur check} reports this sentence.
 
+Instances of these results are examples too. Swapping renames the binder
+along with the free occurrence, and swapping again
+(Theorem~\ref{thm:Swapping-is-involutive}) gives the term back. The unit
+value's only type is $\mathsf{b}$, so it has no function type.
+
+\begin{leanexample}[sum=Kp3J3ralk_]{Stlc.ex_swap}{Swapping a binder}
+\label{ex:Stlc.ex_swap}
+\LeanProse{$(\mathtt{x}\ \mathtt{y}) \cdot (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{y}) = (\lambda \mathtt{y}{:}\mathsf{b}.\, \mathtt{x})$.}
+\end{leanexample}
+
+\begin{leanexample}[sum=vrAVDD3vBM]{Stlc.ex_unit_not_arrow}{The unit value is not a function}
+\label{ex:Stlc.ex_unit_not_arrow}
+\LeanProse{$\neg (\vdash () : \mathsf{b} \to \mathsf{b})$.}
+\end{leanexample}
+
 \subsection{Type safety}
 
 The substitution lemma is proved as Pitts's paper suggests. Typing is
@@ -222,6 +302,15 @@ its type.
 \label{thm:Equivariance}
 \LeanProse{Let $a, b \in \mathit{Name}$, $\Gamma \in \mathit{Context}$, $e \in \mathit{Term}$ and $\tau \in \mathit{Type}$. Assume $\Gamma \vdash e : \tau$. Then $(a\ b) \cdot \Gamma \vdash (a\ b) \cdot e : \tau$.}
 \end{leantheorem}
+
+Applied to Example~\ref{ex:Stlc.ex_typing}, swapping $\mathtt{f}$ and
+$\mathtt{x}$ throughout the context and the term, the function is now called
+$\mathtt{x}$ and the bound variable $\mathtt{f}$.
+
+\begin{leanexample}[sum=Ab7S8d4Yhx]{Stlc.ex_equivariance}{Equivariance at work}
+\label{ex:Stlc.ex_equivariance}
+\LeanProse{$\mathtt{x}{:}\mathsf{b} \to \mathsf{b} \vdash (\lambda \mathtt{f}{:}\mathsf{b}.\, \mathtt{x}\; \mathtt{f}) : \mathsf{b} \to \mathsf{b}$.}
+\end{leanexample}
 
 Typing also depends on the context only at the term's free names, which
 gives weakening and shadowing at once\leancheck[stmt=8f91408eb45c, sig=a65d051214fc]{Stlc.HasType.agree}. So
@@ -237,10 +326,27 @@ preserves\leancheck[stmt=6842915c5069, sig=105ed38d10fd]{Stlc.subst_typing}. Typ
 \LeanProse{Let $e, e' \in \mathit{Term}$, $\Gamma \in \mathit{Context}$ and $\tau \in \mathit{Type}$. Assume $e \longrightarrow e'$ and $\Gamma \vdash e : \tau$. Then $\Gamma \vdash e' : \tau$.}
 \end{leantheorem}
 
+A closed, well-typed application of a function to the identity reduces by
+rule~\ref{rule:Beta}, and the result has the same type.
+
+\begin{leanexample}[sum=LuQF7rf3rY]{Stlc.ex_preservation}{A step preserves the type}
+\label{ex:Stlc.ex_preservation}
+\LeanProse{(1)~$\vdash (\lambda \mathtt{f}{:}\mathsf{b} \to \mathsf{b}.\, \mathtt{f}\; ())\; (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x}) : \mathsf{b}$, (2)~$(\lambda \mathtt{f}{:}\mathsf{b} \to \mathsf{b}.\, \mathtt{f}\; ())\; (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x}) \longrightarrow (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x})\; ()$ and (3)~$\vdash (\lambda \mathtt{x}{:}\mathsf{b}.\, \mathtt{x})\; () : \mathsf{b}$.}
+\end{leanexample}
+
 \begin{leantheorem}[sum=CxgvvaS6H8]{Progress}{Progress}
 \label{thm:Progress}
 \LeanProse{Let $e \in \mathit{Term}$ and $\tau \in \mathit{Type}$. Assume $\vdash e : \tau$. Then $e \in \mathit{Val} \vee (\exists e',\ e \longrightarrow e')$.}
 \end{leantheorem}
+
+Progress needs the term to be closed. An open term can be well typed and yet
+stuck: neither a value nor able to reduce, since no rule applies to a
+variable.
+
+\begin{leanexample}[sum=atC6biB2FK]{Stlc.ex_stuck}{An open term may be stuck}
+\label{ex:Stlc.ex_stuck}
+\LeanProse{(1)~$\mathtt{x}{:}\mathsf{b} \to \mathsf{b} \vdash \mathtt{x}\; () : \mathsf{b}$, (2)~$\mathtt{x}\; () \notin \mathit{Val}$ and (3)~$\forall e : \mathit{Term},\ \neg (\mathtt{x}\; () \longrightarrow e)$.}
+\end{leanexample}
 
 \begin{thebibliography}{1}
 \bibitem[Pitts(2006)]{Pitts06}
@@ -273,22 +379,30 @@ The notation, grouped by where it is defined: the paper's own (\textit{Stlc})
 and Lean's. Each is written as the paper writes it, with the Lean constant it
 stands for.
 
-\begin{leannotation}[sum=KyC23XccFs, dflt=-Zw4mooy8H]{Notation}{The notation of the paper}
+\begin{leannotation}[sum=py9UyxtFjG, dflt=VgTVkeFcO1]{Notation}{The notation of the paper}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
 $\Gamma, x{:}\tau$ & \texttt{List.cons} & \leanslot{List.cons/0}{The list whose first element is \LeanCodeInline{head}, where \LeanCodeInline{tail} is the rest of the list}\\
 \multicolumn{3}{@{}l}{\textit{Stlc}}\\
 $e =_{\alpha} e'$ & \texttt{Alpha} & \leanslot{Stlc.Alpha/0}{α-equivalence}\\
-$\mathit{Name}$ & \texttt{Atom} & \leanslot{Stlc.Atom/0}{Names of variables}\\
+$x{:}\tau$ & \texttt{Atom} & \leanslot{Stlc.Atom/0}{Names of variables}\\
+$\mathit{Name}$ & \texttt{Atom} & \leanslot{Stlc.Atom/1}{Names of variables}\\
 $\mathit{Context}$ & \texttt{Ctx} & \leanslot{Stlc.Ctx/0}{Contexts: names with their types, the most recent first}\\
 $(a\ b) \cdot \Gamma$ & \texttt{Ctx.swap} & \leanslot{Stlc.Ctx.swap/0}{Swapping two names in a context}\\
 $\Gamma \vdash e : \tau$ & \texttt{HasType} & \leanslot{Stlc.HasType/0}{Typing}\\
 $\vdash e : \tau$ & \texttt{HasType} & \leanslot{Stlc.HasType/1}{Typing}\\
 $v \in \mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/0}{Values}\\
-$\mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/1}{Values}\\
+$v \notin \mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/1}{Values}\\
+$\mathit{Val}$ & \texttt{IsValue} & \leanslot{Stlc.IsValue/2}{Values}\\
+$\mathtt{f}$ & \texttt{Names.f} & \leanslot{Stlc.Names.f/0}{The name $\mathtt{f}$}\\
+$\mathtt{x}$ & \texttt{Names.x} & \leanslot{Stlc.Names.x/0}{The name $\mathtt{x}$}\\
+$\mathtt{y}$ & \texttt{Names.y} & \leanslot{Stlc.Names.y/0}{The name $\mathtt{y}$}\\
+$\mathtt{z}$ & \texttt{Names.z} & \leanslot{Stlc.Names.z/0}{The name $\mathtt{z}$, fresh for $\mathtt{x}$ and $\mathtt{y}$}\\
 $e \longrightarrow e'$ & \texttt{Step} & \leanslot{Stlc.Step/0}{Small-step reduction, call by value}\\
 $e_{1}\; e_{2}$ & \texttt{Tm.app} & \leanslot{Stlc.Tm.app/0}{an application}\\
 $c \mathrel{\#} a, b, e, e'$ & \texttt{Tm.atoms} & \leanslot{Stlc.Tm.atoms/0}{The names that occur in a term, bound or free}\\
+$a \notin \mathit{fv}{(e)}$ & \texttt{Tm.fv} & \leanslot{Stlc.Tm.fv/0}{The free names of a term}\\
+$\mathit{fv}(e)$ & \texttt{Tm.fv} & \leanslot{Stlc.Tm.fv/1}{The free names of a term}\\
 $\lambda x{:}\tau.\, e$ & \texttt{Tm.lam} & \leanslot{Stlc.Tm.lam/0}{an abstraction, binding $x$ in $e$}\\
 $(a\ b) \cdot e$ & \texttt{Tm.swap} & \leanslot{Stlc.Tm.swap/0}{Swapping two names throughout a term: bound, binding and free occurrences alike}\\
 $()$ & \texttt{Tm.unit} & \leanslot{Stlc.Tm.unit/0}{the unit value}\\

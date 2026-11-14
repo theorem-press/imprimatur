@@ -5,6 +5,14 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- examples/semantics has two or three worked examples in each section,
+  Lean theorems about particular terms (`host/Stlc/Examples.lean`) shown as
+  sentences in an `example` environment: α-equivalent terms, a substitution
+  that avoids capture, a typing derivation and an ill-typed term, a
+  β-reduction and call by value, equivariance at work, a step that preserves
+  the type, and a well-typed open term that is stuck. The fixed names are set
+  in typewriter, since a name written like a metavariable makes every rule
+  ambiguous when read back.
 - In external mode, `build`, `check` and `show` build the extractor for the
   host's toolchain when none is cached, saying so on stderr, so a first run
   needs no `imprimatur toolchain install` (#119); `--no-install` fails

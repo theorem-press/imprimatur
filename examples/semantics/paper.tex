@@ -4,10 +4,12 @@
 \usepackage{url}
 \usepackage{imprimatur}
 \newtheorem{theorem}{Theorem}
+\newtheorem{example}{Example}
 % The paper's environments, as imprimatur.toml's [aliases] declares them.
 \leanblockalias{leangrammar}{}
 \leanblockalias{leanrules}{}
 \leanblockalias{leantheorem}{theorem}
+\leanblockalias{leanexample}{example}
 \leanblockalias{leanconventions}{}
 \leanblockalias{leannotation}{}
 % Conventions of the generated rules: \val is a value, and \rulelabel{Key}{label}
@@ -23,7 +25,11 @@
 This paper presents a simply-typed $\lambda$-calculus whose definitions and
 results are in Lean. Everything in a \texttt{lean...} environment below is
 generated from the Lean development by imprimatur; the rest is written by
-hand, and the hand-written statements are checked against Lean.
+hand, and the hand-written statements are checked against Lean. The
+examples are Lean theorems about particular terms, stated by imprimatur as
+sentences; their names $\mathtt{x}$, $\mathtt{y}$, $\mathtt{z}$ and
+$\mathtt{f}$ are set in typewriter, to tell them from the metavariables $x$
+and $y$ that stand for any name.
 
 \subsection{Syntax}
 
@@ -37,6 +43,16 @@ grammar, and uses the constructors' docstrings only for new ones.
 
 \begin{leangrammar}{Stlc.Tm}{Terms}
 \end{leangrammar}
+
+Terms carry names, so two abstractions that differ only in the name they bind
+are different terms; $\alpha$-equivalence, in the next section, identifies
+them. A name is bound by the abstraction that carries it, and free otherwise.
+
+\begin{leanexample}{Stlc.ex_names}{Names matter}
+\end{leanexample}
+
+\begin{leanexample}{Stlc.ex_fv}{Bound and free names}
+\end{leanexample}
 
 \subsection{Names, $\alpha$-equivalence and substitution}
 
@@ -58,12 +74,24 @@ bodies $\alpha$-equivalent:
 \begin{leanrules}{Stlc.Alpha}{Alpha-equivalence}
 \end{leanrules}
 
+The two abstractions below bind their names in opposite orders. Swapping each
+binder with the fresh name $\mathtt{z}$ makes the bodies equal, so they are
+$\alpha$-equivalent.
+
+\begin{leanexample}{Stlc.ex_alpha}{Two $\alpha$-equivalent terms}
+\end{leanexample}
+
 Substitution $e[u/x]$ is then defined by recursion on $e$. At an abstraction
 $\lambda a{:}\tau.\, e$ it first swaps $a$ with a name $c$ fresh for $x$,
 $a$, $e$ and $u$, so that no free name of $u$ is captured, and continues in
 $(a\ c) \cdot e$\leancheck{Stlc.subst}. Swapping preserves the size of a
 term\leancheck{Stlc.Tm.size_swap}, so the recursion terminates, although
-$(a\ c) \cdot e$ is not a subterm of the abstraction.
+$(a\ c) \cdot e$ is not a subterm of the abstraction. The renaming matters
+when the substituted term has a free name that the binder would capture: here
+$\mathtt{y}$, so the binder becomes the fresh name $\mathtt{z}$.
+
+\begin{leanexample}{Stlc.ex_subst}{Substitution avoids capture}
+\end{leanexample}
 
 \subsection{Typing}
 
@@ -75,6 +103,17 @@ the notation module.
 \begin{leanrules}{Stlc.HasType}{Typing}
 \end{leanrules}
 
+In the first example $\mathtt{f}$ is a function in the context, applied to the bound
+variable, so every rule but T-Unit takes part in the derivation. The second
+is a non-example: the unit value has only the base type, so T-App cannot
+apply it, and the term has no type at all.
+
+\begin{leanexample}{Stlc.ex_typing}{A typing derivation}
+\end{leanexample}
+
+\begin{leanexample}{Stlc.ex_untypable}{An ill-typed term}
+\end{leanexample}
+
 \subsection{Reduction}
 
 Reduction is call by value. A premise that a term is a value is left
@@ -84,6 +123,16 @@ reduces the function of an application.
 
 \begin{leanrules}{Stlc.Step}{Reduction}
 \end{leanrules}
+
+The identity applied to the unit value $\beta$-reduces at once. When the
+argument is itself an application, rule~\ref{rule:AppRight} reduces it first:
+the outer $\beta$-reduction waits until the argument is a value.
+
+\begin{leanexample}{Stlc.ex_beta}{A $\beta$-reduction}
+\end{leanexample}
+
+\begin{leanexample}{Stlc.ex_cbv}{Call by value}
+\end{leanexample}
 
 \subsection{Results}
 
@@ -107,6 +156,17 @@ the base type, that is, if $\Gamma \vdash () : \tau$ then
 $\tau = \mathsf{b}$\leancheck{Stlc.unit_type}. Should the Lean statement of
 \verb|unit_type| change, \texttt{imprimatur check} reports this sentence.
 
+Instances of these results are examples too. Swapping renames the binder
+along with the free occurrence, and swapping again
+(Theorem~\ref{thm:Swapping-is-involutive}) gives the term back. The unit
+value's only type is $\mathsf{b}$, so it has no function type.
+
+\begin{leanexample}{Stlc.ex_swap}{Swapping a binder}
+\end{leanexample}
+
+\begin{leanexample}{Stlc.ex_unit_not_arrow}{The unit value is not a function}
+\end{leanexample}
+
 \subsection{Type safety}
 
 The substitution lemma is proved as Pitts's paper suggests. Typing is
@@ -115,6 +175,13 @@ its type.
 
 \begin{leantheorem}{Equivariance}{Equivariance}
 \end{leantheorem}
+
+Applied to Example~\ref{ex:Stlc.ex_typing}, swapping $\mathtt{f}$ and
+$\mathtt{x}$ throughout the context and the term, the function is now called
+$\mathtt{x}$ and the bound variable $\mathtt{f}$.
+
+\begin{leanexample}{Stlc.ex_equivariance}{Equivariance at work}
+\end{leanexample}
 
 Typing also depends on the context only at the term's free names, which
 gives weakening and shadowing at once\leancheck{Stlc.HasType.agree}. So
@@ -128,8 +195,21 @@ preserves\leancheck{Stlc.subst_typing}. Type safety follows.
 \begin{leantheorem}{Preservation}{Preservation}
 \end{leantheorem}
 
+A closed, well-typed application of a function to the identity reduces by
+rule~\ref{rule:Beta}, and the result has the same type.
+
+\begin{leanexample}{Stlc.ex_preservation}{A step preserves the type}
+\end{leanexample}
+
 \begin{leantheorem}{Progress}{Progress}
 \end{leantheorem}
+
+Progress needs the term to be closed. An open term can be well typed and yet
+stuck: neither a value nor able to reduce, since no rule applies to a
+variable.
+
+\begin{leanexample}{Stlc.ex_stuck}{An open term may be stuck}
+\end{leanexample}
 
 \begin{thebibliography}{1}
 \bibitem[Pitts(2006)]{Pitts06}
