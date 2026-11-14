@@ -38,6 +38,7 @@ milestones.*
 
 | Directory | What it is |
 |---|---|
+| `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | the root package: the extractor, read from `extract/`, so that Reservoir lists the repository and a `require` without a `subDir` gets the extractor (`lint/root-package` keeps it equal to `extract/lakefile.toml`) |
 | `extract/` | Lake package `imprimatur`: the extractor and the `imprimatur-export` executable. Lean core only, no Lake dependencies |
 | `splice/` | Lake package `imprimatur-splice`: the splicer. Text only, no Lean internals, no Lake dependencies |
 | `testkit/` | test-only package: harness, golden files, seeded generator |

@@ -1,0 +1,31 @@
+# The root package: the extractor, extract/lakefile.toml read from extract/,
+# so that the repository is a Lake package at its root. Reservoir indexes
+# only root packages, and a `require` of this repository without a `subDir`
+# gets the extractor, which is what a host project depends on (DESIGN §5,
+# §19). Its targets, sources and options must be those of extract/lakefile.toml
+# (lint/root-package); only the metadata below and `srcDir` are its own.
+# The splicer stays in splice/ (`subDir = "splice"`), with its own toolchain.
+name = "imprimatur"
+version = "0.0.0"
+description = "Keep a paper's LaTeX in step with a Lean 4 development: render declarations into .tex and check prose against Lean"
+keywords = ["latex", "documentation", "papers", "verification", "notation"]
+homepage = "https://theorem-press.github.io/imprimatur/"
+license = "Apache-2.0"
+licenseFiles = ["LICENSE"]
+readmeFile = "README.md"
+defaultTargets = ["Imprimatur", "imprimatur-export"]
+
+[leanOptions]
+autoImplicit = false
+relaxedAutoImplicit = false
+linter.all = true
+
+[[lean_lib]]
+name = "Imprimatur"
+srcDir = "extract"
+
+[[lean_exe]]
+name = "imprimatur-export"
+root = "Main"
+srcDir = "extract"
+supportInterpreter = true

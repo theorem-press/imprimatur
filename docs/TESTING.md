@@ -117,7 +117,7 @@ with it, in their own repositories.
 | end-to-end examples (needs TeX Live) | `scripts/e2e.sh` | repository root |
 | splicer tests | `lake test` | `splice/test/` |
 | the extractor on another toolchain | `scripts/test-all.sh --toolchain v4.31.0` | repository root |
-| lint (links, schema, this matrix) | `scripts/lint.sh` | repository root |
+| lint (links, schema, the root package, this matrix) | `scripts/lint.sh` | repository root |
 
 The extractor's fixture tests each import a Lean environment, and in one
 process those add up to more memory than a laptop has. So `lake test` in
@@ -276,7 +276,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§13 | the splicer accepts the current and previous bundle schema | `splice/version/schema`, `splice/bundle/schema-version` | M1 |
 | D§14 | testing (this file) | — | n/a |
 | D§14 | the run time of every e2e build, and of papers/con-leche, folded to one line per paper, logged nightly and charted (docs/ci-timing.md) | `e2e/con-leche` | M6 |
-| D§15 | repository layout | — | n/a |
+| D§15 | repository layout; the root package is the extractor read from `extract/`, with no `[[require]]` | `lint/root-package` | M6 |
 | D§16 | adoption in the motivating projects; each is checked in its own repository, so that imprimatur's tests need nothing outside this one | — | n/a |
 | D§17 | roadmap | — | n/a |
 | D§18.1 | what a document claims | — | n/a |
