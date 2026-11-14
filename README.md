@@ -149,6 +149,17 @@ cd imprimatur/splice && lake build
 export PATH="$PWD/.lake/build/bin:$PATH"
 ```
 
+In-project and sidecar modes `require` the extractor from the host's
+lakefile; the repository is that package at its root, so no `subDir` is
+needed:
+
+```toml
+[[require]]
+name = "imprimatur"
+git = "https://github.com/theorem-press/imprimatur"
+rev = "main"   # pin a commit
+```
+
 Then, in a paper's directory with an `imprimatur.toml`
 ([docs/blocks.md](docs/blocks.md) explains it):
 
@@ -173,8 +184,8 @@ in Lean (`splice/SpliceModel`).
 
 There is no tagged release yet, so pin a commit if you depend on it. The
 first release, v0.5.0, adds an index of every result a paper cites,
-`check --anonymous` for double-blind submission, `init`, and release
-binaries: see the
+`check --anonymous` for double-blind submission and `init`, and lists
+imprimatur on [Reservoir](https://reservoir.lean-lang.org): see the
 [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1).
 Other planned work is in the
 [issues](https://github.com/theorem-press/imprimatur/issues).

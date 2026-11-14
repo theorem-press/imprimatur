@@ -146,9 +146,16 @@ makes between prover drivers and rendering.
   executable. It depends on Lean core only (constraint 6). It must compile
   under every supported toolchain.
 - **`imprimatur-splice` (the splicer)** is a Lean executable with no dependence
-  on Lean internals, built with its own pinned toolchain and also shipped as
-  prebuilt release binaries. It scans TeX for requests, applies bundles,
-  checks documents and strips markers.
+  on Lean internals, built from source with its own pinned toolchain (every
+  user has elan, since they are writing about a Lean development; prebuilt
+  binaries are a convenience that may follow, #34). It scans TeX for
+  requests, applies bundles, checks documents and strips markers.
+
+The repository is itself a Lake package at its root: the extractor,
+`extract/lakefile.toml` read from `extract/` (`lint/root-package` keeps the
+two in step). So Reservoir, which indexes root packages only, lists it, and
+a host project's `require` of the repository without a `subDir` gets the
+extractor, the package a host depends on; the splicer is `subDir = "splice"`.
 
 Because the bundle is a public contract (§8), other producers could later
 feed the same splicer, such as an Isabelle or Rocq exporter, or a script.
@@ -1044,8 +1051,10 @@ imprimatur:
 - **Statement hashes** are independent of the toolchain by construction
   (§7.7). A golden test checks that the same declaration gets the same hash
   on every supported toolchain.
-- **The splicer** pins its own toolchain and is released as binaries for
-  Linux, macOS and Windows.
+- **The splicer** pins its own toolchain and is built from source under it
+  (`cd splice && lake build`). Release binaries for Linux, macOS and Windows
+  are a convenience that may follow the first release (#34), not part of it:
+  `build` and `check` need the host built, so every user has a toolchain.
 - **The bundle schema** is versioned on its own and only gains fields within
   a major version. The splicer accepts the current and the previous major
   version.
@@ -1066,6 +1075,9 @@ traceability matrix from each section here to its tests.
 ```
 imprimatur/
   README.md  DESIGN.md  CHANGELOG.md  CONTRIBUTING.md  LICENSE
+  lakefile.toml  lean-toolchain  lake-manifest.json
+                                  the root package: the extractor, read from extract/, for Reservoir
+                                  and for `require` without a subDir (lint/root-package)
   extract/                        Lake package "imprimatur" (no dependencies)
     Imprimatur/Doc.lean           IR and LaTeX emitter (escaping, precedence, widths, flattening)
     Imprimatur/Render.lean        Expr → Doc; delaborator fallback; telescopes, metavariables, cases
@@ -1188,7 +1200,7 @@ imprimatur/
 | 0.2 | Dependency cones, `stmtHash`/`sigHash`, `\leancheck`, `imprimatur accept`. Comparator and blueprint manifests. External mode with `toolchain install`. | done, untagged |
 | 0.3 | `Doc` IR, notation DSL (`width`, `variant`, `flatten`), delaborator fallback, `math` and `prose` views, notation packs. | done, untagged |
 | 0.4 | `rules` and `grammar` views ported from project A, premise conventions, `include`/`exclude`, theorem modifiers, rule labels, custom views, `migrate-slots`. Migrate project A, gated by the parity test (§16). | done, untagged |
-| 0.5 | `\leanindex` (the `provenance` table over every key the document cites), `check --anonymous`, undefined-macro warnings, `init`, `show`, release binaries, the toolchain range documented and enforced. `lint` and `--blueprint-compat` are later (#29, #30). | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
+| 0.5 | `\leanindex` (the `provenance` table over every key the document cites), `check --anonymous`, undefined-macro warnings, `init`, `show`, the toolchain range documented and enforced, the tag, and the listing on Reservoir (#54). Release binaries are a convenience that may follow (#34); `lint` and `--blueprint-compat` are later (#29, #30). | M6, not started: the [v0.5.0 milestone](https://github.com/theorem-press/imprimatur/milestone/1) |
 
 The milestones M0 to M6, named in `CHANGELOG.md` and in comments in the
 code, built these versions: M0 the foundations (layout, harness, CI, spikes
@@ -1491,9 +1503,10 @@ at TeX source; and, for attested claims, the person who checked the prose.
 
 1. **Name availability.** In October 2026, a GitHub search found no Lean or
    LaTeX project called "imprimatur", and the repository is now
-   `theorem-press/imprimatur`. Before the first release, also check
-   Reservoir, and any other registry the release binaries will be
-   published to (#54).
+   `theorem-press/imprimatur`, and a Lake package at its root so that
+   Reservoir lists it (§5). Before the first release, check the name on
+   Reservoir too (#54). Listing needs two GitHub stars; a tag gives the
+   listing a version to show.
 2. **Toolchain support window.** How far back should support go? Each
    additional toolchain adds to the CI matrix and to `Compat.lean` (#33).
 3. **Schematic rules.** One rule in project B, and the ⊕-merged rules elsewhere,

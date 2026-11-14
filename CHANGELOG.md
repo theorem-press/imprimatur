@@ -5,6 +5,14 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The repository is a Lake package at its root: the extractor,
+  `extract/lakefile.toml` read from `extract/`, with the metadata Reservoir
+  shows (description, keywords, homepage, licence, README). Reservoir
+  indexes root packages only, and a `require` of the repository without a
+  `subDir` now gets the extractor. `lint/root-package` keeps the root
+  lakefile equal to `extract/`'s. Release binaries of the splicer are no
+  longer part of v0.5.0: it is built from source under its pinned
+  toolchain, and binaries may follow as a convenience (#34, #54).
 - CI keeps a chart of imprimatur's run time (docs/ci-timing.md): every
   end-to-end build runs with `--timing`, `scripts/timing-fold.py` folds the
   files to one line per paper, the nightly appends it to the `timing`
