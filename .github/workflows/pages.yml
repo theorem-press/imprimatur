@@ -37,12 +37,13 @@ jobs:
           sudo apt-get install -q -y --no-install-recommends latexmk texlive-latex-base \
             texlive-latex-recommended texlive-latex-extra texlive-fonts-recommended \
             texlive-science lmodern
+      # The extractor's cache is not kept: the block then installs it on every
+      # run, as it does for a newcomer, which is the test of that install.
       - uses: actions/cache@v4
         with:
           path: |
             ~/.elan/toolchains
             splice/.lake
-            ${{ runner.temp }}/imprimatur-cache
           key: pages-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-${{ github.sha }}
           restore-keys: pages-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-
       - name: Build the PDF of examples/semantics (README's Try it block)
