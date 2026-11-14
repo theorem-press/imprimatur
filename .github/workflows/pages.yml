@@ -53,9 +53,9 @@ jobs:
           (cd splice && lake build -q) && export PATH="$PWD/splice/.lake/build/bin:$PATH"
           cd examples/semantics
           (cd host && lake build -q)
-          imprimatur build   # installs the extractor for the host's Lean when the cache is cold
+          imprimatur build
           imprimatur check
-          git diff --stat paper.tex
+          git --no-pager diff --stat paper.tex
           latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex
           git checkout -- paper.tex   # the source stays as committed; the site gets the PDF
       - name: Build with Jekyll

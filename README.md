@@ -32,17 +32,20 @@ Lean development that proves its theorems:
 git clone --depth 1 https://github.com/theorem-press/imprimatur.git
 cd imprimatur/splice && lake build && export PATH="$PWD/.lake/build/bin:$PATH"
 cd ../examples/semantics
-(cd host && lake build)                 # the Lean development, as its owners build it
-imprimatur build                        # render the grammar, rules and theorems into paper.tex
-                                        # (the first run builds the extractor for the host's Lean)
-imprimatur check                        # nothing stale, untrusted or unfaithful
-git diff paper.tex                      # the TeX imprimatur wrote into the empty blocks
-latexmk -pdf paper.tex                  # then open paper.pdf
+(cd host && lake build)
+imprimatur build
+imprimatur check
+git --no-pager diff paper.tex
+latexmk -pdf paper.tex
 ```
 
-The committed `paper.tex` has empty blocks, so the diff is exactly what
-imprimatur generated, with the hand-written prose around it untouched. The
-result is the
+Line by line: build the splicer and put it on the path; build the Lean
+development, as its owners would; `imprimatur build` renders the grammar,
+rules and theorems into `paper.tex`, building an extractor for the host's
+Lean the first time; `imprimatur check` reports nothing stale, untrusted or
+unfaithful; the diff is the TeX imprimatur wrote, since the committed
+`paper.tex` has empty blocks and the hand-written prose around them is
+untouched; and `latexmk` typesets `paper.pdf`. The result is the
 [PDF](https://theorem-press.github.io/imprimatur/examples/semantics/paper.pdf)
 the site builds from these commands, and
 [expected/paper.tex](examples/semantics/expected/paper.tex). Clone to PDF
@@ -189,10 +192,13 @@ file, the Lean project, the modules to import and the notation module. In
 it:
 
 ```sh
-imprimatur build                       # render and splice the blocks
-imprimatur check                       # what is stale, untrusted or unfaithful
+imprimatur build
+imprimatur check
 latexmk -pdf paper.tex
 ```
+
+`build` renders and splices the blocks, and `check` reports what is stale,
+untrusted or unfaithful.
 
 In external mode the first run builds an extractor for the host's Lean
 version, once per version, into `~/.cache/imprimatur`;

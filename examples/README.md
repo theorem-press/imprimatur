@@ -17,11 +17,14 @@ for installing imprimatur, and the same commands on this example):
 
 ```sh
 cd examples/semantics
-(cd host && lake build)                  # the Lean project, built by its owners
-imprimatur build                         # fill in the blocks (the first run builds the extractor)
+(cd host && lake build)
+imprimatur build
 imprimatur check
-git diff paper.tex                       # what build wrote
+git --no-pager diff paper.tex
 latexmk -pdf paper.tex
 ```
+
+The host is built as its owners build it; `build` fills in the blocks,
+building the extractor the first time; the diff is what `build` wrote.
 
 The modes are explained in [docs/blocks.md](../docs/blocks.md).
