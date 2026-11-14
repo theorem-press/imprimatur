@@ -43,6 +43,10 @@
 % whose text is \LeanSourceMarkText); a block without a wrap gets the marker on
 % a line of its own, flush right (\LeanSourceLine). Redefine any of them to
 % change the style; without hyperref they print the title alone, and nothing.
+% A block whose rows link on their own (the index views) carries srcbase=
+% instead, the URL template with the commit filled in and \LeanSrcPath and
+% \LeanSrcLine for the path and line, and each \LeanSourceRef{path}{line}{text}
+% in its content completes a link from it (below).
 \newif\ifimprimatur@hyper
 \AtBeginDocument{\@ifpackageloaded{hyperref}{\imprimatur@hypertrue}{}}
 \newcommand\LeanSourceMarkText{\ensuremath{\nearrow}}
@@ -56,22 +60,27 @@
 \tl_new:N \l__imprimatur_wrap_tl
 \tl_new:N \l__imprimatur_label_tl
 \tl_new:N \l__imprimatur_src_tl
+\tl_new:N \l__imprimatur_srcbase_tl
+\tl_new:N \l__imprimatur_url_tl
 \keys_define:nn { imprimatur }
   {
     wrap    .tl_set:N = \l__imprimatur_wrap_tl ,
     label   .tl_set:N = \l__imprimatur_label_tl ,
     src     .tl_set:N = \l__imprimatur_src_tl ,
+    srcbase .tl_set:N = \l__imprimatur_srcbase_tl ,
     unknown .code:n   = { }
   }
 
 % \begin{leanblock}[options]{key}{title} ... \end{leanblock}
 % With wrap=ENV, the content is set in \begin{ENV}[title]; label=L adds \label{L};
-% src=URL links the title, or marks the block, as above.
+% src=URL links the title, or marks the block, as above; srcbase=URL is the
+% base of the links in the content.
 \NewDocumentEnvironment { leanblock } { O{} m m }
   {
     \tl_clear:N \l__imprimatur_wrap_tl
     \tl_clear:N \l__imprimatur_label_tl
     \tl_clear:N \l__imprimatur_src_tl
+    \tl_clear:N \l__imprimatur_srcbase_tl
     \keys_set:nn { imprimatur } { #1 }
     \global\imprimatur@endpefalse
     \par
@@ -84,13 +93,14 @@
               { \exp_args:NV \begin \l__imprimatur_wrap_tl [ #3 ] }
           }
           {
-            % The URL is expanded into the title, which nameref records in
-            % the aux file, so a \nameref of the block links too.
+            % The URL is put into the title (unexpanded: \_ and \~ must
+            % reach \href as they are), which nameref records in the aux
+            % file, so a \nameref of the block links too.
             \tl_if_blank:nTF { #3 }
               { \use:x { \exp_not:N \begin { \l__imprimatur_wrap_tl }
-                  [ \exp_not:N \LeanSourceMark { \l__imprimatur_src_tl } ] } }
+                  [ \exp_not:N \LeanSourceMark { \exp_not:V \l__imprimatur_src_tl } ] } }
               { \use:x { \exp_not:N \begin { \l__imprimatur_wrap_tl }
-                  [ \exp_not:N \LeanSourceTitle { \l__imprimatur_src_tl } { \exp_not:n { #3 } } ] } }
+                  [ \exp_not:N \LeanSourceTitle { \exp_not:V \l__imprimatur_src_tl } { \exp_not:n { #3 } } ] } }
           }
       }
     \tl_if_empty:NF \l__imprimatur_label_tl
@@ -129,6 +139,26 @@
 % source marker. It removes the space before it, so both "checked \leancheck{k}
 % against" and "holds \leancheck{k}." read naturally.
 \NewDocumentCommand \leancheck { O{} m } { \unskip \__imprimatur_src_mark:n { #1 } }
+
+% \LeanSourceRef{path}{line}{text}: the text, linked to the Lean at path:line
+% when the block has srcbase= and hyperref is loaded. The path and line go in
+% for \LeanSrcPath and \LeanSrcLine by replacement, not expansion, so the
+% escaped characters of a URL (\#, \_, \&, \~) reach \href as they are.
+\cs_new_protected:Npn \__imprimatur_source_ref:nnn #1#2#3
+  {
+    \tl_if_empty:NTF \l__imprimatur_srcbase_tl { #3 }
+      {
+        \ifimprimatur@hyper
+          \tl_set_eq:NN \l__imprimatur_url_tl \l__imprimatur_srcbase_tl
+          \tl_replace_all:Nnn \l__imprimatur_url_tl { \LeanSrcPath } { #1 }
+          \tl_replace_all:Nnn \l__imprimatur_url_tl { \LeanSrcLine } { #2 }
+          \exp_args:NV \href \l__imprimatur_url_tl { #3 }
+        \else
+          #3
+        \fi
+      }
+  }
+\NewDocumentCommand \LeanSourceRef { m m m } { \__imprimatur_source_ref:nnn { #1 } { #2 } { #3 } }
 \ExplSyntaxOff
 % \leanindex: the table of every key used (generated from v0.5).
 \NewDocumentCommand\leanindex{}{}

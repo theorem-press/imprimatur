@@ -149,6 +149,10 @@ if [ -d e2e-out/semantics ]; then
   else
     n=$(grep -c 'src=https://github.com/theorem-press/imprimatur/blob/0123abc/examples/semantics/host/Stlc/[A-Za-z]*.lean\\#L[0-9]' "$work/paper.tex" || true)
     [ "$n" -ge 25 ] || { echo "  FAIL: expected src= on every block and check, found $n"; status=1; }
+    grep -q 'srcbase=https://github.com/theorem-press/imprimatur/blob/0123abc/examples/semantics/host/\\LeanSrcPath\\#L\\LeanSrcLine' "$work/paper.tex" \
+      || { echo "  FAIL: expected srcbase= on the index of notation"; status=1; }
+    m=$(grep -c '\\LeanSourceRef{Stlc/[A-Za-z]*.lean}{[0-9]*}' "$work/paper.tex" || true)
+    [ "$m" -ge 20 ] || { echo "  FAIL: expected \\LeanSourceRef on the index's rows, found $m"; status=1; }
     if ! (cd "$work" && "$IMPRIMATUR" check --profile public --commit 4567def > links-check.log 2>&1); then
       echo "  FAIL: check at another commit"; sed 's/^/    /' "$work/links-check.log"; status=1
     fi

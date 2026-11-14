@@ -267,7 +267,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§10.4 | `strip` removes markers and keeps generated content | `splice/slots/unwrap`, `splice/prop/strip`, `splice/golden/strip` | M1 |
 | D§10.5 | comparator manifests, including `@challenge` entries | `splice/golden/manifests`, `extract/manifests/challenge-keys`, `extract/manifests/challenge-statement-matches`, `extract/manifests/unknown-challenge`, `extract/golden/Manifests` | M3 |
 | D§11 | profiles `relative` (default), `url`, `none` for `\leanref` and the `meta` view | `splice/tex-escape`, `splice/config/url-needs-template`, `splice/golden/refs`, `splice/golden/meta-source` | M1 |
-| D§11 | `src=` on blocks, inline items and `\leancheck` under `url`: written with the commit, never stale in `check`, removed under the other profiles; typeset as links by `imprimatur.sty` (#122) | `splice/golden/source-links`, `e2e/source-links` | M6 |
+| D§11 | `src=` on blocks, inline items and `\leancheck` under `url`, and `srcbase=` on a block whose rows link (`\LeanSourceRef`, the index views): written with the commit, never stale in `check`, removed under the other profiles; typeset as links by `imprimatur.sty` (#122) | `splice/golden/source-links`, `extract/index/golden`, `e2e/source-links` | M6 |
 | D§11 | `check --anonymous` | — | M6 |
 | D§12 | `show` prints one key's renderings and problems, fails on a missing key, and writes nothing | `e2e/show` | M6 |
 | D§12 | every command in the table exists and prints usage | — | M6 |

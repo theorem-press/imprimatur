@@ -1,5 +1,5 @@
 $ imprimatur-splice apply --bundle demo.bundle.json
-apply: 4 items updated in 1 file; 0 errors, 0 warnings
+apply: 5 items updated in 1 file; 0 errors, 0 warnings
 [exit 0]
 
 $ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready
@@ -8,11 +8,12 @@ main.tex:5:1: error[bad-ref]: the url profile needs a commit (--commit)
 main.tex:9:8: error[bad-ref]: the url profile needs a commit (--commit)
 main.tex:9:72: error[bad-ref]: the url profile needs a commit (--commit)
 main.tex:10:56: error[bad-ref]: the url profile needs a commit (--commit)
-apply: nothing written; 5 errors, 0 warnings
+main.tex:13:1: error[bad-ref]: the url profile needs a commit (--commit)
+apply: nothing written; 6 errors, 0 warnings
 [exit 1]
 
 $ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready --commit 0123abc
-apply: 5 items updated in 1 file; 0 errors, 0 warnings
+apply: 6 items updated in 1 file; 0 errors, 0 warnings
 [exit 0]
 
 $ imprimatur-splice check --bundle demo.bundle.json --profile camera-ready --commit 4567def
@@ -21,7 +22,7 @@ check: 1 stale, 1 error, 0 warnings
 [exit 1]
 
 $ imprimatur-splice apply --bundle demo.bundle.json --profile camera-ready --commit 4567def
-apply: 5 items updated in 1 file; 0 errors, 0 warnings
+apply: 6 items updated in 1 file; 0 errors, 0 warnings
 [exit 0]
 
 $ imprimatur-splice check --bundle demo.bundle.json --profile camera-ready --commit 4567def
@@ -34,7 +35,7 @@ check: 1 stale, 1 error, 0 warnings
 [exit 1]
 
 $ imprimatur-splice apply --bundle demo.bundle.json
-apply: 5 items updated in 1 file; 0 errors, 0 warnings
+apply: 6 items updated in 1 file; 0 errors, 0 warnings
 [exit 0]
 
 == main.tex
@@ -48,4 +49,12 @@ $\top$
 
 Inline \leaninline[sum=_0ewUIQDey]{Demo.c}{\LeanConst{Demo.c}}, a check\leancheck{Demo.nested, Demo.thm}, one
 with no source\leancheck{Demo.nested}, and a reference \leanref{Demo.c}{Demo/Basic.lean:7}.
+
+An index, whose rows link on their own:
+\begin{leanblock}[view=vocabulary, sum=9YBavOhE3v]{Demo.index}{}
+\begin{tabular}{ll}
+$c$ & \LeanSourceRef{Demo/Basic.lean}{7}{\texttt{c}}\\
+$x$ & \LeanSourceRef{Odd\_dir/A\&B.lean}{3}{\texttt{Under\_score.x}}\\
+\end{tabular}
+\end{leanblock}
 
