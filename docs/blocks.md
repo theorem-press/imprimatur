@@ -45,8 +45,9 @@ name-carrying terms, in external mode, that shows the two ways of tying a
 paper to Lean side by side: a generated grammar (with the authors'
 descriptions kept as slots), swapping and α-equivalence in the style of
 Pitts's nominal techniques, generated typing and reduction rules, and
-generated results up to preservation and progress, next to hand-written statements checked with
-`\leancheck`. Each example's `paper.tex` is
+generated results up to preservation and progress, each section with
+worked examples (theorems about particular terms, stated as sentences),
+next to hand-written statements checked with `\leancheck`. Each example's `paper.tex` is
 the input, with its blocks empty; `expected/paper.tex` is the paper
 imprimatur makes from it, and both compile in an editor (their
 `.latexmkrc` puts `tex/` on the path).

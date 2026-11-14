@@ -11,6 +11,7 @@ strip_namespaces = ["Stlc"]
 leangrammar = { view = "grammar", label = "gram:{key}", template = "\\label{{label}}{content}" }
 leanrules   = { view = "rules" }
 leantheorem = { view = "prose", wrap = "theorem", label = "thm:{key}" }
+leanexample = { view = "prose", wrap = "example", label = "ex:{key}" }
 # The index of notation: the metavariables, and the notation the paper uses.
 leanconventions = { view = "conventions" }
 leannotation    = { view = "vocabulary|scope=all" }

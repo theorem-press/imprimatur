@@ -16,7 +16,9 @@ latex_notation Alpha e e' => r"#e =_{\alpha} #e'" prec := 10
 
 -- Terms and types.
 latex_notation Tm.var x => r"#x"
-latex_notation Tm.lam x t e => r"\lambda #x{:}#t.\, #e" prec := 0
+-- The body extends as far as possible, so a nested abstraction needs no
+-- parentheses.
+latex_notation Tm.lam x t e => r"\lambda #x{:}#t.\, #e" prec := 0  assoc := right
 -- Application, with both operands parenthesised unless atomic or tighter, so
 -- that it reads unambiguously next to swapping.
 latex_notation Tm.app e₁ e₂ => r"#e₁\; #e₂" prec := 100  assoc := none
@@ -36,15 +38,27 @@ latex_notation c ∉ a :: b :: Tm.atoms e ++ Tm.atoms e' => r"#c \mathrel{\#} #a
 latex_notation subst x u e => r"#e[#u/#x]"
 latex_notation Ctx.swap a b Γ => r"(#a\ #b) \cdot #Γ" prec := 100  assoc := none
 latex_notation Tm.fv e => r"\mathit{fv}(#e)"
+latex_notation a ∉ Tm.fv e => r"#a \notin \mathit{fv}{(#e)}" prec := 50
 latex_notation Ctx => r"\mathit{Context}"
 
--- Contexts.
+-- Contexts. A context of one name is written without the empty context.
 latex_notation List.cons (x, t) Γ => r"#Γ, #x{:}#t" prec := 20
+latex_notation List.cons (x, t) ([] : Ctx) => r"#x{:}#t" prec := 20
 latex_notation lookup Γ x = some t => r"#Γ(#x) = #t" prec := 50
 -- `v ∈ Val` is membership in the predicate `Val`, which is `IsValue v`; a
 -- theorem binds a value in `Val` (the convention below).
 latex_notation IsValue v => r"#v \in \mathit{Val}"  synonym
 latex_notation IsValue => r"\mathit{Val}"
+latex_notation ¬ IsValue v => r"#v \notin \mathit{Val}" prec := 50
+
+-- The fixed names of the examples, in typewriter so that a reader can tell
+-- the name x from the metavariable x (reading back would otherwise find
+-- every rule ambiguous). They live in their own namespace, so that `x` in
+-- the patterns above stays a pattern variable.
+latex_notation Names.x => r"\mathtt{x}"
+latex_notation Names.y => r"\mathtt{y}"
+latex_notation Names.z => r"\mathtt{z}"
+latex_notation Names.f => r"\mathtt{f}"
 
 -- A type variable is written τ, with its subscript: t₁ is τ₁.
 latex_metavar t => r"\tau" decorated
