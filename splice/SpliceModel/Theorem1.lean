@@ -81,18 +81,28 @@ theorem sortDiags_empty {doc : Splice.Doc} {ds : Array Splice.Diag} (h : sortDia
   simp only [List.size_toArray, List.length_mergeSort, Array.length_toList] at this
   exact Array.size_eq_zero_iff.mp this
 
+/-- Nothing stale: every change the plan has is of `src=` alone (a source
+link, which follows the commit; DESIGN §11). -/
 theorem staleDiags_empty {changes : Array Change} {diff : Bool} (h : staleDiags changes diff = #[]) :
-    changes = #[] := by
+    ∀ ch ∈ changes, ch.srcOnly = true := by
   unfold staleDiags at h
   have := congrArg Array.size h
   simp only [Array.size_map, Array.size_empty] at this
-  exact Array.size_eq_zero_iff.mp this
+  have hf := Array.size_eq_zero_iff.mp this
+  intro ch hch
+  cases hso : ch.srcOnly with
+  | true => rfl
+  | false =>
+    have hm : ch ∈ changes.filter (fun x => !x.srcOnly) := Array.mem_filter.mpr ⟨hch, by simp [hso]⟩
+    rw [hf] at hm
+    simp at hm
 
-/-- A clean check: the plan reports nothing and changes nothing, and the
-audit finds nothing. -/
+/-- A clean check: the plan reports nothing and changes nothing but source
+links, and the audit finds nothing. -/
 theorem checkDoc_parts {doc : Splice.Doc} {b : B} {opts : ApplyOpts} {extra : Array String} {diff : Bool}
     (hc : checkDoc doc b opts extra diff = #[]) :
-    (plan doc b opts).diags = #[] ∧ (plan doc b opts).changes = #[] ∧ audit doc b = #[] := by
+    (plan doc b opts).diags = #[] ∧ (∀ ch ∈ (plan doc b opts).changes, ch.srcOnly = true) ∧
+      audit doc b = #[] := by
   unfold checkDoc at hc
   have h := sortDiags_empty hc
   simp only [Array.append_eq_empty_iff] at h
@@ -133,19 +143,48 @@ theorem planOnce_quiet {doc : Splice.Doc} {b : B} {o : ApplyOpts}
     rintro _ ⟨x, hx, rfl⟩
     simp [hnone x hx]
 
+/-- A clean plan comes from a clean `planOnce`: `plan` only adds
+diagnostics. -/
+theorem planOnce_diags {doc : Splice.Doc} {b : B} {o : ApplyOpts}
+    (h : (plan doc b o).diags = #[]) : (planOnce doc b o).diags = #[] := by
+  unfold plan at h
+  dsimp only at h
+  split at h
+  · exact h
+  · exact (Array.append_eq_empty_iff.mp h).1
+
+/-- Membership in a concatenation by `foldl`. -/
+theorem mem_foldl_concat {β : Type} {x : β} : ∀ (l : List (Array β)) (init : Array β),
+    x ∈ l.foldl (· ++ ·) init ↔ x ∈ init ∨ ∃ a ∈ l, x ∈ a
+  | [], init => by simp
+  | a :: l, init => by
+    rw [List.foldl_cons, mem_foldl_concat l (init ++ a)]
+    constructor
+    · rintro (h | ⟨c, hc, hx⟩)
+      · rcases Array.mem_append.mp h with h | h
+        · exact .inl h
+        · exact .inr ⟨a, List.mem_cons.mpr (.inl rfl), h⟩
+      · exact .inr ⟨c, List.mem_cons.mpr (.inr hc), hx⟩
+    · rintro (h | ⟨c, hc, hx⟩)
+      · exact .inl (Array.mem_append.mpr (.inl h))
+      · rcases List.mem_cons.mp hc with rfl | hc
+        · exact .inl (Array.mem_append.mpr (.inr hx))
+        · exact .inr ⟨c, hc, hx⟩
+
 /-! ## A clean item -/
 
 theorem push_ne_empty {α : Type} (a : Array α) (x : α) : a.push x ≠ #[] := by
   intro h; have := congrArg Array.size h; simp at this
 
 /-- What a block or inline item that plans cleanly (no diagnostics, no
-change) is: its key's entry has its view, the alias's template applies, and
-its region is, after normalisation, what the splicer would write there. -/
+change but to its source link) is: its key's entry has its view, the alias's
+template applies, and its region is, after normalisation, what the splicer
+would write there. -/
 theorem planItem_clean {cfg : Config} {labels : Array (Nat × Nat × String)} {b : B} {o : ApplyOpts}
     {s : Src} {fi : Nat} {eol : String} {it : Item} {ii : Nat}
     (hk : it.kind = .block ∨ it.kind = .inline)
     (hd : (planItem cfg labels b o s fi eol it ii).diags = #[])
-    (hc : (planItem cfg labels b o s fi eol it ii).change = none) :
+    (hc : ∀ ch, (planItem cfg labels b o s fi eol it ii).change = some ch → ch.srcOnly = true) :
     ∃ e g new, b.find? it.key = some e ∧ e.statement.view? (itemView cfg it) = some g ∧
       renderItem cfg labels o (s.locString it.start) fi ii it e g = .ok new ∧
       normalize (s.slice it.regionStart it.regionEnd) =
@@ -161,6 +200,13 @@ theorem planItem_clean {cfg : Config} {labels : Array (Nat × Nat × String)} {b
   | none => rw [he] at hd; simp at hd
   | some e =>
     rw [he] at hd hc
+    simp only at hd hc
+    rw [hnref] at hd hc
+    simp only [Bool.false_eq_true, ↓reduceIte] at hd hc
+    cases hsrc : srcOf o.links o.commit e with
+    | error msg => rw [hsrc] at hd; simp at hd
+    | ok src =>
+    rw [hsrc] at hd hc
     simp only at hd hc
     have hg : ∀ x, generatedOf cfg o (s.locString it.start) it e = .ok x →
         e.statement.view? (itemView cfg it) = some x := by
@@ -202,32 +248,38 @@ theorem planItem_clean {cfg : Config} {labels : Array (Nat × Nat × String)} {b
               cases same with
               | true => simpa using hsame
               | false => simp [itemRewrite] at hedits
-            · cases hc
+            · have hso := hc _ rfl
+              simp only at hso
+              cases same with
+              | true => simpa using hsame
+              | false => simp at hso
 
 /-- A clean plan: every item of every file plans with no diagnostics and no
-change. -/
+change but to its source link. -/
 theorem items_clean {doc : Splice.Doc} {b : B} {o : ApplyOpts}
-    (hd : (plan doc b o).diags = #[]) (hc : (plan doc b o).changes = #[])
+    (hd : (plan doc b o).diags = #[]) (hc : ∀ ch ∈ (plan doc b o).changes, ch.srcOnly = true)
     {f : SourceFile} {fi : Nat} (hf : (f, fi) ∈ doc.files.toList.zipIdx)
     {it : Item} {ii : Nat} (hi : (it, ii) ∈ f.scan.items.toList.zipIdx) :
     let r := planItem doc.cfg (blockLabels doc) b o f.src fi (dominantEol f.src.chars) it ii
-    r.diags = #[] ∧ r.change = none := by
+    r.diags = #[] ∧ ∀ ch, r.change = some ch → ch.srcOnly = true := by
   intro r
   rw [SpliceModel.Splicer.plan_changes] at hc
-  rw [SpliceModel.Splicer.plan_of_quiet (planOnce_quiet hc)] at hd
+  have hd := planOnce_diags hd
   unfold planOnce at hd hc
   simp only at hd hc
   rw [foldl_concat_empty] at hd
-  rw [foldl_concat_empty'] at hc
   have hfd := hd.2 _ (List.mem_map.mpr ⟨_, List.mem_map.mpr ⟨_, hf, rfl⟩, rfl⟩)
-  have hfc := hc.2 _ (List.mem_map.mpr ⟨_, List.mem_map.mpr ⟨_, hf, rfl⟩, rfl⟩)
-  unfold planFile at hfd hfc
-  simp only at hfd hfc
+  unfold planFile at hfd
+  simp only at hfd
   rw [foldl_concat_empty] at hfd
   refine ⟨hfd.2 _ (List.mem_map.mpr ⟨_, List.mem_map.mpr ⟨_, hi, rfl⟩, rfl⟩), ?_⟩
-  have := congrArg Array.toList hfc
-  simp only [List.filterMap_eq_nil_iff, List.mem_map] at this
-  exact this _ ⟨_, hi, rfl⟩
+  intro ch hch
+  apply hc
+  rw [mem_foldl_concat]
+  refine .inr ⟨_, List.mem_map.mpr ⟨_, List.mem_map.mpr ⟨_, hf, rfl⟩, rfl⟩, ?_⟩
+  unfold planFile
+  simp only [List.mem_toArray, List.mem_filterMap, List.mem_map]
+  exact ⟨_, ⟨_, hi, rfl⟩, hch⟩
 
 /-! ## A clean audit -/
 

@@ -35,36 +35,70 @@
 % each enclosing environment's \end consumes LaTeX's flag, so leanblock and
 % an alias raise it again, and text after the block is not indented.
 \newif\ifimprimatur@endpe
+% Source links (DESIGN 11): under the url profile the splicer writes src=URL on
+% each block, inline item and \leancheck, and these macros typeset it as a link
+% when hyperref is loaded (by the document; this package loads nothing). A
+% block's title becomes the link (\LeanSourceTitle); a block without one, an
+% inline item and a \leancheck get a small marker after them (\LeanSourceMark,
+% whose text is \LeanSourceMarkText); a block without a wrap gets the marker on
+% a line of its own, flush right (\LeanSourceLine). Redefine any of them to
+% change the style; without hyperref they print the title alone, and nothing.
+\newif\ifimprimatur@hyper
+\AtBeginDocument{\@ifpackageloaded{hyperref}{\imprimatur@hypertrue}{}}
+\newcommand\LeanSourceMarkText{\ensuremath{\nearrow}}
+% Robust: a title goes into the aux file (nameref records theorem notes), and
+% must not expand there.
+\DeclareRobustCommand\LeanSourceMark[1]{\ifimprimatur@hyper\textsuperscript{\href{#1}{\LeanSourceMarkText}}\fi}
+\DeclareRobustCommand\LeanSourceTitle[2]{\ifimprimatur@hyper\href{#1}{#2}\else#2\fi}
+\newcommand\LeanSourceLine[1]{\ifimprimatur@hyper
+  \par\nobreak\noindent\makebox[\linewidth][r]{\LeanSourceMark{#1}}\par\fi}
 \ExplSyntaxOn
 \tl_new:N \l__imprimatur_wrap_tl
 \tl_new:N \l__imprimatur_label_tl
+\tl_new:N \l__imprimatur_src_tl
 \keys_define:nn { imprimatur }
   {
     wrap    .tl_set:N = \l__imprimatur_wrap_tl ,
     label   .tl_set:N = \l__imprimatur_label_tl ,
+    src     .tl_set:N = \l__imprimatur_src_tl ,
     unknown .code:n   = { }
   }
 
 % \begin{leanblock}[options]{key}{title} ... \end{leanblock}
-% With wrap=ENV, the content is set in \begin{ENV}[title]; label=L adds \label{L}.
+% With wrap=ENV, the content is set in \begin{ENV}[title]; label=L adds \label{L};
+% src=URL links the title, or marks the block, as above.
 \NewDocumentEnvironment { leanblock } { O{} m m }
   {
     \tl_clear:N \l__imprimatur_wrap_tl
     \tl_clear:N \l__imprimatur_label_tl
+    \tl_clear:N \l__imprimatur_src_tl
     \keys_set:nn { imprimatur } { #1 }
     \global\imprimatur@endpefalse
     \par
     \tl_if_empty:NF \l__imprimatur_wrap_tl
       {
-        \tl_if_blank:nTF { #3 }
-          { \exp_args:NV \begin \l__imprimatur_wrap_tl }
-          { \exp_args:NV \begin \l__imprimatur_wrap_tl [ #3 ] }
+        \tl_if_empty:NTF \l__imprimatur_src_tl
+          {
+            \tl_if_blank:nTF { #3 }
+              { \exp_args:NV \begin \l__imprimatur_wrap_tl }
+              { \exp_args:NV \begin \l__imprimatur_wrap_tl [ #3 ] }
+          }
+          {
+            % The URL is expanded into the title, which nameref records in
+            % the aux file, so a \nameref of the block links too.
+            \tl_if_blank:nTF { #3 }
+              { \use:x { \exp_not:N \begin { \l__imprimatur_wrap_tl }
+                  [ \exp_not:N \LeanSourceMark { \l__imprimatur_src_tl } ] } }
+              { \use:x { \exp_not:N \begin { \l__imprimatur_wrap_tl }
+                  [ \exp_not:N \LeanSourceTitle { \l__imprimatur_src_tl } { \exp_not:n { #3 } } ] } }
+          }
       }
     \tl_if_empty:NF \l__imprimatur_label_tl
       { \exp_args:NV \label \l__imprimatur_label_tl }
   }
   {
-    \tl_if_empty:NF \l__imprimatur_wrap_tl
+    \tl_if_empty:NTF \l__imprimatur_wrap_tl
+      { \tl_if_empty:NF \l__imprimatur_src_tl { \exp_args:NV \LeanSourceLine \l__imprimatur_src_tl } }
       { \exp_args:NV \end \l__imprimatur_wrap_tl }
     \par
     \ifimprimatur@endpe \@endpetrue \fi
@@ -78,16 +112,24 @@
       { \begin { leanblock } [ wrap = { #2 } , ##1 ] { ##2 } { ##3 } }
       { \end { leanblock } \ifimprimatur@endpe \global\imprimatur@endpefalse \@endpetrue \fi }
   }
-\ExplSyntaxOff
 
-% \leaninline[options]{key}{generated text}
-\NewDocumentCommand\leaninline{O{} m m}{#3}
+% The source marker of an inline item or a \leancheck, from its options.
+\cs_new_protected:Npn \__imprimatur_src_mark:n #1
+  {
+    \tl_clear:N \l__imprimatur_src_tl
+    \keys_set:nn { imprimatur } { #1 }
+    \tl_if_empty:NF \l__imprimatur_src_tl { \exp_args:NV \LeanSourceMark \l__imprimatur_src_tl }
+  }
+
+% \leaninline[options]{key}{generated text}, followed by its source marker.
+\NewDocumentCommand \leaninline { O{} m m } { #3 \__imprimatur_src_mark:n { #1 } }
 % \leanref[options]{key}{generated location}
-\NewDocumentCommand\leanref{O{} m m}{#3}
-% \leancheck[options]{key, ...}: ties prose to Lean; prints nothing. It removes
-% the space before it, so both "checked \leancheck{k} against" and
-% "holds \leancheck{k}." read naturally.
-\NewDocumentCommand\leancheck{O{} m}{\unskip}
+\NewDocumentCommand \leanref { O{} m m } { #3 }
+% \leancheck[options]{key, ...}: ties prose to Lean; prints nothing but its
+% source marker. It removes the space before it, so both "checked \leancheck{k}
+% against" and "holds \leancheck{k}." read naturally.
+\NewDocumentCommand \leancheck { O{} m } { \unskip \__imprimatur_src_mark:n { #1 } }
+\ExplSyntaxOff
 % \leanindex: the table of every key used (generated from v0.5).
 \NewDocumentCommand\leanindex{}{}
 % \leanslot{id}{text}: text that belongs to the authors.

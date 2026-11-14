@@ -1,0 +1,9 @@
+schema = 1
+main = "main.tex"
+
+[aliases]
+leantheorem = { view = "lean", wrap = "theorem" }
+
+[profile.camera-ready]
+source_links = "url"
+url_template = "https://example.org/repo/blob/{commit}/{path}#L{line}"
