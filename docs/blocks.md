@@ -29,14 +29,15 @@ for each alias `\leanblockalias{leantheorem}{theorem}`. Run
 The Lean project is reached in one of three ways:
 
 - **In-project.** The project's own lakefile requires
-  `imprimatur` (`subDir = "extract"`).
+  `imprimatur` (the repository is that package at its root).
 - **Sidecar.** A small package next to the project requires both the project
   and `imprimatur`, so the project itself doesn't change.
 
-- **External.** Nothing requires imprimatur. Run
-  `imprimatur toolchain install VERSION` once for the project's toolchain;
-  `imprimatur build` then reads the project, which must already be built,
-  without changing it.
+- **External.** Nothing requires imprimatur. `imprimatur build` reads the
+  project, which must already be built, without changing it; the first run
+  builds an extractor for the project's toolchain, once per version, into
+  `IMPRIMATUR_CACHE` or `~/.cache/imprimatur` (`imprimatur toolchain install
+  VERSION` does it ahead of time; `--no-install` fails instead).
 
 `examples/minimal`, `examples/sidecar` and `examples/external` show all
 three. `examples/semantics` is a short paper on a typed λ-calculus with
@@ -197,7 +198,8 @@ position into `\leanslot` form. It matches each old slot to the new
 | `--timing` | with `build`, `check`, `accept` or `show`: log where the time goes to `.imprimatur/timing.jsonl` (one JSON line per phase, entry, view and validated formula) and end with a summary naming the slowest |
 | `imprimatur accept KEY…` / `--all` | the same, then records the current statement hashes in `\leancheck` ([trust.md](trust.md)) |
 | `imprimatur show KEY [--view VIEW]…` | runs the extractor for one key and prints its renderings, with the problems translation validation found in each, its axioms and whether it uses `sorry`; writes nothing. The views are those given, else those the document uses for the key, else `math`. For working on notation |
-| `imprimatur toolchain install VERSION` | builds the extractor for a toolchain, for external mode |
+| `imprimatur toolchain install VERSION` | builds the extractor for a toolchain ahead of time, for external mode; `build`, `check` and `show` build it themselves when none is cached |
+| `--no-install` | with `build`, `check` or `show` in external mode: fail when no extractor is cached, instead of building one; for CI that must not compile what it did not ask for |
 
 The configuration is `imprimatur.toml` in the current directory, or
 `--config FILE`. With `--main FILE.tex`, no configuration file is needed.

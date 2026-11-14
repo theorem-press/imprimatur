@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- In external mode, `build`, `check` and `show` build the extractor for the
+  host's toolchain when none is cached, saying so on stderr, so a first run
+  needs no `imprimatur toolchain install` (#119); `--no-install` fails
+  instead, for CI that must not compile what it did not ask for. The
+  install is not counted in the export phase `--timing` reports. README's
+  Try it block and the Pages workflow lose the install line.
 - README opens with "Try it in two minutes": one block of commands from
   `git clone` to the PDF of examples/semantics, ending with `git diff`
   of the generated TeX. The Pages workflow runs the block and publishes the

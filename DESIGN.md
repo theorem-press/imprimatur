@@ -274,7 +274,11 @@ environment that contains the host's modules and the notation module.
 
 - `imprimatur toolchain install v4.31.0` builds the extractor and the `Imprimatur`
   library once per toolchain into a user cache. The toolchain is read from
-  the host's `lean-toolchain`.
+  the host's `lean-toolchain`. The first `build`, `check` or `show` that
+  finds no extractor cached for the host's toolchain builds it the same way,
+  saying so on stderr, before the export phase it times; `--no-install`
+  fails instead, for CI that must not compile what it did not ask for
+  (#119).
 - At run time, imprimatur takes the host's search path from `lake env` in the
   host project, adds its own cached `Imprimatur` `.olean` files, and elaborates
   the notation module in-process with Lean's frontend. The resulting
@@ -1003,9 +1007,9 @@ repository URL.
 
 | Command | What it does |
 |---|---|
-| `imprimatur toolchain install <ver>` | build the extractor for a toolchain (external mode) |
-| `imprimatur build [--profile p] [--commit sha] [--force key] [--keep-stale] [--rename-slot old=new] [--no-checker]` | scan, then export (with the verified checker, §7.8, unless `--no-checker`), then apply |
-| `imprimatur check [--profile p] [--diff] [--check-fail-msg m] [--keep-stale] [--no-checker]` | the checks in §10.3 |
+| `imprimatur toolchain install <ver>` | build the extractor for a toolchain ahead of time (external mode; `build`, `check` and `show` do it when none is cached, unless `--no-install`) |
+| `imprimatur build [--profile p] [--commit sha] [--force key] [--keep-stale] [--rename-slot old=new] [--no-checker] [--no-install]` | scan, then export (with the verified checker, §7.8, unless `--no-checker`), then apply |
+| `imprimatur check [--profile p] [--diff] [--check-fail-msg m] [--keep-stale] [--no-checker] [--no-install]` | the checks in §10.3 |
 | `imprimatur accept <key>… \| --all` | record the current statement hash in `\leancheck` |
 | `imprimatur show <key> [--view v]…` | print one key's renderings and their validation problems, writing nothing; for working on notation |
 | `imprimatur strip -o dir` | write a copy with the markers removed |

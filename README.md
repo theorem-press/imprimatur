@@ -33,8 +33,8 @@ git clone --depth 1 https://github.com/theorem-press/imprimatur.git
 cd imprimatur/splice && lake build && export PATH="$PWD/.lake/build/bin:$PATH"
 cd ../examples/semantics
 (cd host && lake build)                 # the Lean development, as its owners build it
-imprimatur toolchain install v4.35.0    # the extractor for the host's Lean, once per version
 imprimatur build                        # render the grammar, rules and theorems into paper.tex
+                                        # (the first run builds the extractor for the host's Lean)
 imprimatur check                        # nothing stale, untrusted or unfaithful
 git diff paper.tex                      # the TeX imprimatur wrote into the empty blocks
 latexmk -pdf paper.tex                  # then open paper.pdf
@@ -189,11 +189,16 @@ file, the Lean project, the modules to import and the notation module. In
 it:
 
 ```sh
-imprimatur toolchain install v4.35.0   # external mode: the host's Lean version, once
 imprimatur build                       # render and splice the blocks
 imprimatur check                       # what is stale, untrusted or unfaithful
 latexmk -pdf paper.tex
 ```
+
+In external mode the first run builds an extractor for the host's Lean
+version, once per version, into `~/.cache/imprimatur`;
+`imprimatur toolchain install VERSION` does it ahead of time, and
+`--no-install` fails instead, for CI that must not compile what it did not
+ask for.
 
 [examples/](examples/README.md) has four working papers: one for each mode, and the
 longer one on a λ-calculus built above.

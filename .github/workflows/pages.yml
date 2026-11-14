@@ -52,8 +52,7 @@ jobs:
           (cd splice && lake build -q) && export PATH="$PWD/splice/.lake/build/bin:$PATH"
           cd examples/semantics
           (cd host && lake build -q)
-          imprimatur toolchain install v4.35.0
-          imprimatur build
+          imprimatur build   # installs the extractor for the host's Lean when the cache is cold
           imprimatur check
           git diff --stat paper.tex
           latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex
