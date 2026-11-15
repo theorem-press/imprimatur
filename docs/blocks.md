@@ -37,7 +37,9 @@ The Lean project is reached in one of three ways:
   project, which must already be built, without changing it; the first run
   builds an extractor for the project's toolchain, once per version, into
   `IMPRIMATUR_CACHE` or `~/.cache/imprimatur` (`imprimatur toolchain install
-  VERSION` does it ahead of time; `--no-install` fails instead).
+  VERSION` does it ahead of time; `--no-install` fails instead). One built
+  from other sources than the running imprimatur is rebuilt the same way
+  (`--no-install` warns instead).
 
 `examples/minimal`, `examples/sidecar` and `examples/external` show all
 three. `examples/semantics` is a short paper on a typed λ-calculus with

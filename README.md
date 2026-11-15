@@ -208,7 +208,8 @@ In external mode the first run builds an extractor for the host's Lean
 version, once per version, into `~/.cache/imprimatur`;
 `imprimatur toolchain install VERSION` does it ahead of time, and
 `--no-install` fails instead, for CI that must not compile what it did not
-ask for.
+ask for. An extractor built from other sources than the running imprimatur,
+by another checkout say, is rebuilt the same way.
 
 [examples/](examples/README.md) has four working papers: one for each mode, and the
 longer one on a λ-calculus built above.

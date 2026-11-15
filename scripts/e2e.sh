@@ -272,5 +272,40 @@ for l in open(sys.argv[1]):
 PY
 fi
 
+# e2e/stale-extractor: an extractor built from other sources than this
+# imprimatur's is rebuilt by the next build or check (#86). With the sources
+# at IMPRIMATUR_SOURCE changed (a copy of extract/ with a comment added),
+# `check --no-install` warns and runs the cached one, and `check` says so
+# and rebuilds, which changes the stamp. Last, since it leaves the cache built
+# from the copy, which any later run would rebuild again, saying so.
+echo "== e2e/stale-extractor"
+if [ -d e2e-out/external ]; then
+  copy="$ROOT/e2e-out/extract-copy"; rm -rf "$copy"; mkdir -p "$copy"
+  (cd extract && tar --exclude=.lake --exclude=test -cf - .) | (cd "$copy" && tar -xf -)
+  printf '\n-- e2e/stale-extractor: other sources than the checkout\n' >> "$copy/Imprimatur/Version.lean"
+  stamp="$IMPRIMATUR_CACHE/toolchains/$(sed 's/.*://' examples/external/host/lean-toolchain)/sources.sha256"
+  [ -f "$stamp" ] || { echo "  FAIL: the install left no stamp at $stamp"; status=1; }
+  before=$(cat "$stamp" 2>/dev/null)
+  if out=$(cd e2e-out/external && IMPRIMATUR_SOURCE="$copy" "$IMPRIMATUR" check --no-install 2>&1); then
+    grep -q 'warning: the extractor for Lean .* was built from other sources' <<< "$out" \
+      || { echo "  FAIL: check --no-install did not warn of the stale extractor:"; sed 's/^/    /' <<< "$out"; status=1; }
+  else
+    echo "  FAIL: check --no-install with a stale extractor"; sed 's/^/    /' <<< "$out"; status=1
+  fi
+  [ "$(cat "$stamp")" = "$before" ] || { echo "  FAIL: check --no-install rebuilt the extractor"; status=1; }
+  if out=$(cd e2e-out/external && IMPRIMATUR_SOURCE="$copy" "$IMPRIMATUR" check 2>&1); then
+    grep -q 'built from other sources than this imprimatur; rebuilding' <<< "$out" \
+      || { echo "  FAIL: check did not rebuild the stale extractor:"; sed 's/^/    /' <<< "$out"; status=1; }
+  else
+    echo "  FAIL: check with a stale extractor"; sed 's/^/    /' <<< "$out"; status=1
+  fi
+  [ "$(cat "$stamp")" != "$before" ] || { echo "  FAIL: the rebuild did not change the stamp"; status=1; }
+  if out=$(cd e2e-out/external && IMPRIMATUR_SOURCE="$copy" "$IMPRIMATUR" check 2>&1); then
+    grep -q 'other sources' <<< "$out" && { echo "  FAIL: check rebuilt a fresh extractor:"; sed 's/^/    /' <<< "$out"; status=1; }
+  else
+    echo "  FAIL: check after the rebuild"; sed 's/^/    /' <<< "$out"; status=1
+  fi
+fi
+
 [ $status = 0 ] && echo "e2e: all examples passed"
 exit $status
