@@ -60,7 +60,7 @@ imprimatur makes from it, and both compile in an editor (their
 | inline | `\leaninline{Key}{}` | regenerates the second argument |
 | reference | `\leanref{Key}{}` | fills the second argument with the source location, per profile |
 | check | `\leancheck{Key1, Key2}` | generates nothing; `check` reports missing keys and untrusted results |
-| source link | `[src=https://…]` on any of the above but `\leanref` | written under the `url` profile (below); typeset as a hyperlink when the document loads hyperref |
+| source link | `[src=https://…]` on any of the above but `\leanref`; `[srcbase=https://…]` on a block whose rows link | written under the `url` profile (below); typeset as hyperlinks when the document loads hyperref |
 | hypothesis reference | `\leanhypref{Key}{h}` | prints `(h)`, and makes the prose view of `Key` label its hypothesis `h` |
 | index | `\leanindex` | recognised; generated from M6 |
 | slot | `\leanslot{id}{text}` | inside generated content: text that belongs to the authors |
@@ -100,9 +100,9 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
   `[sum=…]` after the marker name.
 
 **Options** go in the optional argument: `view`, `wrap`, `label`, `sum`,
-`dflt`, `src`, `notation`, `include`, `exclude`, and the theorem modifiers `rule`,
-`def`, `forall` and `names` ([views.md](views.md)). The splicer writes
-`sum=`, `dflt=` and `src=` itself.
+`dflt`, `src`, `srcbase`, `notation`, `include`, `exclude`, and the theorem
+modifiers `rule`, `def`, `forall` and `names` ([views.md](views.md)). The
+splicer writes `sum=`, `dflt=`, `src=` and `srcbase=` itself.
 
 ## Where generated content goes
 
@@ -187,6 +187,14 @@ source location gets no link. `src=` follows the commit: `apply` always
 regenerates it, `check` never counts it as stale, and under the `relative`
 and `none` profiles it is removed, so a paper built for submission again
 holds no URL. `strip` drops it with the other options.
+
+The index views link row by row ([views.md](views.md)): the `vocabulary`
+table's project constants and the `provenance` table's locations are
+written `\LeanSourceRef{path}{line}{text}`, and under the `url` profile the
+block gets `srcbase=`, the template with the commit filled in and
+`\LeanSrcPath` and `\LeanSrcLine` where the path and line go, from which
+`\LeanSourceRef` makes each text a link. It follows the commit, and is
+removed, like `src=`.
 
 ## Slots
 

@@ -269,11 +269,14 @@ view notes what it displays). Each table is a `longtable`, which
   constants are named without the namespaces the document strips. A project's rule
   headed by a library constant (`Γ(x) = τ`, an equation) is listed under the
   project's constant it mentions, and the types the `conventions` table lists
-  are left out. `examples/semantics` ends with such an index.
+  are left out. Under the `url` profile each of the project's constants links
+  to its Lean ([blocks.md](blocks.md#source-links)). `examples/semantics`
+  ends with such an index.
 - **`provenance`**: each theorem the document states, in document order, with
   its kind and number (from its label's prefix: `thm:`, `lem:`, `prop:`,
   `cor:`, `def:`, written Thm., Lemma, Prop., Cor., Def.), its declaration
-  without the namespaces the document strips, its source location and the
+  without the namespaces the document strips, its source location (a link
+  under the `url` profile) and the
   axioms beyond
   `propext`, `Classical.choice` and `Quot.sound`; definitions too with
   `kinds=all`.

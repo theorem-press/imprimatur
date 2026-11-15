@@ -23,6 +23,11 @@ them after every other block, so what they list is the whole document.
 * `provenance`: each result the document states, with its Lean declaration,
   source location and axioms.
 
+A project's constant in the `vocabulary` table, and the source location in
+`provenance`, is written `\LeanSourceRef{path}{line}{text}`: under the `url`
+profile the splicer gives the block the base of its links (`srcbase=`), and
+`imprimatur.sty` makes the text a link to the Lean (DESIGN §11).
+
 The views' keys are the authors' (`\begin{leanconventions}{Conventions}{…}`);
 they name no declaration.
 -/
@@ -173,9 +178,13 @@ def packageOf (mod : Name) : String :=
 each: the library's (`scope=library`, the default), the project's
 (`scope=project`), or both (`scope=all`). Notation packs (logic and the like)
 are left out unless the block asks for them (`packs=true`). -/
-def vocabularyView (opts : Array (String × String)) : RenderM String := do
+def vocabularyView (srcOf : Name → MetaM (Option (String × Nat)))
+    (opts : Array (String × String)) : RenderM String := do
   let env ← getEnv
   let roots := (← read).imports.map (·.getRoot)
+  let modOf (n : Name) : Option Name := do
+    let idx ← env.getModuleIdxFor? n
+    Compat.moduleName? env idx
   let packs := opts.any (· == ("packs", "true"))
   let scope := ((opts.find? (·.1 == "scope")).map (·.2)).getD "library"
   let cats := projectCategories env
@@ -189,9 +198,6 @@ def vocabularyView (opts : Array (String × String)) : RenderM String := do
     let head := r.pat.head
     -- The library's notation: rules whose patterns mention only constants of
     -- modules outside the project. The project's: the others.
-    let modOf (n : Name) : Option Name := do
-      let idx ← env.getModuleIdxFor? n
-      Compat.moduleName? env idx
     let some mod := modOf head | continue
     -- The project's constant the pattern mentions first, and its package.
     let own := r.pat.consts.findSome? fun n => match modOf n with
@@ -226,7 +232,14 @@ def vocabularyView (opts : Array (String × String)) : RenderM String := do
     -- The project's constants as the paper names them, without the
     -- namespaces it strips.
     let shown := Views.stripName (← read).strip head
-    out := out ++ s!"${← ruleTeX r}$ & \\texttt\{{TeX.escape shown.toString}} & \\leanslot\{{head}/{n}}\{{← docSentence head}}\\\\\n"
+    let name := s!"\\texttt\{{TeX.escape shown.toString}}"
+    -- The project's constants link to their Lean (DESIGN §11).
+    let name ← if (modOf head).any (roots.contains ·.getRoot) then
+        match ← srcOf head with
+        | some (p, l) => pure s!"\\LeanSourceRef\{{TeX.escape p}}\{{l}}\{{name}}"
+        | none => pure name
+      else pure name
+    out := out ++ s!"${← ruleTeX r}$ & {name} & \\leanslot\{{head}/{n}}\{{← docSentence head}}\\\\\n"
   out := out ++ "\\end{longtable}\n"
   return out
 
@@ -258,8 +271,11 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
     let wh := match b.label with
       | some l => s!"{kind l}\\ref\{{l}}, p.~\\pageref\{{l}}"
       | none => ""
+    -- The location, a link to the Lean under the `url` profile (DESIGN §11).
     let src := match ← srcOf c.name with
-      | some (p, l) => s!"\\texttt\{{"/\\allowbreak ".intercalate ((p.splitOn "/").map TeX.escape)}:{l}}"
+      | some (p, l) =>
+        let shown := s!"\\texttt\{{"/\\allowbreak ".intercalate ((p.splitOn "/").map TeX.escape)}:{l}}"
+        s!"\\LeanSourceRef\{{TeX.escape p}}\{{l}}\{{shown}}"
       | none => ""
     let ax ← axOf c.name
     let extra := ax.filter (!standardAxioms.contains ·)
@@ -281,7 +297,7 @@ def runIndexView (base : String) (srcOf : Name → MetaM (Option (String × Nat)
     (axOf : Name → MetaM (Array Name)) (opts : Array (String × String)) : RenderM String :=
   match base with
   | "conventions" => conventionsView
-  | "vocabulary" => vocabularyView opts
+  | "vocabulary" => vocabularyView srcOf opts
   | "provenance" => provenanceView srcOf axOf opts
   | v => throwError "{v} is not a view that indexes the document"
 
