@@ -5,6 +5,9 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The site's code blocks have a copy button (`_includes/head-custom.html`,
+  which the primer theme puts in every page's head), so README's "Try it"
+  block can be copied from the site as from GitHub.
 - External mode rebuilds a cached extractor that was built from other
   sources than the running imprimatur (#86): `toolchain install` stamps the
   cache with a digest of the sources, and `build`, `check` and `show`
