@@ -172,6 +172,10 @@ or `—` if there are none yet. **When** is the milestone that brings the tests
 `scripts/check-traceability.py` (run by `scripts/lint.sh` and the `lint` CI
 job) fails if a section of DESIGN.md has no row, a row names a section that
 doesn't exist, or a row names a test that doesn't exist.
+`scripts/check-std-macros.py` (run the same way) fails if `tex/imprimatur.sty`
+defines a macro that `splice/Splice/StdMacros.lean`, the splicer's list of the
+macros generated content may use without the paper defining them (D§10.3),
+does not list; `scripts/gen-std-macros.py` regenerates the list.
 
 | Section | Requirement | Tests | When |
 |---|---|---|---|
@@ -262,7 +266,7 @@ doesn't exist, or a row names a test that doesn't exist.
 | D§10.3 | `check` reports broken references | `splice/golden/failures` | M1 |
 | D§10.3 | `check` reports untrusted results (splicer side; the extractor fills in the data in M2) | `splice/golden/failures` | M1 |
 | D§10.3 | `check` reports drift; `accept` records the new hash | `splice/golden/drift` | M3 |
-| D§10.3 | `check` warns of undefined macros and orphaned slots | `splice/macros/defined`, `splice/macros/loaded`, `splice/golden/macros`, `splice/golden/slots` | M6 |
+| D§10.3 | `check` warns of undefined macros and orphaned slots | `splice/macros/defined`, `splice/macros/loaded`, `splice/golden/macros`, `splice/golden/slots`, `lint/std-macros` | M6 |
 | D§10.3 | `check` exit codes: non-zero on anything but warnings | `splice/golden/failures`, `splice/golden/config-errors`, `splice/golden/slots` | M1 |
 | D§10.4 | `strip` removes markers and keeps generated content | `splice/slots/unwrap`, `splice/prop/strip`, `splice/golden/strip` | M1 |
 | D§10.5 | comparator manifests, including `@challenge` entries | `splice/golden/manifests`, `extract/manifests/challenge-keys`, `extract/manifests/challenge-statement-matches`, `extract/manifests/unknown-challenge`, `extract/golden/Manifests` | M3 |
