@@ -1,0 +1,37 @@
+<!-- The primer theme includes this file in <head>. It gives every code
+     block a copy button, as GitHub's own rendering of the Markdown has, so
+     README's "Try it" block can be copied from the site in one click. -->
+<style>
+  .highlight { position: relative; }
+  .highlight .copy-code {
+    position: absolute; top: .4rem; right: .4rem;
+    font: 12px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    padding: .3rem .5rem; color: #57606a; background: #f6f8fa;
+    border: 1px solid #d0d7de; border-radius: 6px; cursor: pointer;
+    opacity: 0; transition: opacity .15s;
+  }
+  .highlight:hover .copy-code, .highlight .copy-code:focus { opacity: 1; }
+  .highlight .copy-code:hover { background: #eaeef2; }
+  @media (hover: none) { .highlight .copy-code { opacity: 1; } }
+</style>
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    if (!navigator.clipboard) return;
+    document.querySelectorAll('div.highlight').forEach(function (block) {
+      var pre = block.querySelector('pre');
+      if (!pre) return;
+      var button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'copy-code';
+      button.textContent = 'Copy';
+      button.setAttribute('aria-label', 'Copy to clipboard');
+      button.addEventListener('click', function () {
+        navigator.clipboard.writeText(pre.innerText.replace(/\n$/, '')).then(function () {
+          button.textContent = 'Copied';
+          setTimeout(function () { button.textContent = 'Copy'; }, 1500);
+        });
+      });
+      block.appendChild(button);
+    });
+  });
+</script>
