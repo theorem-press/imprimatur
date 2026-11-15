@@ -49,8 +49,12 @@ untouched; and `latexmk` typesets `paper.pdf`, which `open paper.pdf`
 shows on macOS and `xdg-open paper.pdf` on Linux. The result is the
 [PDF](https://theorem-press.github.io/imprimatur/examples/semantics/paper.pdf)
 the site builds from these commands, and
-[expected/paper.tex](examples/semantics/expected/paper.tex). Clone to PDF
-took about a minute on one machine; the first run also downloads Lean v4.35.0.
+[expected/paper.tex](examples/semantics/expected/paper.tex), apart from the
+hashes on its five `\leancheck` sentences, which `imprimatur accept --all`
+records once an author has read each sentence against the Lean result it
+names ([docs/trust.md](docs/trust.md#tying-prose-to-lean-leancheck-and-accept)).
+Clone to PDF took about a minute on one machine; the first run also
+downloads Lean v4.35.0.
 The site builds the PDF once more with `--profile public --commit`, so every
 theorem, example, checked sentence and row of the index of notation in it
 links to its Lean on GitHub
