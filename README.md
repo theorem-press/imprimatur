@@ -45,7 +45,8 @@ rules and theorems into `paper.tex`, building an extractor for the host's
 Lean the first time; `imprimatur check` reports nothing stale, untrusted or
 unfaithful; the diff is the TeX imprimatur wrote, since the committed
 `paper.tex` has empty blocks and the hand-written prose around them is
-untouched; and `latexmk` typesets `paper.pdf`. The result is the
+untouched; and `latexmk` typesets `paper.pdf`, which `open paper.pdf`
+shows on macOS and `xdg-open paper.pdf` on Linux. The result is the
 [PDF](https://theorem-press.github.io/imprimatur/examples/semantics/paper.pdf)
 the site builds from these commands, and
 [expected/paper.tex](examples/semantics/expected/paper.tex). Clone to PDF
