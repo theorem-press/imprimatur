@@ -278,7 +278,12 @@ environment that contains the host's modules and the notation module.
   finds no extractor cached for the host's toolchain builds it the same way,
   saying so on stderr, before the export phase it times; `--no-install`
   fails instead, for CI that must not compile what it did not ask for
-  (#119).
+  (#119). The install stamps the cache with a digest of the sources it
+  copied, and a run whose sources (`extract/` beside the program, or
+  `IMPRIMATUR_SOURCE`) differ from the stamp rebuilds the extractor the same
+  way, saying so; `--no-install` warns and runs the cached one. So a cache
+  shared by several checkouts follows whichever imprimatur runs, instead of
+  silently serving another's renderings (#86).
 - At run time, imprimatur takes the host's search path from `lake env` in the
   host project, adds its own cached `Imprimatur` `.olean` files, and elaborates
   the notation module in-process with Lean's frontend. The resulting

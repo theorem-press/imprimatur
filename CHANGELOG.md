@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- External mode rebuilds a cached extractor that was built from other
+  sources than the running imprimatur (#86): `toolchain install` stamps the
+  cache with a digest of the sources, and `build`, `check` and `show`
+  compare it with the sources at hand, rebuilding (incrementally: the
+  build directory is kept) and saying so, or warning under `--no-install`.
+  A cache shared by several checkouts no longer serves one checkout's
+  renderings to another.
 - Source links (#122): under a profile with `source_links = "url"`, every
   block, inline item and `\leancheck` carries its declaration's permalink as
   `src=`, and `imprimatur.sty` typesets it as a hyperlink when the paper

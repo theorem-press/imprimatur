@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Splice.Cli
 import Splice.Checker
+import Splice.Sha256
 import Splice.Timing
 
 /-!
@@ -28,6 +29,10 @@ How the extractor runs depends on the mode (DESIGN §6.3):
   `imprimatur toolchain install` ahead of time or by the first `build`,
   `check` or `show` that finds none cached (`--no-install` fails instead),
   run under the host's `lake env`. The host doesn't change and isn't built.
+  The install stamps the cache with a digest of the sources it was built
+  from; a run whose sources differ from the stamp rebuilds it the same way
+  (`--no-install` warns instead), so a cache shared by several checkouts
+  follows whichever imprimatur runs (#86).
 
 Requests and the bundle go in `.imprimatur/` next to `imprimatur.toml`.
 With `--timing`, so does `timing.jsonl`, where the splicer and the extractor
@@ -81,27 +86,74 @@ def sourceDir : IO System.FilePath := do
   if let some d := ← IO.getEnv "IMPRIMATUR_SOURCE" then return d
   return (← IO.appDir) / ".." / ".." / ".." / ".." / "extract"
 
+/-- Whether a source file or directory is left out of the install: the
+build directory and the tests. -/
+def skipSource (name : String) : Bool := name == ".lake" || name == "test"
+
 /-- Copy a directory tree, leaving out `.lake` and `test`. -/
 partial def copySources (src dst : System.FilePath) : IO Unit := do
   IO.FS.createDirAll dst
   for e in ← src.readDir do
-    if e.fileName == ".lake" || e.fileName == "test" then continue
+    if skipSource e.fileName then continue
     if ← e.path.isDir then copySources e.path (dst / e.fileName)
     else IO.FS.writeBinFile (dst / e.fileName) (← IO.FS.readBinFile e.path)
 
+/-- The files of a source tree, as `copySources` copies them: each with its
+path relative to the tree. -/
+partial def sourceFiles (dir : System.FilePath) (rel : String := "") :
+    IO (Array (String × ByteArray)) := do
+  let mut out := #[]
+  for e in ← dir.readDir do
+    if skipSource e.fileName then continue
+    let r := if rel.isEmpty then e.fileName else rel ++ "/" ++ e.fileName
+    if ← e.path.isDir then out := out ++ (← sourceFiles e.path r)
+    else out := out.push (r, ← IO.FS.readBinFile e.path)
+  return out
+
+/-- A digest of the extractor's sources at `dir`: the files `copySources`
+copies, in path order, each with its contents. It stamps an install, and a
+run compares it with the sources at hand (#86). -/
+def sourcesDigest (dir : System.FilePath) : IO String := do
+  let files := (← sourceFiles dir).qsort (·.1 < ·.1)
+  let bytes := files.foldl (fun acc (r, b) => acc ++ (r ++ "\n").toUTF8 ++ b ++ "\n".toUTF8) ByteArray.empty
+  return Sha256.hex (Sha256.hash bytes)
+
+/-- The stamp of a cached extractor: the digest of the sources it was built
+from, beside its `lean-toolchain`. -/
+def stampFile (version : String) : IO System.FilePath := do
+  return (← cacheDir) / "toolchains" / version / "sources.sha256"
+
 /-- `imprimatur toolchain install VERSION`: build the extractor for a
-toolchain into the cache (DESIGN §6.3 A). -/
+toolchain into the cache (DESIGN §6.3 A). The sources are copied afresh;
+the build directory stays, so a rebuild is incremental. The stamp is written
+last, so a failed build leaves none. -/
 def installToolchain (version : String) : ExceptT String IO String := do
   let version := toolchainVersion version
   let src ← (sourceDir : IO _)
   unless ← (src / "Imprimatur.lean").pathExists do
     throw s!"the extractor's sources are not at {src}; set IMPRIMATUR_SOURCE to imprimatur's extract/ directory"
   let dst := (← (cacheDir : IO _)) / "toolchains" / version
-  if ← dst.pathExists then IO.FS.removeDirAll dst
+  if ← dst.pathExists then
+    for e in ← dst.readDir do
+      if e.fileName == ".lake" then continue
+      if ← e.path.isDir then IO.FS.removeDirAll e.path else IO.FS.removeFile e.path
+  let digest ← (sourcesDigest src : IO _)
   copySources src dst
   IO.FS.writeFile (dst / "lean-toolchain") s!"leanprover/lean4:{version}\n"
   discard <| lake dst #["build", "-q", "imprimatur-export"]
+  IO.FS.writeFile (← (stampFile version : IO _)) (digest ++ "\n")
   return s!"imprimatur: the extractor for Lean {version} is in {dst}\n"
+
+/-- Whether the cached extractor for `version` was built from other sources
+than those at hand (#86): its stamp differs from their digest, or it has
+none. Without sources at hand there is nothing to compare, and it is used
+as it is. -/
+def extractorStale (version : String) : IO Bool := do
+  let src ← sourceDir
+  unless ← (src / "Imprimatur.lean").pathExists do return false
+  let stamp ← stampFile version
+  let recorded ← if ← stamp.pathExists then pure (← IO.FS.readFile stamp).trimAscii.toString else pure ""
+  return recorded != (← sourcesDigest src)
 
 /-- The views the document asks for `key`, if it uses it. -/
 def docViews (doc : Doc) (key : String) : Option (Array String) := Id.run do
@@ -164,20 +216,29 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   let leanDir := root / cfg.leanProject
   unless ← leanDir.pathExists do throw s!"lean_project {cfg.leanProject} does not exist"
   -- External mode's extractor (DESIGN §6.3 A): the one cached for the host's
-  -- toolchain, built now if there is none, unless `--no-install`. Before the
-  -- export phase is timed, so that a first run's build does not count as
-  -- export; and announced on stderr at once, since it takes a while.
+  -- toolchain, built now if there is none, or built again if it was built
+  -- from other sources than this imprimatur's (#86), unless `--no-install`.
+  -- Before the export phase is timed, so that a first run's build does not
+  -- count as export; and announced on stderr at once, since it takes a while.
   let external : Option System.FilePath ← if cfg.mode == "external" then do
       let tcFile := leanDir / "lean-toolchain"
       unless ← tcFile.pathExists do throw s!"{cfg.leanProject} has no lean-toolchain file"
       let version := toolchainVersion (← IO.FS.readFile tcFile)
       let exe ← cachedExtractor version
-      unless ← exe.pathExists do
-        if a.noInstall then
-          throw s!"no extractor for Lean {version}; run: imprimatur toolchain install {version}"
+      let install := s!"imprimatur toolchain install {version}"
+      if !(← exe.pathExists) then
+        if a.noInstall then throw s!"no extractor for Lean {version}; run: {install}"
         IO.eprintln s!"imprimatur: no extractor for Lean {version}; building one in \
-          {← (cacheDir : IO _)}, once per version (imprimatur toolchain install {version} does it ahead of time)"
+          {← (cacheDir : IO _)}, once per version ({install} does it ahead of time)"
         IO.eprint (← installToolchain version)
+      else if ← extractorStale version then
+        if a.noInstall then
+          IO.eprintln s!"imprimatur: warning: the extractor for Lean {version} was built from other \
+            sources than this imprimatur; run: {install}"
+        else
+          IO.eprintln s!"imprimatur: the extractor for Lean {version} was built from other sources \
+            than this imprimatur; rebuilding it in {← (cacheDir : IO _)}"
+          IO.eprint (← installToolchain version)
       pure (some exe)
     else pure none
   let exportArgs := #["--requests", reqs.toString, "--out", bundle.toString,
