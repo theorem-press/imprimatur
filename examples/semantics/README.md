@@ -6,7 +6,9 @@ it.
 
 - [paper.tex](paper.tex): the paper as its author writes it, with empty
   blocks. [expected/paper.tex](expected/paper.tex) is the result of
-  `imprimatur build`.
+  `imprimatur build` followed by `imprimatur accept --all`, which records
+  the hashes of the five `\leancheck` sentences (the steps in
+  [steps](steps)).
 - [host/Stlc/Lang.lean](host/Stlc/Lang.lean): terms, types, typing and
   reduction, with swapping and α-equivalence after Pitts;
   [host/Stlc/Safety.lean](host/Stlc/Safety.lean): substitution, preservation

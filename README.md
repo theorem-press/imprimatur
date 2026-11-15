@@ -33,8 +33,8 @@ git clone --depth 1 https://github.com/theorem-press/imprimatur.git
 cd imprimatur/splice && lake build && export PATH="$PWD/.lake/build/bin:$PATH"
 cd ../examples/semantics
 (cd host && lake build)
-imprimatur build
-imprimatur check
+imprimatur build --profile public --commit "$(git rev-parse HEAD)"
+imprimatur check --profile public --commit "$(git rev-parse HEAD)"
 git --no-pager diff paper.tex
 latexmk -pdf paper.tex
 ```
@@ -42,18 +42,25 @@ latexmk -pdf paper.tex
 Line by line: build the splicer and put it on the path; build the Lean
 development, as its owners would; `imprimatur build` renders the grammar,
 rules and theorems into `paper.tex`, building an extractor for the host's
-Lean the first time; `imprimatur check` reports nothing stale, untrusted or
-unfaithful; the diff is the TeX imprimatur wrote, since the committed
-`paper.tex` has empty blocks and the hand-written prose around them is
-untouched; and `latexmk` typesets `paper.pdf`. The result is the
+Lean the first time, and under the `public` profile at the commit you cloned
+it also links every theorem, example, checked sentence and row of the index
+of notation to its Lean on GitHub
+([docs/blocks.md](docs/blocks.md#source-links)); `imprimatur check` reports
+nothing stale, untrusted or unfaithful; the diff is the TeX imprimatur
+wrote, since the committed `paper.tex` has empty blocks and the hand-written
+prose around them is untouched; and `latexmk` typesets `paper.pdf`, which
+`open paper.pdf` shows on macOS and `xdg-open paper.pdf` on Linux. The
+result is the
 [PDF](https://theorem-press.github.io/imprimatur/examples/semantics/paper.pdf)
-the site builds from these commands, and
-[expected/paper.tex](examples/semantics/expected/paper.tex). Clone to PDF
-took about a minute on one machine; the first run also downloads Lean v4.35.0.
-The site builds the PDF once more with `--profile public --commit`, so every
-theorem, example, checked sentence and row of the index of notation in it
-links to its Lean on GitHub
-([docs/blocks.md](docs/blocks.md#source-links)).
+the site builds from these commands.
+[expected/paper.tex](examples/semantics/expected/paper.tex) is the same
+paper built for submission, by `imprimatur build` with no profile, which
+leaves the links out, and with the hashes on its five `\leancheck`
+sentences that `imprimatur accept --all` records once an author has read
+each sentence against the Lean result it names
+([docs/trust.md](docs/trust.md#tying-prose-to-lean-leancheck-and-accept)).
+Clone to PDF took about a minute on one machine; the first run also
+downloads Lean v4.35.0.
 
 ## What it looks like
 
