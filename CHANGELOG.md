@@ -5,6 +5,11 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `check` no longer warns that `\LeanSourceRef`, which the index views use
+  for their source links, is an undefined macro: the splicer's list of the
+  macros `imprimatur.sty` defines is regenerated, and the `lint` CI job now
+  fails when the list lacks a macro of `imprimatur.sty`
+  (`scripts/check-std-macros.py`).
 - The site's code blocks have a copy button (`_includes/head-custom.html`,
   which the primer theme puts in every page's head), so README's "Try it"
   block can be copied from the site as from GitHub.

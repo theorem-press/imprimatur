@@ -12,6 +12,7 @@ python3 scripts/check-no-deps.py || status=1
 python3 scripts/check-root-package.py || status=1
 python3 scripts/check-verified.py || status=1
 python3 scripts/check-traceability.py || status=1
+python3 scripts/check-std-macros.py || status=1
 python3 scripts/check-bundles.py || status=1
 scripts/check-bundle-copies.sh || status=1
 exit $status
