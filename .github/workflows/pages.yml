@@ -55,7 +55,7 @@ jobs:
           (cd host && lake build -q)
           # The PDF links every block to its Lean at this commit.
           imprimatur build --profile public --commit "$(git rev-parse HEAD)"
-          imprimatur check --profile public --commit "$(git rev-parse HEAD)"
+          imprimatur check
           git --no-pager diff --stat paper.tex
           latexmk -pdf -interaction=nonstopmode -halt-on-error paper.tex
           git checkout -- paper.tex   # the source stays as committed; the site gets the PDF

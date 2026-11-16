@@ -34,7 +34,7 @@ cd imprimatur/splice && lake build && export PATH="$PWD/.lake/build/bin:$PATH"
 cd ../examples/semantics
 (cd host && lake build)
 imprimatur build --profile public --commit "$(git rev-parse HEAD)"
-imprimatur check --profile public --commit "$(git rev-parse HEAD)"
+imprimatur check
 git --no-pager diff paper.tex
 latexmk -pdf paper.tex
 ```
