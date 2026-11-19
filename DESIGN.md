@@ -369,12 +369,18 @@ resulting `Syntax`, to avoid exposing instance arguments
   namespaces are open, on pretty-printer options, or on surface syntax that
   differs between toolchains. Instance and implicit arguments are hidden by
   binder info, and the notation packs (§7.5) cover the arithmetic, order,
-  set, logic and coercion constants that would otherwise leak through.
+  set, logic and coercion constants that would otherwise leak through. A
+  `let` or `have` in a statement is unfolded before matching: the statement
+  means the same, and what the variable stands for then renders in the
+  notation, which Lean's text for the `let` would hide (#135).
 - **Unmatched subterms go to Lean's delaborator.** A subterm that no rule
   matches is delaborated with the configured `open_scoped` namespaces active.
   The resulting tokens are emitted with the semantic macros of §7.3. Every
   declaration therefore renders legibly with no configuration, and notation
-  improves the rendering bit by bit.
+  improves the rendering bit by bit. The delaborator's text is Lean's, in
+  which the paper's notation and metavariable names do not apply, and the
+  read-back takes it for any subterm (§18.4), so a view that falls back is
+  reported as not validated, naming the text.
 
 ### 7.3 Views
 
@@ -1430,7 +1436,9 @@ block is.
   application, `∃`, `λ` or implication as the built-in form. A form it does
   not say how to read (`∀` with its binders, `match`, chains, folded
   binders, synonyms, Lean's fallback text) is `⁇`, which matches any
-  subterm. A reading that does not match is a *misread*, reported with both:
+  subterm; fallback text is besides a problem of the view in itself (§7.2),
+  since what it says is Lean's and not the paper's. A reading that does not
+  match is a *misread*, reported with both:
   the emitter left out parentheses a reader needs, or the grammar does not
   mirror the renderer. **Two** is an ambiguity, reported with both readings.
   **None** means the grammar does not model what the renderer did, and the

@@ -457,6 +457,19 @@ def expectApp (pre : Array String) : RenderM Unit :=
     if kids.isEmpty && pre.size == 1 then .node pre[0]! []
     else Validate.mkReading "application" none (pre.map (.node · []) ++ kids))
 
+
+/-- What a `let` or `have` stands for: its body with the value put in for
+the variable. A statement means the same with the definition unfolded, and
+so renders in the paper's notation, where Lean's text for the `let` would
+not (#135). Metadata is dropped the same way. -/
+def unLet? (e : Expr) : Option Expr :=
+  match e with
+  | .letE _ _ v b _ => some (b.instantiate1 v)
+  | .mdata _ e => some e
+  | .app (.app (.app (.app (.const ``letFun _) _) _) v) f =>
+    some (match f with | .lam _ _ b _ => b.instantiate1 v | _ => .app f v)
+  | _ => none
+
 mutual
 
   /-- Render an expression. A formula a view renders (not a part of one) is
@@ -547,6 +560,7 @@ mutual
               return d
       if head == ``Exists then
         if let some d ← renderExists e then return d
+    if let some e' := unLet? e then return ← render e'
     match e with
     | .fvar f =>
       let t ← match (← read).overrides.find? (·.1 == f) with
@@ -885,11 +899,18 @@ mutual
       lctx := lctx.setUserName id name
     return lctx
 
-  /-- Lean's own rendering, in monospace, for what nothing else covers. -/
+  /-- Lean's own rendering, in monospace, for what nothing else covers. The
+  text is Lean's, in which the paper's notation and metavariables do not
+  apply, and the read-back takes it for any subterm (DESIGN §18.4), so a
+  formula that falls back is reported as not validated (#135). -/
   partial def delab (e : Expr) : RenderM Doc := do
     let text := toString (← ppExpr e)
     let line := " ".intercalate ((text.splitOn "\n").map (·.trimAscii.toString))
     let t := s!"\\LeanMathCode\{{TeX.escape line}}"
+    if let some problems := (← read).problems then
+      let msg := s!"not validated: `{line}` is Lean's own text for a subterm nothing renders, \
+        in which the paper's notation does not apply"
+      problems.modify fun ps => if ps.contains msg then ps else ps.push msg
     logAtom t (← sortOf e)
     return .text t line.length
 

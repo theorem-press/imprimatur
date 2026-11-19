@@ -5,6 +5,14 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- A `let` or `have` in a statement is unfolded before rendering (#135), so
+  the `math` and `prose` views write what it stands for in the paper's
+  notation, with the metavariable names, and a conclusion under a `let`
+  still comes apart into its conjuncts. Before, the whole subterm fell back
+  to Lean's text. A formula that still falls back to Lean's text, a `match`
+  under the default `pattern_matching := code` say, is now reported by
+  `check` as not validated, naming the text, since the paper's notation does
+  not apply in it and the read-back accepts it unread.
 - `check` no longer warns that `\LeanSourceRef`, which the index views use
   for their source links, is an undefined macro: the splicer's list of the
   macros `imprimatur.sty` defines is regenerated, and the `lint` CI job now

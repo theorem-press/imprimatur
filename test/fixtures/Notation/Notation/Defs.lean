@@ -65,6 +65,19 @@ theorem binders (s : MySet Nat) (f : Nat → Nat) (h : ∀ x ∈ s, f x = x) :
       (match f 0 with | 0 => true | _ => false) = true ∧ true ≠ false := by
   sorry
 
+/-- A `let` in a statement: unfolded, so the notation and the metavariable
+name apply to what it stands for, and the conclusion still comes apart (#135). -/
+theorem letIn (spec : Nat) (h : 0 < spec) :
+    let m := double spec
+    0 < m ∧ spec ≤ m := by
+  unfold double; omega
+
+/-- A `have` in a statement, likewise. -/
+theorem haveIn (spec : Nat) (h : 0 < spec) :
+    have m := double spec
+    spec ≤ m ∧ 0 < m := by
+  unfold double; omega
+
 /-- Notation from the project: every feature of a rule. -/
 theorem project (n m k : Nat) (ρ : Fin 0 → Nat) (spec : Nat) (hd : double n = m)
     (hr : ¬ Realize n m ρ) (hl : lub (lub n m) (lub k n) = k) (hz : zeroish = 0) :
