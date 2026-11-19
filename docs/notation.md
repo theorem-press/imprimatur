@@ -128,7 +128,7 @@ Settings of the renderer, for conventions a paper fixes once:
 |---|---|---|
 | `names` | `italic` (default), `raw` | with `raw`, a binder name is written as it is: it is TeX, so `l_c` sets a subscript |
 | `applied_variables` | `juxtaposed` (default), `call`, `subscript` | a variable applied to arguments: `f\,a\,b`, `f(a)(b)`, or `f_{a, b}` |
-| `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots` |
+| `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, which `check` reports as not validated since the notation does not apply in it, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots` |
 | `lists` | `cons` (default), `literal` | a list literal: by the rules for `List.cons`, or `[a,\ b]` |
 | `categories` | `loose` (default), `unique`, `strict` | how strictly the metavariables of `latex_category` are held to their types: see [Metavariables](#metavariables) |
 

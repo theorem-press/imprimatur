@@ -53,7 +53,9 @@ where
         if bi.isInstImplicit then go body vars hyps
         else if (← isProp t) then go body vars (hyps.push (n, t))
         else go body (vars.push (n, x, t)) hyps
-    | _ => k vars hyps e
+    | _ => match unLet? e with
+      | some e' => go e' vars hyps
+      | none => k vars hyps e
 
 /-- Apply the premise conventions (DESIGN §7.6) to hypotheses: those a
 convention hides are dropped, and variables a metavariable convention names
@@ -313,6 +315,7 @@ def formulaChars (e : Expr) : RenderM (List Char) := do
 /-- A conclusion in words (`Layout.Concl`): conjuncts are numbered, `↔`
 reads "if and only if", and `∃ x, p` reads "there is x such that p". -/
 partial def gatherConcl (concl : Expr) : RenderM (Layout.Concl (List Char)) := do
+  if let some e := unLet? concl then return ← gatherConcl e
   if concl.isAppOfArity ``Exists 2 then
     if let .lam n t b bi := concl.appArg! then
       return ← withLocalDecl n bi t fun x => do
