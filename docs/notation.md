@@ -46,6 +46,9 @@ latex_notation (variant := "named")? PATTERN => "TEMPLATE" OPTIONS…
   notation module is built.
 - Only explicit arguments are matched; implicit and instance arguments are
   ignored.
+- An instance binder of a statement, `[NeZero N]`, is left out of the `math`
+  and `prose` views unless a rule writes its class (`latex_notation NeZero
+  (N : ℕ) => r"#N \ne 0"`): then it is a hypothesis, stated like any other.
 - To constrain an implicit argument, write the pattern with `@`. For
   example, `@LE.le (Set _) _ a b` matches `≤` only on sets.
 - A constant applied to fewer arguments than it takes matches that partial

@@ -1,0 +1,48 @@
+$ imprimatur-splice check --bundle demo.bundle.json
+main.tex:9:1: warning[claim]: Claimed.result is stated as a claim: its proof is sorry
+main.tex:9:1: error[stale]: the generated content of Claimed.result is out of date
+main.tex:11:1: error[untrusted]: Claimed.result depends on sorry
+main.tex:11:1: error[stale]: the generated content of Claimed.result is out of date
+main.tex:13:23: warning[claim]: Claimed.result is stated as a claim: its proof is sorry
+main.tex:14:8: error[untrusted]: Claimed.result depends on sorry
+main.tex:16:1: warning[claim]: Claimed.weak is stated as a claim: its proof is sorry
+main.tex:16:1: error[untrusted]: Claimed.weak has untrusted constants in its dependency cone: Claimed.Weak (sorry)
+check: 2 stale, 5 errors, 3 warnings
+[exit 1]
+
+$ imprimatur-splice apply --bundle demo.bundle.json
+apply: 2 items updated in 1 file; 0 errors, 0 warnings
+[exit 0]
+
+$ imprimatur-splice check --bundle demo.bundle.json
+main.tex:9:1: warning[claim]: Claimed.result is stated as a claim: its proof is sorry
+main.tex:12:1: error[untrusted]: Claimed.result depends on sorry
+main.tex:15:23: warning[claim]: Claimed.result is stated as a claim: its proof is sorry
+main.tex:16:8: error[untrusted]: Claimed.result depends on sorry
+main.tex:18:1: warning[claim]: Claimed.weak is stated as a claim: its proof is sorry
+main.tex:18:1: error[untrusted]: Claimed.weak has untrusted constants in its dependency cone: Claimed.Weak (sorry)
+check: 0 stale, 3 errors, 3 warnings
+[exit 1]
+
+== main.tex
+\documentclass{article}
+\usepackage{imprimatur}
+\newtheorem{claim}{Claim}
+\leanblockalias{leanclaim}{claim}
+\begin{document}
+A statement whose proof is not in the development, stated as a claim: its
+\texttt{sorry} is a warning, and a block or a check without the option
+reports it as before.
+\begin{leanclaim}[claim, sum=ktCz9etBqv]{Claimed.result}{Claimed}
+\LeanMath{\top}
+\end{leanclaim}
+\begin{leanblock}[view=math, sum=ktCz9etBqv]{Claimed.result}{Not a claim}
+\LeanMath{\top}
+\end{leanblock}
+The prose says it too \leancheck[claim]{Claimed.result}, and here without the
+option \leancheck{Claimed.result}.
+A claim with a sorried definition in its cone is still untrusted
+\leancheck[claim]{Claimed.weak}.
+A claim that is proved warns of nothing \leancheck[claim]{Claimed.proved}.
+\end{document}
+

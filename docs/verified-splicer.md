@@ -256,7 +256,10 @@ Its pieces, in words:
   `bundleOf_true` shows that an honest extractor makes it true.
 - **`hc`** says that `check` reports nothing, warnings included, for exactly
   the files the command line read. The warnings must be included because
-  `unfaithful-rendering`, a rendering that doesn't read back, is a warning.
+  `unfaithful-rendering`, a rendering that doesn't read back, is a warning,
+  and so is `claim`, the `sorry` of an item marked `[claim]` (DESIGN §9.1):
+  a paper of claims passes `check` with warnings, and Theorem 1 says nothing
+  of it, as it should.
   A variant with `hc` only for errors drops the read-back conclusion below.
 - **`Files.True W cfg fs`** says that every file scans, and every *claim* it
   makes is true of `W`. The claims are read off the lossless scan:

@@ -29,6 +29,7 @@ part of the design:
 | `Semantics` | a small STLC with an inductive typing relation and a small-step relation; value predicates; well-formedness side conditions; docstring labels `/-- T-App: … -/` | the `rules` and `grammar` views, rule labels, premise conventions, `include`/`exclude`, slots |
 | `Notation` | constants used in every kind of notation rule: infix, nested pattern, `hide`, `variant`, `flatten`, `width`, `prec` | the notation language (D§7.5) |
 | `Patterns` | definitions by cases, nested cases that reuse a name, a case on a disjoint union, a dependent `if`, list literals | `latex_style pattern_matching` and `lists`, binder names in cases and equations (D§7.5) |
+| `Statements` | a theorem whose statement is a named proposition (`Named`, and `Bounded n` with an argument), proved by `sorry`; a theorem with two instance binders, one with a notation rule and one without | the `unfold` modifier (D§9.1) and instance binders as hypotheses (D§7.6) |
 | `Trust` | `sorry` directly in a proof, and three levels deep in the cone; a custom `axiom`; `partial` and `unsafe` definitions; a theorem whose hypothesis definition exists in two versions (`Weak := True`, `Strong := …`), switched by a build option | D§7.7, and the drift tests of D§10.3 |
 | `ModuleSys` | files with `module` headers, private proofs, and `import` with and without `all` | the `private`-level import (D§4, constraint 7) on the toolchains that have the module system |
 | `Categories` | two notation modules over one small language: `Strict`, with `latex_style categories := strict`, and `Clash`, which gives two types one letter | strict metavariables and their errors (D§7.5, D§18.3, condition 5) |
@@ -186,7 +187,7 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§4 | (2) the splicer imports nothing from Lean but `Lean.Data.Json` | `lint/splice-imports` | M1 |
 | D§4 | (3) a notation rule naming a missing constant fails at build time (checked when the `Notation` fixture builds; the messages are tested by hand) | `extract/golden/Notation` | M4 |
 | D§4 | (4) every declaration has a default rendering (the `lean` view) | `extract/golden/Basic` | M2 |
-| D§4 | (5) external mode changes nothing in the host project | `e2e/external`, `e2e/semantics` | M3 |
+| D§4 | (5) external mode changes nothing in the host project | `e2e/external`, `e2e/semantics`, `e2e/riemann` (a Mathlib host; run with `E2E_MATHLIB=1`) | M3 |
 | D§4 | (6) shipped packages have no Lake dependencies | `lint/no-deps` | M0 (lint) |
 | D§4 | (7) environments are imported at `private` level | `extract/modules/private-sorry-seen`, `extract/modules/sorry-through-import-all`, `extract/golden/ModuleSys` | M2 |
 | D§5 | extractor and splicer communicate only through the bundle | `splice/version/schema`, `extract/version/schema` | M1 |
@@ -230,6 +231,7 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§18.4 | a template that drops a pattern variable is a warning | the `#guard_msgs` test in `extract/test/ExtractTest/Validate.lean` | M5 |
 | D§7.5 | `latex_style pattern_matching` and `lists`; case patterns and λ binders renamed when in scope; unused binders `_`; proof λs hidden; constructors shown in patterns; equation binders named by category or parameter, authors' names kept | `extract/golden/Patterns`, `extract/golden/Semantics`, `e2e/semantics` | M5 |
 | D§7.6 | premise conventions | `extract/golden/Semantics`, `e2e/fixture-views` | M5 |
+| D§7.6 | an instance binder is a hypothesis when a notation rule writes its class, and is left out otherwise, in the statement views and under `forall` | `extract/golden/Statements`, `e2e/riemann` | M5 |
 | D§7.7 | axioms and `sorry` | `extract/trust/direct-sorry`, `extract/trust/custom-axiom`, `extract/trust/classical-axioms`, `extract/trust/sorry-in-proof-chain`, `extract/trust/sorry-in-statement`, `extract/trust/custom-axiom-trust`, `extract/modules/private-sorry-seen` | M2 |
 | D§7.7 | dependency cone up to `trusted_prefixes`, with reasons | `extract/trust/cone-sorry`, `extract/trust/cone-partial`, `extract/trust/cone-clean`, `splice/golden/cone` | M3 |
 | D§7.7 | the axioms of an inductive type include those its constructors' types depend on (a cycle), and a cone's nodes and the axioms are the same whichever entry asks first | `extract/trust/cycle-axioms`, `extract/trust/axioms-order`, `extract/golden/Basic` | M6 |
@@ -244,6 +246,8 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§8 | the bundle is a Lean type, of which the file is the JSON: an extractor's bundle survives parse and render byte for byte; both packages hold the same copy of the module | `splice/bundle/round-trip`, `lint/bundle-copies` | M6 |
 | D§9.1 | `leanblock`, `\leaninline`, `\leanref`, `\leancheck`, `\leanindex` are recognised | `splice/scan/forms`, `splice/scan/options`, `splice/scan/check-keys`, `splice/golden/basic` | M1 |
 | D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
+| D§9.1 | `unfold`: a named proposition is shown unfolded under its binders, in `math` and `prose` and with `forall`; a head a rule writes (`≠`) is kept | `extract/golden/Statements`, `e2e/riemann` | M5 |
+| D§9.1 | `claim`: the `sorry` of a claim is a warning on its block and its `\leancheck`, an error on an item without the option; a sorried cone is still an error; a proved claim warns of nothing | `splice/golden/claim`, `e2e/riemann` | M6 |
 | D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases` | M5 |
 | D§10.1 | definitions of imprimatur's macros are not uses | `splice/golden/definitions` | M5 |
 | D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases` | M5 |

@@ -218,8 +218,9 @@ version, once per version, into `~/.cache/imprimatur`;
 ask for. An extractor built from other sources than the running imprimatur,
 by another checkout say, is rebuilt the same way.
 
-[examples/](examples/README.md) has four working papers: one for each mode, and the
-longer one on a λ-calculus built above.
+[examples/](examples/README.md) has five working papers: one for each mode, the
+longer one on a λ-calculus built above, and a note on a Mathlib host that
+states what the Lean archive claiming the Riemann Hypothesis claims.
 
 ## Status
 

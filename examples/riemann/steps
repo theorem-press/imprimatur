@@ -1,0 +1,7 @@
+# needs: mathlib
+# The host imports Mathlib, so this example runs only with E2E_MATHLIB=1
+# (scripts/e2e.sh): the host's owners build it, with Mathlib's cache.
+!(cd host && lake exe cache get -q && lake build -q)
+build
+accept --all
+check

@@ -1,0 +1,18 @@
+\documentclass{article}
+\usepackage{imprimatur}
+\newtheorem{claim}{Claim}
+\leanblockalias{leanclaim}{claim}
+\begin{document}
+A statement whose proof is not in the development, stated as a claim: its
+\texttt{sorry} is a warning, and a block or a check without the option
+reports it as before.
+\begin{leanclaim}[claim]{Claimed.result}{Claimed}
+\end{leanclaim}
+\begin{leanblock}[view=math]{Claimed.result}{Not a claim}
+\end{leanblock}
+The prose says it too \leancheck[claim]{Claimed.result}, and here without the
+option \leancheck{Claimed.result}.
+A claim with a sorried definition in its cone is still untrusted
+\leancheck[claim]{Claimed.weak}.
+A claim that is proved warns of nothing \leancheck[claim]{Claimed.proved}.
+\end{document}

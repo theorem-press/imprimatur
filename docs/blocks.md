@@ -103,8 +103,15 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
 
 **Options** go in the optional argument: `view`, `wrap`, `label`, `sum`,
 `dflt`, `src`, `srcbase`, `notation`, `include`, `exclude`, and the theorem
-modifiers `rule`, `def`, `forall` and `names` ([views.md](views.md)). The
-splicer writes `sum=`, `dflt=`, `src=` and `srcbase=` itself.
+modifiers `rule`, `def`, `forall`, `unfold` and `names` ([views.md](views.md)),
+and `claim`. The splicer writes `sum=`, `dflt=`, `src=` and `srcbase=` itself.
+
+**`claim`** marks an item, or a `\leancheck`, whose result is stated but not
+proved in the development: its proof is `sorry` on purpose, as when a paper
+states what another development proves. `check` then reports the `sorry` as a
+warning (`claim`) instead of an error; the axioms and the dependency cone are
+checked as for any result, so a claim is still a well-defined statement
+([trust.md](trust.md)).
 
 ## Where generated content goes
 
@@ -266,6 +273,7 @@ Every message has a stable code.
 | `bad-content` | error | generated text would break the document: unbalanced braces in an inline item, or `\end{env}` inside a block |
 | `broken-ref` | error | a `\leancheck` key has no entry in the bundle |
 | `untrusted` | error | the result depends on `sorry`, uses an axiom outside `allowed_axioms`, or has untrusted constants in its cone |
+| `claim` | warning | an item marked `claim` depends on `sorry`, as a claim may |
 | `drift` | error | a `\leancheck`'s statement changed since it was accepted ([trust.md](trust.md)) |
 | `sig-changed` | warning | a `\leancheck`'s statement reads differently but means the same |
 | `no-hash` | error | the bundle has no statement hash for a `\leancheck` key |

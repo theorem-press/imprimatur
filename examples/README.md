@@ -1,6 +1,6 @@
 # Examples
 
-Four small papers built with imprimatur. Each is a directory with a Lean
+Five small papers built with imprimatur. Each is a directory with a Lean
 project, an `imprimatur.toml`, and a `paper.tex` whose blocks are empty until
 `imprimatur build` fills them in. `expected/paper.tex` in each is the result,
 as the end-to-end tests check it.
@@ -11,6 +11,7 @@ as the end-to-end tests check it.
 | [sidecar](sidecar/paper.tex) | sidecar: a separate Lake package beside the host reads it ([result](sidecar/expected/paper.tex)) | a theorem as Lean prints it, with its source, axioms and `sorry` status, without touching the host's lakefile |
 | [external](external/paper.tex) | external: the host is read as it is, with a notation file outside it ([result](external/expected/paper.tex)) | a formula typeset from a notation file outside the host, which is read unchanged |
 | [semantics](semantics/) | external | a short paper on a typed λ-calculus: a generated grammar and rules, theorems and worked examples as sentences, hand-written prose checked with `\leancheck` |
+| [riemann](riemann/) | external, on Mathlib | a note stating the five theorems a Lean archive claims (the Riemann Hypothesis and its generalisation), from a host that proves nothing: a named proposition unfolded, an instance binder as a hypothesis, `sorry` on purpose (`[claim]`), an index of the Mathlib notation used; skipped by the tests unless `E2E_MATHLIB=1` |
 
 To build one (see [Try it in two minutes](../README.md#try-it-in-two-minutes)
 for installing imprimatur, and the same commands on this example):

@@ -267,7 +267,7 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
     let kind (l : String) : String :=
       match (l.splitOn ":")[0]! with
       | "thm" => "Thm.~" | "lem" => "Lemma~" | "prop" => "Prop.~"
-      | "cor" => "Cor.~" | "def" => "Def.~" | _ => ""
+      | "cor" => "Cor.~" | "def" => "Def.~" | "claim" => "Claim~" | _ => ""
     let wh := match b.label with
       | some l => s!"{kind l}\\ref\{{l}}, p.~\\pageref\{{l}}"
       | none => ""

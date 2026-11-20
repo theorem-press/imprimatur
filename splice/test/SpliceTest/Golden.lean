@@ -117,6 +117,7 @@ def cases : Array String := #[
   "splice/golden/blueprint",
   "splice/golden/bundle-errors",
   "splice/golden/checker",
+  "splice/golden/claim",
   "splice/golden/comments-verbatim",
   "splice/golden/conditionals",
   "splice/golden/cone",
