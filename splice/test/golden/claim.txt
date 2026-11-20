@@ -5,8 +5,8 @@ main.tex:11:1: error[untrusted]: Claimed.result depends on sorry
 main.tex:11:1: error[stale]: the generated content of Claimed.result is out of date
 main.tex:13:23: warning[claim]: Claimed.result is stated as a claim: its proof is sorry
 main.tex:14:8: error[untrusted]: Claimed.result depends on sorry
-main.tex:16:1: error[untrusted]: Claimed.weak has untrusted constants in its dependency cone: Claimed.Weak (sorry)
 main.tex:16:1: warning[claim]: Claimed.weak is stated as a claim: its proof is sorry
+main.tex:16:1: error[untrusted]: Claimed.weak has untrusted constants in its dependency cone: Claimed.Weak (sorry)
 check: 2 stale, 5 errors, 3 warnings
 [exit 1]
 
@@ -19,8 +19,8 @@ main.tex:9:1: warning[claim]: Claimed.result is stated as a claim: its proof is 
 main.tex:12:1: error[untrusted]: Claimed.result depends on sorry
 main.tex:15:23: warning[claim]: Claimed.result is stated as a claim: its proof is sorry
 main.tex:16:8: error[untrusted]: Claimed.result depends on sorry
-main.tex:18:1: error[untrusted]: Claimed.weak has untrusted constants in its dependency cone: Claimed.Weak (sorry)
 main.tex:18:1: warning[claim]: Claimed.weak is stated as a claim: its proof is sorry
+main.tex:18:1: error[untrusted]: Claimed.weak has untrusted constants in its dependency cone: Claimed.Weak (sorry)
 check: 0 stale, 3 errors, 3 warnings
 [exit 1]
 
