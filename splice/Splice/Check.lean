@@ -62,10 +62,11 @@ def checkHashes (bundle : Bundle (Image TeX) Verdict) (keys : Array String) :
 
 /-- Problems with an entry's trust, checked against `allowed` axioms: none
 exactly when `Verdict.trusted allowed` holds of its verdict. -/
-def trustProblems (allowed : Array String) (key : String) (e : Entry (Image TeX) Verdict) :
-    Array String :=
+def trustProblems (allowed : Array String) (key : String) (e : Entry (Image TeX) Verdict)
+    (claim := false) : Array String :=
   let v := e.verdict
-  let sorry_ := if v.usesSorry then #[s!"{key} depends on sorry"] else #[]
+  -- A claim's `sorry` is reported by `auditKey`, as a warning.
+  let sorry_ := if v.usesSorry && !claim then #[s!"{key} depends on sorry"] else #[]
   -- `sorryAx` is reported above, as `sorry`.
   let bad := v.axioms.filter (fun a => a != "sorryAx" && !allowed.contains a)
   let axioms := if bad.isEmpty then #[] else
@@ -95,7 +96,13 @@ def auditKey (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (it : Item) (l
     -- A blueprint `\lean{…}` without `\leanok` is work in progress, so only
     -- `\leanok` nodes are checked for trust (`auditLeanok`).
     (if it.kind == .check && it.name == "lean" then #[] else
-      (trustProblems cfg.allowedAxioms key e).map (Diag.err "untrusted" loc ·)) ++
+      -- `claim` (DESIGN §9.1): the item states a result whose proof is not
+      -- in the development, so its `sorry` is a warning; its axioms and its
+      -- cone are checked as for any result.
+      let claim := (it.opt? "claim").isSome
+      (trustProblems cfg.allowedAxioms key e claim).map (Diag.err "untrusted" loc ·) ++
+      (if claim && e.verdict.usesSorry then
+        #[Diag.warn "claim" loc s!"{key} is stated as a claim: its proof is sorry"] else #[])) ++
     -- Faithfulness (DESIGN §18.4): a typeset rendering that does not read
     -- back as its statement.
     (if (it.kind == .block || it.kind == .inline) && it.live then

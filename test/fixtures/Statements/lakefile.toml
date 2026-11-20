@@ -1,0 +1,13 @@
+# The `Statements` fixture (docs/TESTING.md, Fixtures): statements shown other
+# than as written: a named proposition unfolded (`unfold`), and an instance
+# binder stated as a hypothesis when a notation rule writes it (DESIGN §7.6,
+# §9.1). It requires imprimatur, as a project in in-project mode does.
+name = "statements-fixture"
+defaultTargets = ["Statements"]
+
+[[require]]
+name = "imprimatur"
+path = "../../../extract"
+
+[[lean_lib]]
+name = "Statements"

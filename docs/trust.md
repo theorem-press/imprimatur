@@ -10,6 +10,7 @@ cites:
 | Code | Meaning |
 |---|---|
 | `untrusted` | the result depends on `sorry`, uses an axiom outside `allowed_axioms`, or has an untrusted constant in its dependency cone |
+| `claim` (warning) | an item marked `[claim]` depends on `sorry`: a statement whose proof is elsewhere, on purpose (below) |
 | `unchecked` | `[trust].checker` asks for a verified checker, and it did not accept the development (below) |
 | `broken-ref` | the key names no declaration |
 | `drift` | the statement changed since an author last checked the prose against it |
@@ -34,6 +35,26 @@ untrusted if it:
 **Why this matters.** Without the cone check, a hypothesis definition could
 be changed to `True`. The theorem would become trivial, while its statement
 read exactly as before.
+
+## Claims: statements proved elsewhere
+
+A paper sometimes states a result whose proof is not in its development: a
+note that says what another project's Lean proves, from a file that restates
+its theorems over Mathlib with `sorry` for every proof. Mark such an item
+`[claim]`:
+
+```latex
+\begin{leanclaim}[claim]{Riemann.riemannHypothesis}{The Riemann Hypothesis}
+\end{leanclaim}
+… must set that point aside \leancheck[claim]{Riemann.riemannHypothesis}.
+```
+
+`check` then reports the `sorry` as a warning, `claim`, instead of the error
+`untrusted`. Everything else is checked as for a proved result: the axioms,
+and the dependency cone, so a claim whose hypotheses rest on a sorried
+definition is still untrusted. The `provenance` view writes **sorry** in the
+axioms column of a claim, so the reader sees it too. `examples/riemann` is a
+note made of claims.
 
 ## A verified checker
 

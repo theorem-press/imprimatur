@@ -57,7 +57,7 @@ keep_timing() {  # keep_timing WORK COMMAND: a build's or a check's timing file,
 
 # One test per example, named so docs/TESTING.md can refer to it. An example
 # without a name here is an error, so none is skipped by accident.
-TESTS=(e2e/external e2e/minimal e2e/semantics e2e/sidecar)
+TESTS=(e2e/external e2e/minimal e2e/riemann e2e/semantics e2e/sidecar)
 # And two tests that are not examples: e2e/show and e2e/fixture-views, below.
 
 # External mode needs an extractor built for the examples' toolchain. It goes in
@@ -83,6 +83,12 @@ for dir in examples/*/; do
   ex=$(basename "$dir")
   if [[ ! " ${TESTS[*]} " =~ " e2e/$ex " ]]; then
     echo "e2e: examples/$ex has no test name in TESTS (scripts/e2e.sh)" >&2; status=1; continue
+  fi
+  # An example whose host imports Mathlib (its steps say `# needs: mathlib`)
+  # runs only with E2E_MATHLIB=1: Mathlib's cache is several gigabytes, and
+  # the extractor needs about 7 GB of memory to load it.
+  if [ -f "$dir/steps" ] && grep -q '^# needs: mathlib' "$dir/steps" && [ "${E2E_MATHLIB:-}" != 1 ]; then
+    echo "== e2e/$ex: skipped (needs Mathlib; E2E_MATHLIB=1 runs it)"; continue
   fi
   echo "== e2e/$ex"
   work="e2e-out/$ex"

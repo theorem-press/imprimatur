@@ -1,0 +1,121 @@
+{
+  "entries": {
+    "Statements.bounded": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Statements.bounded",
+      "doc": "A statement that applies a named proposition: `unfold` shows its body at\nthe argument.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNumber", "\\LeanProse", "\\LeanSorryFree", "\\forall", "\\implies", "\\in", "\\leanmetasource", "\\mathbb"],
+      "sigHash": "2d914d9d8d941e8bf4cce6c7ebfbd81d4bc9946d92580b7d2359b7a317eeba8b",
+      "sorry": false,
+      "source": {
+        "line": 23,
+        "path": "Statements/Defs.lean"
+      },
+      "stmtHash": "786106e9a4c3d65d7d0b9d61a9aead82edcae772d14a792fee16600467bf6e9c",
+      "validation": {
+        "math": [],
+        "math|forall=": [],
+        "math|forall=|unfold=": [],
+        "math|unfold=": [],
+        "prose": [],
+        "prose|unfold=": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{bounded} (\\LeanBound{n} : \\LeanConst{Nat}) (\\LeanBound{h} : \\LeanBound{n} = \\LeanNumber{3}) : \\LeanConst{Bounded} \\LeanBound{n}}",
+        "math": "\\LeanMath{n = 3 \\implies \\LeanMathConst{Bounded}\\,n}",
+        "math|forall=": "\\LeanMath{\\forall n : \\mathbb{N},\\ n = 3 \\implies \\LeanMathConst{Bounded}\\,n}",
+        "math|forall=|unfold=": "\\LeanMath{\\forall n : \\mathbb{N},\\ n = 3 \\implies n < 10}",
+        "math|unfold=": "\\LeanMath{n = 3 \\implies n < 10}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A statement that applies a named proposition: \\LeanCodeInline{unfold} shows its body at\nthe argument.}",
+        "prose": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $n = 3$. Then $\\LeanMathConst{Bounded}\\,n$.}",
+        "prose|unfold=": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $n = 3$. Then $n < 10$.}"
+      }
+    },
+    "Statements.named": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 1,
+        "untrusted": []
+      },
+      "decl": "Statements.named",
+      "doc": "A theorem whose statement is a named proposition, and whose proof is not\nhere: the `unfold` modifier shows the proposition, and `claim` says the proof\nis elsewhere (#137).",
+      "kind": "theorem",
+      "macros": ["\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProse", "\\LeanUsesSorry", "\\forall", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\ne"],
+      "sigHash": "e9aa4db250429563700bbd7d55385a3f8e77ee6e7ce6109401e6c926c897832a",
+      "sorry": true,
+      "source": {
+        "line": 16,
+        "path": "Statements/Defs.lean"
+      },
+      "stmtHash": "e8af1d7c3cc6ab26431a4b24348a32c08415faaf6a1cba915e4cd8577cbd334e",
+      "validation": {
+        "math": [],
+        "math|forall=": [],
+        "math|forall=|unfold=": [],
+        "math|unfold=": [],
+        "prose": [],
+        "prose|unfold=": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{named} : \\LeanConst{Named}}",
+        "math": "\\LeanMath{\\LeanMathConst{Named}}",
+        "math|forall=": "\\LeanMath{\\LeanMathConst{Named}}",
+        "math|forall=|unfold=": "\\LeanMath{\\forall n : \\mathbb{N},\\ 0 < n \\implies n \\ne 0}",
+        "math|unfold=": "\\LeanMath{0 < n \\implies n \\ne 0}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{A theorem whose statement is a named proposition, and whose proof is not\nhere: the \\LeanCodeInline{unfold} modifier shows the proposition, and \\LeanCodeInline{claim} says the proof\nis elsewhere (\\#137).}",
+        "prose": "\\LeanProse{$\\LeanMathConst{Named}$.}",
+        "prose|unfold=": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $0 < n$. Then $n \\ne 0$.}"
+      }
+    },
+    "Statements.withInstance": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 4,
+        "untrusted": []
+      },
+      "decl": "Statements.withInstance",
+      "doc": "A theorem with instance binders.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNumber", "\\LeanProse", "\\LeanSorryFree", "\\forall", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\mathsf", "\\ne"],
+      "sigHash": "86f0fc8615314ae7252c15e1ef40e6820430ff23a547794f7dfae14135715daf",
+      "sorry": false,
+      "source": {
+        "line": 35,
+        "path": "Statements/Defs.lean"
+      },
+      "stmtHash": "98be33a2847062098c6f42b55087adf862cd2a16ea60cd4113ce19126bc89d25",
+      "validation": {
+        "math": [],
+        "math|forall=": [],
+        "math|forall=|unfold=": [],
+        "math|unfold=": [],
+        "prose": [],
+        "prose|unfold=": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{withInstance} (\\LeanBound{n} : \\LeanConst{Nat}) [\\LeanConst{Positive} \\LeanBound{n}] [\\LeanConst{Quiet} \\LeanBound{n}] : \\LeanBound{n} ≠ \\LeanNumber{0}}",
+        "math": "\\LeanMath{\\mathsf{pos}(n) \\implies n \\ne 0}",
+        "math|forall=": "\\LeanMath{\\forall n : \\mathbb{N},\\ \\mathsf{pos}(n) \\implies n \\ne 0}",
+        "math|forall=|unfold=": "\\LeanMath{\\forall n : \\mathbb{N},\\ \\mathsf{pos}(n) \\implies n \\ne 0}",
+        "math|unfold=": "\\LeanMath{\\mathsf{pos}(n) \\implies n \\ne 0}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with instance binders.}",
+        "prose": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $\\mathsf{pos}(n)$. Then $n \\ne 0$.}",
+        "prose|unfold=": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $\\mathsf{pos}(n)$. Then $n \\ne 0$.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

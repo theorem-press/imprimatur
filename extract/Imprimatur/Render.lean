@@ -278,6 +278,14 @@ def candidates (head : Name) : RenderM (Array NotationRule) := do
     x1 < x2 || (x1 == x2 && y1 ≤ y2)
   return (rs.toList.mergeSort le).toArray.filter fun r => r.variant.isNone || r.variant == ctx.variant
 
+/-- Whether a notation rule in scope writes `e`: what earns an instance
+binder a place among the hypotheses (DESIGN §7.6). -/
+def hasRule (e : Expr) : RenderM Bool := do
+  let .const head _ := e.getAppFn | return false
+  for r in ← candidates head do
+    if (← r.tryMatch e).isSome then return true
+  return false
+
 /-- Log an atom of the formula being rendered. -/
 def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none)
     (name : String := "") : RenderM Unit := do
@@ -804,6 +812,9 @@ mutual
     let .forallE n t b bi := e | delab e
     let isProp ← isProp e
     if !b.hasLooseBVars then
+      -- An instance binder is left out, unless a notation rule writes it:
+      -- then it is a hypothesis the paper states (DESIGN §7.6).
+      if bi.isInstImplicit && !(← hasRule t) then return ← render b
       -- An implication or a function type.
       let arrow := if isProp then "\\implies" else "\\to"
       let lhs ← render t

@@ -5,6 +5,18 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- A first example on a Mathlib host, `examples/riemann` (#137): a note that
+  states the five theorems the Lean archive of 2026-11-20 claims (the Riemann
+  Hypothesis and its generalisation) from a file that restates them over
+  Mathlib with `sorry` for every proof. Three things it needed: the `unfold`
+  modifier, which shows a theorem whose statement is a named proposition
+  (Mathlib's `RiemannHypothesis`) as the proposition rather than its name;
+  an instance binder (`[NeZero N]`) stated as a hypothesis when the notation
+  module writes its class, where before every instance binder was left out;
+  and the `claim` option on a block, inline item or `\leancheck`, under
+  which `check` reports a `sorry` as a warning instead of an error, for a
+  result stated but proved elsewhere. The example's end-to-end test runs
+  only with `E2E_MATHLIB=1`, since Mathlib's cache is several gigabytes.
 - A `let` or `have` in a statement is unfolded before rendering (#135), so
   the `math` and `prose` views write what it stands for in the paper's
   notation, with the metavariable names, and a conclusion under a `let`

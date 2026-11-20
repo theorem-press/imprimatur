@@ -50,12 +50,43 @@ where
     | .forallE n t b bi =>
       withLocalDecl n bi t fun x => do
         let body := b.instantiate1 x
-        if bi.isInstImplicit then go body vars hyps
+        -- An instance binder is a hypothesis when a notation rule writes it
+        -- (`[NeZero N]` as `N ≠ 0`), and is left out otherwise (DESIGN §7.6).
+        if bi.isInstImplicit then
+          if ← hasRule t then go body vars (hyps.push (n, t)) else go body vars hyps
         else if (← isProp t) then go body vars (hyps.push (n, t))
         else go body (vars.push (n, x, t)) hyps
     | _ => match unLet? e with
       | some e' => go e' vars hyps
       | none => k vars hyps e
+
+/-- The statement with its head definition unfolded once, under its outer
+binders (the `unfold` modifier, DESIGN §9.1): `theorem rh : RiemannHypothesis`
+is shown as the proposition that `RiemannHypothesis` names, and `Bounded n`
+as its body at `n`. A head that a notation rule writes (`≠`, which is a
+definition too) is left as it is, as is one that is no definition. -/
+partial def unfoldStatement (e : Expr) : RenderM Expr := do
+  match e with
+  | .forallE n t b bi =>
+    withLocalDecl n bi t fun x => do
+      mkForallFVars #[x] (← unfoldStatement (b.instantiate1 x))
+  | .mdata _ e => unfoldStatement e
+  | _ =>
+    if ← hasRule e then return e
+    return ((← delta? e).getD e).headBeta
+
+/-- `c` with another type: the statement a view shows for it. -/
+def withType (c : ConstantInfo) (t : Expr) : ConstantInfo :=
+  match c with
+  | .thmInfo v => .thmInfo { v with type := t }
+  | .axiomInfo v => .axiomInfo { v with type := t }
+  | .defnInfo v => .defnInfo { v with type := t }
+  | .opaqueInfo v => .opaqueInfo { v with type := t }
+  | c => c
+
+/-- The declaration as the `unfold` modifier shows it. -/
+def unfoldConst (c : ConstantInfo) : RenderM ConstantInfo := do
+  return withType c (← unfoldStatement c.type)
 
 /-- Apply the premise conventions (DESIGN §7.6) to hypotheses: those a
 convention hides are dropped, and variables a metavariable convention names

@@ -533,8 +533,11 @@ latex_hide_premise Ctx.WF _
 latex_hide_premise (_ : Fintype _)
 ```
 
-Instance binders are always hidden. Block options `show=` and `hide=`, to
-override these choices per block, are designed but not implemented (#35).
+Instance binders are hidden, unless a notation rule writes the class
+(`[NeZero N]` as `N ≠ 0`): then the binder is a hypothesis like any other,
+since the paper evidently means to state it (#137). Block options `show=` and
+`hide=`, to override these choices per block, are designed but not
+implemented (#35).
 
 A hidden premise must still be said somewhere the reader looks (#77): a
 statement that drops `IsValue v` is stronger than the one proved, unless the
@@ -770,7 +773,18 @@ The options of `leanblock`:
   - `rule` renders `A → B → C` as an inference rule;
   - `def` renders a definition's equation lemmas as an aligned block;
   - `forall` shows the outer quantifiers, which are hidden by default;
+  - `unfold` unfolds the head definition of the statement, under its outer
+    binders, when no notation rule writes it: `theorem rh :
+    RiemannHypothesis` is shown as the proposition Mathlib's definition
+    names, not as its name (#137). `≠`, a definition too, stays as the
+    pack's rule writes it;
   - `names=short|full` sets how much of each name's namespace is shown.
+- **`claim`**, on a block, inline item or `\leancheck`: the result is stated
+  but not proved in this development, on purpose, as in a note that says
+  what another project's Lean proves from a file that restates its theorems
+  with `sorry` (#137). `check` reports the `sorry` as a warning (`claim`),
+  not the error `untrusted`; axioms and the cone are checked as for any
+  result (§7.7), and the `provenance` view writes **sorry** in its row.
 
 `\leanref`, `\leancheck` and `\leanindex`:
 

@@ -1,0 +1,30 @@
+{
+  "schema": "imprimatur-bundle/1",
+  "producer": {"lean": "v4.35.0", "project": "demo", "tool": "hand-written", "version": "0"},
+  "entries": {
+    "Claimed.result": {
+      "decl": "Claimed.result", "kind": "theorem",
+      "axioms": ["propext", "sorryAx"], "sorry": true,
+      "cone": {"size": 1, "untrusted": []},
+      "stmtHash": "1111111111111111111111111111111111111111111111111111111111111111",
+      "sigHash": "2222222222222222222222222222222222222222222222222222222222222222",
+      "views": {"lean": "\\LeanKeyword{theorem} \\LeanConst{Claimed.result} : \\LeanConst{True}", "math": "\\LeanMath{\\top}"}
+    },
+    "Claimed.weak": {
+      "decl": "Claimed.weak", "kind": "theorem",
+      "axioms": ["sorryAx"], "sorry": true,
+      "cone": {"size": 2, "untrusted": ["Claimed.Weak"], "reasons": {"Claimed.Weak": ["sorry"]}},
+      "stmtHash": "3333333333333333333333333333333333333333333333333333333333333333",
+      "sigHash": "4444444444444444444444444444444444444444444444444444444444444444",
+      "views": {"lean": "w"}
+    },
+    "Claimed.proved": {
+      "decl": "Claimed.proved", "kind": "theorem",
+      "axioms": ["propext"], "sorry": false,
+      "cone": {"size": 1, "untrusted": []},
+      "stmtHash": "5555555555555555555555555555555555555555555555555555555555555555",
+      "sigHash": "6666666666666666666666666666666666666666666666666666666666666666",
+      "views": {"lean": "p"}
+    }
+  }
+}

@@ -349,9 +349,12 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
         | .ok v => views := views.push (other, v)
         | .error msg => errors := errors.push (other, msg)
       else if base == "math" || base == "prose" then
-        let act : Render.Ctx → MetaM String :=
-          if base == "math" then (Views.mathViewWith c s.width spec.opts).run
-          else (Views.proseView c s.width).run
+        -- `unfold` (DESIGN §9.1): the statement with its head definition
+        -- unfolded, for a theorem whose statement is a named proposition.
+        let act : Render.Ctx → MetaM String := fun ctx => do
+          let c ← if spec.opts.any (·.1 == "unfold") then (Views.unfoldConst c).run ctx else pure c
+          if base == "math" then (Views.mathViewWith c s.width spec.opts).run ctx
+          else (Views.proseView c s.width).run ctx
         let (res, ps) ← run act
         validation := validation.push (other, ps)
         match res with

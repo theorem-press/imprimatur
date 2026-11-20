@@ -1,0 +1,19 @@
+schema = 1
+main = "paper.tex"
+lean_project = "host"
+mode = "external"
+imports = ["Riemann"]
+notation = ["notation/RiemannTeX.lean"]
+strip_namespaces = ["Riemann"]
+
+# The public version links every statement to its Lean on GitHub:
+# imprimatur build --profile public --commit SHA (DESIGN §11).
+[profile.public]
+source_links = "url"
+url_template = "https://github.com/theorem-press/imprimatur/blob/{commit}/examples/riemann/host/{path}#L{line}"
+
+[aliases]
+# Each statement is a claim: a theorem whose proof is not in this development.
+leanclaim = { view = "prose", wrap = "claim", label = "claim:{key}" }
+leannotation = { view = "vocabulary|scope=all" }
+leanprovenance = { view = "provenance" }

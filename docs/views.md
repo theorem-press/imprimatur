@@ -223,6 +223,7 @@ defined them.
 |---|---|
 | `rule` | the hypotheses over the conclusion, as `\inferrule` |
 | `forall` | the statement with its outer quantifiers shown |
+| `unfold` | the statement with its head definition unfolded, under its outer binders: a theorem whose statement is a named proposition (`theorem rh : RiemannHypothesis`) is shown as the proposition, not the name; a head a notation rule writes (`≠`) is kept. Also for `prose` |
 | `def` | a definition as its equation lemmas, aligned |
 | `names=full` | no namespaces left out |
 
@@ -274,7 +275,7 @@ view notes what it displays). Each table is a `longtable`, which
   ends with such an index.
 - **`provenance`**: each theorem the document states, in document order, with
   its kind and number (from its label's prefix: `thm:`, `lem:`, `prop:`,
-  `cor:`, `def:`, written Thm., Lemma, Prop., Cor., Def.), its declaration
+  `cor:`, `def:`, `claim:`, written Thm., Lemma, Prop., Cor., Def., Claim), its declaration
   without the namespaces the document strips, its source location (a link
   under the `url` profile) and the
   axioms beyond
