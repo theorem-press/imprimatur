@@ -41,6 +41,12 @@ def testTokens : TestM Unit := group "tokens" do
   checkEq "extract/names/strip" (Views.stripName #[`A, `A.B] `A.B.c) `c
   checkEq "extract/names/strip-not-self" (Views.stripName #[`A] `A) `A
   checkEq "extract/names/from-key" (toName "MyPaper.Results.theorem1_main") `MyPaper.Results.theorem1_main
+  -- A component that is not an identifier is written `«…»`, as `Name.toString`
+  -- writes it; a run of digits is a numeric component.
+  checkEq "extract/names/from-key-escaped" (toName "Arxiv.«0805.3777».isMaxRank_three")
+    (Name.mkStr (Name.mkStr (Name.mkStr .anonymous "Arxiv") "0805.3777") "isMaxRank_three")
+  checkEq "extract/names/from-key-numeric" (toName "_private.A.0.B") (Name.mkStr (Name.mkNum `_private.A 0) "B")
+  checkEq "extract/names/from-key-digits-escaped" (toName "ErdosProblems.«1000»") (Name.mkStr `ErdosProblems "1000")
 
 /-- The JSON writer and requests. -/
 def testJson : TestM Unit := group "json" do

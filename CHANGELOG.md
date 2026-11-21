@@ -5,6 +5,50 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- A `mathlib` notation pack (#36), on by default with the other four, from
+  a sweep of the 4,907 statements of google-deepmind/formal-conjectures
+  through the `math` and `prose` views (2026-11-21): the Mathlib constants
+  left bare most often that a rule can write without a choice the paper
+  would want to make, and without a pun in the read-back. `ℝ`, `ℂ`,
+  `ℤ/nℤ`; coercions from bundled functions and from `ℚ`, `ℝ≥0`, `ℕ+`, `ℝ`
+  to `EReal`, not shown; `log`, `exp`, `√`, `π`, trigonometry, `ℜ`, `ℑ`,
+  absolute value and norm, factorials, binomials, `φ`, `π(n)`, floors and
+  ceilings; cardinalities; sentences for primality, parity, irrationality,
+  finiteness, monotonicity, coprimality, connectedness; congruences of
+  integers; intervals, set-builder notation, filtered finsets; sums,
+  products and series; limits and "for all sufficiently large" along
+  `atTop`; graph invariants; polynomial evaluation and degree. The `core`
+  pack gains `ℚ`, `∣`, gcd and lcm, injective and surjective; `sets` gains
+  `{a, b}` and `insert a s` as `{a} ∪ s`. A pack rule whose constant the
+  environment lacks is dropped when the rules are assembled, so the packs
+  cost a project nothing it does not use. The `MathlibPack` fixture stubs
+  the constants, so every rule has a golden use with no Mathlib. For the
+  read-back, a pack rule may give a hole or a result the sort `!`, any
+  datum: neither a universe nor a function type (DESIGN §18.3). The sides
+  of `∣` are data, so `{p ∣ q}` does not also read as the singleton of `p`
+  dividing the proposition `q`.
+- A key with a component that is not an identifier, written `«…»` as Lean
+  writes it (`Arxiv.«0805.3777».isMaxRank_three`, `ErdosProblems.«1000»`),
+  is read as Lean reads it. Before, the key was split at every dot, and the
+  extractor reported no declaration of that name; 124 statements of
+  formal-conjectures were lost so.
+- A λ whose body is a `match` on its own variable with one alternative,
+  `fun p => match p with | (a, b) => e`, is written with the pattern for its
+  binder, `\lambda (a, b).\, e`, in the notation in scope, under either
+  `pattern_matching` style; before, it fell back to Lean's text (all 84
+  fallbacks of the sweep were of this shape). The read-back's λ form takes
+  a term for its binder as well as a name, so the pattern reads as the pair
+  it is; the same pattern under a rule's binder (`{(a, b) | e}` for
+  `Set.ofPred fun p => match p with | (a, b) => e`) is written so too. A
+  variable a rule's pattern binds (`∑_{i ∈ s} f`) reads back as an atom, a
+  name or a parenthesised pattern, not as an expression such as `n ∈ s`.
+- An applied constant reads back with the sort of its application, a
+  function from its shown arguments' sorts to its result's, where before its
+  sort was unknown (#90): `|E(G)|` is the cardinality of the finset `E(G)`
+  is, not of a set it might be. Each formula is read in the grammar of the
+  productions whose tokens all occur in it, so a large notation costs a
+  formula only what it could read as.
+
 - A first example on a Mathlib host, `examples/riemann` (#137): a note that
   states the five theorems the Lean archive of 2026-11-20 claims (the Riemann
   Hypothesis and its generalisation) from a file that restates them over

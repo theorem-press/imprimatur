@@ -14,7 +14,7 @@
       "sigHash": "747ee6b611672f92bee542d2eca3b21a96542fccb9d9cde257c19f9583626dcf",
       "sorry": true,
       "source": {
-        "line": 42,
+        "line": 43,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "2ed1dde6d3441816e75a036da4c1008c81736345d7bb8f1781eb73a5b2d78c23",
@@ -47,7 +47,7 @@
       "sigHash": "d7949ad9ed6a72dbe2bb92d16c43ddcfa8ff1cd009754da9dea272f6564799ee",
       "sorry": false,
       "source": {
-        "line": 134,
+        "line": 145,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "cbf57ca2ac2c1a288bed379a97bc1a2199e85c57d7213acfa5fb8d64c46b1717",
@@ -80,7 +80,7 @@
       "sigHash": "cc73f0ff1083703b7724b495a9ec006fd66155e5402efb927911f97b513727c6",
       "sorry": true,
       "source": {
-        "line": 97,
+        "line": 108,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c095ee9dc585cc229fc3cd1f6e17d9cd485c4e6f08a1050766450e95ab513f66",
@@ -103,20 +103,20 @@
       "axioms": ["sorryAx"],
       "cone": {
         "reasons": {},
-        "size": 3,
+        "size": 4,
         "untrusted": []
       },
       "decl": "Notation.binders",
-      "doc": "Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a `match`, which falls back to Lean's printer.",
+      "doc": "Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, a `match` with two alternatives, which falls back to\nLean's printer under the default style, and a λ that destructures a pair,\nwritten with the pattern for its binder.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathCode", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Rightarrow", "\\exists", "\\forall", "\\implies", "\\in", "\\lambda", "\\leanmetasource", "\\mapsto", "\\mathbb", "\\mathrm", "\\ne", "\\to", "\\wedge"],
-      "sigHash": "f35290c1a52bd4ec389e89c77b632966bb98a89f72fe1b37689e53335bbd065b",
+      "sigHash": "013a414feb292c9b10308e9d5248318a27971bac87d03c60b647eaa4c4befda5",
       "sorry": true,
       "source": {
-        "line": 63,
+        "line": 73,
         "path": "Notation/Defs.lean"
       },
-      "stmtHash": "71ee4b16740c5764d1999502855cb7cf083e7e86e202cf4dfb7185cb6eb081fc",
+      "stmtHash": "1b506904511100b3e8a25b3d6e7b079ead8f01db949431021b792cb353a8352a",
       "validation": {
         "math": ["not validated: `match f 0 with | 0 => true | x => false` is Lean's own text for a subterm nothing renders, in which the paper's notation does not apply"],
         "math:binders": ["not validated: `match f 0 with | 0 => true | x => false` is Lean's own text for a subterm nothing renders, in which the paper's notation does not apply"],
@@ -124,12 +124,12 @@
         "prose": ["not validated: `match f 0 with | 0 => true | x => false` is Lean's own text for a subterm nothing renders, in which the paper's notation does not apply"]
       },
       "views": {
-        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{binders} (\\LeanBound{s} : \\LeanConst{MySet} \\LeanConst{Nat}) (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h} : ∀ (\\LeanBound{x} : \\LeanConst{Nat}), \\LeanBound{x} ∈ \\LeanBound{s} → \\LeanBound{f} \\LeanBound{x} = \\LeanBound{x}) :\\LeanNewline\n\\LeanIndent{2}(∃ \\LeanBound{y}, \\LeanBound{y} ∈ \\LeanBound{s} ∧ \\LeanBound{f} \\LeanBound{y} = \\LeanBound{y}) →\\LeanNewline\n\\LeanIndent{4}(∃ \\LeanBound{z}, \\LeanBound{z} = \\LeanBound{f} \\LeanNumber{0}) ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} + \\LeanNumber{1}) \\LeanNumber{0} = \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanKeyword{match} \\LeanBound{f} \\LeanNumber{0} \\LeanKeyword{with}\\LeanNewline\n\\LeanIndent{12}| \\LeanNumber{0} => \\LeanConst{true}\\LeanNewline\n\\LeanIndent{12}| \\LeanBound{x} => \\LeanConst{false}) =\\LeanNewline\n\\LeanIndent{12}\\LeanConst{true} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{true} ≠ \\LeanConst{false}}",
-        "math": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
-        "math:binders": "\\LeanMath{(\\forall x.\\, x \\in s \\Rightarrow f\\,x = x) \\wedge (\\exists y.\\, y \\in s \\wedge f\\,y = y) \\implies (\\exists z.\\, z = f\\,0) \\wedge ((n \\mapsto n + 1)\\,0 \\LeanBreak = 1 \\wedge (\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}))}",
-        "math:named": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\LeanBreak \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\wedge \\mathrm{true} \\ne \\mathrm{false}}",
-        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, and a \\LeanCodeInline{match}, which falls back to Lean's printer.}",
-        "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$ and (4)~$\\mathrm{true} \\ne \\mathrm{false}$.}"
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{binders} (\\LeanBound{s} : \\LeanConst{MySet} \\LeanConst{Nat}) (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h} : ∀ (\\LeanBound{x} : \\LeanConst{Nat}), \\LeanBound{x} ∈ \\LeanBound{s} → \\LeanBound{f} \\LeanBound{x} = \\LeanBound{x}) :\\LeanNewline\n\\LeanIndent{2}(∃ \\LeanBound{y}, \\LeanBound{y} ∈ \\LeanBound{s} ∧ \\LeanBound{f} \\LeanBound{y} = \\LeanBound{y}) →\\LeanNewline\n\\LeanIndent{4}(∃ \\LeanBound{z}, \\LeanBound{z} = \\LeanBound{f} \\LeanNumber{0}) ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} + \\LeanNumber{1}) \\LeanNumber{0} = \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanKeyword{match} \\LeanBound{f} \\LeanNumber{0} \\LeanKeyword{with}\\LeanNewline\n\\LeanIndent{12}| \\LeanNumber{0} => \\LeanConst{true}\\LeanNewline\n\\LeanIndent{12}| \\LeanBound{x} => \\LeanConst{false}) =\\LeanNewline\n\\LeanIndent{12}\\LeanConst{true} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{true} ≠ \\LeanConst{false} ∧\\LeanNewline\n\\LeanIndent{12}(\\LeanKeyword{fun} \\LeanBound{p} =>\\LeanNewline\n\\LeanIndent{18}\\LeanKeyword{match} \\LeanBound{p} \\LeanKeyword{with}\\LeanNewline\n\\LeanIndent{18}| (\\LeanBound{a}, \\LeanBound{b}) => \\LeanBound{a} + \\LeanBound{b})\\LeanNewline\n\\LeanIndent{16}(\\LeanNumber{1}, \\LeanNumber{2}) =\\LeanNewline\n\\LeanIndent{14}\\LeanNumber{3}}",
+        "math": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\LeanBreak \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\LeanBreak \\wedge \\mathrm{true} \\ne \\mathrm{false} \\wedge (\\lambda (a, b).\\,a + b)\\,(1, 2) = 3}",
+        "math:binders": "\\LeanMath{(\\forall x.\\, x \\in s \\Rightarrow f\\,x = x) \\wedge (\\exists y.\\, y \\in s \\wedge f\\,y = y) \\implies (\\exists z.\\, z = f\\,0) \\wedge ((n \\mapsto n + 1)\\,0 \\LeanBreak = 1 \\wedge (\\LeanMathCode{match f 0 with | 0 => true | x => false} \\LeanBreak = \\mathrm{true} \\wedge (\\mathrm{true} \\ne \\mathrm{false} \\wedge ((a, b) \\mapsto a + b)\\,(1, 2) = 3)))}",
+        "math:named": "\\LeanMath{(\\forall x \\in s,\\ f\\,x = x) \\wedge (\\exists y \\in s,\\ f\\,y = y) \\implies (\\exists z,\\ z = f\\,0) \\wedge (\\lambda n.\\,n + 1)\\,0 = 1 \\LeanBreak \\wedge \\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true} \\LeanBreak \\wedge \\mathrm{true} \\ne \\mathrm{false} \\wedge (\\lambda (a, b).\\,a + b)\\,(1, 2) = 3}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Binders: bounded quantifiers, ∃, implication, function types, λ, an\napplied variable, a \\LeanCodeInline{match} with two alternatives, which falls back to\nLean's printer under the default style, and a λ that destructures a pair,\nwritten with the pattern for its binder.}",
+        "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{MySet}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Assume $\\forall x \\in s,\\ f\\,x = x$ and $\\exists y \\in s,\\ f\\,y = y$. Then (1)~$\\exists z,\\ z = f\\,0$, (2)~$(\\lambda n.\\,n + 1)\\,0 = 1$, (3)~$\\LeanMathCode{match f 0 with | 0 => true | x => false} = \\mathrm{true}$, (4)~$\\mathrm{true} \\ne \\mathrm{false}$ and (5)~$(\\lambda (a, b).\\,a + b)\\,(1, 2) = 3$.}"
       }
     },
     "Notation.haveIn": {
@@ -146,7 +146,7 @@
       "sigHash": "4d21207e1507722a90098e93f6e840a1a35e892da6832bce3be3dee7ea2a0fef",
       "sorry": false,
       "source": {
-        "line": 76,
+        "line": 87,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "06d2c5917cb18e74387e8df3cb31b9a7077992319d41fb352a5e38756b639ddc",
@@ -179,7 +179,7 @@
       "sigHash": "cc5dedf191c60ddbfaa5194e99461a7a15ccb65fd15f32d5f8ac70eff0d542e1",
       "sorry": false,
       "source": {
-        "line": 130,
+        "line": 141,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "ebe62c77e7806d9cd0c9e45e1a4907bb2ffc09e047bdaf984f6c984d1eec08b2",
@@ -212,7 +212,7 @@
       "sigHash": "6fefdddecfb21402f3c8d2972277fb7612c58e9f9d2deff38e4c8596bf31ec31",
       "sorry": true,
       "source": {
-        "line": 118,
+        "line": 129,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "7095017a9ab620bc22fa869986d271f119381c11984b2bbde23c9f616f1f26fd",
@@ -245,7 +245,7 @@
       "sigHash": "1bef55530959eae78060ecf8537eeee77f6ed60feec3c4aba3ef74afd718d48d",
       "sorry": false,
       "source": {
-        "line": 70,
+        "line": 81,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "9abf4cbb4f1cdc0c20c2ab6368dd62cea22be1919adb6bb3e596d20741b70b75",
@@ -278,7 +278,7 @@
       "sigHash": "81d78636ce98aa349657c15b32b4dec96da33ff12e0951ab9dafe7367445f55d",
       "sorry": true,
       "source": {
-        "line": 49,
+        "line": 50,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "7399614943f4c79d8ffcd534bf0d61af276c669167cbaaa7e0c9fb80333b6394",
@@ -311,7 +311,7 @@
       "sigHash": "741759d8b08457cf755b7bd1167328d6d9c461cdca2d2882ee9c461a8b039a1a",
       "sorry": true,
       "source": {
-        "line": 107,
+        "line": 118,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "577dc99fc70b512c185a34e65f85c1ec2a4fd7938bb99da02bdfdb4c6a484708",
@@ -330,6 +330,39 @@
         "prose": "\\LeanProse{Let $a, b, c, d, e, f, g \\in \\mathbb{N}$. Assume $a + b + c + d = e + f + g$, $e + f + g = a + b + c + d$ and $a \\cdot b \\cdot c \\cdot d = e \\cdot f \\cdot g$. Then (1)~$a + b + c + d + e + f + g = e + f + g + a + b + c + d$, (2)~$a + b + c = c + b + a$, (3)~$c + d + e = e + d + c$ and (4)~$a \\cdot b \\cdot c \\cdot d \\cdot e = e \\cdot d \\cdot c \\cdot b \\cdot a$.}"
       }
     },
+    "Notation.number": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 0,
+        "untrusted": []
+      },
+      "decl": "Notation.number",
+      "doc": "Numbers: `ℚ`, divisibility, gcd and lcm, and injectivity and\nsurjectivity, each a sentence.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanUsesSorry", "\\gcd", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\mid", "\\operatorname", "\\text", "\\to", "\\wedge"],
+      "sigHash": "e0168b50787e26565b43e7ed76eae7a665ec887de7ba6a50439912e1b64f6774",
+      "sorry": true,
+      "source": {
+        "line": 61,
+        "path": "Notation/Defs.lean"
+      },
+      "stmtHash": "e3c570f3c68b9a708822a2d8e8d3d0009660abd2a6d525ad72a5ce58ae88eccc",
+      "validation": {
+        "math": [],
+        "math:binders": [],
+        "math:named": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{number} (\\LeanBound{q} : \\LeanConst{Rat}) (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}) (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{q} = \\LeanBound{q} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanBound{a} ∣ \\LeanBound{b} ∧ \\LeanBound{a}.gcd \\LeanBound{b} ≤ \\LeanBound{a}.lcm \\LeanBound{b} ∧ \\LeanConst{Function.Injective} \\LeanBound{f} ∧ \\LeanConst{Function.Surjective} \\LeanBound{f}}",
+        "math": "\\LeanMath{q = q \\wedge a \\mid b \\wedge \\gcd(a, b) \\le \\operatorname{lcm}(a, b) \\wedge f \\text{ is injective} \\wedge f \\text{ is surjective}}",
+        "math:binders": "\\LeanMath{q = q \\wedge (a \\mid b \\wedge (\\gcd(a, b) \\le \\operatorname{lcm}(a, b) \\wedge (f \\text{ is injective} \\wedge f \\text{ is surjective})))}",
+        "math:named": "\\LeanMath{q = q \\wedge a \\mid b \\wedge \\gcd(a, b) \\le \\operatorname{lcm}(a, b) \\wedge f \\text{ is injective} \\wedge f \\text{ is surjective}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Numbers: \\LeanCodeInline{ℚ}, divisibility, gcd and lcm, and injectivity and\nsurjectivity, each a sentence.}",
+        "prose": "\\LeanProse{Let $q \\in \\mathbb{Q}$, $a, b \\in \\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{N}$. Then (1)~$q = q$, (2)~$a \\mid b$, (3)~$\\gcd(a, b) \\le \\operatorname{lcm}(a, b)$, (4)~$f \\text{ is injective}$ and (5)~$f \\text{ is surjective}$.}"
+      }
+    },
     "Notation.order": {
       "axioms": ["sorryAx"],
       "cone": {
@@ -344,7 +377,7 @@
       "sigHash": "0bcc1b47826d11e2e678950de2b54f68c9054f3e55ab0dacd9c915fa57e87463",
       "sorry": true,
       "source": {
-        "line": 58,
+        "line": 66,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "81e79f11e397fa3ccaea03d9240cadce174b2b075274ff86307d80551b241e99",
@@ -377,7 +410,7 @@
       "sigHash": "c134fb1e52b319051da4329bdb04b49634aa06ab95f5c032ecb4bb13072cea7b",
       "sorry": true,
       "source": {
-        "line": 82,
+        "line": 93,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "ebdc7fc42b37dc31c0069f33f5eabacdac639dc909b8df1aab32a7e2e7f3e594",
@@ -400,20 +433,20 @@
       "axioms": ["sorryAx"],
       "cone": {
         "reasons": {},
-        "size": 9,
+        "size": 10,
         "untrusted": []
       },
       "decl": "Notation.sets",
-      "doc": "Sets: every operation of the sets pack.",
+      "doc": "Sets: every operation of the sets pack; a literal `{a, b}`, and a longer\n`insert`, written `{a} ∪ s`.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\alpha", "\\cap", "\\cup", "\\emptyset", "\\in", "\\leanmetasource", "\\setminus", "\\subset", "\\subseteq", "\\textbackslash", "\\wedge"],
-      "sigHash": "7bf620d809b4035a80b56103198721e6b7b705a9615c3d45af5748d178eeaa53",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\alpha", "\\cap", "\\cup", "\\emptyset", "\\in", "\\leanmetasource", "\\setminus", "\\subset", "\\subseteq", "\\textbackslash", "\\wedge"],
+      "sigHash": "c52c49577c9813f7485908b9666e4eab5c3fa7f9cbddf7d29fae5ecf0286324c",
       "sorry": true,
       "source": {
-        "line": 53,
+        "line": 55,
         "path": "Notation/Defs.lean"
       },
-      "stmtHash": "401c792355f000d211954ca797d7d007f31080c27e3fdb6b904435560d48181f",
+      "stmtHash": "384a5299965f1f87e57af918c3ad7c0a67c86ee1eebb4a45770f8f3c3d8b414c",
       "validation": {
         "math": [],
         "math:binders": [],
@@ -421,12 +454,12 @@
         "prose": []
       },
       "views": {
-        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} \\{\\LeanBound{α} : \\LeanSort{Type}\\} (\\LeanBound{s} \\LeanBound{t} : \\LeanConst{MySet} \\LeanBound{α}) (\\LeanBound{a} : \\LeanBound{α}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} ∈ \\LeanBound{s} ∪ \\LeanBound{t} ∩ (\\LeanBound{s} \\textbackslash{} \\LeanBound{t}) ∧ \\LeanBound{s} ⊆ \\LeanBound{t} ∧ \\LeanBound{s} ⊂ \\LeanBound{t} ∧ ∅ ⊆ \\{\\LeanBound{a}\\}}",
-        "math": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}}",
-        "math:binders": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge (s \\subseteq t \\wedge (s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}))}",
-        "math:named": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\}}",
-        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Sets: every operation of the sets pack.}",
-        "prose": "\\LeanProse{Let $\\alpha$ be a type, $s, t \\in \\LeanMathConst{MySet}\\,\\alpha$ and $a \\in \\alpha$. Then (1)~$a \\in s \\cup t \\cap (s \\setminus t)$, (2)~$s \\subseteq t$, (3)~$s \\subset t$ and (4)~$\\emptyset \\subseteq \\{a\\}$.}"
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} \\{\\LeanBound{α} : \\LeanSort{Type}\\} (\\LeanBound{s} \\LeanBound{t} : \\LeanConst{MySet} \\LeanBound{α}) (\\LeanBound{a} \\LeanBound{b} : \\LeanBound{α}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} ∈ \\LeanBound{s} ∪ \\LeanBound{t} ∩ (\\LeanBound{s} \\textbackslash{} \\LeanBound{t}) ∧ \\LeanBound{s} ⊆ \\LeanBound{t} ∧ \\LeanBound{s} ⊂ \\LeanBound{t} ∧ ∅ ⊆ \\{\\LeanBound{a}\\} ∧ \\{\\LeanBound{a}, \\LeanBound{b}\\} ⊆ \\LeanConst{insert} \\LeanBound{a} \\LeanBound{s}}",
+        "math": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\} \\wedge \\{a, b\\} \\subseteq \\{a\\} \\cup s}",
+        "math:binders": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge (s \\subseteq t \\wedge (s \\subset t \\wedge (\\emptyset \\subseteq \\{a\\} \\wedge \\{a, b\\} \\subseteq \\{a\\} \\cup s)))}",
+        "math:named": "\\LeanMath{a \\in s \\cup t \\cap (s \\setminus t) \\wedge s \\subseteq t \\wedge s \\subset t \\wedge \\emptyset \\subseteq \\{a\\} \\wedge \\{a, b\\} \\subseteq \\{a\\} \\cup s}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Sets: every operation of the sets pack; a literal \\LeanCodeInline{\\{a, b\\}}, and a longer\n\\LeanCodeInline{insert}, written \\LeanCodeInline{\\{a\\} ∪ s}.}",
+        "prose": "\\LeanProse{Let $\\alpha$ be a type, $s, t \\in \\LeanMathConst{MySet}\\,\\alpha$ and $a, b \\in \\alpha$. Then (1)~$a \\in s \\cup t \\cap (s \\setminus t)$, (2)~$s \\subseteq t$, (3)~$s \\subset t$, (4)~$\\emptyset \\subseteq \\{a\\}$ and (5)~$\\{a, b\\} \\subseteq \\{a\\} \\cup s$.}"
       }
     },
     "Notation.triple": {
@@ -443,7 +476,7 @@
       "sigHash": "907b05bf0c8e607fcbc056d38b067fb75b09be18030faa7e464594026246e3a3",
       "sorry": false,
       "source": {
-        "line": 104,
+        "line": 115,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c7fde288a4c19a27c6a82b67a2e9b8271fd766dd8776b81e947e4c2dfa8d0c90",
@@ -476,7 +509,7 @@
       "sigHash": "442764eb98dee58774e114b2c144f255c575c6dbd6e9dd8a7308d2834e108869",
       "sorry": true,
       "source": {
-        "line": 88,
+        "line": 99,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c9972ac218916daa784efa844e6fe4762ac942c117e213910c76be2dc9543c50",
@@ -509,7 +542,7 @@
       "sigHash": "c2c923c587cdcd9a478e8cb4850dd8c88521e5c7b4a22dc7a042cfee23faef2f",
       "sorry": false,
       "source": {
-        "line": 125,
+        "line": 136,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "d87f370e2af19f39552d16f9c9bd3dbcccd63d556ef1c6ecc67378e3a965ac6a",

@@ -1,0 +1,300 @@
+{
+  "entries": {
+    "MathlibPack.arithmetic": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 11,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.arithmetic",
+      "doc": "Arithmetic functions.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\binom", "\\cdot", "\\in", "\\lceil", "\\leanmetasource", "\\lfloor", "\\mathbb", "\\pi", "\\rceil", "\\rfloor", "\\varphi", "\\wedge"],
+      "sigHash": "f6bce3b16efe072f93a9d302264920590814fe4175248db88ce6d1f5c5b6e4cd",
+      "sorry": true,
+      "source": {
+        "line": 32,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "f162eb445e2ea2fccd3f8ee91152db2b28595ea2e241d31a44b5ba23d71dd38d",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{arithmetic} (\\LeanBound{n} \\LeanBound{k} : \\LeanConst{Nat}) (\\LeanBound{x} : \\LeanConst{Real}) :\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{n} + \\LeanNumber{1}).factorial = \\LeanBound{n}.choose \\LeanBound{k} * \\LeanBound{n}.totient + \\LeanBound{n}.primeCounting ∧\\LeanNewline\n\\LeanIndent{4}\\LeanConst{Int.floor} \\LeanBound{x} + \\LeanConst{Int.ceil} \\LeanBound{x} = ↑(\\LeanConst{Nat.floor} \\LeanBound{x}) + ↑(\\LeanConst{Nat.ceil} \\LeanBound{x})}",
+        "math": "\\LeanMath{(n + 1)! = \\binom{n}{k} \\cdot \\varphi(n) + \\pi(n) \\wedge \\lfloor x \\rfloor + \\lceil x \\rceil = \\lfloor x \\rfloor_{+} + \\lceil x \\rceil_{+}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Arithmetic functions.}",
+        "prose": "\\LeanProse{Let $n, k \\in \\mathbb{N}$ and $x \\in \\mathbb{R}$. Then (1)~$(n + 1)! = \\binom{n}{k} \\cdot \\varphi(n) + \\pi(n)$ and (2)~$\\lfloor x \\rfloor + \\lceil x \\rceil = \\lfloor x \\rfloor_{+} + \\lceil x \\rceil_{+}$.}"
+      }
+    },
+    "MathlibPack.cards": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 7,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.cards",
+      "doc": "Cardinalities.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\alpha", "\\in", "\\leanmetasource", "\\mathbb"],
+      "sigHash": "74b03291c89cb88d9e502d6297faa3ca5da888a99593fa182aee319f131df0cf",
+      "sorry": true,
+      "source": {
+        "line": 38,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "dacdaa70c4610e6daf4d91589e296ae7b9cee01232e96d80b87232d006fc87a5",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{cards} (\\LeanBound{s} : \\LeanConst{Finset} \\LeanConst{Nat}) (\\LeanBound{t} : \\LeanConst{Set} \\LeanConst{Nat}) (\\LeanBound{α} : \\LeanSort{Type}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{s}.card + \\LeanBound{t}.ncard = \\LeanConst{Fintype.card} \\LeanBound{α}}",
+        "math": "\\LeanMath{|s| + |t| = |\\alpha|}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Cardinalities.}",
+        "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{Finset}\\,\\mathbb{N}$, $t \\in \\LeanMathConst{Set}\\,\\mathbb{N}$ and $\\alpha$ be a type. Then $|s| + |t| = |\\alpha|$.}"
+      }
+    },
+    "MathlibPack.functions": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 20,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.functions",
+      "doc": "Functions of the reals and the complex numbers.",
+      "kind": "theorem",
+      "macros": ["\\Im", "\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\Re", "\\cos", "\\exp", "\\in", "\\lVert", "\\leanmetasource", "\\log", "\\lvert", "\\mathbb", "\\mathrm", "\\pi", "\\rVert", "\\rvert", "\\sin", "\\sqrt", "\\wedge"],
+      "sigHash": "594655657a4819f139a09e943ee5fdbc795a2b4ec5a7a85d93cafcfe9835ab2c",
+      "sorry": true,
+      "source": {
+        "line": 25,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "a25ba0903589222075706a7efe57c5ca058d238dea56a2e8708a51fac09ce323",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{functions} (\\LeanBound{x} \\LeanBound{y} : \\LeanConst{Real}) (\\LeanBound{z} \\LeanBound{v} : \\LeanConst{Complex}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{x}.log = (\\LeanBound{x} + \\LeanNumber{1}).exp ∧\\LeanNewline\n\\LeanIndent{4}\\LeanBound{x}.sqrt < \\LeanConst{Real.pi} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{x}.sin = \\LeanBound{y}.cos ∧\\LeanNewline\n\\LeanIndent{8}\\LeanConst{Real.logb} \\LeanNumber{2} \\LeanBound{x} = (\\LeanBound{x}.logb \\LeanBound{y}).log ∧\\LeanNewline\n\\LeanIndent{10}\\LeanBound{z}.re + \\LeanBound{z}.im = Complex.I.re ∧ \\LeanConst{abs} \\LeanBound{x} = \\LeanConst{Norm.norm} \\LeanBound{v}}",
+        "math": "\\LeanMath{\\log x = \\exp (x + 1) \\wedge \\sqrt{x} < \\pi \\wedge \\sin x = \\cos y \\wedge \\log_{2} x = \\log \\log_{x} y \\wedge \\Re z + \\Im z = \\Re \\mathrm{i} \\wedge \\lvert x \\rvert = \\lVert v \\rVert}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Functions of the reals and the complex numbers.}",
+        "prose": "\\LeanProse{Let $x, y \\in \\mathbb{R}$ and $z, v \\in \\mathbb{C}$. Then (1)~$\\log x = \\exp (x + 1)$, (2)~$\\sqrt{x} < \\pi$, (3)~$\\sin x = \\cos y$, (4)~$\\log_{2} x = \\log \\log_{x} y$, (5)~$\\Re z + \\Im z = \\Re \\mathrm{i}$ and (6)~$\\lvert x \\rvert = \\lVert v \\rVert$.}"
+      }
+    },
+    "MathlibPack.graphs": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 14,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.graphs",
+      "doc": "Graphs.",
+      "kind": "theorem",
+      "macros": ["\\Delta", "\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\chi", "\\delta", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\mathrm", "\\omega", "\\sim", "\\wedge"],
+      "sigHash": "f78e843d3af3b6b7219acc2d93b30b8340c138f4bca3b43bd5e15a9647295888",
+      "sorry": true,
+      "source": {
+        "line": 75,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "e3e17c5505c0328c9b9d71c67fe5ed30ebb14eb8eb1521f7aec0cf4e98a32288",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{graphs} (\\LeanBound{G} : \\LeanConst{SimpleGraph} \\LeanConst{Nat}) (\\LeanBound{u} \\LeanBound{v} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{G}.chromaticNumber ≤ \\LeanBound{G}.maxDegree + \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanBound{G}.minDegree ≤ \\LeanBound{G}.cliqueNum ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{G}.edgeFinset.card = \\LeanNumber{3} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanBound{G}.Adj \\LeanBound{u} \\LeanBound{v} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{SimpleGraph.completeGraph} \\LeanConst{Nat} = \\LeanBound{G} ∧\\LeanNewline\n\\LeanIndent{12}\\LeanConst{SimpleGraph.cycleGraph} \\LeanNumber{5} = \\LeanConst{SimpleGraph.cycleGraph} \\LeanNumber{5}}",
+        "math": "\\LeanMath{\\chi(G) \\le \\Delta(G) + 1 \\wedge \\delta(G) \\le \\omega(G) \\wedge |\\mathrm{E}(G)| = 3 \\wedge u \\sim_{G} v \\wedge K_{\\mathbb{N}} = G \\wedge C_{5} = C_{5}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Graphs.}",
+        "prose": "\\LeanProse{Let $G \\in \\LeanMathConst{SimpleGraph}\\,\\mathbb{N}$ and $u, v \\in \\mathbb{N}$. Then (1)~$\\chi(G) \\le \\Delta(G) + 1$, (2)~$\\delta(G) \\le \\omega(G)$, (3)~$|\\mathrm{E}(G)| = 3$, (4)~$u \\sim_{G} v$, (5)~$K_{\\mathbb{N}} = G$ and (6)~$C_{5} = C_{5}$.}"
+      }
+    },
+    "MathlibPack.limits": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 14,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.limits",
+      "doc": "Limits along `atTop`: to a point, to infinity, to minus infinity; what\nholds eventually and frequently.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\cdot", "\\in", "\\infty", "\\leanmetasource", "\\lim", "\\mathbb", "\\text", "\\to", "\\wedge"],
+      "sigHash": "1ef20bd3f1db73b7863845ac922a749d7e06098c77da57fd0b2ae2472967b5f6",
+      "sorry": true,
+      "source": {
+        "line": 66,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "ff13face497172df01307d78727a1bc57733a4b071ee62f8e0cf6de017399470",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{limits} (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Real}) (\\LeanBound{a} : \\LeanConst{Real}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Filter.Tendsto} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{f} \\LeanBound{n}) \\LeanConst{Filter.atTop} (\\LeanConst{nhds} \\LeanBound{a}) ∧\\LeanNewline\n\\LeanIndent{4}\\LeanConst{Filter.Tendsto} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{f} (\\LeanNumber{2} * \\LeanBound{n})) \\LeanConst{Filter.atTop} \\LeanConst{Filter.atTop} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanConst{Filter.Tendsto} (\\LeanKeyword{fun} \\LeanBound{n} => -\\LeanBound{f} \\LeanBound{n}) \\LeanConst{Filter.atTop} \\LeanConst{Filter.atBot} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanConst{Filter.Eventually} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{a} < \\LeanBound{f} \\LeanBound{n}) \\LeanConst{Filter.atTop} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{Filter.Frequently} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{f} \\LeanBound{n} < \\LeanBound{a}) \\LeanConst{Filter.atTop}}",
+        "math": "\\LeanMath{\\lim_{n \\to \\infty} f\\,n = a \\wedge \\lim_{n \\to \\infty} f\\,(2 \\cdot n) = \\infty \\wedge \\lim_{n \\to \\infty} -f\\,n = -\\infty \\LeanBreak \\wedge (\\text{for all sufficiently large } n,\\ a < f\\,n) \\wedge (\\text{for infinitely many } n,\\ f\\,n < a)}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Limits along \\LeanCodeInline{atTop}: to a point, to infinity, to minus infinity; what\nholds eventually and frequently.}",
+        "prose": "\\LeanProse{Let $f \\in \\mathbb{N} \\to \\mathbb{R}$ and $a \\in \\mathbb{R}$. Then (1)~$\\lim_{n \\to \\infty} f\\,n = a$, (2)~$\\lim_{n \\to \\infty} f\\,(2 \\cdot n) = \\infty$, (3)~$\\lim_{n \\to \\infty} -f\\,n = -\\infty$, (4)~$\\text{for all sufficiently large } n,\\ a < f\\,n$ and (5)~$\\text{for infinitely many } n,\\ f\\,n < a$.}"
+      }
+    },
+    "MathlibPack.polynomials": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 6,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.polynomials",
+      "doc": "Polynomials.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\deg", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\mathrm", "\\wedge"],
+      "sigHash": "0ac1b3fa8b32b6ee3e44a760492ea945d0860c572abf3a526ca723ed738ee060",
+      "sorry": true,
+      "source": {
+        "line": 84,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "694d73d21415d6d65d625e34fb75f691516438682c94e7dd3ccd64dfb640bc48",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{polynomials} (\\LeanBound{p} : \\LeanConst{Polynomial} \\LeanConst{Nat}) (\\LeanBound{x} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Polynomial.eval} \\LeanBound{x} \\LeanBound{p} = \\LeanConst{Polynomial.eval} \\LeanBound{x} \\LeanConst{Polynomial.X} ∧ \\LeanBound{p}.degree ≤ \\LeanNumber{2}}",
+        "math": "\\LeanMath{p(x) = \\mathrm{X}(x) \\wedge \\deg p \\le 2}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Polynomials.}",
+        "prose": "\\LeanProse{Let $p \\in \\LeanMathConst{Polynomial}\\,\\mathbb{N}$ and $x \\in \\mathbb{N}$. Then (1)~$p(x) = \\mathrm{X}(x)$ and (2)~$\\deg p \\le 2$.}"
+      }
+    },
+    "MathlibPack.predicates": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 23,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.predicates",
+      "doc": "Predicates, as sentences.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\equiv", "\\in", "\\leanmetasource", "\\mathbb", "\\pmod", "\\text", "\\to", "\\wedge"],
+      "sigHash": "b49eba08d31c178de58a065f3c733d36b3dff5135e81bf5da49e2bd2dd7c2ba4",
+      "sorry": true,
+      "source": {
+        "line": 42,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "043ca942ea6af7ff49355457df01d6ba6cd8b41c80ade432be83257a86ec71a9",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{predicates} (\\LeanBound{p} \\LeanBound{n} \\LeanBound{m} : \\LeanConst{Nat}) (\\LeanBound{x} : \\LeanConst{Real}) (\\LeanBound{s} : \\LeanConst{Set} \\LeanConst{Nat}) (\\LeanBound{t} : \\LeanConst{Finset} \\LeanConst{Nat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Nat}) (\\LeanBound{G} : \\LeanConst{SimpleGraph} \\LeanConst{Nat}) (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Int}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{p}.Prime ∧\\LeanNewline\n\\LeanIndent{4}\\LeanConst{Odd} \\LeanBound{n} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanConst{Even} \\LeanBound{m} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanConst{Irrational} \\LeanBound{x} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanConst{Squarefree} \\LeanBound{n} ∧\\LeanNewline\n\\LeanIndent{12}\\LeanConst{IsSquare} \\LeanBound{m} ∧\\LeanNewline\n\\LeanIndent{14}\\LeanBound{s}.Infinite ∧\\LeanNewline\n\\LeanIndent{16}\\LeanBound{s}.Finite ∧\\LeanNewline\n\\LeanIndent{18}\\LeanBound{s}.Nonempty ∧\\LeanNewline\n\\LeanIndent{20}\\LeanBound{t}.Nonempty ∧\\LeanNewline\n\\LeanIndent{22}\\LeanConst{StrictMono} \\LeanBound{f} ∧\\LeanNewline\n\\LeanIndent{24}\\LeanConst{Monotone} \\LeanBound{f} ∧\\LeanNewline\n\\LeanIndent{26}\\LeanConst{Function.Bijective} \\LeanBound{f} ∧\\LeanNewline\n\\LeanIndent{28}\\LeanBound{G}.Connected ∧ \\LeanBound{n}.Coprime \\LeanBound{m} ∧ \\LeanConst{Int.ModEq} \\LeanNumber{7} \\LeanBound{a} \\LeanBound{b}}",
+        "math": "\\LeanMath{p \\text{ is prime} \\wedge n \\text{ is odd} \\wedge m \\text{ is even} \\wedge x \\text{ is irrational} \\wedge n \\text{ is squarefree} \\LeanBreak \\wedge m \\text{ is a square} \\wedge s \\text{ is infinite} \\wedge s \\text{ is finite} \\wedge s \\text{ is nonempty} \\wedge t \\text{ is nonempty} \\LeanBreak \\wedge f \\text{ is strictly increasing} \\LeanBreak \\wedge f \\text{ is monotone} \\wedge f \\text{ is bijective} \\wedge G \\text{ is connected} \\wedge n \\text{ and } m \\text{ are coprime} \\wedge a \\equiv b \\pmod{7}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Predicates, as sentences.}",
+        "prose": "\\LeanProse{Let $p, n, m \\in \\mathbb{N}$, $x \\in \\mathbb{R}$, $s \\in \\LeanMathConst{Set}\\,\\mathbb{N}$, $t \\in \\LeanMathConst{Finset}\\,\\mathbb{N}$, $f \\in \\mathbb{N} \\to \\mathbb{N}$, $G \\in \\LeanMathConst{SimpleGraph}\\,\\mathbb{N}$ and $a, b \\in \\mathbb{Z}$. Then (1)~$p \\text{ is prime}$, (2)~$n \\text{ is odd}$, (3)~$m \\text{ is even}$, (4)~$x \\text{ is irrational}$, (5)~$n \\text{ is squarefree}$, (6)~$m \\text{ is a square}$, (7)~$s \\text{ is infinite}$, (8)~$s \\text{ is finite}$, (9)~$s \\text{ is nonempty}$, (10)~$t \\text{ is nonempty}$, (11)~$f \\text{ is strictly increasing}$, (12)~$f \\text{ is monotone}$, (13)~$f \\text{ is bijective}$, (14)~$G \\text{ is connected}$, (15)~$n \\text{ and } m \\text{ are coprime}$ and (16)~$a \\equiv b \\pmod{7}$.}"
+      }
+    },
+    "MathlibPack.sets": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 16,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.sets",
+      "doc": "Sets and finsets: intervals, set-builder notation, filters.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\dots", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\mid", "\\text", "\\wedge"],
+      "sigHash": "cfe013f588dcd1059d4814ccf324445e4a1af8c2074e9146f682f5ff365bcc54",
+      "sorry": true,
+      "source": {
+        "line": 51,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "482a3529c4b5bd948e36fa7a65aac3c0a4026e2b41ed9513709ac7463b5a45d2",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}) (\\LeanBound{s} : \\LeanConst{Finset} \\LeanConst{Nat}) (\\LeanBound{x} : \\LeanConst{Real}) :\\LeanNewline\n\\LeanIndent{2}\\LeanNumber{1} ∈ \\LeanConst{Set.Icc} \\LeanBound{a} \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{4}(\\LeanConst{Finset.Icc} \\LeanBound{a} \\LeanBound{b}).card = (\\LeanConst{Finset.range} \\LeanBound{b}).card ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanConst{Set.ofPred} \\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n}.Prime).Infinite ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{Set.ofPred} \\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} < \\LeanNumber{5}).Finite ∧\\LeanNewline\n\\LeanIndent{10}(\\LeanConst{Finset.filter} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} < \\LeanNumber{5}) \\LeanBound{s}).card ≤ \\LeanNumber{5} ∧ \\LeanBound{x} = \\LeanBound{x}}",
+        "math": "\\LeanMath{1 \\in [a, b] \\wedge |\\{a, \\dots, b\\}| = |\\{0, 1, \\dots, b - 1\\}| \\LeanBreak \\wedge \\{n \\mid n \\text{ is prime}\\} \\text{ is infinite} \\wedge \\{n \\mid n < 5\\} \\text{ is finite} \\wedge |\\{n \\in s \\mid n < 5\\}| \\le 5 \\wedge x = x}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Sets and finsets: intervals, set-builder notation, filters.}",
+        "prose": "\\LeanProse{Let $a, b \\in \\mathbb{N}$, $s \\in \\LeanMathConst{Finset}\\,\\mathbb{N}$ and $x \\in \\mathbb{R}$. Then (1)~$1 \\in [a, b]$, (2)~$|\\{a, \\dots, b\\}| = |\\{0, 1, \\dots, b - 1\\}|$, (3)~$\\{n \\mid n \\text{ is prime}\\} \\text{ is infinite}$, (4)~$\\{n \\mid n < 5\\} \\text{ is finite}$, (5)~$|\\{n \\in s \\mid n < 5\\}| \\le 5$ and (6)~$x = x$.}"
+      }
+    },
+    "MathlibPack.sums": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 13,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.sums",
+      "doc": "Sums and products, over a finset, over everything, and infinite.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\in", "\\infty", "\\leanmetasource", "\\mathbb", "\\prod", "\\sum", "\\to", "\\wedge"],
+      "sigHash": "720bda8ea24f070980b3671303ac5f3d50b6a161609013c897d7e1a10dfb88ac",
+      "sorry": true,
+      "source": {
+        "line": 58,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "4ad86c2a6648427ef7e2176e6ce4a6abedaa1321465b5e5d3b9c06a07ebb9f70",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sums} (\\LeanBound{s} : \\LeanConst{Finset} \\LeanConst{Nat}) (\\LeanBound{f} : \\LeanConst{Nat} → \\LeanConst{Real}) :\\LeanNewline\n\\LeanIndent{2}((\\LeanBound{s}.sum \\LeanKeyword{fun} \\LeanBound{i} => \\LeanBound{i}) = Finset.univ.sum \\LeanKeyword{fun} \\LeanBound{i} => ↑\\LeanBound{i}) ∧\\LeanNewline\n\\LeanIndent{4}((\\LeanBound{s}.prod \\LeanKeyword{fun} \\LeanBound{i} => \\LeanBound{i} + \\LeanNumber{1}) = Finset.univ.prod \\LeanKeyword{fun} \\LeanBound{i} => ↑\\LeanBound{i}) ∧\\LeanNewline\n\\LeanIndent{6}\\LeanConst{tsum} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{f} \\LeanBound{n}) (\\LeanConst{SummationFilter.unconditional} \\LeanConst{Nat}) =\\LeanNewline\n\\LeanIndent{8}\\LeanConst{tsum} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{f} \\LeanBound{n}) (\\LeanConst{SummationFilter.unconditional} \\LeanConst{Nat})}",
+        "math": "\\LeanMath{\\sum_{i \\in s} i = \\sum_{i} \\LeanMathConst{Fin.val}\\,i \\wedge \\prod_{i \\in s} (i + 1) = \\prod_{i} \\LeanMathConst{Fin.val}\\,i \\wedge \\sum_{n}^{\\infty} f\\,n = \\sum_{n}^{\\infty} f\\,n}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Sums and products, over a finset, over everything, and infinite.}",
+        "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{Finset}\\,\\mathbb{N}$ and $f \\in \\mathbb{N} \\to \\mathbb{R}$. Then (1)~$\\sum_{i \\in s} i = \\sum_{i} \\LeanMathConst{Fin.val}\\,i$, (2)~$\\prod_{i \\in s} (i + 1) = \\prod_{i} \\LeanMathConst{Fin.val}\\,i$ and (3)~$\\sum_{n}^{\\infty} f\\,n = \\sum_{n}^{\\infty} f\\,n$.}"
+      }
+    },
+    "MathlibPack.types": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 27,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.types",
+      "doc": "Types, and the coercions that are not shown.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\in", "\\leanmetasource", "\\mathbb", "\\wedge"],
+      "sigHash": "41697356cf548fbf2e07cc93f6f3cf5c83ea475147cb85bbd13ac02dc5aed2cb",
+      "sorry": true,
+      "source": {
+        "line": 18,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "20ef1d42701e83c497cac254ff4699807b1899e988e9b3fdbf82e294865d4254",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{types} (\\LeanBound{x} : \\LeanConst{Real}) (\\LeanBound{z} : \\LeanConst{Complex}) (\\LeanBound{q} : \\LeanConst{Rat}) (\\LeanBound{r} : \\LeanConst{NNReal}) (\\LeanBound{m} : \\LeanConst{PNat})\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{h} : \\LeanConst{Hom}) (\\LeanBound{k} : \\LeanConst{ZMod} \\LeanNumber{7}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{q}.cast = \\LeanBound{x} ∧\\LeanNewline\n\\LeanIndent{4}\\LeanBound{r}.toReal = \\LeanBound{x} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{m}.val = \\LeanNumber{1} ∧ \\LeanBound{x}.toEReal = \\LeanBound{x}.toEReal ∧ \\LeanConst{DFunLike.coe} \\LeanBound{h} \\LeanNumber{1} = \\LeanNumber{1} ∧ \\LeanBound{k} = \\LeanBound{k} ∧ \\LeanBound{z} = \\LeanBound{z}}",
+        "math": "\\LeanMath{q = x \\wedge r = x \\wedge m = 1 \\wedge x = x \\wedge h\\,1 = 1 \\wedge k = k \\wedge z = z}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Types, and the coercions that are not shown.}",
+        "prose": "\\LeanProse{Let $x \\in \\mathbb{R}$, $z \\in \\mathbb{C}$, $q \\in \\mathbb{Q}$, $r \\in \\LeanMathConst{NNReal}$, $m \\in \\LeanMathConst{PNat}$, $h \\in \\LeanMathConst{Hom}$ and $k \\in \\mathbb{Z}/7\\mathbb{Z}$. Then (1)~$q = x$, (2)~$r = x$, (3)~$m = 1$, (4)~$x = x$, (5)~$h\\,1 = 1$, (6)~$k = k$ and (7)~$z = z$.}"
+      }
+    }
+  },
+  "producer": {
+    "lean": "v4.x",
+    "tool": "imprimatur-export",
+    "version": "0.0.0"
+  },
+  "schema": "imprimatur-bundle/1"
+}

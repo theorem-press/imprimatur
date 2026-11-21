@@ -509,9 +509,11 @@ latex_notation Label.lub a b                   => r"\lub{#a, #b}"      flatten
   1. The project's rules. The most specific pattern wins, and declaration
      order breaks ties.
   2. Notation packs shipped with imprimatur (`core`, `logic`, `sets`,
-     `order`; a `mathlib-common` pack is not yet written, #36). A pack is
-     selected in `imprimatur.toml`, and its rules are stored as names, so
-     imprimatur still doesn't depend on Mathlib.
+     `order` and `mathlib`, the last chosen from a sweep of
+     formal-conjectures, #36). A pack is selected in `imprimatur.toml`, and
+     its rules are stored as names, so imprimatur still doesn't depend on
+     Mathlib; a rule for a constant the environment lacks is dropped as the
+     rules are assembled.
   3. The delaborator fallback (§7.2).
 - **Metavariables.** A trailing digit or a Unicode subscript becomes a LaTeX
   subscript. `latex_metavar` renames a binder, for example rendering
@@ -1435,7 +1437,11 @@ block is.
   to default (`Fin n` is a type). A universe that may be `Prop` is `Sort*`:
   it takes a type or a proposition, but not a value of a datatype, so the
   type `[n]` is not read as a one-element list. A proposition is read where
-  a type is expected, but not the other way round.
+  a type is expected, but not the other way round. A pack rule, which is not
+  elaborated, may give a hole or its result the sort `!`, any datum: a sort
+  that is neither a universe nor a function type, so that a coercion from
+  bundled functions (`DFunLike.coe`, of sort `! → (?α → !)`) takes neither a
+  type nor a set, which is a function type, and yields no set.
 - **Readings** are trees named by the shapes of the rules' patterns, so
   rules for the same expressions (a variant's and a pack's) give the same
   reading. Coercions, chain association and synonyms are invisible (`≈_N`),

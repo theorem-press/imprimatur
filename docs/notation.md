@@ -131,7 +131,7 @@ Settings of the renderer, for conventions a paper fixes once:
 |---|---|---|
 | `names` | `italic` (default), `raw` | with `raw`, a binder name is written as it is: it is TeX, so `l_c` sets a subscript |
 | `applied_variables` | `juxtaposed` (default), `call`, `subscript` | a variable applied to arguments: `f\,a\,b`, `f(a)(b)`, or `f_{a, b}` |
-| `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, which `check` reports as not validated since the notation does not apply in it, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots` |
+| `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, which `check` reports as not validated since the notation does not apply in it, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots`. Under either, a λ whose body is a `match` on its own variable with one alternative, `fun p => match p with \| (a, b) => e`, is written with the pattern for its binder, `\lambda (a, b).\, e` |
 | `lists` | `cons` (default), `literal` | a list literal: by the rules for `List.cons`, or `[a,\ b]` |
 | `categories` | `loose` (default), `unique`, `strict` | how strictly the metavariables of `latex_category` are held to their types: see [Metavariables](#metavariables) |
 
@@ -188,16 +188,31 @@ when it also names a declaration (Mathlib's `Representation`, say).
 
 ## Packs
 
-Rules for constants in Lean's core library are shipped with imprimatur, and
-selected with `notation_packs` in `imprimatur.toml`. All four are used by
-default.
+Rules for constants of Lean's core library, and for the Mathlib notation
+papers use most, are shipped with imprimatur, and selected with
+`notation_packs` in `imprimatur.toml`. All five are used by default. A pack
+names its constants rather than elaborating them, so imprimatur depends on
+no library; a rule for a constant the project's environment lacks is
+dropped before the read-back grammar is built, so an unused pack costs
+nothing.
 
 | Pack | Covers |
 |---|---|
-| `core` | `=` `≠` `+` `-` `·` `/` `mod` `^` negation `<` `≤` `>` `≥`, numerals, `Nat.succ`, `∘`, pairs, `ℕ`, `ℤ`, Booleans; coercions are not shown |
+| `core` | `=` `≠` `+` `-` `·` `/` `mod` `^` negation `<` `≤` `>` `≥` `∣`, numerals, `Nat.succ`, `∘`, pairs, `ℕ`, `ℤ`, `ℚ`, gcd and lcm, injective and surjective, Booleans; coercions are not shown |
 | `logic` | `∧` `∨` `¬` `↔` `⊤` `⊥` |
-| `sets` | `∈` `⊆` `⊂` `∪` `∩` `\` `∅` `{a}` |
+| `sets` | `∈` `⊆` `⊂` `∪` `∩` `\` `∅` `{a}` `{a, b}`, and `insert a s` as `{a} ∪ s` |
 | `order` | `max`, `min` |
+| `mathlib` | `ℝ` `ℂ` `ℤ/nℤ`; the coercions `DFunLike.coe`, `Rat.cast`, `NNReal.toReal`, `PNat.val`, `Real.toEReal`, not shown; `log` `exp` `√` `π` `sin` `cos` `log_b` `ℜ` `ℑ` `i` `|x|` `‖x‖` `n!` `\binom{n}{k}` `φ(n)` `π(n)` floors and ceilings; `|s|` for a finset, a set or a type; "is prime", odd, even, irrational, squarefree, a square, infinite, finite, nonempty, strictly increasing, monotone, bijective, connected, coprime, `a ≡ b (mod n)` over `ℤ`; `[a, b]`, `{a, …, b}`, `{0, 1, …, n − 1}`, `{x ∣ p}`, `{x ∈ s ∣ p}`; `∑` and `∏` over a finset or over everything, `∑^∞` for a series; `lim_{n→∞} f = a` (also `= ±∞`), "for all sufficiently large n", "for infinitely many n"; graphs: `χ` `Δ` `δ` `ω` `E(G)` `K_V` `C_n` `u ∼_G v`; polynomials: `p(x)`, `X`, `deg` |
+
+The `mathlib` pack was chosen from a sweep of
+[formal-conjectures](https://github.com/google-deepmind/formal-conjectures)
+(2026-11-21): the constants left bare most often, where a rule renders them
+without a choice the paper would want to make itself, and where the
+read-back stays unambiguous: so no `IsBigO` (its two functions share a
+variable a template cannot bind), no `Set.Ioo` as `(a, b)` (a pair), no
+`ℝ^n` for `EuclideanSpace ℝ (Fin n)` (a power), and of `Nat.ModEq` and
+`Int.ModEq`, which print alike through the casts, only the integer one. A
+project rule for any of these takes precedence.
 
 `∀`, `∃`, bounded quantifiers (`∀ x ∈ s`), implication and `λ` are built
 in; a binder pattern for them in the project takes precedence.

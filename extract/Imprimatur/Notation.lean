@@ -82,6 +82,16 @@ partial def Pat.binder? : Pat → Option (Name × Name)
   | .constrained p _ => p.binder?
   | _ => none
 
+/-- The variables a pattern binds (`fun x => p`, `∀ x, p`): in a template
+they stand for a bound variable's name, not an expression. -/
+partial def Pat.binderVars : Pat → Array Name
+  | .app _ args => args.foldl (· ++ ·.binderVars) #[]
+  | .constrained p _ => p.binderVars
+  | .lam x b => #[x] ++ b.binderVars
+  | .pi x d b => #[x] ++ d.binderVars ++ b.binderVars
+  | .arrow d c => d.binderVars ++ c.binderVars
+  | _ => #[]
+
 /-- The head a rule is indexed by: `_forall`, `_arrow` and `_lam` stand for
 the binders. -/
 def Pat.head : Pat → Name
@@ -398,6 +408,62 @@ def Pat.arity : Pat → Nat
   | .app _ args | .constrained (.app _ args) _ => args.size
   | _ => 0
 
+/-- The local context with each pattern variable `xs[i]` named as the
+alternative `alt` names its `i`th binder, unless that name is inaccessible,
+and renamed when another variable in scope has the name already. -/
+partial def patternNames (alt : Expr) (xs : Array Expr) : MetaM LocalContext := do
+  let mut lctx ← getLCtx
+  let mut body := alt
+  for x in xs do
+    let suggested := if body.isLambda then body.bindingName! else .anonymous
+    let unused := body.isLambda && !body.bindingBody!.hasLooseBVar 0
+    if body.isLambda then body := body.bindingBody!
+    let .fvar id := x | continue
+    let some decl := lctx.find? id | continue
+    -- A variable the branch does not use is written `_`, as in the source.
+    if unused then
+      lctx := lctx.setUserName id `_
+      continue
+    let base :=
+      if suggested.isAnonymous || suggested.hasMacroScopes || suggested.isInaccessibleUserName
+      then decl.userName.eraseMacroScopes else suggested
+    let clash (n : Name) (l : LocalContext) : Bool :=
+      l.decls.toList.any fun
+        | some d => d.fvarId != id && d.userName == n
+        | none => false
+    let mut name := base
+    let mut i := 1
+    while clash name lctx do
+      name := base.appendAfter s!"_{i}"
+      i := i + 1
+    lctx := lctx.setUserName id name
+  return lctx
+
+/-- `match y with | pat => rhs`: a matcher applied to the variable `y` alone,
+with one alternative, `y` nowhere else. Runs `k` on the pattern and the
+right-hand side, with the pattern's variables in scope, named as the
+alternative names them; `none` for any other expression. So `fun p => match
+p with | (a, b) => e` is a λ that binds the pattern `(a, b)`. -/
+def withDestructuring {α : Type} (y e : Expr) (k : Expr → Expr → MetaM (Option α)) :
+    MetaM (Option α) := do
+  unless ← isMatcherApp e do return none
+  let some app ← matchMatcherApp? e | return none
+  let .fvar yid := y | return none
+  unless app.discrs == #[y] && app.alts.size == 1 && app.remaining.isEmpty do return none
+  if (app.alts[0]!).containsFVar yid || app.params.any (·.containsFVar yid) then return none
+  let some eqns ← (try some <$> Match.getEquationsFor app.matcherName catch _ => pure none)
+    | return none
+  let some eqn := eqns.eqnNames[0]? | return none
+  let nParams := app.params.size
+  forallTelescope (← getConstInfo eqn).type fun _ body => do
+    let some (_, lhs, rhs) := body.eq? | return none
+    let args := lhs.getAppArgs
+    let some pat := args[nParams + 1]? | return none
+    unless rhs.getAppFn == args[nParams + 2]! do return none
+    let rhsBody := (app.alts[0]!).beta rhs.getAppArgs
+    let lctx ← patternNames (app.alts[0]!) rhs.getAppArgs
+    withLCtx lctx (← getLocalInstances) do k pat rhsBody
+
 /-- Match a pattern, and continue with the bindings of its variables. The
 continuation runs inside the scope of the locals that binder patterns
 introduce: a bound variable is bound to its local, and a body to the
@@ -436,7 +502,13 @@ partial def Pat.matchExprK {α : Type} (p : Pat) (e : Expr) (acc : Array (Name �
     goArgs 0 acc
   | .lam x body =>
     let .lam n t b bi := e.consumeMData | return none
-    withLocalDecl n bi t fun y => body.matchExprK (b.instantiate1 y) (acc.push (x, y)) k
+    withLocalDecl n bi t fun y => do
+      let b := b.instantiate1 y
+      -- `fun p => match p with | (a, b) => e` binds a pattern: `x` stands for
+      -- the pattern `(a, b)`, and the body is `e`, with `a` and `b` in scope.
+      match ← withDestructuring y b (fun pat rhs => body.matchExprK rhs (acc.push (x, pat)) k) with
+      | some r => return some r
+      | none => body.matchExprK b (acc.push (x, y)) k
   | .pi x dom body =>
     let .forallE n t b bi := e.consumeMData | return none
     unless b.hasLooseBVar 0 do return none

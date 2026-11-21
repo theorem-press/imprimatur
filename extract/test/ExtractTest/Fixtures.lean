@@ -53,12 +53,17 @@ def fixtures : Array Fixture := #[
   { dir := "Manifests", module := `Manifests, strip := #[`Cat],
     keys := #["Cat.main", "Cat.classical", "Cat.IsEven"] },
   { dir := "Notation", module := `Notation, strip := #[`Notation],
-    keys := #["Notation.arith", "Notation.logic", "Notation.sets", "Notation.order",
+    keys := #["Notation.arith", "Notation.logic", "Notation.sets", "Notation.order", "Notation.number",
       "Notation.binders", "Notation.project", "Notation.triple", "Notation.long", "Notation.joins", "Notation.typed",
       "Notation.binderRules", "Notation.witnesses", "Notation.hypsOnly", "Notation.bare",
       "Notation.letIn", "Notation.haveIn"],
     views := #["math", "prose", "math:named", "math:binders"],
     document := { hypRefs := #[("Notation.project", "hd")] } },
+  { dir := "MathlibPack", module := `MathlibPack, strip := #[`MathlibPack],
+    keys := #["MathlibPack.types", "MathlibPack.functions", "MathlibPack.arithmetic", "MathlibPack.cards",
+      "MathlibPack.predicates", "MathlibPack.sets", "MathlibPack.sums", "MathlibPack.limits",
+      "MathlibPack.graphs", "MathlibPack.polynomials"],
+    views := #["math", "prose"] },
   { dir := "Statements", module := `Statements, strip := #[`Statements],
     keys := #["Statements.named", "Statements.bounded", "Statements.withInstance"],
     views := #["math", "prose", "math|unfold=", "prose|unfold=", "math|forall=", "math|forall=|unfold="] },
@@ -324,10 +329,15 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     checkEq "extract/modules/private-sorry-seen" (usesSorry r.bundle "ModuleSys.pub_thm") (some true)
     checkEq "extract/modules/sorry-through-import-all" (usesSorry r.bundle "ModuleSys.via_all") (some true)
     checkEq "extract/modules/honest" (axioms r.bundle "ModuleSys.honest") #[]
-  | "Notation" =>
-    -- M4: every pack rule has a golden use.
+  | "MathlibPack" =>
+    -- M4: every rule of the `mathlib` pack has a golden use.
     let usedRules ← used.get
-    let unused := (Packs.all.toArray.flatMap (·.2)).filter fun r =>
+    let unused := Packs.mathlib.filter fun r => !usedRules.contains s!"{r.origin}: {r.template}"
+    checkEq "extract/notation/every-mathlib-rule-used" (unused.map (·.template)) #[]
+  | "Notation" =>
+    -- M4: every rule of the other packs has a golden use.
+    let usedRules ← used.get
+    let unused := (Packs.all.toArray.filter (·.1 != "mathlib") |>.flatMap (·.2)).filter fun r =>
       !usedRules.contains s!"{r.origin}: {r.template}"
     checkEq "extract/notation/every-pack-rule-used" (unused.map (·.template)) #[]
     -- Prose labels a hypothesis only where the paper refers to it.

@@ -922,14 +922,28 @@ def STerm.univFits (a b : String) : Bool :=
   (a == "Prop" && (b == "Sort" || b == "Sort*")) || (a == "Sort" && b == "Sort*") ||
   (a == "Sort*" && (b == "Prop" || b == "Sort"))
 
+/-- A datum: a sort that is neither a universe nor a function type, so a
+value of a named or applied type, or one not known. The sort `!` stands for
+any datum, where a pack rule names what a coercion takes or yields
+(`Packs.mathlib`): a bundled function coerces to a function from a datum
+into data (`! → (?α → !)`), not from a type or a set, which is a function
+type, and not to a set. -/
+def STerm.datum : STerm → Bool
+  | .atom a => !STerm.univ a
+  | .app .. => true
+  | .arrow .. => false
+
 mutual
 /-- Sorts compatible, the first found where the second is expected: equal up
 to unknowns (`*`, and type variables, which are unknown until bound), part
-by part. A type written without its arguments (as the packs write `Option`)
-stands for it with any. A function type is written as one wherever it is
-one by definition (the extractor unfolds `Matrix R C α` to `R → C → α`), so
-a named or applied type is not a function, and a function is not of one. -/
+by part; `!` is any datum. A type written without its arguments (as the
+packs write `Option`) stands for it with any. A function type is written as
+one wherever it is one by definition (the extractor unfolds `Matrix R C α`
+to `R → C → α`), so a named or applied type is not a function, and a
+function is not of one. -/
 def STerm.compat : STerm → STerm → Bool
+  | .atom "!", b => STerm.datum b
+  | a, .atom "!" => STerm.datum a
   | .atom a, .atom b => a == b || STerm.unknown a || STerm.unknown b || STerm.univFits a b
   | .app h as, .app h' bs => h == h' && STerm.compatList as bs
   | .app h _, .atom b => STerm.unknown b || h == b
