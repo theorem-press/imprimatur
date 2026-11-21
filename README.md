@@ -162,7 +162,8 @@ by the proof.
   its notation and its results are views too. See
   [docs/views.md](docs/views.md).
 - **Notation** is declared in Lean, with `latex_notation`, `latex_category`
-  and `latex_style`, and shared packs for logic, sets and order. See
+  and `latex_style`, and shared packs for logic, sets, order and common
+  Mathlib notation. See
   [docs/notation.md](docs/notation.md).
 - **Trust checks:** results that disappear, depend on `sorry` or a
   disallowed axiom, or whose statement changed since `\leancheck` recorded

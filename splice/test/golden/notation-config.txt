@@ -20,7 +20,7 @@ apply: 3 items updated in 1 file; 0 errors, 0 warnings
 [exit 0]
 
 $ imprimatur-splice --config bad-pack.toml scan
-error: bad-pack.toml: notation_packs: unknown pack "calculus"; the packs are core, logic, sets and order
+error: bad-pack.toml: notation_packs: unknown pack "calculus"; the packs are core, logic, sets, order and mathlib
 [exit 2]
 
 == main.tex

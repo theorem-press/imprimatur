@@ -260,7 +260,7 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
   out := out ++ "\\textit{Result} & \\textit{Lean} & \\textit{Source} & \\textit{Axioms}\\\\\n\\hline\\endhead\n"
   for b in blocks do
     if done.contains b.key || (← isIndexKey b.key) then continue
-    let some c := env.find? (b.key.toName) | continue
+    let some c := env.find? (Imprimatur.toName b.key) | continue
     unless all || c matches .thmInfo _ do continue
     done := done.push b.key
     -- The kind of a result, by the prefix of its label (`thm:`, `lem:`, …).

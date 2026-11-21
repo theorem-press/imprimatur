@@ -280,8 +280,8 @@ def Config.parse (text : String) : Except String Config := do
       | "notation_packs" =>
         let ps ← expectStrs k v
         for p in ps do
-          unless ["core", "logic", "sets", "order"].contains p do
-            throw s!"notation_packs: unknown pack {repr p}; the packs are core, logic, sets and order"
+          unless ["core", "logic", "sets", "order", "mathlib"].contains p do
+            throw s!"notation_packs: unknown pack {repr p}; the packs are core, logic, sets, order and mathlib"
         cfg := { cfg with notationPacks := some ps }
       | "notation" => cfg := { cfg with notationFiles := ← expectStrs k v }
       | _ => discard <| expectStrs k v

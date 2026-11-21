@@ -70,6 +70,11 @@ def builtins (call subscript : Bool := false) (cases : Bool := false) (lists : B
     syms := [.tok "\\exists", .var, .tok "\\in", .hole "*" 50, .tok ",", .tok "\\ ", .hole "Prop" 0] },
   { name := "λ", sort := "*", prec := 0,
     syms := [.tok "\\lambda", .var, .tok ".", .tok "\\,", .hole "*" 0] },
+  -- A λ over a pair may bind a pattern, `\lambda (a, b).\, e`, which reads as
+  -- the pair of its variables: the same form, its binder an atom. A plain
+  -- binder reads both ways to the same text, so it is one reading.
+  { name := "λ", sort := "*", prec := 0,
+    syms := [.tok "\\lambda", .hole "*" Doc.maxPrec, .tok ".", .tok "\\,", .hole "*" 0] },
   -- Applications are binary, the function on the left (`f\,a\,b` is
   -- `(f\,a)\,b`; `mkReading` flattens the nested `app`s), so that the
   -- result has the function's codomain for its sort when the function's
@@ -147,6 +152,10 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
     return n
   let chain := r.flatten && r.pat.binder?.isNone
   let folded : Option String := if r.flatten then r.pat.binder?.map (·.1.toString) else none
+  -- A variable the pattern binds is an atom in the production: a bound
+  -- variable's name, or a pattern in parentheses (`λ (a, b). e`), never an
+  -- expression such as `n ∈ s`.
+  let binders := r.pat.binderVars.map (·.toString)
   let mut syms : Array Sym := #[]
   let mut depth := 0
   let mut holeIdx := 0
@@ -180,6 +189,8 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
       else if folded == some v then
         -- The variables of a fold each have their own type.
         syms := syms.push (.list [.hole "*" need] (tokenize r.sep).toList 1)
+      else if binders.contains v then
+        syms := syms.push (.hole "*" Doc.maxPrec)
       else
         syms := syms.push hole
       holeIdx := holeIdx + 1

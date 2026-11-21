@@ -3,6 +3,7 @@ Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean.Data.Json
+import Imprimatur.Names
 
 /-!
 # Requests
@@ -83,7 +84,7 @@ structure Settings where
   own budget per formula, under this limit too. -/
   maxHeartbeats : Nat := 1000000
   /-- Notation packs to use, in order (DESIGN §7.5). -/
-  notationPacks : Array String := #["core", "logic", "sets", "order"]
+  notationPacks : Array String := #["core", "logic", "sets", "order", "mathlib"]
   /-- Notation modules given as files, elaborated in-process (external mode). -/
   notationFiles : Array String := #[]
   /-- The document's blocks and labels. -/
@@ -100,10 +101,6 @@ structure Request where
   /-- The views asked for. -/
   views : Array String
   deriving Repr
-
-/-- Turn a dotted string into a `Name`, component by component. -/
-def toName (s : String) : Name :=
-  s.splitOn "." |>.foldl (fun n c => Name.mkStr n c) .anonymous
 
 private def strs (where_ : String) (j : Json) : Except String (Array String) := do
   let xs ← match j.getArr? with

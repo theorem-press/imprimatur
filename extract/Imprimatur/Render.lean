@@ -313,6 +313,16 @@ partial def listLiteral? (e : Expr) : Option (Array Expr) :=
 def sortOf (e : Expr) : MetaM String := do
   try sortKey (← inferType e) catch _ => pure "*"
 
+/-- The sort of what is shown for an argument: a λ over a proof is shown as
+its body (`⋂ n ∈ s, f n` is `iInter fun n => iInter fun _ : n ∈ s => f n`),
+so its sort is the body's, not the function's from the proof. -/
+partial def shownSortOf (e : Expr) : MetaM String := do
+  match e with
+  | .lam n t b bi =>
+    if ← isProp t then withLocalDecl n bi t fun x => shownSortOf (b.instantiate1 x)
+    else sortOf e
+  | _ => sortOf e
+
 /-- Read a rendered formula back (DESIGN §18.4): it must have exactly one
 reading as an expression of `e`'s sort, and its free variables must print
 differently. Problems go to the context's `problems`. -/
@@ -333,7 +343,14 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
   let base := ctx.grammar.getD
     (Validate.notationGrammar ctx.rules ctx.variant ctx.callVars ctx.subscriptVars ctx.casesMatch
       ctx.listLiterals)
-  let g := base.extend leaves
+  -- A production with a token the formula lacks reads none of it: this
+  -- formula's grammar is the productions whose tokens all occur, and its
+  -- atoms, so a large notation costs a formula only what it could read as.
+  let present (p : Validate.Prod) : Bool := p.syms.all fun
+    | .tok t => ts.contains t
+    | .list elem _ _ => elem.all fun | .tok t => ts.contains t | _ => true
+    | _ => true
+  let g := Validate.Grammar.of ((base.prods.map (·.1)).filter present ++ leaves)
   let h₀ ← IO.getNumHeartbeats
   let (rs, flags, steps) := Validate.readBackSteps g ts (← sortOf e)
   -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering and
@@ -600,12 +617,17 @@ mutual
             i := i + 1
           return m
       withLocalDecl n bi t fun x => do
-        let body ← render (b.instantiate1 x)
+        let e' := b.instantiate1 x
         -- Proofs are not shown, so neither is a λ that binds one: the
         -- branches of `if h : c then a else b` are `a` and `b`.
         if ← isProp t then
+          let body ← render e'
           expectFrame (some fun kids => kids[0]?.getD Validate.anyReading)
           return body
+        -- `fun p => match p with | (a, b) => e` destructures its argument:
+        -- it is written with the pattern for its binder, `λ (a, b).\, e`.
+        if let some d ← renderPatternLambda x e' then return d
+        let body ← render e'
         logAtom (← varNameT n t) "*" (isVar := true)
         let v ← varNameT n t
         expectForm "λ" #[v] 1
@@ -624,7 +646,14 @@ mutual
         match ← explicitArgsLoose e with
         | some (_, args) =>
           let t := constTeX (← read).strip h
-          logAtom t "*"
+          -- The constant's sort as applied here: a function from its shown
+          -- arguments' sorts to the result's, so that the application reads
+          -- back with a known sort, and `|f x|` is the cardinality of what
+          -- `f x` is (#90). Proofs are not shown, so not counted.
+          let shown ← args.filterM fun a => do return !(← isProof a)
+          let sorts ← shown.mapM fun a => (shownSortOf a : MetaM String)
+          let sort := sorts.foldr (fun a acc => s!"({a} → {acc})") (← sortOf e)
+          logAtom t sort
           let d ← apply (.tex t) args
           expectApp #[t]
           return d
@@ -841,10 +870,7 @@ mutual
   What cannot be read so is left to Lean's printer. -/
   partial def renderMatch (e : Expr) : RenderM Doc := do
     let some app ← matchMatcherApp? e | delab e
-    let some eqns ← (try some <$> Match.getEquationsFor app.matcherName catch _ => pure none)
-      | delab e
-    let nParams := app.params.size
-    let nDiscrs := app.discrs.size
+    let some branches ← matchBranches app | delab e
     let commaJoin (ds : Array Doc) : Array Doc := Id.run do
       let mut out : Array Doc := #[]
       for (d, i) in ds.toList.zip (List.range ds.size) do
@@ -855,6 +881,22 @@ mutual
     let mut parts : Array Doc :=
       #[.tex "\\mathsf{case}\\ "] ++ commaJoin discrs ++ #[.tex "\\ \\mathsf{of}\\ "]
     let mut first := true
+    for (ps, b) in branches do
+      unless first do parts := parts ++ #[.brk, .tex " \\mid "]
+      first := false
+      parts := parts ++ commaJoin ps ++ #[.tex " \\Rightarrow ", .child 1 b]
+    let d : Doc := .node 0 parts
+    if app.remaining.isEmpty then return d else apply d app.remaining
+
+  /-- The branches of a matcher application, from the matcher's equations:
+  each alternative's patterns and its right-hand side, rendered in the
+  notation in scope. `none` when an equation cannot be read. -/
+  partial def matchBranches (app : MatcherApp) : RenderM (Option (Array (Array Doc × Doc))) := do
+    let some eqns ← (try some <$> Match.getEquationsFor app.matcherName catch _ => pure none)
+      | return none
+    let nParams := app.params.size
+    let nDiscrs := app.discrs.size
+    let mut out : Array (Array Doc × Doc) := #[]
     for eqn in eqns.eqnNames do
       let ty := (← getConstInfo eqn).type
       let branch? ← forallTelescope ty fun _ body => do
@@ -871,44 +913,24 @@ mutual
         withLCtx lctx (← getLocalInstances) do
           let ps ← withReader (fun c => { c with inPattern := true }) (pats.mapM render)
           let b ← render rhsBody
-          return some (commaJoin ps ++ #[.tex " \\Rightarrow ", .child 1 b])
-      let some branch := branch? | return ← delab e
-      unless first do parts := parts ++ #[.brk, .tex " \\mid "]
-      first := false
-      parts := parts ++ branch
-    let d : Doc := .node 0 parts
-    if app.remaining.isEmpty then return d else apply d app.remaining
+          return some (ps, b)
+      let some branch := branch? | return none
+      out := out.push branch
+    return some out
 
-  /-- The local context with each pattern variable `xs[i]` named as the
-  alternative `alt` names its `i`th binder, unless that name is inaccessible,
-  and renamed when another variable in scope has the name already. -/
-  partial def patternNames (alt : Expr) (xs : Array Expr) : RenderM LocalContext := do
-    let mut lctx ← getLCtx
-    let mut body := alt
-    for x in xs do
-      let suggested := if body.isLambda then body.bindingName! else .anonymous
-      let unused := body.isLambda && !body.bindingBody!.hasLooseBVar 0
-      if body.isLambda then body := body.bindingBody!
-      let .fvar id := x | continue
-      let some decl := lctx.find? id | continue
-      -- A variable the branch does not use is written `_`, as in the source.
-      if unused then
-        lctx := lctx.setUserName id `_
-        continue
-      let base :=
-        if suggested.isAnonymous || suggested.hasMacroScopes || suggested.isInaccessibleUserName
-        then decl.userName.eraseMacroScopes else suggested
-      let clash (n : Name) (l : LocalContext) : Bool :=
-        l.decls.toList.any fun
-          | some d => d.fvarId != id && d.userName == n
-          | none => false
-      let mut name := base
-      let mut i := 1
-      while clash name lctx do
-        name := base.appendAfter s!"_{i}"
-        i := i + 1
-      lctx := lctx.setUserName id name
-    return lctx
+  /-- A λ whose body is a `match` on its own variable with one alternative,
+  `fun p => match p with | (a, b) => e`: written with the pattern as its
+  binder, `\lambda (a, b).\, e`, in the notation in scope, whatever the
+  `pattern_matching` style. The pattern reads back as the term it is (a
+  pair of variables), under the λ form. `none` for any other λ. -/
+  partial def renderPatternLambda (x e : Expr) : RenderM (Option Doc) := do
+    let ctx ← read
+    withDestructuring x e fun pat rhs => (do
+      let p ← withReader (fun c => { c with inPattern := true }) (render pat)
+      let b ← render rhs
+      expectForm "λ" #[] 2
+      return some (.node 0 #[.tex "\\lambda ", .child Doc.maxPrec p, .tex ".\\,", .child 0 b])
+      : RenderM (Option Doc)).run ctx
 
   /-- Lean's own rendering, in monospace, for what nothing else covers. The
   text is Lean's, in which the paper's notation and metavariables do not

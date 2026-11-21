@@ -156,7 +156,13 @@ def renderCtx (s : Settings) (variant : Option String) (used : IO.Ref (Array Str
   let subscriptVars := style "applied_variables" "subscript"
   let casesMatch := style "pattern_matching" "cases"
   let listLiterals := style "lists" "literal"
-  return { rules := projectRules env ++ Packs.select s.notationPacks,
+  -- A pack rule for a constant this environment lacks never matches, and
+  -- would only enlarge the read-back grammar: it is dropped here.
+  let packRules := (Packs.select s.notationPacks).filter fun r =>
+    match r.pat with
+    | .app h _ => env.contains h
+    | _ => true
+  return { rules := projectRules env ++ packRules,
            metavars := projectMetavars env, variant, strip := s.stripNamespaces, used, rawVars,
            callVars, subscriptVars, casesMatch, listLiterals, document := s.document, key,
            root, imports := s.imports }

@@ -18,6 +18,7 @@ instance {α : Type} : Inter (MySet α) := ⟨fun s t a => s a ∧ t a⟩
 instance {α : Type} : SDiff (MySet α) := ⟨fun s t a => s a ∧ ¬ t a⟩
 instance {α : Type} : EmptyCollection (MySet α) := ⟨fun _ => False⟩
 instance {α : Type} : Singleton α (MySet α) := ⟨fun a b => b = a⟩
+instance {α : Type} : Insert α (MySet α) := ⟨fun a s b => b = a ∨ s b⟩
 instance {α : Type} : LE (MySet α) := ⟨fun s t => ∀ a, s a → t a⟩
 
 /-- Doubling, with notation `2n`. -/
@@ -49,9 +50,16 @@ theorem arith (a b c : Nat) (i : Int) (spec : Nat) :
 theorem logic (p q : Prop) : (p ∧ q ∨ ¬ p) ↔ (True ∨ False) := by
   sorry
 
-/-- Sets: every operation of the sets pack. -/
-theorem sets {α : Type} (s t : MySet α) (a : α) :
-    a ∈ s ∪ t ∩ (s \ t) ∧ s ⊆ t ∧ s ⊂ t ∧ (∅ : MySet α) ⊆ {a} := by
+/-- Sets: every operation of the sets pack; a literal `{a, b}`, and a longer
+`insert`, written `{a} ∪ s`. -/
+theorem sets {α : Type} (s t : MySet α) (a b : α) :
+    a ∈ s ∪ t ∩ (s \ t) ∧ s ⊆ t ∧ s ⊂ t ∧ (∅ : MySet α) ⊆ {a} ∧ ({a, b} : MySet α) ⊆ insert a s := by
+  sorry
+
+/-- Numbers: `ℚ`, divisibility, gcd and lcm, and injectivity and
+surjectivity, each a sentence. -/
+theorem number (q : Rat) (a b : Nat) (f : Nat → Nat) :
+    q = q ∧ a ∣ b ∧ Nat.gcd a b ≤ Nat.lcm a b ∧ Function.Injective f ∧ Function.Surjective f := by
   sorry
 
 /-- Order: max and min. -/
@@ -59,10 +67,13 @@ theorem order (a b : Nat) : max a b = min a b := by
   sorry
 
 /-- Binders: bounded quantifiers, ∃, implication, function types, λ, an
-applied variable, and a `match`, which falls back to Lean's printer. -/
+applied variable, a `match` with two alternatives, which falls back to
+Lean's printer under the default style, and a λ that destructures a pair,
+written with the pattern for its binder. -/
 theorem binders (s : MySet Nat) (f : Nat → Nat) (h : ∀ x ∈ s, f x = x) :
     (∃ y ∈ s, f y = y) → (∃ z, z = f 0) ∧ (fun n => n + 1) 0 = 1 ∧
-      (match f 0 with | 0 => true | _ => false) = true ∧ true ≠ false := by
+      (match f 0 with | 0 => true | _ => false) = true ∧ true ≠ false ∧
+      (fun p : Nat × Nat => match p with | (a, b) => a + b) (1, 2) = 3 := by
   sorry
 
 /-- A `let` in a statement: unfolded, so the notation and the metavariable

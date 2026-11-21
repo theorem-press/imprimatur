@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean
 import Imprimatur.TeX
+import Imprimatur.Names
 
 /-!
 # The `lean` view
@@ -125,7 +126,7 @@ structure LeanCtx where
 
 /-- Whether a printed identifier names a constant. -/
 def LeanCtx.isConst (ctx : LeanCtx) (s : String) : Bool :=
-  let n := s.splitOn "." |>.foldl (fun n c => Name.mkStr n c) .anonymous
+  let n := Imprimatur.toName s
   (ResolveName.resolveGlobalName ctx.env {} .anonymous ctx.openDecls n).any (·.2.isEmpty)
 
 /-- Render one identifier. -/

@@ -1,0 +1,9 @@
+# The `MathlibPack` fixture (docs/TESTING.md, Fixtures): stubs with the names and explicit
+# arities of the Mathlib constants the `mathlib` pack writes, and a use of every rule of the
+# pack, so the pack has a golden use with no Mathlib. It needs nothing of imprimatur: the pack
+# is the extractor's.
+name = "mathlibpack-fixture"
+defaultTargets = ["MathlibPack"]
+
+[[lean_lib]]
+name = "MathlibPack"
