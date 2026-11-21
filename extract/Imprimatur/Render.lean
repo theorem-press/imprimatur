@@ -286,6 +286,25 @@ def hasRule (e : Expr) : RenderM Bool := do
     if (← r.tryMatch e).isSome then return true
   return false
 
+/-- The hypothesis an instance binder `[C a]` states, if any (DESIGN §7.6):
+the class itself when a notation rule writes it (`[Fintype V]` as "V is
+finite"); otherwise, for a class in `Prop` with one field and nothing else,
+that field's statement (`[NeZero n]` as `n ≠ 0`, `[Fact p]` as `p`), since
+the instance is that statement and no more. Any other instance binder,
+which fixes structure a paper does not state, is `none`: left out. -/
+def instanceHypothesis? (t : Expr) : RenderM (Option Expr) := do
+  if ← hasRule t then return some t
+  let .const c us := t.getAppFn | return none
+  let env ← getEnv
+  let some info := getStructureInfo? env c | return none
+  let #[field] := info.fieldNames | return none
+  let some proj := getProjFnForField? env c field | return none
+  unless ← isProp t do return none
+  let projTy ← try inferType (mkAppN (mkConst proj us) t.getAppArgs) catch _ => return none
+  let .forallE _ _ body _ := (← whnf projTy) | return none
+  if body.hasLooseBVars then return none
+  return if ← isProp body then some body else none
+
 /-- Log an atom of the formula being rendered. -/
 def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none)
     (name : String := "") : RenderM Unit := do
@@ -820,6 +839,9 @@ mutual
   /-- `∃ x, p`, and `∃ x ∈ s, p`. -/
   partial def renderExists (e : Expr) : RenderM (Option Doc) := do
     let some (_, #[.lam n t b bi]) ← explicitArgs e | return none
+    -- `∃ h : p, q`, over a proof the body does not mention, is `p ∧ q`: the
+    -- hypothesis is stated, not a vacuous "there is h".
+    if (← isProp t) && !b.hasLooseBVar 0 then return some (← render (mkAnd t b))
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
       let v ← varNameT n t
@@ -841,9 +863,13 @@ mutual
     let .forallE n t b bi := e | delab e
     let isProp ← isProp e
     if !b.hasLooseBVars then
-      -- An instance binder is left out, unless a notation rule writes it:
-      -- then it is a hypothesis the paper states (DESIGN §7.6).
-      if bi.isInstImplicit && !(← hasRule t) then return ← render b
+      -- An instance binder is left out, unless it states a hypothesis
+      -- (`instanceHypothesis?`): then the paper states it (DESIGN §7.6).
+      let t ← if bi.isInstImplicit then
+          match ← instanceHypothesis? t with
+          | some h => pure h
+          | none => return ← render b
+        else pure t
       -- An implication or a function type.
       let arrow := if isProp then "\\implies" else "\\to"
       let lhs ← render t

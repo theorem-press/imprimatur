@@ -51,9 +51,12 @@ where
       withLocalDecl n bi t fun x => do
         let body := b.instantiate1 x
         -- An instance binder is a hypothesis when a notation rule writes it
+        -- (`[Fintype V]` as "V is finite") or its class is one statement
         -- (`[NeZero N]` as `N ≠ 0`), and is left out otherwise (DESIGN §7.6).
         if bi.isInstImplicit then
-          if ← hasRule t then go body vars (hyps.push (n, t)) else go body vars hyps
+          match ← instanceHypothesis? t with
+          | some h => go body vars (hyps.push (n, h))
+          | none => go body vars hyps
         else if (← isProp t) then go body vars (hyps.push (n, t))
         else go body (vars.push (n, x, t)) hyps
     | _ => match unLet? e with
@@ -349,6 +352,9 @@ partial def gatherConcl (concl : Expr) : RenderM (Layout.Concl (List Char)) := d
   if let some e := unLet? concl then return ← gatherConcl e
   if concl.isAppOfArity ``Exists 2 then
     if let .lam n t b bi := concl.appArg! then
+      -- `∃ h : p, q` over a proof the body does not mention is `p ∧ q`, not
+      -- "there is h such that q".
+      if (← isProp t) && !b.hasLooseBVar 0 then return ← gatherConcl (mkAnd t b)
       return ← withLocalDecl n bi t fun x => do
         let body := b.instantiate1 x
         return .exists_ (← varNameT n t).toList (← gatherConcl body)

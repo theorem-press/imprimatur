@@ -52,17 +52,38 @@ def rule' (pack : String) (pat : Pat) (template : String) (prec : Nat := 1024)
 /-- `fun x => body`, as a pattern. -/
 def lam (x body : Name) : Pat := .lam x (.var body)
 
+/-- A class applied to a type, written as a sentence, `α \text{ is …}`: an
+instance binder of it is then a hypothesis the paper states (DESIGN §7.6).
+Its sort is `Sort*`, a class being a type or a proposition. -/
+def classRule (pack : String) (head : Name) (what : String) : NotationRule :=
+  rule pack head 1 s!"#a \\text\{ is {what}}" 50 (sort := "Sort*") (holes := "Sort")
+
+/-- A class of two types, likewise; the template names them `#a` and `#b`. -/
+def classRule2 (pack : String) (head : Name) (template : String) : NotationRule :=
+  rule pack head 2 template 50 (sort := "Sort*") (holes := "Sort")
+
 /-- The `core` pack. -/
 def core : Array NotationRule := #[
   rule "core" ``Eq 2 "#a = #b" 50 "none" true (sort := "Prop") (holes := "?α"),
   rule "core" ``Ne 2 "#a \\ne #b" 50 "none" true (sort := "Prop") (holes := "?α"),
-  rule "core" ``HAdd.hAdd 2 "#a + #b" 65,
-  rule "core" ``HSub.hSub 2 "#a - #b" 65,
-  rule "core" ``HMul.hMul 2 "#a \\cdot #b" 70,
-  rule "core" ``HDiv.hDiv 2 "#a / #b" 70,
-  rule "core" ``HMod.hMod 2 "#a \\bmod #b" 70,
-  rule "core" ``HPow.hPow 2 "#a^{#b}" 75 "right",
-  rule "core" ``Neg.neg 1 "-#a" 75,
+  -- Arithmetic is homogeneous as Lean uses it (`Add α` gives `HAdd α α α`),
+  -- so an operation is of its operands' sort, and `n / 2` of naturals is a
+  -- natural, not also the floor of a real. A cast operand is read as the
+  -- unknown sort, which binds nothing, so `↑n + x` still reads.
+  rule "core" ``HAdd.hAdd 2 "#a + #b" 65 (sort := "?α") (holes := "?α"),
+  rule "core" ``HSub.hSub 2 "#a - #b" 65 (sort := "?α") (holes := "?α"),
+  rule "core" ``HMul.hMul 2 "#a \\cdot #b" 70 (sort := "?α") (holes := "?α"),
+  -- Division of natural numbers rounds down, so it is written `⌊a/b⌋` with
+  -- the fraction stacked: a reader takes `n^2 / 4` for a fraction, which it
+  -- is not; and `⌊a / b⌋` with a slash is the floor of a real division (the
+  -- `mathlib` pack's `Int.floor`), which a cast operand would let this read
+  -- as too. The braces keep the operands' parentheses needless.
+  rule' "core" (.constrained (.app ``HDiv.hDiv #[.var `a, .var `b]) #[(0, .lit (mkConst ``Nat))])
+    "\\lfloor \\tfrac{#a}{#b} \\rfloor" (sort := "Nat") (holes := #[(`a, "Nat"), (`b, "Nat")]),
+  rule "core" ``HDiv.hDiv 2 "#a / #b" 70 (sort := "?α") (holes := "?α"),
+  rule "core" ``HMod.hMod 2 "#a \\bmod #b" 70 (sort := "?α") (holes := "?α"),
+  { rule "core" ``HPow.hPow 2 "#a^{#b}" 75 "right" (sort := "?α") with holeSorts := #[(`a, "?α"), (`b, "*")] },
+  rule "core" ``Neg.neg 1 "-#a" 75 (sort := "?α") (holes := "?α"),
   rule "core" ``LT.lt 2 "#a < #b" 50 "none" true (sort := "Prop") (holes := "?α"),
   rule "core" ``LE.le 2 "#a \\le #b" 50 "none" true (sort := "Prop") (holes := "?α"),
   rule "core" ``GT.gt 2 "#a > #b" 50 "none" true (sort := "Prop") (holes := "?α"),
@@ -85,6 +106,10 @@ def core : Array NotationRule := #[
   rule "core" ``Nat.lcm 2 "\\operatorname{lcm}(#a, #b)" (sort := "Nat") (holes := "Nat"),
   rule "core" `Function.Injective 1 "#a \\text{ is injective}" 50 (sort := "Prop"),
   rule "core" `Function.Surjective 1 "#a \\text{ is surjective}" 50 (sort := "Prop"),
+  -- A class of core Lean, so that an instance binder `[Nonempty α]` is a
+  -- hypothesis the paper states (DESIGN §7.6). `[NeZero n]` needs no rule: a
+  -- class in `Prop` with one field is that field's statement, `n ≠ 0`.
+  classRule "core" ``Nonempty "nonempty",
   rule "core" ``Bool.true 0 "\\mathrm{true}",
   rule "core" ``Bool.false 0 "\\mathrm{false}"]
 
@@ -157,16 +182,19 @@ def mathlib : Array NotationRule :=
   rule "mathlib" `NNReal.toReal 1 "#a" (sort := "Real") (holes := "NNReal"),
   rule "mathlib" `PNat.val 1 "#a" (sort := "Nat") (holes := "PNat"),
   rule "mathlib" `Real.toEReal 1 "#a" (sort := "EReal") (holes := "Real"),
-  -- Functions of the reals and the complex numbers.
-  rule "mathlib" `Real.log 1 "\\log #a" 1023 (sort := "Real") (holes := "Real"),
-  rule "mathlib" `Real.exp 1 "\\exp #a" 1023 (sort := "Real") (holes := "Real"),
+  -- Functions of the reals and the complex numbers. A prefix function is at
+  -- precedence 72: below `^` (75), so `(\log N)^{2}` keeps its parentheses
+  -- and `\log N^{2}` is the logarithm of the square, as a reader takes it;
+  -- above `+`, so `\log N + 1` is as written.
+  rule "mathlib" `Real.log 1 "\\log #a" 72 (sort := "Real") (holes := "Real"),
+  rule "mathlib" `Real.exp 1 "\\exp #a" 72 (sort := "Real") (holes := "Real"),
   rule "mathlib" `Real.sqrt 1 "\\sqrt{#a}" (sort := "Real") (holes := "Real"),
   rule "mathlib" `Real.pi 0 "\\pi" (sort := "Real"),
-  rule "mathlib" `Real.sin 1 "\\sin #a" 1023 (sort := "Real") (holes := "Real"),
-  rule "mathlib" `Real.cos 1 "\\cos #a" 1023 (sort := "Real") (holes := "Real"),
-  rule "mathlib" `Real.logb 2 "\\log_{#a} #b" 1023 (sort := "Real") (holes := "Real"),
-  rule "mathlib" `Complex.re 1 "\\Re #a" 1023 (sort := "Real") (holes := "Complex"),
-  rule "mathlib" `Complex.im 1 "\\Im #a" 1023 (sort := "Real") (holes := "Complex"),
+  rule "mathlib" `Real.sin 1 "\\sin #a" 72 (sort := "Real") (holes := "Real"),
+  rule "mathlib" `Real.cos 1 "\\cos #a" 72 (sort := "Real") (holes := "Real"),
+  rule "mathlib" `Real.logb 2 "\\log_{#a} #b" 72 (sort := "Real") (holes := "Real"),
+  rule "mathlib" `Complex.re 1 "\\Re #a" 72 (sort := "Real") (holes := "Complex"),
+  rule "mathlib" `Complex.im 1 "\\Im #a" 72 (sort := "Real") (holes := "Complex"),
   rule "mathlib" `Complex.I 0 "\\mathrm{i}" (sort := "Complex"),
   rule "mathlib" `abs 1 "\\lvert #a \\rvert" (sort := "?α") (holes := "?α"),
   rule "mathlib" `Norm.norm 1 "\\lVert #a \\rVert" (sort := "Real"),
@@ -175,10 +203,12 @@ def mathlib : Array NotationRule :=
   rule "mathlib" `Nat.choose 2 "\\binom{#a}{#b}" (sort := "Nat") (holes := "Nat"),
   rule "mathlib" `Nat.totient 1 "\\varphi(#a)" (sort := "Nat") (holes := "Nat"),
   rule "mathlib" `Nat.primeCounting 1 "\\pi(#a)" (sort := "Nat") (holes := "Nat"),
-  rule "mathlib" `Int.floor 1 "\\lfloor #a \\rfloor" (sort := "Int"),
-  rule "mathlib" `Int.ceil 1 "\\lceil #a \\rceil" (sort := "Int"),
-  rule "mathlib" `Nat.floor 1 "\\lfloor #a \\rfloor_{+}" (sort := "Nat"),
-  rule "mathlib" `Nat.ceil 1 "\\lceil #a \\rceil_{+}" (sort := "Nat"),
+  -- Floors and ceilings of reals: their holes are `Real`, so that `⌊a / b⌋`
+  -- of two naturals (`core`'s rounding division) is not also read as a floor.
+  rule "mathlib" `Int.floor 1 "\\lfloor #a \\rfloor" (sort := "Int") (holes := "Real"),
+  rule "mathlib" `Int.ceil 1 "\\lceil #a \\rceil" (sort := "Int") (holes := "Real"),
+  rule "mathlib" `Nat.floor 1 "\\lfloor #a \\rfloor_{+}" (sort := "Nat") (holes := "Real"),
+  rule "mathlib" `Nat.ceil 1 "\\lceil #a \\rceil_{+}" (sort := "Nat") (holes := "Real"),
   -- Cardinalities: of a finset, a set, a type.
   rule "mathlib" `Finset.card 1 "|#a|" (sort := "Nat") (holes := "Finset"),
   rule "mathlib" `Set.ncard 1 "|#a|" (sort := "Nat") (holes := "(?α → Prop)"),
@@ -204,6 +234,8 @@ def mathlib : Array NotationRule :=
   rule "mathlib" `Set.Icc 2 "[#a, #b]" (sort := "(?α → Prop)") (holes := "?α"),
   rule "mathlib" `Finset.Icc 2 "\\{#a, \\dots, #b\\}" (sort := "Finset"),
   -- `{0, 1, …, n − 1}`, with the `1`, so it is not also read as `Finset.Icc 0 (n − 1)`.
+  -- (`range (n + 1)` prints as `{0, 1, …, n + 1 − 1}`: a rule for it would read
+  -- `{0, 1, …, b − 1}` as `range b` and as `range ((b − 1) + 1)` alike.)
   rule "mathlib" `Finset.range 1 "\\{0, 1, \\dots, #a - 1\\}" (sort := "Finset") (holes := "Nat"),
   rule' "mathlib" (.app `Set.ofPred #[lam `x `p]) "\\{#x \\mid #p\\}" (sort := "(?α → Prop)") (holes := #[(`p, "Prop")]),
   rule' "mathlib" (.app `Finset.filter #[lam `x `p, .var `s]) "\\{#x \\in #s \\mid #p\\}"
@@ -235,10 +267,38 @@ def mathlib : Array NotationRule :=
   rule "mathlib" `SimpleGraph.cycleGraph 1 "C_{#a}" (sort := "SimpleGraph") (holes := "Nat"),
   rule' "mathlib" (.app `SimpleGraph.Adj #[.var `G, .var `u, .var `v]) "#u \\sim_{#G} #v" 50 "none"
     (sort := "Prop") (holes := #[(`G, "SimpleGraph")]),
+  -- Classes, so that instance binders are hypotheses: the sweep's judge found
+  -- `[Fintype V]`, `[Group G]` and `[Field k]` left out of the prose, which
+  -- generalises a statement. (`[Fact p]` needs no rule: it is `p`.)
+  -- `Fintype α` and `Finite α` both say α is finite, as do `CommGroup` and
+  -- `AddCommGroup` that it is abelian: the second of each pair reads for both.
+  { classRule "mathlib" `Fintype "finite" with synonym := true },
+  classRule "mathlib" `Finite "finite",
+  classRule "mathlib" `Infinite "infinite",
+  classRule "mathlib" `Nontrivial "nontrivial",
+  classRule "mathlib" `Group "a group",
+  classRule "mathlib" `CommGroup "an abelian group",
+  { classRule "mathlib" `AddCommGroup "an abelian group" with synonym := true },
+  classRule "mathlib" `Ring "a ring",
+  classRule "mathlib" `CommRing "a commutative ring",
+  classRule "mathlib" `Field "a field",
+  classRule "mathlib" `CharZero "of characteristic zero",
+  classRule "mathlib" `IsNoetherianRing "Noetherian",
+  classRule "mathlib" `IsLocalRing "local",
+  classRule "mathlib" `TopologicalSpace "a topological space",
+  classRule "mathlib" `MetricSpace "a metric space",
+  classRule "mathlib" `CompleteSpace "complete",
+  classRule "mathlib" `ConnectedSpace "connected",
+  classRule "mathlib" `NormedAddCommGroup "a normed abelian group",
+  classRule2 "mathlib" `Module "#b \\text{ is an } #a\\text{-module}",
+  classRule2 "mathlib" `Module.Finite "#b \\text{ is a finitely generated } #a\\text{-module}",
+  classRule2 "mathlib" `FiniteDimensional "#b \\text{ is finite-dimensional over } #a",
+  classRule2 "mathlib" `Algebra "#b \\text{ is an } #a\\text{-algebra}",
+  classRule2 "mathlib" `NormedSpace "#b \\text{ is a normed } #a\\text{-vector space}",
   -- Polynomials.
   rule' "mathlib" (.app `Polynomial.eval #[.var `x, .var `p]) "#p(#x)" 1023 (holes := #[(`p, "Polynomial")]),
   rule "mathlib" `Polynomial.X 0 "\\mathrm{X}" (sort := "Polynomial"),
-  rule "mathlib" `Polynomial.degree 1 "\\deg #a" 1023 (holes := "Polynomial")]
+  rule "mathlib" `Polynomial.degree 1 "\\deg #a" 72 (holes := "Polynomial")]
 
 /-- The packs by name. -/
 def all : List (String × Array NotationRule) :=

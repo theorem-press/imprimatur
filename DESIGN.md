@@ -536,8 +536,12 @@ latex_hide_premise (_ : Fintype _)
 ```
 
 Instance binders are hidden, unless a notation rule writes the class
-(`[NeZero N]` as `N ≠ 0`): then the binder is a hypothesis like any other,
-since the paper evidently means to state it (#137). Block options `show=` and
+(`[Fintype V]` as "V is finite", as the `mathlib` pack does for the common
+classes): then the binder is a hypothesis like any other, since the paper
+evidently means to state it (#137); or unless the class is in `Prop` with one
+field and nothing else, when the binder is that field's statement (`[NeZero
+n]` as `n ≠ 0`, `[Fact p]` as `p`), since the instance is that statement and
+no more. Block options `show=` and
 `hide=`, to override these choices per block, are designed but not
 implemented (#35).
 

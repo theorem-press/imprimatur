@@ -80,6 +80,17 @@ theorem graphs (G : SimpleGraph Nat) (u v : Nat) :
       SimpleGraph.cycleGraph 5 = SimpleGraph.cycleGraph 5 := by
   sorry
 
+/-- Instance binders, each stated as a hypothesis by a class rule; `Fact` is
+the hypothesis itself. -/
+theorem instances (V : Type) [Fintype V] [Nonempty V] (W : Type) [Finite W] [Infinite W] [Nontrivial W]
+    (G : Type) [Group G] (H : Type) [CommGroup H] (A : Type) [AddCommGroup A]
+    (R : Type) [Ring R] (S : Type) [CommRing S] [IsNoetherianRing S] [IsLocalRing S] [CharZero S]
+    (k : Type) [Field k] (M : Type) [Module S M] [Module.Finite S M]
+    (E : Type) [NormedAddCommGroup E] [NormedSpace k E] [FiniteDimensional k E] (B : Type) [Algebra S B]
+    (X : Type) [TopologicalSpace X] [CompleteSpace X] [ConnectedSpace X] (Y : Type) [MetricSpace Y]
+    (n : Nat) [NeZero n] [Fact (1 < n)] : Fintype.card V ≤ n := by
+  sorry
+
 /-- Polynomials. -/
 theorem polynomials (p : Polynomial Nat) (x : Nat) :
     Polynomial.eval x p = Polynomial.eval x Polynomial.X ∧ Polynomial.degree p ≤ 2 := by

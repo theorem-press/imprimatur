@@ -27,12 +27,19 @@ theorem bounded (n : Nat) (h : n = 3) : Bounded n := by
 class Positive (n : Nat) : Prop where
   pos : 0 < n
 
-/-- A class the paper has no notation for: its instance binder is not shown. -/
+/-- A class the paper has no notation for, of two fields: its instance binder
+is not shown. -/
 class Quiet (n : Nat) : Prop where
   quiet : True
+  still : True
+
+/-- A class in `Prop` with one field and no notation: its instance binder is
+stated as that field, `0 < n`. -/
+class Loud (n : Nat) : Prop where
+  out : 0 < n
 
 /-- A theorem with instance binders. -/
-theorem withInstance (n : Nat) [Positive n] [Quiet n] : n ≠ 0 :=
+theorem withInstance (n : Nat) [Positive n] [Quiet n] [Loud n] : n ≠ 0 :=
   Nat.pos_iff_ne_zero.mp Positive.pos
 
 end Statements
