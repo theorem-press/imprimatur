@@ -8,16 +8,16 @@
         "untrusted": []
       },
       "decl": "Notation.arith",
-      "doc": "Arithmetic: every operator of the core pack; division of naturals rounds\ndown, `⌊(c · 2)/1⌋` with the fraction stacked, and of integers is written plainly.",
+      "doc": "Arithmetic: every operator of the core pack; division of naturals rounds\ndown, `⌊(c · 2)/1⌋` with the fraction stacked, and of integers is written plainly;\n`(-i)^2` keeps its parentheses, which `-i^2` has not.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\bmod", "\\cdot", "\\circ", "\\ge", "\\in", "\\le", "\\leanmetasource", "\\lfloor", "\\mathbb", "\\ne", "\\rfloor", "\\textasciicircum", "\\tfrac", "\\wedge"],
-      "sigHash": "92f1b179ac2ac7011fa6ad125a749a54d2904008debe3f76787e1fd235041303",
+      "sigHash": "47fd5bc3b03d2d217222ca0323879c0f85aad1eb0dcea73beb2e382481b15636",
       "sorry": true,
       "source": {
-        "line": 44,
+        "line": 45,
         "path": "Notation/Defs.lean"
       },
-      "stmtHash": "84b74e0e580907157d62ec1b34941f33db7627e6a657c5d441b83aef90761b5e",
+      "stmtHash": "ce0d73a031b0e9683eafec70080d165331f6a0b3e254771fab77d7fbd3583cc2",
       "validation": {
         "math": [],
         "math:binders": [],
@@ -25,12 +25,12 @@
         "prose": []
       },
       "views": {
-        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{arith} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} : \\LeanConst{Nat}) (\\LeanBound{i} : \\LeanConst{Int}) (\\LeanBound{spec} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} - \\LeanBound{c} * \\LeanNumber{2} / \\LeanNumber{1} \\% \\LeanNumber{3} = \\LeanBound{b} \\textasciicircum{} \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{4}-\\LeanBound{i} ≠ \\LeanBound{i} / \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{6}\\LeanBound{a} < \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanBound{a} ≤ \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanBound{b} > \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{12}\\LeanBound{b} ≥ \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{14}\\LeanBound{a}.succ = \\LeanBound{a} + \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{16}(\\LeanConst{id} ∘ \\LeanConst{id}) \\LeanBound{a} = \\LeanBound{a} ∧ (\\LeanBound{a}, \\LeanBound{b}) = (\\LeanBound{a}, \\LeanBound{b}) ∧ ↑\\LeanBound{spec} = ↑\\LeanBound{i} ∧ ⟨\\LeanBound{a}, ⋯⟩.val = \\LeanBound{a}}",
-        "math": "\\LeanMath{a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2} \\wedge -i \\ne i / 2 \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
-        "math:binders": "\\LeanMath{a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2} \\wedge (-i \\ne i / 2 \\wedge (a < b \\wedge (a \\le b \\wedge (b > a \\wedge (b \\ge a \\wedge (a + 1 \\LeanBreak = a + 1 \\wedge ((\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge ((a, b) = (a, b) \\wedge (L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a)))))))))}",
-        "math:named": "\\LeanMath{a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2} \\wedge -i \\ne i / 2 \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
-        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Arithmetic: every operator of the core pack; division of naturals rounds\ndown, \\LeanCodeInline{⌊(c · 2)/1⌋} with the fraction stacked, and of integers is written plainly.}",
-        "prose": "\\LeanProse{Let $a, b, c \\in \\mathbb{N}$, $i \\in \\mathbb{Z}$ and $L \\in \\mathbb{N}$. Then (1)~$a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2}$, (2)~$-i \\ne i / 2$, (3)~$a < b$, (4)~$a \\le b$, (5)~$b > a$, (6)~$b \\ge a$, (7)~$a + 1 = a + 1$, (8)~$(\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a$, (9)~$(a, b) = (a, b)$, (10)~$L = i$ and (11)~$\\LeanMathConst{Subtype.mk}\\,a = a$.}"
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{arith} (\\LeanBound{a} \\LeanBound{b} \\LeanBound{c} : \\LeanConst{Nat}) (\\LeanBound{i} : \\LeanConst{Int}) (\\LeanBound{spec} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanBound{a} + \\LeanBound{b} - \\LeanBound{c} * \\LeanNumber{2} / \\LeanNumber{1} \\% \\LeanNumber{3} = \\LeanBound{b} \\textasciicircum{} \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{4}-\\LeanBound{i} ≠ \\LeanBound{i} / \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{6}(-\\LeanBound{i}) \\textasciicircum{} \\LeanNumber{2} = -\\LeanBound{i} \\textasciicircum{} \\LeanNumber{2} ∧\\LeanNewline\n\\LeanIndent{8}\\LeanBound{a} < \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{10}\\LeanBound{a} ≤ \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{12}\\LeanBound{b} > \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{14}\\LeanBound{b} ≥ \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{16}\\LeanBound{a}.succ = \\LeanBound{a} + \\LeanNumber{1} ∧\\LeanNewline\n\\LeanIndent{18}(\\LeanConst{id} ∘ \\LeanConst{id}) \\LeanBound{a} = \\LeanBound{a} ∧\\LeanNewline\n\\LeanIndent{20}(\\LeanBound{a}, \\LeanBound{b}) = (\\LeanBound{a}, \\LeanBound{b}) ∧ ↑\\LeanBound{spec} = ↑\\LeanBound{i} ∧ ⟨\\LeanBound{a}, ⋯⟩.val = \\LeanBound{a}}",
+        "math": "\\LeanMath{a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2} \\wedge -i \\ne i / 2 \\wedge (-i)^{2} = -i^{2} \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
+        "math:binders": "\\LeanMath{a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2} \\wedge (-i \\ne i / 2 \\wedge ((-i)^{2} = -i^{2} \\wedge (a < b \\wedge (a \\le b \\wedge (b > a \\wedge (b \\ge a \\wedge (a + 1 \\LeanBreak = a + 1 \\wedge ((\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge ((a, b) = (a, b) \\wedge (L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a))))))))))}",
+        "math:named": "\\LeanMath{a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2} \\wedge -i \\ne i / 2 \\wedge (-i)^{2} = -i^{2} \\wedge a < b \\wedge a \\le b \\LeanBreak \\wedge b > a \\wedge b \\ge a \\wedge a + 1 = a + 1 \\wedge (\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a \\wedge (a, b) = (a, b) \\wedge L = i \\wedge \\LeanMathConst{Subtype.mk}\\,a = a}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Arithmetic: every operator of the core pack; division of naturals rounds\ndown, \\LeanCodeInline{⌊(c · 2)/1⌋} with the fraction stacked, and of integers is written plainly;\n\\LeanCodeInline{(-i)\\textasciicircum{}2} keeps its parentheses, which \\LeanCodeInline{-i\\textasciicircum{}2} has not.}",
+        "prose": "\\LeanProse{Let $a, b, c \\in \\mathbb{N}$, $i \\in \\mathbb{Z}$ and $L \\in \\mathbb{N}$. Then (1)~$a + b - \\lfloor \\tfrac{c \\cdot 2}{1} \\rfloor \\bmod 3 = b^{2}$, (2)~$-i \\ne i / 2$, (3)~$(-i)^{2} = -i^{2}$, (4)~$a < b$, (5)~$a \\le b$, (6)~$b > a$, (7)~$b \\ge a$, (8)~$a + 1 = a + 1$, (9)~$(\\LeanMathConst{id} \\circ \\LeanMathConst{id})\\,a = a$, (10)~$(a, b) = (a, b)$, (11)~$L = i$ and (12)~$\\LeanMathConst{Subtype.mk}\\,a = a$.}"
       }
     },
     "Notation.bare": {
@@ -47,7 +47,7 @@
       "sigHash": "d7949ad9ed6a72dbe2bb92d16c43ddcfa8ff1cd009754da9dea272f6564799ee",
       "sorry": false,
       "source": {
-        "line": 154,
+        "line": 155,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "cbf57ca2ac2c1a288bed379a97bc1a2199e85c57d7213acfa5fb8d64c46b1717",
@@ -80,7 +80,7 @@
       "sigHash": "cc73f0ff1083703b7724b495a9ec006fd66155e5402efb927911f97b513727c6",
       "sorry": true,
       "source": {
-        "line": 112,
+        "line": 113,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c095ee9dc585cc229fc3cd1f6e17d9cd485c4e6f08a1050766450e95ab513f66",
@@ -113,7 +113,7 @@
       "sigHash": "68c39fc877eb118b7a9cf2cf100fa8e282b2728b4cbbf33726124619d8249efb",
       "sorry": true,
       "source": {
-        "line": 76,
+        "line": 77,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "acdb251a978608c3b766ddc95ed1d9e0ecf2ee0ff6b63a07b4712e6b12cad685",
@@ -146,7 +146,7 @@
       "sigHash": "71fd2a98937190d730a18844eaed01e7864e94a6759bd77a1b189d9c04963b2d",
       "sorry": true,
       "source": {
-        "line": 150,
+        "line": 151,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "eccebb4677ddce058a1a3009244c2767d0bfab4bf2db23737d1535967676f7de",
@@ -179,7 +179,7 @@
       "sigHash": "4d21207e1507722a90098e93f6e840a1a35e892da6832bce3be3dee7ea2a0fef",
       "sorry": false,
       "source": {
-        "line": 91,
+        "line": 92,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "06d2c5917cb18e74387e8df3cb31b9a7077992319d41fb352a5e38756b639ddc",
@@ -212,7 +212,7 @@
       "sigHash": "cc5dedf191c60ddbfaa5194e99461a7a15ccb65fd15f32d5f8ac70eff0d542e1",
       "sorry": false,
       "source": {
-        "line": 145,
+        "line": 146,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "ebe62c77e7806d9cd0c9e45e1a4907bb2ffc09e047bdaf984f6c984d1eec08b2",
@@ -245,7 +245,7 @@
       "sigHash": "6fefdddecfb21402f3c8d2972277fb7612c58e9f9d2deff38e4c8596bf31ec31",
       "sorry": true,
       "source": {
-        "line": 133,
+        "line": 134,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "7095017a9ab620bc22fa869986d271f119381c11984b2bbde23c9f616f1f26fd",
@@ -278,7 +278,7 @@
       "sigHash": "1bef55530959eae78060ecf8537eeee77f6ed60feec3c4aba3ef74afd718d48d",
       "sorry": false,
       "source": {
-        "line": 85,
+        "line": 86,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "9abf4cbb4f1cdc0c20c2ab6368dd62cea22be1919adb6bb3e596d20741b70b75",
@@ -311,7 +311,7 @@
       "sigHash": "81d78636ce98aa349657c15b32b4dec96da33ff12e0951ab9dafe7367445f55d",
       "sorry": true,
       "source": {
-        "line": 51,
+        "line": 52,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "7399614943f4c79d8ffcd534bf0d61af276c669167cbaaa7e0c9fb80333b6394",
@@ -344,7 +344,7 @@
       "sigHash": "741759d8b08457cf755b7bd1167328d6d9c461cdca2d2882ee9c461a8b039a1a",
       "sorry": true,
       "source": {
-        "line": 122,
+        "line": 123,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "577dc99fc70b512c185a34e65f85c1ec2a4fd7938bb99da02bdfdb4c6a484708",
@@ -377,7 +377,7 @@
       "sigHash": "177d2128d70d4c100d9f6e354b9c960f3afec3380760b498d5921bbd839c6de6",
       "sorry": true,
       "source": {
-        "line": 63,
+        "line": 64,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "84068d0d177fca317bdf0b8176daa4311436d7c6aaecf37952c0a9dfceb1daa4",
@@ -410,7 +410,7 @@
       "sigHash": "0bcc1b47826d11e2e678950de2b54f68c9054f3e55ab0dacd9c915fa57e87463",
       "sorry": true,
       "source": {
-        "line": 68,
+        "line": 69,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "81e79f11e397fa3ccaea03d9240cadce174b2b075274ff86307d80551b241e99",
@@ -443,7 +443,7 @@
       "sigHash": "c134fb1e52b319051da4329bdb04b49634aa06ab95f5c032ecb4bb13072cea7b",
       "sorry": true,
       "source": {
-        "line": 97,
+        "line": 98,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "ebdc7fc42b37dc31c0069f33f5eabacdac639dc909b8df1aab32a7e2e7f3e594",
@@ -476,7 +476,7 @@
       "sigHash": "c52c49577c9813f7485908b9666e4eab5c3fa7f9cbddf7d29fae5ecf0286324c",
       "sorry": true,
       "source": {
-        "line": 56,
+        "line": 57,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "384a5299965f1f87e57af918c3ad7c0a67c86ee1eebb4a45770f8f3c3d8b414c",
@@ -509,7 +509,7 @@
       "sigHash": "907b05bf0c8e607fcbc056d38b067fb75b09be18030faa7e464594026246e3a3",
       "sorry": false,
       "source": {
-        "line": 119,
+        "line": 120,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c7fde288a4c19a27c6a82b67a2e9b8271fd766dd8776b81e947e4c2dfa8d0c90",
@@ -542,7 +542,7 @@
       "sigHash": "442764eb98dee58774e114b2c144f255c575c6dbd6e9dd8a7308d2834e108869",
       "sorry": true,
       "source": {
-        "line": 103,
+        "line": 104,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "c9972ac218916daa784efa844e6fe4762ac942c117e213910c76be2dc9543c50",
@@ -575,7 +575,7 @@
       "sigHash": "c2c923c587cdcd9a478e8cb4850dd8c88521e5c7b4a22dc7a042cfee23faef2f",
       "sorry": false,
       "source": {
-        "line": 140,
+        "line": 141,
         "path": "Notation/Defs.lean"
       },
       "stmtHash": "d87f370e2af19f39552d16f9c9bd3dbcccd63d556ef1c6ecc67378e3a965ac6a",

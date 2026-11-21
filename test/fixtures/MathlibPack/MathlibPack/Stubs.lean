@@ -134,7 +134,11 @@ def Polynomial.eval {R : Type} (_x : R) (_p : Polynomial R) : R := _x
 def Polynomial.X {R : Type} [OfNat R 0] [OfNat R 1] : Polynomial R := ⟨[0, 1]⟩
 def Polynomial.degree {R : Type} (p : Polynomial R) : Nat := p.coeffs.length
 
-def ZMod (_n : Nat) : Type := Int
+/-- Residues, a structure so that a cast into it is a cast. -/
+structure ZMod (_n : Nat) where
+  val : Int
+instance {n : Nat} : NatCast (ZMod n) := ⟨fun a => ⟨a⟩⟩
+instance {n : Nat} : IntCast (ZMod n) := ⟨fun a => ⟨a⟩⟩
 
 /-- Classes, for the instance binders the pack states as hypotheses. -/
 class Fintype (_α : Type) where
@@ -152,6 +156,9 @@ class AddCommGroup (G : Type) where
   add : G → G → G
 class Ring (R : Type) where
   mul : R → R → R
+  one : R
+/-- An element of a ring, for a statement whose body depends on an instance. -/
+def Ring.unit {R : Type} [Ring R] : R := Ring.one
 class CommRing (R : Type) extends Ring R
 class Field (K : Type) extends CommRing K
 class CharZero (_R : Type) : Prop where
@@ -180,5 +187,7 @@ class Algebra (R A : Type) where
   smul : R → A → A
 class NormedSpace (k E : Type) where
   smul : k → E → E
+class ChartedSpace (H M : Type) where
+  atlas : H → M
 class Fact (p : Prop) : Prop where
   out : p

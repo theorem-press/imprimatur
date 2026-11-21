@@ -25,7 +25,15 @@ All notable changes to imprimatur are recorded here. Versions follow
   of the judge); stacked, so that it is not also read as the floor of a real
   division, `⌊a / b⌋`, which a cast operand would allow. For the read-back,
   the arithmetic rules are homogeneous in sort (`a + b` is of its operands'
-  sort).
+  sort). Also from the judge's second round, over 500 statements: the base
+  of a power keeps its parentheses, so `(-1)^{k}` is not `-1^{k}` (a hole is
+  last in a template only if no hole follows it, braced ones included,
+  which also ends the `a^{-b^{c}}` ambiguity); an instance binder the
+  statement depends on through implicit arguments (`[Field k]` under
+  `MvPolynomial ι k`) is stated as a non-dependent one is; an `∃` over an
+  instance (`∃ (_ : Group H), …`) states what the class states; a cast into
+  `ZMod n` is written as the residue class `[a]_n`, since `↑u = 0` there is
+  a congruence; and `ChartedSpace H M` is "M is modelled on H".
 
 - A `mathlib` notation pack (#36), on by default with the other four, from
   a sweep of the 4,907 statements of google-deepmind/formal-conjectures

@@ -40,9 +40,10 @@ def Judg (n : Nat) : Prop := n = n
 def zeroish : Nat := 0
 
 /-- Arithmetic: every operator of the core pack; division of naturals rounds
-down, `⌊(c · 2)/1⌋` with the fraction stacked, and of integers is written plainly. -/
+down, `⌊(c · 2)/1⌋` with the fraction stacked, and of integers is written plainly;
+`(-i)^2` keeps its parentheses, which `-i^2` has not. -/
 theorem arith (a b c : Nat) (i : Int) (spec : Nat) :
-    a + b - c * 2 / 1 % 3 = b ^ 2 ∧ -i ≠ i / 2 ∧ a < b ∧ a ≤ b ∧ b > a ∧ b ≥ a ∧
+    a + b - c * 2 / 1 % 3 = b ^ 2 ∧ -i ≠ i / 2 ∧ (-i) ^ 2 = -i ^ 2 ∧ a < b ∧ a ≤ b ∧ b > a ∧ b ≥ a ∧
       Nat.succ a = a + 1 ∧ (id ∘ id) a = a ∧ (a, b) = (a, b) ∧ (spec : Int) = Int.cast i ∧
       (⟨a, rfl⟩ : {x : Nat // x = a}).val = a := by
   sorry

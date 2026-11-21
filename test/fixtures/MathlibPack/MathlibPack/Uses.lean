@@ -88,7 +88,15 @@ theorem instances (V : Type) [Fintype V] [Nonempty V] (W : Type) [Finite W] [Inf
     (k : Type) [Field k] (M : Type) [Module S M] [Module.Finite S M]
     (E : Type) [NormedAddCommGroup E] [NormedSpace k E] [FiniteDimensional k E] (B : Type) [Algebra S B]
     (X : Type) [TopologicalSpace X] [CompleteSpace X] [ConnectedSpace X] (Y : Type) [MetricSpace Y]
-    (n : Nat) [NeZero n] [Fact (1 < n)] : Fintype.card V ≤ n := by
+    (n : Nat) [NeZero n] [Fact (1 < n)] (Z : Type) [ChartedSpace X Z] : Fintype.card V ≤ n := by
+  sorry
+
+/-- An instance binder the statement depends on, stated like the others; an
+∃ over an instance, stated as what the class states; a cast into `ZMod n`,
+written as a residue class. -/
+theorem dependent (k : Type) [Field k] (a : Nat) (b : Int) (n : Nat) :
+    (Ring.unit : k) = Ring.unit ∧ (∃ (H : Type) (_ : Group H), Fintype.card H = 2) ∧
+      (a : ZMod n) = (b : ZMod n) := by
   sorry
 
 /-- Polynomials. -/

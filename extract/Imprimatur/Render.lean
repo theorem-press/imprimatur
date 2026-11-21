@@ -757,21 +757,13 @@ mutual
         return d
     -- Flatten a chain: `a ∘ (b ∘ c)` becomes one n-ary node.
     let operands ← if r.flatten && r.pat.binder?.isNone then collect r e else pure #[]
-    let topHoles := Id.run do
-      let mut d := 0
-      let mut out : Array Nat := #[]
-      for p in parts do
-        match p with
-        | .inl t => d := TeX.braceDepth t d
-        | .inr _ => out := out.push d
-      return out
-    let topCount := (topHoles.filter (· == 0)).size
     let mut out : Array Doc := #[]
     let mut depth := 0
     let mut holeIdx := 0
-    let mut topIdx := 0
     let mut textW := r.width
     let mut partIdx := 0
+    let shownCount := (vars.filter (!hidden.contains ·)).size
+    let mut shownIdx := 0
     for p in parts do
       partIdx := partIdx + 1
       match p with
@@ -788,9 +780,10 @@ mutual
           holeIdx := holeIdx + 1
           continue
         -- The precedence the hole needs: the policy the validator's grammar
-        -- shares (`Doc.holeNeeds`).
+        -- shares (`Doc.holeNeeds`); first or last among all the shown holes.
         let need := Doc.holeNeeds r.prec r.assoc depth (partIdx == 1 || partIdx == parts.size)
-          (topIdx == 0) (topIdx + 1 == topCount)
+          (shownIdx == 0) (shownIdx + 1 == shownCount)
+        shownIdx := shownIdx + 1
         if r.flatten && !operands.isEmpty && holeIdx == 1 then
           -- The rest of the chain, separated by the text between the holes.
           -- The separator is the text between the two holes.
@@ -814,7 +807,6 @@ mutual
           | some a => out := out.push (.child need (← render a))
           | none => out := out.push (.tex s!"?{v}")
         holeIdx := holeIdx + 1
-        if depth == 0 then topIdx := topIdx + 1
     -- The reading: the rule's production with its holes' readings. Chains,
     -- folded binders and synonyms are left unchecked.
     match (if r.flatten || !multi.isEmpty then none else Validate.ofRule r) with
@@ -840,8 +832,14 @@ mutual
   partial def renderExists (e : Expr) : RenderM (Option Doc) := do
     let some (_, #[.lam n t b bi]) ← explicitArgs e | return none
     -- `∃ h : p, q`, over a proof the body does not mention, is `p ∧ q`: the
-    -- hypothesis is stated, not a vacuous "there is h".
-    if (← isProp t) && !b.hasLooseBVar 0 then return some (← render (mkAnd t b))
+    -- hypothesis is stated, not a vacuous "there is h". Likewise `∃ _ : C α, q`
+    -- over an instance states what the class states, or is left out.
+    if !b.hasLooseBVar 0 then
+      if ← isProp t then return some (← render (mkAnd t b))
+      if (← isClass? t).isSome then
+        return some (← match ← instanceHypothesis? t with
+          | some h => render (mkAnd h b)
+          | none => render b)
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
       let v ← varNameT n t
@@ -879,7 +877,17 @@ mutual
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
       -- Instance binders are not shown.
-      if bi.isInstImplicit then return ← render body
+      -- An instance binder the body depends on (through the implicit
+      -- arguments of its constants) is stated when it states a hypothesis,
+      -- as a non-dependent one is; otherwise left out.
+      if bi.isInstImplicit then
+        match ← instanceHypothesis? t with
+        | some h =>
+          let lhs ← render h
+          let rhs ← render body
+          expectForm (if isProp then "implication" else "function type") #[] 2
+          return .node 25 #[.child 26 lhs, .brk, .tex s!" {if isProp then "\\implies" else "\\to"} ", .child 25 rhs]
+        | none => return ← render body
       let v ← varNameT n t
       logAtom v "*" (isVar := true)
       -- `∀ x, x ∈ s → p` is written `∀ x ∈ s, p`.

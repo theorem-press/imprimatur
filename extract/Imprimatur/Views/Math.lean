@@ -354,7 +354,12 @@ partial def gatherConcl (concl : Expr) : RenderM (Layout.Concl (List Char)) := d
     if let .lam n t b bi := concl.appArg! then
       -- `∃ h : p, q` over a proof the body does not mention is `p ∧ q`, not
       -- "there is h such that q".
-      if (← isProp t) && !b.hasLooseBVar 0 then return ← gatherConcl (mkAnd t b)
+      if !b.hasLooseBVar 0 then
+        if ← isProp t then return ← gatherConcl (mkAnd t b)
+        if (← isClass? t).isSome then
+          return ← match ← instanceHypothesis? t with
+            | some h => gatherConcl (mkAnd h b)
+            | none => gatherConcl b
       return ← withLocalDecl n bi t fun x => do
         let body := b.instantiate1 x
         return .exists_ (← varNameT n t).toList (← gatherConcl body)

@@ -67,7 +67,7 @@ partial def Pat.specificity : Pat → Nat
 partial def Pat.vars : Pat → Array Name
   | .var n => #[n]
   | .app _ args => args.foldl (· ++ ·.vars) #[]
-  | .constrained p _ => p.vars
+  | .constrained p cs => p.vars ++ cs.foldl (· ++ ·.2.vars) #[]
   | .lam x b => #[x] ++ b.vars
   | .pi x d b => #[x] ++ d.vars ++ b.vars
   | .arrow d c => d.vars ++ c.vars
@@ -478,13 +478,14 @@ partial def Pat.matchExprK {α : Type} (p : Pat) (e : Expr) (acc : Array (Name �
     if ← withNewMCtxDepth (isDefEq e v) then k acc else return none
   | .constrained q cs =>
     let args := e.consumeMData.getAppArgs
-    let rec goCs (i : Nat) : MetaM (Option α) := do
+    -- A constraint's variables are bound too (`@Nat.cast (ZMod n) a`).
+    let rec goCs (i : Nat) (acc : Array (Name × Expr)) : MetaM (Option α) := do
       if h : i < cs.size then
         let (j, c) := cs[i]
         let some a := args[j]? | return none
-        c.matchExprK a #[] fun _ => goCs (i + 1)
+        c.matchExprK a acc fun acc => goCs (i + 1) acc
       else q.matchExprK e acc k
-    goCs 0
+    goCs 0 acc
   | .app h ps =>
     let e := e.consumeMData
     -- A constant pattern with no arguments matches the constant, whatever

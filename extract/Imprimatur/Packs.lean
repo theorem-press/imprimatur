@@ -174,6 +174,14 @@ def mathlib : Array NotationRule :=
   #[
   -- Types.
   rule "mathlib" `Real 0 "\\mathbb{R}" (sort := "Sort"),
+  -- A cast into `ZMod n` is the residue class `[a]_n`: the cast is not
+  -- invisible there, since `↑u = 0` in `ZMod n` is a congruence, not an
+  -- equation.
+  rule' "mathlib" (.constrained (.app ``Nat.cast #[.var `a]) #[(0, .app `ZMod #[.var `n])]) "[#a]_{#n}"
+    (sort := "ZMod") (holes := #[(`a, "Nat"), (`n, "Nat")]),
+  -- The integer's class reads as the natural's through the cast: a synonym.
+  { rule' "mathlib" (.constrained (.app ``Int.cast #[.var `a]) #[(0, .app `ZMod #[.var `n])]) "[#a]_{#n}"
+      (sort := "ZMod") (holes := #[(`a, "Int"), (`n, "Nat")]) with synonym := true },
   rule "mathlib" `Complex 0 "\\mathbb{C}" (sort := "Sort"),
   rule "mathlib" `ZMod 1 "\\mathbb{Z}/#a\\mathbb{Z}" (sort := "Sort") (holes := "Nat"),
   -- Coercions, which are not shown.
@@ -295,6 +303,7 @@ def mathlib : Array NotationRule :=
   classRule2 "mathlib" `FiniteDimensional "#b \\text{ is finite-dimensional over } #a",
   classRule2 "mathlib" `Algebra "#b \\text{ is an } #a\\text{-algebra}",
   classRule2 "mathlib" `NormedSpace "#b \\text{ is a normed } #a\\text{-vector space}",
+  classRule2 "mathlib" `ChartedSpace "#b \\text{ is modelled on } #a",
   -- Polynomials.
   rule' "mathlib" (.app `Polynomial.eval #[.var `x, .var `p]) "#p(#x)" 1023 (holes := #[(`p, "Polynomial")]),
   rule "mathlib" `Polynomial.X 0 "\\mathrm{X}" (sort := "Polynomial"),

@@ -142,14 +142,7 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
   let sortOf (v : String) : String :=
     let so := sortOf v
     if (mentions so).any lone then ((STerm.parse so).mapVars fun a => if lone a then "*" else a).render else so
-  let topCount := Id.run do
-    let mut d := 0
-    let mut n := 0
-    for p in parts do
-      match p with
-      | .inl t => d := TeX.braceDepth t d
-      | .inr _ => if d == 0 then n := n + 1
-    return n
+  let shownCount := (vars.filter (!hidden.contains ·)).size
   let chain := r.flatten && r.pat.binder?.isNone
   let folded : Option String := if r.flatten then r.pat.binder?.map (·.1.toString) else none
   -- A variable the pattern binds is an atom in the production: a bound
@@ -159,7 +152,6 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
   let mut syms : Array Sym := #[]
   let mut depth := 0
   let mut holeIdx := 0
-  let mut topIdx := 0
   let mut chainSep : Array String := #[]
   let mut shownVars : Array String := #[]
   let mut partIdx := 0
@@ -175,9 +167,11 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
       if hidden.contains v then
         holeIdx := holeIdx + 1
         continue
-      -- The precedence the hole needs: the renderer's own policy.
+      -- The precedence the hole needs: the renderer's own policy. A hole is
+      -- first or last among all the shown holes, braced ones included, so
+      -- the base of `#a^{#b}` is not last and keeps its parentheses.
       let need := Doc.holeNeeds r.prec r.assoc depth (partIdx == 1 || partIdx == parts.size)
-        (topIdx == 0) (topIdx + 1 == topCount)
+        (shownVars.size == 0) (shownVars.size + 1 == shownCount)
       -- A chain's operands may each be of their own type (a tuple
       -- `(a, b, c)`), so a type variable among them is left open.
       let so := sortOf v
@@ -194,7 +188,6 @@ def ofRule (r : NotationRule) : Option Prod := Id.run do
       else
         syms := syms.push hole
       holeIdx := holeIdx + 1
-      if depth == 0 then topIdx := topIdx + 1
   let coercion := match syms with
     | #[.hole ..] => true
     | _ => false

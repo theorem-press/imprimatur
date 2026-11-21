@@ -62,7 +62,7 @@ def fixtures : Array Fixture := #[
   { dir := "MathlibPack", module := `MathlibPack, strip := #[`MathlibPack],
     keys := #["MathlibPack.types", "MathlibPack.functions", "MathlibPack.arithmetic", "MathlibPack.cards",
       "MathlibPack.predicates", "MathlibPack.sets", "MathlibPack.sums", "MathlibPack.limits",
-      "MathlibPack.graphs", "MathlibPack.polynomials", "MathlibPack.instances"],
+      "MathlibPack.graphs", "MathlibPack.polynomials", "MathlibPack.instances", "MathlibPack.dependent"],
     views := #["math", "prose"] },
   { dir := "Statements", module := `Statements, strip := #[`Statements],
     keys := #["Statements.named", "Statements.bounded", "Statements.withInstance"],

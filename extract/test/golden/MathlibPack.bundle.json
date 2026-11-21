@@ -58,6 +58,35 @@
         "prose": "\\LeanProse{Let $s \\in \\LeanMathConst{Finset}\\,\\mathbb{N}$, $t \\in \\LeanMathConst{Set}\\,\\mathbb{N}$ and $\\alpha$ be a type. Then $|s| + |t| = |\\alpha|$.}"
       }
     },
+    "MathlibPack.dependent": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 17,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.dependent",
+      "doc": "An instance binder the statement depends on, stated like the others; an\n∃ over an instance, stated as what the class states; a cast into `ZMod n`,\nwritten as a residue class.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\exists", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\text", "\\wedge"],
+      "sigHash": "e4721e5f1f9b8703a0f3f894c3962f61ccbae5d2ebff7e471fcad4c3aed8c01c",
+      "sorry": true,
+      "source": {
+        "line": 97,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "3fd4edc2dbe77685b2c29becef431f2e1a2cfc1f6798207ae97dd5072ab7dc6f",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{dependent} (\\LeanBound{k} : \\LeanSort{Type}) [\\LeanConst{Field} \\LeanBound{k}] (\\LeanBound{a} : \\LeanConst{Nat}) (\\LeanBound{b} : \\LeanConst{Int}) (\\LeanBound{n} : \\LeanConst{Nat}) :\\LeanNewline\n\\LeanIndent{2}\\LeanConst{Ring.unit} = \\LeanConst{Ring.unit} ∧ (∃ \\LeanBound{H} \\LeanBound{x}, \\LeanConst{Fintype.card} \\LeanBound{H} = \\LeanNumber{2}) ∧ ↑\\LeanBound{a} = ↑\\LeanBound{b}}",
+        "math": "\\LeanMath{k \\text{ is a field} \\implies \\LeanMathConst{Ring.unit} = \\LeanMathConst{Ring.unit} \\wedge (\\exists H,\\ H \\text{ is a group} \\wedge |H| = 2) \\wedge [a]_{n} = [b]_{n}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{An instance binder the statement depends on, stated like the others; an\n∃ over an instance, stated as what the class states; a cast into \\LeanCodeInline{ZMod n},\nwritten as a residue class.}",
+        "prose": "\\LeanProse{Let $k$ be a type, $a \\in \\mathbb{N}$, $b \\in \\mathbb{Z}$ and $n \\in \\mathbb{N}$. Assume $k \\text{ is a field}$. Then (1)~$\\LeanMathConst{Ring.unit} = \\LeanMathConst{Ring.unit}$, (2)~$\\exists H,\\ H \\text{ is a group} \\wedge |H| = 2$ and (3)~$[a]_{n} = [b]_{n}$.}"
+      }
+    },
     "MathlibPack.functions": {
       "axioms": ["sorryAx"],
       "cone": {
@@ -120,29 +149,29 @@
       "axioms": ["sorryAx"],
       "cone": {
         "reasons": {},
-        "size": 52,
+        "size": 54,
         "untrusted": []
       },
       "decl": "MathlibPack.instances",
       "doc": "Instance binders, each stated as a hypothesis by a class rule; `Fact` is\nthe hypothesis itself.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\implies", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\ne", "\\text", "\\wedge"],
-      "sigHash": "01b04f97ec5affd1e61cd7995b4b82e0e5d553e0b0ac9842ba931ed181ec539a",
+      "sigHash": "fd8c268ebcce0bc1ac7ded94a4fd69a274bc3b91fdc1a628276d48abda7e352f",
       "sorry": true,
       "source": {
         "line": 85,
         "path": "MathlibPack/Uses.lean"
       },
-      "stmtHash": "36b26c3abe11b209febfed8d7695a5ce2c9e16f702e2eef0998383b4da9f7769",
+      "stmtHash": "cd2d4d55cb73ab1f5de898f324e844cb34aab53b9a63a76bae9c1ae1329a9bbb",
       "validation": {
         "math": [],
         "prose": []
       },
       "views": {
-        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{instances} (\\LeanBound{V} : \\LeanSort{Type}) [\\LeanConst{Fintype} \\LeanBound{V}] [\\LeanConst{Nonempty} \\LeanBound{V}] (\\LeanBound{W} : \\LeanSort{Type}) [\\LeanConst{Finite} \\LeanBound{W}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{Infinite} \\LeanBound{W}] [\\LeanConst{Nontrivial} \\LeanBound{W}] (\\LeanBound{G} : \\LeanSort{Type}) [\\LeanConst{Group} \\LeanBound{G}] (\\LeanBound{H} : \\LeanSort{Type}) [\\LeanConst{CommGroup} \\LeanBound{H}]\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{A} : \\LeanSort{Type}) [\\LeanConst{AddCommGroup} \\LeanBound{A}] (\\LeanBound{R} : \\LeanSort{Type}) [\\LeanConst{Ring} \\LeanBound{R}] (\\LeanBound{S} : \\LeanSort{Type}) [\\LeanConst{CommRing} \\LeanBound{S}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{IsNoetherianRing} \\LeanBound{S}] [\\LeanConst{IsLocalRing} \\LeanBound{S}] [\\LeanConst{CharZero} \\LeanBound{S}] (\\LeanBound{k} : \\LeanSort{Type}) [\\LeanConst{Field} \\LeanBound{k}]\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{M} : \\LeanSort{Type}) [\\LeanConst{Module} \\LeanBound{S} \\LeanBound{M}] [\\LeanConst{Module.Finite} \\LeanBound{S} \\LeanBound{M}] (\\LeanBound{E} : \\LeanSort{Type}) [\\LeanConst{NormedAddCommGroup} \\LeanBound{E}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{NormedSpace} \\LeanBound{k} \\LeanBound{E}] [\\LeanConst{FiniteDimensional} \\LeanBound{k} \\LeanBound{E}] (\\LeanBound{B} : \\LeanSort{Type}) [\\LeanConst{Algebra} \\LeanBound{S} \\LeanBound{B}] (\\LeanBound{X} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{TopologicalSpace} \\LeanBound{X}] [\\LeanConst{CompleteSpace} \\LeanBound{X}] [\\LeanConst{ConnectedSpace} \\LeanBound{X}] (\\LeanBound{Y} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{MetricSpace} \\LeanBound{Y}] (\\LeanBound{n} : \\LeanConst{Nat}) [\\LeanConst{NeZero} \\LeanBound{n}] [\\LeanConst{Fact} (\\LeanNumber{1} < \\LeanBound{n})] : \\LeanConst{Fintype.card} \\LeanBound{V} ≤ \\LeanBound{n}}",
-        "math": "\\LeanMath{V \\text{ is finite} \\wedge V \\text{ is nonempty} \\wedge W \\text{ is finite} \\wedge W \\text{ is infinite} \\wedge W \\text{ is nontrivial} \\LeanBreak \\wedge G \\text{ is a group} \\wedge H \\text{ is an abelian group} \\wedge A \\text{ is an abelian group} \\wedge R \\text{ is a ring} \\LeanBreak \\wedge S \\text{ is a commutative ring} \\wedge S \\text{ is Noetherian} \\wedge S \\text{ is local} \\LeanBreak \\wedge S \\text{ is of characteristic zero} \\wedge k \\text{ is a field} \\wedge M \\text{ is an } S\\text{-module} \\LeanBreak \\wedge M \\text{ is a finitely generated } S\\text{-module} \\wedge E \\text{ is a normed abelian group} \\LeanBreak \\wedge E \\text{ is a normed } k\\text{-vector space} \\wedge E \\text{ is finite-dimensional over } k \\LeanBreak \\wedge B \\text{ is an } S\\text{-algebra} \\wedge X \\text{ is a topological space} \\wedge X \\text{ is complete} \\LeanBreak \\wedge X \\text{ is connected} \\wedge Y \\text{ is a metric space} \\wedge n \\ne 0 \\wedge 1 < n \\implies |V| \\le n}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{instances} (\\LeanBound{V} : \\LeanSort{Type}) [\\LeanConst{Fintype} \\LeanBound{V}] [\\LeanConst{Nonempty} \\LeanBound{V}] (\\LeanBound{W} : \\LeanSort{Type}) [\\LeanConst{Finite} \\LeanBound{W}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{Infinite} \\LeanBound{W}] [\\LeanConst{Nontrivial} \\LeanBound{W}] (\\LeanBound{G} : \\LeanSort{Type}) [\\LeanConst{Group} \\LeanBound{G}] (\\LeanBound{H} : \\LeanSort{Type}) [\\LeanConst{CommGroup} \\LeanBound{H}]\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{A} : \\LeanSort{Type}) [\\LeanConst{AddCommGroup} \\LeanBound{A}] (\\LeanBound{R} : \\LeanSort{Type}) [\\LeanConst{Ring} \\LeanBound{R}] (\\LeanBound{S} : \\LeanSort{Type}) [\\LeanConst{CommRing} \\LeanBound{S}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{IsNoetherianRing} \\LeanBound{S}] [\\LeanConst{IsLocalRing} \\LeanBound{S}] [\\LeanConst{CharZero} \\LeanBound{S}] (\\LeanBound{k} : \\LeanSort{Type}) [\\LeanConst{Field} \\LeanBound{k}]\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{M} : \\LeanSort{Type}) [\\LeanConst{Module} \\LeanBound{S} \\LeanBound{M}] [\\LeanConst{Module.Finite} \\LeanBound{S} \\LeanBound{M}] (\\LeanBound{E} : \\LeanSort{Type}) [\\LeanConst{NormedAddCommGroup} \\LeanBound{E}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{NormedSpace} \\LeanBound{k} \\LeanBound{E}] [\\LeanConst{FiniteDimensional} \\LeanBound{k} \\LeanBound{E}] (\\LeanBound{B} : \\LeanSort{Type}) [\\LeanConst{Algebra} \\LeanBound{S} \\LeanBound{B}] (\\LeanBound{X} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{TopologicalSpace} \\LeanBound{X}] [\\LeanConst{CompleteSpace} \\LeanBound{X}] [\\LeanConst{ConnectedSpace} \\LeanBound{X}] (\\LeanBound{Y} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{MetricSpace} \\LeanBound{Y}] (\\LeanBound{n} : \\LeanConst{Nat}) [\\LeanConst{NeZero} \\LeanBound{n}] [\\LeanConst{Fact} (\\LeanNumber{1} < \\LeanBound{n})] (\\LeanBound{Z} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{ChartedSpace} \\LeanBound{X} \\LeanBound{Z}] : \\LeanConst{Fintype.card} \\LeanBound{V} ≤ \\LeanBound{n}}",
+        "math": "\\LeanMath{V \\text{ is finite} \\wedge V \\text{ is nonempty} \\wedge W \\text{ is finite} \\wedge W \\text{ is infinite} \\wedge W \\text{ is nontrivial} \\LeanBreak \\wedge G \\text{ is a group} \\wedge H \\text{ is an abelian group} \\wedge A \\text{ is an abelian group} \\wedge R \\text{ is a ring} \\LeanBreak \\wedge S \\text{ is a commutative ring} \\wedge S \\text{ is Noetherian} \\wedge S \\text{ is local} \\LeanBreak \\wedge S \\text{ is of characteristic zero} \\wedge k \\text{ is a field} \\wedge M \\text{ is an } S\\text{-module} \\LeanBreak \\wedge M \\text{ is a finitely generated } S\\text{-module} \\wedge E \\text{ is a normed abelian group} \\LeanBreak \\wedge E \\text{ is a normed } k\\text{-vector space} \\wedge E \\text{ is finite-dimensional over } k \\LeanBreak \\wedge B \\text{ is an } S\\text{-algebra} \\wedge X \\text{ is a topological space} \\wedge X \\text{ is complete} \\LeanBreak \\wedge X \\text{ is connected} \\wedge Y \\text{ is a metric space} \\wedge n \\ne 0 \\wedge 1 < n \\wedge Z \\text{ is modelled on } X \\implies |V| \\le n}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Instance binders, each stated as a hypothesis by a class rule; \\LeanCodeInline{Fact} is\nthe hypothesis itself.}",
-        "prose": "\\LeanProse{Let $V, W, G, H, A, R, S, k, M, E, B, X, Y$ be types and $n \\in \\mathbb{N}$. Assume $V \\text{ is finite}$, $V \\text{ is nonempty}$, $W \\text{ is finite}$, $W \\text{ is infinite}$, $W \\text{ is nontrivial}$, $G \\text{ is a group}$, $H \\text{ is an abelian group}$, $A \\text{ is an abelian group}$, $R \\text{ is a ring}$, $S \\text{ is a commutative ring}$, $S \\text{ is Noetherian}$, $S \\text{ is local}$, $S \\text{ is of characteristic zero}$, $k \\text{ is a field}$, $M \\text{ is an } S\\text{-module}$, $M \\text{ is a finitely generated } S\\text{-module}$, $E \\text{ is a normed abelian group}$, $E \\text{ is a normed } k\\text{-vector space}$, $E \\text{ is finite-dimensional over } k$, $B \\text{ is an } S\\text{-algebra}$, $X \\text{ is a topological space}$, $X \\text{ is complete}$, $X \\text{ is connected}$, $Y \\text{ is a metric space}$, $n \\ne 0$ and $1 < n$. Then $|V| \\le n$.}"
+        "prose": "\\LeanProse{Let $V, W, G, H, A, R, S, k, M, E, B, X, Y$ be types, $n \\in \\mathbb{N}$ and $Z$ be a type. Assume $V \\text{ is finite}$, $V \\text{ is nonempty}$, $W \\text{ is finite}$, $W \\text{ is infinite}$, $W \\text{ is nontrivial}$, $G \\text{ is a group}$, $H \\text{ is an abelian group}$, $A \\text{ is an abelian group}$, $R \\text{ is a ring}$, $S \\text{ is a commutative ring}$, $S \\text{ is Noetherian}$, $S \\text{ is local}$, $S \\text{ is of characteristic zero}$, $k \\text{ is a field}$, $M \\text{ is an } S\\text{-module}$, $M \\text{ is a finitely generated } S\\text{-module}$, $E \\text{ is a normed abelian group}$, $E \\text{ is a normed } k\\text{-vector space}$, $E \\text{ is finite-dimensional over } k$, $B \\text{ is an } S\\text{-algebra}$, $X \\text{ is a topological space}$, $X \\text{ is complete}$, $X \\text{ is connected}$, $Y \\text{ is a metric space}$, $n \\ne 0$, $1 < n$ and $Z \\text{ is modelled on } X$. Then $|V| \\le n$.}"
       }
     },
     "MathlibPack.limits": {
@@ -188,7 +217,7 @@
       "sigHash": "0ac1b3fa8b32b6ee3e44a760492ea945d0860c572abf3a526ca723ed738ee060",
       "sorry": true,
       "source": {
-        "line": 95,
+        "line": 103,
         "path": "MathlibPack/Uses.lean"
       },
       "stmtHash": "694d73d21415d6d65d625e34fb75f691516438682c94e7dd3ccd64dfb640bc48",
@@ -294,7 +323,7 @@
       "axioms": ["sorryAx"],
       "cone": {
         "reasons": {},
-        "size": 27,
+        "size": 28,
         "untrusted": []
       },
       "decl": "MathlibPack.types",
@@ -307,7 +336,7 @@
         "line": 18,
         "path": "MathlibPack/Uses.lean"
       },
-      "stmtHash": "20ef1d42701e83c497cac254ff4699807b1899e988e9b3fdbf82e294865d4254",
+      "stmtHash": "8a734b2a55ce01250e746bd6b2a594b1ea261ebd1c9eba007bf3ef65ac3ff02f",
       "validation": {
         "math": [],
         "prose": []
