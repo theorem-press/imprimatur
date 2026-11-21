@@ -5,6 +5,28 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Three defects the sweep's judge of equivalence found (imprimatur-paper
+  `sweep/judge.py`), each a rendering the read-back cannot fault, since its
+  grammar is the renderer's own, but a reader would: an instance binder
+  `[Fintype V]`, `[Group G]` or `[Field k]` left out of the prose, which
+  generalises the statement; `(\log N)^{-c}` printed as `\log N^{-c}`; and an
+  `∃` over a proof printed as a vacuous "there is h". Now: the `mathlib` pack
+  writes the common classes as sentences ("V is finite", "G is a group", "M
+  is an R-module", …) and `core` writes `Nonempty`, so their instance
+  binders are hypotheses; an instance binder whose class is in `Prop` with
+  one field and no rule is that field's statement (`[NeZero n]` as `n ≠ 0`,
+  `[Fact p]` as `p`), where before it was left out; the pack's prefix
+  functions (`\log`, `\exp`, `\sin`, `\cos`, `\log_b`, `\Re`, `\Im`,
+  `\deg`) are at precedence 72, below `^`, so `(\log N)^{2}` keeps its
+  parentheses; `∃ h : p, q`, over a proof the body does not mention, is
+  `p ∧ q`, in the prose view's "there is … such that" too; and division of
+  natural numbers, which rounds down, is written `⌊a/b⌋` with the fraction
+  stacked, where before `n^2 / 4` read as a fraction (a `different` verdict
+  of the judge); stacked, so that it is not also read as the floor of a real
+  division, `⌊a / b⌋`, which a cast operand would allow. For the read-back,
+  the arithmetic rules are homogeneous in sort (`a + b` is of its operands'
+  sort).
+
 - A `mathlib` notation pack (#36), on by default with the other four, from
   a sweep of the 4,907 statements of google-deepmind/formal-conjectures
   through the `math` and `prose` views (2026-11-21): the Mathlib constants

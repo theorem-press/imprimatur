@@ -135,3 +135,50 @@ def Polynomial.X {R : Type} [OfNat R 0] [OfNat R 1] : Polynomial R := ⟨[0, 1]�
 def Polynomial.degree {R : Type} (p : Polynomial R) : Nat := p.coeffs.length
 
 def ZMod (_n : Nat) : Type := Int
+
+/-- Classes, for the instance binders the pack states as hypotheses. -/
+class Fintype (_α : Type) where
+  elems : Nat
+class Finite (_α : Type) : Prop where
+  finite : True
+class Infinite (_α : Type) : Prop where
+  infinite : True
+class Nontrivial (_α : Type) : Prop where
+  nontrivial : True
+class Group (G : Type) where
+  mul : G → G → G
+class CommGroup (G : Type) extends Group G
+class AddCommGroup (G : Type) where
+  add : G → G → G
+class Ring (R : Type) where
+  mul : R → R → R
+class CommRing (R : Type) extends Ring R
+class Field (K : Type) extends CommRing K
+class CharZero (_R : Type) : Prop where
+  charZero : True
+class IsNoetherianRing (_R : Type) : Prop where
+  noetherian : True
+class IsLocalRing (_R : Type) : Prop where
+  local_ : True
+class TopologicalSpace (X : Type) where
+  IsOpen : Set X → Prop
+class MetricSpace (X : Type) where
+  dist : X → X → Real
+class CompleteSpace (_X : Type) : Prop where
+  complete : True
+class ConnectedSpace (_X : Type) : Prop where
+  connected : True
+class NormedAddCommGroup (E : Type) where
+  norm : E → Real
+class Module (R M : Type) where
+  smul : R → M → M
+class Module.Finite (_R _M : Type) : Prop where
+  finite : True
+class FiniteDimensional (_K _V : Type) : Prop where
+  finite : True
+class Algebra (R A : Type) where
+  smul : R → A → A
+class NormedSpace (k E : Type) where
+  smul : k → E → E
+class Fact (p : Prop) : Prop where
+  out : p

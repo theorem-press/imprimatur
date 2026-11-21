@@ -78,20 +78,20 @@
       "axioms": [],
       "cone": {
         "reasons": {},
-        "size": 4,
+        "size": 6,
         "untrusted": []
       },
       "decl": "Statements.withInstance",
       "doc": "A theorem with instance binders.",
       "kind": "theorem",
-      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNumber", "\\LeanProse", "\\LeanSorryFree", "\\forall", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\mathsf", "\\ne"],
-      "sigHash": "86f0fc8615314ae7252c15e1ef40e6820430ff23a547794f7dfae14135715daf",
+      "macros": ["\\LeanBound", "\\LeanCode", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNumber", "\\LeanProse", "\\LeanSorryFree", "\\forall", "\\implies", "\\in", "\\leanmetasource", "\\mathbb", "\\mathsf", "\\ne", "\\wedge"],
+      "sigHash": "d38ad10705da2901b16797bdff231fd4f622ae5829eb111890f613334e842e8c",
       "sorry": false,
       "source": {
-        "line": 35,
+        "line": 42,
         "path": "Statements/Defs.lean"
       },
-      "stmtHash": "98be33a2847062098c6f42b55087adf862cd2a16ea60cd4113ce19126bc89d25",
+      "stmtHash": "446336a4aec4c054d05171694c7d7d9ddea8ca440d6103861614883a087ebb6b",
       "validation": {
         "math": [],
         "math|forall=": [],
@@ -101,14 +101,14 @@
         "prose|unfold=": []
       },
       "views": {
-        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{withInstance} (\\LeanBound{n} : \\LeanConst{Nat}) [\\LeanConst{Positive} \\LeanBound{n}] [\\LeanConst{Quiet} \\LeanBound{n}] : \\LeanBound{n} ≠ \\LeanNumber{0}}",
-        "math": "\\LeanMath{\\mathsf{pos}(n) \\implies n \\ne 0}",
-        "math|forall=": "\\LeanMath{\\forall n : \\mathbb{N},\\ \\mathsf{pos}(n) \\implies n \\ne 0}",
-        "math|forall=|unfold=": "\\LeanMath{\\forall n : \\mathbb{N},\\ \\mathsf{pos}(n) \\implies n \\ne 0}",
-        "math|unfold=": "\\LeanMath{\\mathsf{pos}(n) \\implies n \\ne 0}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{withInstance} (\\LeanBound{n} : \\LeanConst{Nat}) [\\LeanConst{Positive} \\LeanBound{n}] [\\LeanConst{Quiet} \\LeanBound{n}] [\\LeanConst{Loud} \\LeanBound{n}] : \\LeanBound{n} ≠ \\LeanNumber{0}}",
+        "math": "\\LeanMath{\\mathsf{pos}(n) \\wedge 0 < n \\implies n \\ne 0}",
+        "math|forall=": "\\LeanMath{\\forall n : \\mathbb{N},\\ \\mathsf{pos}(n) \\implies 0 < n \\implies n \\ne 0}",
+        "math|forall=|unfold=": "\\LeanMath{\\forall n : \\mathbb{N},\\ \\mathsf{pos}(n) \\implies 0 < n \\implies n \\ne 0}",
+        "math|unfold=": "\\LeanMath{\\mathsf{pos}(n) \\wedge 0 < n \\implies n \\ne 0}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A theorem with instance binders.}",
-        "prose": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $\\mathsf{pos}(n)$. Then $n \\ne 0$.}",
-        "prose|unfold=": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $\\mathsf{pos}(n)$. Then $n \\ne 0$.}"
+        "prose": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $\\mathsf{pos}(n)$ and $0 < n$. Then $n \\ne 0$.}",
+        "prose|unfold=": "\\LeanProse{Let $n \\in \\mathbb{N}$. Assume $\\mathsf{pos}(n)$ and $0 < n$. Then $n \\ne 0$.}"
       }
     }
   },

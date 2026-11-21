@@ -39,9 +39,10 @@ def Judg (n : Nat) : Prop := n = n
 /-- A constant shown as a symbol. -/
 def zeroish : Nat := 0
 
-/-- Arithmetic: every operator of the core pack. -/
+/-- Arithmetic: every operator of the core pack; division of naturals rounds
+down, `⌊(c · 2)/1⌋` with the fraction stacked, and of integers is written plainly. -/
 theorem arith (a b c : Nat) (i : Int) (spec : Nat) :
-    a + b - c * 2 / 1 % 3 = b ^ 2 ∧ -i ≠ i ∧ a < b ∧ a ≤ b ∧ b > a ∧ b ≥ a ∧
+    a + b - c * 2 / 1 % 3 = b ^ 2 ∧ -i ≠ i / 2 ∧ a < b ∧ a ≤ b ∧ b > a ∧ b ≥ a ∧
       Nat.succ a = a + 1 ∧ (id ∘ id) a = a ∧ (a, b) = (a, b) ∧ (spec : Int) = Int.cast i ∧
       (⟨a, rfl⟩ : {x : Nat // x = a}).val = a := by
   sorry
@@ -57,8 +58,9 @@ theorem sets {α : Type} (s t : MySet α) (a b : α) :
   sorry
 
 /-- Numbers: `ℚ`, divisibility, gcd and lcm, and injectivity and
-surjectivity, each a sentence. -/
-theorem number (q : Rat) (a b : Nat) (f : Nat → Nat) :
+surjectivity, each a sentence; and the instance binders `[Nonempty α]` and
+`[NeZero a]`, stated as hypotheses. -/
+theorem number (q : Rat) (a b : Nat) (f : Nat → Nat) (α : Type) [Nonempty α] [NeZero a] :
     q = q ∧ a ∣ b ∧ Nat.gcd a b ≤ Nat.lcm a b ∧ Function.Injective f ∧ Function.Surjective f := by
   sorry
 
@@ -68,12 +70,14 @@ theorem order (a b : Nat) : max a b = min a b := by
 
 /-- Binders: bounded quantifiers, ∃, implication, function types, λ, an
 applied variable, a `match` with two alternatives, which falls back to
-Lean's printer under the default style, and a λ that destructures a pair,
-written with the pattern for its binder. -/
+Lean's printer under the default style, a λ that destructures a pair,
+written with the pattern for its binder, and an ∃ over a proof, which is a
+conjunction. -/
 theorem binders (s : MySet Nat) (f : Nat → Nat) (h : ∀ x ∈ s, f x = x) :
     (∃ y ∈ s, f y = y) → (∃ z, z = f 0) ∧ (fun n => n + 1) 0 = 1 ∧
       (match f 0 with | 0 => true | _ => false) = true ∧ true ≠ false ∧
-      (fun p : Nat × Nat => match p with | (a, b) => a + b) (1, 2) = 3 := by
+      (fun p : Nat × Nat => match p with | (a, b) => a + b) (1, 2) = 3 ∧
+      (∃ _ : 0 < 1, f 0 = f 0) := by
   sorry
 
 /-- A `let` in a statement: unfolded, so the notation and the metavariable
@@ -140,6 +144,11 @@ theorem witnesses (n : Nat) : ∃ m : Nat, ∃ k : Nat, m = n ∧ k = m :=
 only if". -/
 theorem hypsOnly (h : 1 = 1) (h' : 2 = 2) : True ↔ True :=
   Iff.rfl
+
+/-- A leading ∃ over a proof: "there is n such that (1) 0 < n and (2) …", not
+"there is n such that there is h such that". -/
+theorem existsProof (f : Nat → Nat) : ∃ n : Nat, ∃ _ : 0 < n, f n = n := by
+  sorry
 
 /-- A conclusion alone: no "Let", no "Assume", no "Then". -/
 theorem bare : True :=

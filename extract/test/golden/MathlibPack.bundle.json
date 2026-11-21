@@ -116,6 +116,35 @@
         "prose": "\\LeanProse{Let $G \\in \\LeanMathConst{SimpleGraph}\\,\\mathbb{N}$ and $u, v \\in \\mathbb{N}$. Then (1)~$\\chi(G) \\le \\Delta(G) + 1$, (2)~$\\delta(G) \\le \\omega(G)$, (3)~$|\\mathrm{E}(G)| = 3$, (4)~$u \\sim_{G} v$, (5)~$K_{\\mathbb{N}} = G$ and (6)~$C_{5} = C_{5}$.}"
       }
     },
+    "MathlibPack.instances": {
+      "axioms": ["sorryAx"],
+      "cone": {
+        "reasons": {},
+        "size": 52,
+        "untrusted": []
+      },
+      "decl": "MathlibPack.instances",
+      "doc": "Instance binders, each stated as a hypothesis by a class rule; `Fact` is\nthe hypothesis itself.",
+      "kind": "theorem",
+      "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanSort", "\\LeanUsesSorry", "\\implies", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\ne", "\\text", "\\wedge"],
+      "sigHash": "01b04f97ec5affd1e61cd7995b4b82e0e5d553e0b0ac9842ba931ed181ec539a",
+      "sorry": true,
+      "source": {
+        "line": 85,
+        "path": "MathlibPack/Uses.lean"
+      },
+      "stmtHash": "36b26c3abe11b209febfed8d7695a5ce2c9e16f702e2eef0998383b4da9f7769",
+      "validation": {
+        "math": [],
+        "prose": []
+      },
+      "views": {
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{instances} (\\LeanBound{V} : \\LeanSort{Type}) [\\LeanConst{Fintype} \\LeanBound{V}] [\\LeanConst{Nonempty} \\LeanBound{V}] (\\LeanBound{W} : \\LeanSort{Type}) [\\LeanConst{Finite} \\LeanBound{W}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{Infinite} \\LeanBound{W}] [\\LeanConst{Nontrivial} \\LeanBound{W}] (\\LeanBound{G} : \\LeanSort{Type}) [\\LeanConst{Group} \\LeanBound{G}] (\\LeanBound{H} : \\LeanSort{Type}) [\\LeanConst{CommGroup} \\LeanBound{H}]\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{A} : \\LeanSort{Type}) [\\LeanConst{AddCommGroup} \\LeanBound{A}] (\\LeanBound{R} : \\LeanSort{Type}) [\\LeanConst{Ring} \\LeanBound{R}] (\\LeanBound{S} : \\LeanSort{Type}) [\\LeanConst{CommRing} \\LeanBound{S}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{IsNoetherianRing} \\LeanBound{S}] [\\LeanConst{IsLocalRing} \\LeanBound{S}] [\\LeanConst{CharZero} \\LeanBound{S}] (\\LeanBound{k} : \\LeanSort{Type}) [\\LeanConst{Field} \\LeanBound{k}]\\LeanNewline\n\\LeanIndent{2}(\\LeanBound{M} : \\LeanSort{Type}) [\\LeanConst{Module} \\LeanBound{S} \\LeanBound{M}] [\\LeanConst{Module.Finite} \\LeanBound{S} \\LeanBound{M}] (\\LeanBound{E} : \\LeanSort{Type}) [\\LeanConst{NormedAddCommGroup} \\LeanBound{E}]\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{NormedSpace} \\LeanBound{k} \\LeanBound{E}] [\\LeanConst{FiniteDimensional} \\LeanBound{k} \\LeanBound{E}] (\\LeanBound{B} : \\LeanSort{Type}) [\\LeanConst{Algebra} \\LeanBound{S} \\LeanBound{B}] (\\LeanBound{X} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{TopologicalSpace} \\LeanBound{X}] [\\LeanConst{CompleteSpace} \\LeanBound{X}] [\\LeanConst{ConnectedSpace} \\LeanBound{X}] (\\LeanBound{Y} : \\LeanSort{Type})\\LeanNewline\n\\LeanIndent{2}[\\LeanConst{MetricSpace} \\LeanBound{Y}] (\\LeanBound{n} : \\LeanConst{Nat}) [\\LeanConst{NeZero} \\LeanBound{n}] [\\LeanConst{Fact} (\\LeanNumber{1} < \\LeanBound{n})] : \\LeanConst{Fintype.card} \\LeanBound{V} ≤ \\LeanBound{n}}",
+        "math": "\\LeanMath{V \\text{ is finite} \\wedge V \\text{ is nonempty} \\wedge W \\text{ is finite} \\wedge W \\text{ is infinite} \\wedge W \\text{ is nontrivial} \\LeanBreak \\wedge G \\text{ is a group} \\wedge H \\text{ is an abelian group} \\wedge A \\text{ is an abelian group} \\wedge R \\text{ is a ring} \\LeanBreak \\wedge S \\text{ is a commutative ring} \\wedge S \\text{ is Noetherian} \\wedge S \\text{ is local} \\LeanBreak \\wedge S \\text{ is of characteristic zero} \\wedge k \\text{ is a field} \\wedge M \\text{ is an } S\\text{-module} \\LeanBreak \\wedge M \\text{ is a finitely generated } S\\text{-module} \\wedge E \\text{ is a normed abelian group} \\LeanBreak \\wedge E \\text{ is a normed } k\\text{-vector space} \\wedge E \\text{ is finite-dimensional over } k \\LeanBreak \\wedge B \\text{ is an } S\\text{-algebra} \\wedge X \\text{ is a topological space} \\wedge X \\text{ is complete} \\LeanBreak \\wedge X \\text{ is connected} \\wedge Y \\text{ is a metric space} \\wedge n \\ne 0 \\wedge 1 < n \\implies |V| \\le n}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Instance binders, each stated as a hypothesis by a class rule; \\LeanCodeInline{Fact} is\nthe hypothesis itself.}",
+        "prose": "\\LeanProse{Let $V, W, G, H, A, R, S, k, M, E, B, X, Y$ be types and $n \\in \\mathbb{N}$. Assume $V \\text{ is finite}$, $V \\text{ is nonempty}$, $W \\text{ is finite}$, $W \\text{ is infinite}$, $W \\text{ is nontrivial}$, $G \\text{ is a group}$, $H \\text{ is an abelian group}$, $A \\text{ is an abelian group}$, $R \\text{ is a ring}$, $S \\text{ is a commutative ring}$, $S \\text{ is Noetherian}$, $S \\text{ is local}$, $S \\text{ is of characteristic zero}$, $k \\text{ is a field}$, $M \\text{ is an } S\\text{-module}$, $M \\text{ is a finitely generated } S\\text{-module}$, $E \\text{ is a normed abelian group}$, $E \\text{ is a normed } k\\text{-vector space}$, $E \\text{ is finite-dimensional over } k$, $B \\text{ is an } S\\text{-algebra}$, $X \\text{ is a topological space}$, $X \\text{ is complete}$, $X \\text{ is connected}$, $Y \\text{ is a metric space}$, $n \\ne 0$ and $1 < n$. Then $|V| \\le n$.}"
+      }
+    },
     "MathlibPack.limits": {
       "axioms": ["sorryAx"],
       "cone": {
@@ -159,7 +188,7 @@
       "sigHash": "0ac1b3fa8b32b6ee3e44a760492ea945d0860c572abf3a526ca723ed738ee060",
       "sorry": true,
       "source": {
-        "line": 84,
+        "line": 95,
         "path": "MathlibPack/Uses.lean"
       },
       "stmtHash": "694d73d21415d6d65d625e34fb75f691516438682c94e7dd3ccd64dfb640bc48",
@@ -214,7 +243,7 @@
       "doc": "Sets and finsets: intervals, set-builder notation, filters.",
       "kind": "theorem",
       "macros": ["\\LeanBound", "\\LeanBreak", "\\LeanCode", "\\LeanConst", "\\LeanIndent", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanNewline", "\\LeanNumber", "\\LeanProse", "\\LeanUsesSorry", "\\dots", "\\in", "\\le", "\\leanmetasource", "\\mathbb", "\\mid", "\\text", "\\wedge"],
-      "sigHash": "cfe013f588dcd1059d4814ccf324445e4a1af8c2074e9146f682f5ff365bcc54",
+      "sigHash": "eb5a977e2a69143f8cd439f5ca592faf727989171f42753712d1ac2ade0a1538",
       "sorry": true,
       "source": {
         "line": 51,
@@ -226,7 +255,7 @@
         "prose": []
       },
       "views": {
-        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}) (\\LeanBound{s} : \\LeanConst{Finset} \\LeanConst{Nat}) (\\LeanBound{x} : \\LeanConst{Real}) :\\LeanNewline\n\\LeanIndent{2}\\LeanNumber{1} ∈ \\LeanConst{Set.Icc} \\LeanBound{a} \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{4}(\\LeanConst{Finset.Icc} \\LeanBound{a} \\LeanBound{b}).card = (\\LeanConst{Finset.range} \\LeanBound{b}).card ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanConst{Set.ofPred} \\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n}.Prime).Infinite ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{Set.ofPred} \\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} < \\LeanNumber{5}).Finite ∧\\LeanNewline\n\\LeanIndent{10}(\\LeanConst{Finset.filter} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} < \\LeanNumber{5}) \\LeanBound{s}).card ≤ \\LeanNumber{5} ∧ \\LeanBound{x} = \\LeanBound{x}}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{theorem} \\LeanConst{sets} (\\LeanBound{a} \\LeanBound{b} : \\LeanConst{Nat}) (\\LeanBound{s} : \\LeanConst{Finset} \\LeanConst{Nat}) (\\LeanBound{x} : \\LeanConst{Real}) :\\LeanNewline\n\\LeanIndent{2}\\LeanNumber{1} ∈ \\LeanConst{Set.Icc} \\LeanBound{a} \\LeanBound{b} ∧\\LeanNewline\n\\LeanIndent{4}(\\LeanConst{Finset.Icc} \\LeanBound{a} \\LeanBound{b}).card = (\\LeanConst{Finset.range} \\LeanBound{b}).card ∧\\LeanNewline\n\\LeanIndent{6}(\\LeanConst{Set.ofPred} \\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n}.Prime).\\LeanConst{Infinite} ∧\\LeanNewline\n\\LeanIndent{8}(\\LeanConst{Set.ofPred} \\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} < \\LeanNumber{5}).\\LeanConst{Finite} ∧\\LeanNewline\n\\LeanIndent{10}(\\LeanConst{Finset.filter} (\\LeanKeyword{fun} \\LeanBound{n} => \\LeanBound{n} < \\LeanNumber{5}) \\LeanBound{s}).card ≤ \\LeanNumber{5} ∧ \\LeanBound{x} = \\LeanBound{x}}",
         "math": "\\LeanMath{1 \\in [a, b] \\wedge |\\{a, \\dots, b\\}| = |\\{0, 1, \\dots, b - 1\\}| \\LeanBreak \\wedge \\{n \\mid n \\text{ is prime}\\} \\text{ is infinite} \\wedge \\{n \\mid n < 5\\} \\text{ is finite} \\wedge |\\{n \\in s \\mid n < 5\\}| \\le 5 \\wedge x = x}",
         "meta": "\\LeanMeta{\\leanmetasource{}}{sorryAx}{\\LeanUsesSorry}{Sets and finsets: intervals, set-builder notation, filters.}",
         "prose": "\\LeanProse{Let $a, b \\in \\mathbb{N}$, $s \\in \\LeanMathConst{Finset}\\,\\mathbb{N}$ and $x \\in \\mathbb{R}$. Then (1)~$1 \\in [a, b]$, (2)~$|\\{a, \\dots, b\\}| = |\\{0, 1, \\dots, b - 1\\}|$, (3)~$\\{n \\mid n \\text{ is prime}\\} \\text{ is infinite}$, (4)~$\\{n \\mid n < 5\\} \\text{ is finite}$, (5)~$|\\{n \\in s \\mid n < 5\\}| \\le 5$ and (6)~$x = x$.}"

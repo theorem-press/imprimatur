@@ -46,9 +46,12 @@ latex_notation (variant := "named")? PATTERN => "TEMPLATE" OPTIONS…
   notation module is built.
 - Only explicit arguments are matched; implicit and instance arguments are
   ignored.
-- An instance binder of a statement, `[NeZero N]`, is left out of the `math`
-  and `prose` views unless a rule writes its class (`latex_notation NeZero
-  (N : ℕ) => r"#N \ne 0"`): then it is a hypothesis, stated like any other.
+- An instance binder of a statement whose class is in `Prop` with one field,
+  `[NeZero N]`, is that field's statement, `N ≠ 0`, in the `math` and `prose`
+  views. Any other, `[Fintype V]`, is left out of them unless a rule writes
+  its class (`latex_notation Fintype V => r"#V \text{ is finite}"`, as the
+  `mathlib` pack does for the common classes): then it is a hypothesis,
+  stated like any other.
 - To constrain an implicit argument, write the pattern with `@`. For
   example, `@LE.le (Set _) _ a b` matches `≤` only on sets.
 - A constant applied to fewer arguments than it takes matches that partial
@@ -198,11 +201,11 @@ nothing.
 
 | Pack | Covers |
 |---|---|
-| `core` | `=` `≠` `+` `-` `·` `/` `mod` `^` negation `<` `≤` `>` `≥` `∣`, numerals, `Nat.succ`, `∘`, pairs, `ℕ`, `ℤ`, `ℚ`, gcd and lcm, injective and surjective, Booleans; coercions are not shown |
+| `core` | `=` `≠` `+` `-` `·` `/` `mod` `^` negation `<` `≤` `>` `≥` `∣`, numerals, `Nat.succ`, `∘`, pairs, `ℕ`, `ℤ`, `ℚ`, gcd and lcm, injective and surjective, Booleans, `Nonempty α` as a hypothesis; coercions are not shown |
 | `logic` | `∧` `∨` `¬` `↔` `⊤` `⊥` |
 | `sets` | `∈` `⊆` `⊂` `∪` `∩` `\` `∅` `{a}` `{a, b}`, and `insert a s` as `{a} ∪ s` |
 | `order` | `max`, `min` |
-| `mathlib` | `ℝ` `ℂ` `ℤ/nℤ`; the coercions `DFunLike.coe`, `Rat.cast`, `NNReal.toReal`, `PNat.val`, `Real.toEReal`, not shown; `log` `exp` `√` `π` `sin` `cos` `log_b` `ℜ` `ℑ` `i` `|x|` `‖x‖` `n!` `\binom{n}{k}` `φ(n)` `π(n)` floors and ceilings; `|s|` for a finset, a set or a type; "is prime", odd, even, irrational, squarefree, a square, infinite, finite, nonempty, strictly increasing, monotone, bijective, connected, coprime, `a ≡ b (mod n)` over `ℤ`; `[a, b]`, `{a, …, b}`, `{0, 1, …, n − 1}`, `{x ∣ p}`, `{x ∈ s ∣ p}`; `∑` and `∏` over a finset or over everything, `∑^∞` for a series; `lim_{n→∞} f = a` (also `= ±∞`), "for all sufficiently large n", "for infinitely many n"; graphs: `χ` `Δ` `δ` `ω` `E(G)` `K_V` `C_n` `u ∼_G v`; polynomials: `p(x)`, `X`, `deg` |
+| `mathlib` | `ℝ` `ℂ` `ℤ/nℤ`; the coercions `DFunLike.coe`, `Rat.cast`, `NNReal.toReal`, `PNat.val`, `Real.toEReal`, not shown; `log` `exp` `√` `π` `sin` `cos` `log_b` `ℜ` `ℑ` `i` `|x|` `‖x‖` `n!` `\binom{n}{k}` `φ(n)` `π(n)` floors and ceilings; `|s|` for a finset, a set or a type; "is prime", odd, even, irrational, squarefree, a square, infinite, finite, nonempty, strictly increasing, monotone, bijective, connected, coprime, `a ≡ b (mod n)` over `ℤ`; `[a, b]`, `{a, …, b}`, `{0, 1, …, n − 1}`, `{x ∣ p}`, `{x ∈ s ∣ p}`; `∑` and `∏` over a finset or over everything, `∑^∞` for a series; `lim_{n→∞} f = a` (also `= ±∞`), "for all sufficiently large n", "for infinitely many n"; graphs: `χ` `Δ` `δ` `ω` `E(G)` `K_V` `C_n` `u ∼_G v`; polynomials: `p(x)`, `X`, `deg`; classes, so that their instance binders are hypotheses: finite, infinite, nontrivial, group, abelian group, ring, commutative ring, field, characteristic zero, Noetherian, local, topological, metric, complete, connected, normed, module, finitely generated, finite-dimensional, algebra |
 
 The `mathlib` pack was chosen from a sweep of
 [formal-conjectures](https://github.com/google-deepmind/formal-conjectures)
