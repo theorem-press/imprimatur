@@ -5,6 +5,12 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The nightly CI checks out con-leche at the commit `papers/con-leche` is
+  written against (7cb7a45, its README's), where before it cloned `master`,
+  which on 2026-11-20 deleted two of the theorems the paper cites and so
+  failed the `e2e/con-leche` test. `CON_LECHE_REV` now takes a commit as
+  well as a branch or a tag.
+
 - Three defects the sweep's judge of equivalence found (imprimatur-paper
   `sweep/judge.py`), each a rendering the read-back cannot fault, since its
   grammar is the renderer's own, but a reader would: an instance binder

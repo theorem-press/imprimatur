@@ -27,12 +27,24 @@ the prose names. The words are unchanged.
 
 ```sh
 git clone https://github.com/leanprover/con-leche ../../../con-leche   # beside imprimatur
+git -C ../../../con-leche checkout 7cb7a45cd   # the README's commit: see below
 (cd ../../../con-leche && lake build ConLeche.MainTheorem ConLeche.Verify.Frontend.Prepare \
    ConLeche.Model.StreamConsts ConLeche.Frontend.Olean.View con-leche)   # about 10 minutes
 imprimatur build        # the extractor, about 20 s (built first, the first time); con-leche's own check besides
 imprimatur check
 latexmk -pdf main.tex
 ```
+
+The checkout must be the README's commit, 7cb7a45 (2026-11-05): the paper
+cites that revision's declarations, and con-leche's `master` has since
+changed them. On 2026-11-20 (task #624) the main corollary
+`no_False_declaration` and the lifted corollary `main_oleans_no_False` were
+deleted in favour of `main_no_False` and `main_modular_compare_no_False`,
+and on 2026-11-21 (task #627) `MainTheorem.lean` was reorganised, so on
+`master` the paper's `build` reports two missing keys. The nightly CI checks
+out the same commit (`.github/workflows/ci.yml`, `CON_LECHE_REV`). To follow
+con-leche, redo the paper from the README at the new commit, as the
+experiment describes, rather than renaming keys under the old prose.
 
 ## What the README names, and what the paper shows
 
