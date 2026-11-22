@@ -115,13 +115,17 @@ jobs:
           restore-keys: e2e-${{ hashFiles('**/lean-toolchain', '**/lakefile.toml') }}-
       # con-leche, for papers/con-leche (e2e/con-leche): the nightly only, since
       # its modules take a while to build the first time; the cache keeps them.
+      # The paper is con-leche's README at one commit and cites that commit's
+      # theorems (papers/con-leche/README.md), so that commit is checked out,
+      # not master, which renamed the corollaries on 2026-11-20. The variable
+      # CON_LECHE_REV overrides it; a branch, a tag or a commit.
       - name: Check out and build con-leche (nightly)
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
-          CON_LECHE_REV: ${{ vars.CON_LECHE_REV || 'master' }}
+          CON_LECHE_REV: ${{ vars.CON_LECHE_REV || '7cb7a45cd573daf282766aa45c59fdd36b1b9470' }}
         run: |
-          git clone -q --depth 1 --branch "$CON_LECHE_REV" https://github.com/leanprover/con-leche.git ../con-leche \
-            || git clone -q https://github.com/leanprover/con-leche.git ../con-leche
+          git clone -q --no-checkout https://github.com/leanprover/con-leche.git ../con-leche
+          git -C ../con-leche checkout -q "$CON_LECHE_REV"
           echo "CON_LECHE_SHA=$(git -C ../con-leche rev-parse HEAD)" >> "$GITHUB_ENV"
       - uses: actions/cache@v4
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
