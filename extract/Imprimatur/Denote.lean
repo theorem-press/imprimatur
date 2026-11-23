@@ -133,6 +133,14 @@ where one that exhausts its budget was. -/
 def trace (msg : MetaM String) : MetaM Unit := do
   if (← (IO.getEnv "IMPRIMATUR_DENOTE_TRACE" : IO _)) == some "1" then IO.eprintln s!"denote: {← msg}"
 
+/-- The head constant of a function's result type, if it has one: what a
+coercion rule can turn its argument into. -/
+def resultHead (c : Name) : MetaM (Option Name) := do
+  let some ci := (← getEnv).find? c | return none
+  let mut ty := ci.type
+  while ty.isForall do ty := ty.bindingBody!
+  return ty.getAppFn.constName?
+
 /-- A fresh metavariable for a binder the notation does not write. -/
 def implicitMVar (d : Expr) (bi : BinderInfo) : DenoteM Expr := do
   let m ← mkFreshExprMVar d
@@ -166,14 +174,17 @@ mutual
         let x ← fit (a.getArg! 2) α depth
         let y ← fit (a.getArg! 3) β depth
         return ← mkAppOptM ``Prod.mk #[some α, some β, some x, some y]
-    match ← coerce? a d with
-    | .some a' =>
-      (← read).coerced.modify (·.push (a', a))
-      return a'
-    | _ => pure ()
     -- Coercions nest (`some (C, V)` with `V` itself coerced), to a depth.
     if depth == 0 then throwError "{← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
+    -- The notation's coercion rules first, those whose result can be `d`
+    -- by its head; Lean's own search, which is costly, last, and only on
+    -- closed types.
+    let d ← instantiateMVars d
+    let dHead := d.getAppFn.constName?
     for c in (← read).coercions do
+      if let some h := dHead then
+        if let some h' ← resultHead c.pat.head then
+          if h != h' then continue
       let s ← (saveState : MetaM Meta.SavedState)
       let before ← (← read).insts.get
       try
@@ -196,6 +207,12 @@ mutual
         else trace do return s!"coercion {c.pat.head}: {← ppExpr (← inferType a')} is not {← ppExpr d}"
       catch ex => trace do return s!"coercion {c.pat.head}: {← ex.toMessageData.toString}"
       (restoreState s : MetaM Unit)
+    if !ta.hasExprMVar && !d.hasExprMVar then
+      match ← coerce? a d with
+      | .some a' =>
+        (← read).coerced.modify (·.push (a', a))
+        return a'
+      | _ => pure ()
     throwError "{← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
 
   /-- Fill the leading binders of `f` the notation does not write, up to its
