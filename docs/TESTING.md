@@ -194,6 +194,7 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§5 | extractor and splicer communicate only through the bundle | `splice/version/schema`, `extract/version/schema` | M1 |
 | D§5 | `imprimatur build` runs scan, export, apply; `check` passes after it | `e2e/minimal`, `e2e/sidecar` | M2 |
 | D§5 | `--timing` logs the splicer's and the extractor's phases, entries, views and formulas, and the summary names the slowest | `splice/timing/summary-phases`, `splice/timing/summary-slowest-formula`, `e2e/external` | M6 |
+| D§5 | `--log` records each formula's verdict with its readings, what they denote and the term it was rendered from, and the summary counts the verdicts | `splice/log/parse-fields`, `splice/log/summary`, `e2e/semantics` | M6 |
 | D§6.1 | `imprimatur.toml` is parsed; unknown keys and bad values are reported | `splice/toml/parses`, `splice/toml/duplicate-key`, `splice/toml/error-line`, `splice/config/parses`, `splice/config/unknown-key`, `splice/config/alias-needs-view`, `splice/config/url-needs-template`, `splice/golden/config-errors` | M1 |
 | D§6.2 | the notation module is elaborated and its names resolved, in-project and as a file in external mode | `extract/golden/Notation`, `e2e/minimal`, `e2e/external` | M4 |
 | D§6.3 | sidecar and in-project modes | `e2e/minimal`, `e2e/sidecar` | M2 |

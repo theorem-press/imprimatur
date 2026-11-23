@@ -12,7 +12,7 @@
 #      undefined control sequences or missing glyphs;
 #   5. compare pdftotext's output (in content order) with examples/X/expected/{pdflatex,lualatex}.txt.
 # UPDATE_GOLDEN=1 rewrites the expected files; review the diff.
-# Every imprimatur step runs with --timing; the last build's and check's
+# Every imprimatur step runs with --timing and --log; the last build's and check's
 # timing files are kept as e2e-out/X/timing-{build,check}.jsonl, and the end
 # folds them to e2e-out/timing.jsonl, one line per paper (docs/ci-timing.md).
 set -euo pipefail
@@ -109,7 +109,7 @@ for dir in examples/*/; do
   failed=0
   while IFS= read -r step; do
     [ -z "$step" ] && continue
-    if [[ $step == !* ]]; then cmd=(bash -c "${step#!}"); else read -ra words <<< "$step"; cmd=("$IMPRIMATUR" "${words[@]}"); timed "${words[@]}" && cmd+=(--timing); fi
+    if [[ $step == !* ]]; then cmd=(bash -c "${step#!}"); else read -ra words <<< "$step"; cmd=("$IMPRIMATUR" "${words[@]}"); timed "${words[@]}" && cmd+=(--timing --log); fi
     if ! (cd "$work" && "${cmd[@]}" > step.log 2>&1); then
       echo "  FAIL: $step"; sed 's/^/    /' "$work/step.log"; status=1; failed=1; break
     fi
@@ -128,6 +128,14 @@ for dir in examples/*/; do
   # so that a verdict that changes is seen.
   (cd "$work" && "$IMPRIMATUR" check > check.txt 2>&1) || true
   compare "$work/check.txt" "$dir/expected/check.txt" "check output"
+  # The validation log of the steps (`--log`): every line a formula with a
+  # verdict; the semantics example validates formulas, so some say so.
+  if [ -f "$work/.imprimatur/validation.jsonl" ] && grep -qv '"verdict":"' "$work/.imprimatur/validation.jsonl"; then
+    echo "  FAIL: a line of .imprimatur/validation.jsonl has no verdict"; status=1
+  fi
+  if [ "$ex" = semantics ] && ! grep -q '"verdict":"validated"' "$work/.imprimatur/validation.jsonl" 2>/dev/null; then
+    echo "  FAIL: the validation log of semantics has no validated formula"; status=1
+  fi
   for engine in pdflatex lualatex; do
     flag=$([ $engine = pdflatex ] && echo -pdf || echo -lualatex)
     if ! (cd "$work" && latexmk $flag -interaction=nonstopmode -halt-on-error -outdir=out-$engine paper.tex > latexmk-$engine.log 2>&1); then

@@ -73,6 +73,9 @@ structure Args where
   views : Array String := #[]
   /-- `--timing`: log where the time goes, and summarise it. -/
   timing : Bool := false
+  /-- `--log`: log what translation validation made of each formula, and
+  count the verdicts. -/
+  log : Bool := false
   /-- `--no-checker`: go by Lean's verdict alone this run, whatever
   `[trust].checker` says (DESIGN §7.8). -/
   noChecker : Bool := false
@@ -101,6 +104,7 @@ partial def parseArgs (args : List String) (a : Args := {}) : Except String Args
   | "--all" :: rest => parseArgs rest { a with all := true }
   | "--view" :: v :: rest => parseArgs rest { a with views := a.views.push v }
   | "--timing" :: rest => parseArgs rest { a with timing := true }
+  | "--log" :: rest => parseArgs rest { a with log := true }
   | "--no-checker" :: rest => parseArgs rest { a with noChecker := true }
   | "--no-install" :: rest => parseArgs rest { a with noInstall := true }
   | arg :: rest =>

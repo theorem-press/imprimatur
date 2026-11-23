@@ -48,6 +48,7 @@ unsafe def main (args : List String) : IO UInt32 := do
     return 2
   -- IMPRIMATUR_TIMING=FILE logs where the time goes (`Imprimatur.Timing`).
   Timing.start
+  ValidationLog.start
   let tStart ← IO.monoMsNow
   -- The host's search path (from `lake env`), then this program's own library,
   -- which a notation module may import (external mode, DESIGN §6.3 A). The
