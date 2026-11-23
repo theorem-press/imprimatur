@@ -25,7 +25,14 @@ All notable changes to imprimatur are recorded here. Versions follow
   is now `p ∧ q` before any rule for `∃` applies, and a fold stops at a
   proof. `IMPRIMATUR_VALIDATE_DEBUG=1` reports why a reading has no
   denotation or is ill typed, and what a misread denotes;
-  `IMPRIMATUR_DENOTE_TRACE=1` prints each step. On the LLMbda paper (345
+  `IMPRIMATUR_DENOTE_TRACE=1` prints each step. The whole reading is fit
+  to the formula's type as an argument is, so `x` for `Tm.var x` passes
+  through the rule that hides the constructor; and a reading ill typed as
+  read is read again with each synonym's template as its pattern, so `v
+  \in \mathit{Val}` for a predicate `IsValue v` is what the synonym says,
+  not a membership no instance types. `scripts/e2e.sh` now compares what
+  `check` says of each example with `expected/check.txt`, so a verdict that
+  changes is seen. On the LLMbda paper (345
   formulas) denotation takes 3.8 s in all, 6 ms a formula at the median,
   and reports four formulas: three where the text hides both `EvalResult.ok`
   and `LabelledValue.toExpr` around one variable, whose type a reader cannot

@@ -460,7 +460,11 @@ mutual
   /-- A rule's node: the rules whose pattern has this shape, tried in turn. -/
   partial def ruleNode (name : String) (kids : List Reading) (bound : List (String × Expr)) :
       DenoteM Expr := do
-    let rules := (← read).rules.filter fun r => !r.synonym && r.pat.shape == name
+    -- A synonym's pattern reads nothing by itself; a reading rewritten to
+    -- its shape (`Render.rewriteSynonyms`) is denoted by it.
+    let all := (← read).rules
+    let rules := all.filter fun r => !r.synonym && r.pat.shape == name
+    let rules := if rules.isEmpty then all.filter fun r => r.synonym && r.pat.shape == name else rules
     if rules.isEmpty then throwError "no rule reads as {name}"
     let mut last : Option Exception := none
     for r in rules do
@@ -593,7 +597,7 @@ structure Denotation where
 
 /-- The denotation of a reading; or why the denotation does not cover it,
 the metavariable context then as it was. -/
-def run (rules : Array NotationRule) (atoms : Array Atom) (r : Reading) :
+def run (rules : Array NotationRule) (atoms : Array Atom) (r : Reading) (τ : Option Expr := none) :
     MetaM (Except String Denotation) := do
   let insts ← IO.mkRef #[]
   let coerced ← IO.mkRef #[]
@@ -602,8 +606,14 @@ def run (rules : Array NotationRule) (atoms : Array Atom) (r : Reading) :
   let s ← saveState
   try
     -- With the elaborator's approximations: a binder's type is found from
-    -- a use inside the binder's scope.
-    let e ← withDepth <| approxDefEq <| (denote r []).run { rules, coercions, atoms, insts, coerced }
+    -- a use inside the binder's scope. The whole is fit to the type
+    -- expected, as an argument is: a variable `x` written for `Tm.var x`
+    -- goes through the coercion rule that hides the constructor.
+    let e ← withDepth <| approxDefEq <| (do
+      let e ← denote r []
+      match τ with
+      | some τ => fit e τ
+      | none => pure e).run { rules, coercions, atoms, insts, coerced }
     return .ok { term := e, insts := ← insts.get, coerced := ← coerced.get }
   catch ex =>
     let msg ← ex.toMessageData.toString

@@ -14,7 +14,7 @@ them, and keeps the traceability matrix.*
 | **Golden: extractor** | every view of every declaration in the fixture projects (Fixtures, below) | `lake test` in `extract/`, once per toolchain | about a minute per toolchain |
 | **Golden: splicer** | pairs of TeX files before and after `apply`, `check` reports, `strip` output | `lake test` in `splice/` | seconds |
 | **Trust (negative)** | each trust failure ([CONTRIBUTING.md](../CONTRIBUTING.md), principle 5) on purpose-built fixtures | runs with the extractor golden tests | about a minute |
-| **End-to-end** | the `imprimatur build` command line on the example projects in all three modes, then `latexmk` with pdflatex and lualatex: no LaTeX errors, and `pdftotext` output matches golden text | `scripts/e2e.sh`, in CI | a few minutes |
+| **End-to-end** | the `imprimatur build` command line on the example projects in all three modes, then `latexmk` with pdflatex and lualatex: no LaTeX errors, `check`'s warnings and errors match golden text, and `pdftotext` output matches golden text | `scripts/e2e.sh`, in CI | a few minutes |
 | **Cross-toolchain** | the same fixture gives byte-identical bundles, apart from the `producer` field, and identical `stmtHash` values, on every supported toolchain | CI matrix job comparing bundles | a few minutes |
 
 ### Fixtures
