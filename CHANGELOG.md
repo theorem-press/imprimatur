@@ -24,7 +24,13 @@ All notable changes to imprimatur are recorded here. Versions follow
   hypothesis (`∃ n, ∃ _ : 0 < n, p` was written `∃ n, x.\, p`); `∃ h : p, q`
   is now `p ∧ q` before any rule for `∃` applies, and a fold stops at a
   proof. `IMPRIMATUR_VALIDATE_DEBUG=1` reports why a reading has no
-  denotation or is ill typed, and what a misread denotes.
+  denotation or is ill typed, and what a misread denotes;
+  `IMPRIMATUR_DENOTE_TRACE=1` prints each step. On the LLMbda paper (345
+  formulas) denotation takes 3.8 s in all, 6 ms a formula at the median,
+  and reports four formulas: three where the text hides both `EvalResult.ok`
+  and `LabelledValue.toExpr` around one variable, whose type a reader cannot
+  then recover, and one rule over a λ with a constrained pattern that the
+  denotation does not cover yet.
 
 - The nightly CI checks out con-leche at the commit `papers/con-leche` is
   written against (7cb7a45, its README's), where before it cloned `master`,
