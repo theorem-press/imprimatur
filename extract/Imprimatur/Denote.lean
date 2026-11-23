@@ -150,7 +150,7 @@ mutual
   `if` being written as its value; else through the coercion Lean finds,
   else (if `coerce`) through a coercion rule of the notation whose result
   fits. -/
-  partial def fit (a d : Expr) (coerce : Bool := true) : DenoteM Expr := do
+  partial def fit (a d : Expr) (depth : Nat := 3) : DenoteM Expr := do
     trace do return s!"fit {← ppExpr a} : {← ppExpr (← inferType a)} to {← ppExpr d}"
     let ta ← inferType a
     -- A value where a function from a proof is expected, before `ta`, which
@@ -163,20 +163,21 @@ mutual
     -- coercion the notation hides inside `(C, V)` is found there.
     if a.isAppOfArity ``Prod.mk 4 then
       if let .app (.app (.const `Prod _) α) β := ← whnf d then
-        let x ← fit (a.getArg! 2) α coerce
-        let y ← fit (a.getArg! 3) β coerce
+        let x ← fit (a.getArg! 2) α depth
+        let y ← fit (a.getArg! 3) β depth
         return ← mkAppOptM ``Prod.mk #[some α, some β, some x, some y]
     match ← coerce? a d with
     | .some a' =>
       (← read).coerced.modify (·.push (a', a))
       return a'
     | _ => pure ()
-    unless coerce do throwError "{← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
+    -- Coercions nest (`some (C, V)` with `V` itself coerced), to a depth.
+    if depth == 0 then throwError "{← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
     for c in (← read).coercions do
       let s ← (saveState : MetaM Meta.SavedState)
       let before ← (← read).insts.get
       try
-        let a' ← applyArgs (← mkConstWithFreshMVarLevels c.pat.head) [a] (coerced := true)
+        let a' ← applyArgs (← mkConstWithFreshMVarLevels c.pat.head) [a] (coerced := true) (depth := depth - 1)
         if ← isDefEq (← inferType a') d then
           -- The coercion's instances must exist: `Int.cast` into `ℕ` does not.
           synthPendingInsts
@@ -208,7 +209,7 @@ mutual
   is coerced to one, by Lean's coercion or by a coercion rule of the
   notation (once: `coerced`). -/
   partial def applyArgs (f : Expr) (args : List Expr) (coerced : Bool := false)
-      (skipProofs : Bool := true) : DenoteM Expr := do
+      (skipProofs : Bool := true) (depth : Nat := 3) : DenoteM Expr := do
     trace do return s!"apply {← ppExpr f} to {args.length} arguments"
     match args with
     | [] => fillImplicits f
@@ -217,18 +218,18 @@ mutual
       match ty with
       | .forallE _ d _ bi =>
         if bi.isExplicit && !(skipProofs && (← isPropDomain d)) then
-          let f' := mkApp f (← fit a d (coerce := !coerced))
+          let f' := mkApp f (← fit a d depth)
           synthPendingInsts
-          applyArgs f' rest coerced skipProofs
-        else applyArgs (mkApp f (← implicitMVar d bi)) args coerced skipProofs
+          applyArgs f' rest coerced skipProofs depth
+        else applyArgs (mkApp f (← implicitMVar d bi)) args coerced skipProofs depth
       | .mvar _ =>
         -- Anything applied is a function of anything.
         let α ← mkFreshTypeMVar
         let β ← mkFreshTypeMVar
         unless ← isDefEq ty (← mkArrow α β) do throwError "{← ppExpr f} is applied, but is not a function"
-        applyArgs f args coerced skipProofs
+        applyArgs f args coerced skipProofs depth
       | _ =>
-        if let some f' ← coerceToFunction? f then return ← applyArgs f' args coerced skipProofs
+        if let some f' ← coerceToFunction? f then return ← applyArgs f' args coerced skipProofs depth
         if coerced then throwError "{← ppExpr f} is applied, but is not a function"
         for c in (← read).coercions do
           let s ← (saveState : MetaM Meta.SavedState)
@@ -454,6 +455,7 @@ mutual
   shown variables, with any further children applied as arguments. -/
   partial def ruleWith (r : NotationRule) (kids : List Reading) (bound : List (String × Expr)) :
       DenoteM Expr := do
+    trace do return s!"rule {r.pat.head} with {kids.length} parts"
     let vars := shownVars r
     if r.flatten then
       if let some (x, p) := r.pat.binder? then
@@ -518,8 +520,12 @@ mutual
         unless binders.contains v do
           if under.contains v then lazy := lazy.push (v, denote k bound')
           else bs := bs.push (v, ← denote k bound')
+      trace do return "homogenise"
       let bs' ← homogenise r bs
+      trace do return "pattern"
       let e ← ofPat r.pat ((← hiddenBindings r) ++ bs') lazy
+      trace do return "extra"
+
       applyArgs e (← extra.mapM (denote · bound'))
 
   /-- Locals for a rule's binder variables, each named as the text names it. -/
@@ -569,6 +575,7 @@ def run (rules : Array NotationRule) (atoms : Array Atom) (r : Reading) :
   let insts ← IO.mkRef #[]
   let coerced ← IO.mkRef #[]
   let coercions := rules.filter isCoercion
+  trace do return s!"coercions: {coercions.map (·.pat.head)}"
   let s ← saveState
   try
     -- With the elaborator's approximations: a binder's type is found from

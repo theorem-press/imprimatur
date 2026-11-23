@@ -392,9 +392,21 @@ def synonymEquations (g : Validate.Grammar) : RenderM (Array (NotationRule × Ab
   if let some cache := ctx.synonyms then
     if let some eqs ← cache.get then return eqs
   let mut eqs := #[]
+  let mctx ← readThe Meta.Context
   for r in ctx.rules do
     if r.synonym && (r.variant.isNone || r.variant == ctx.variant) then
-      if let some ab ← synonymEquation g r then eqs := eqs.push (r, ab)
+      -- A synonym whose equation exhausts the budget is left out, with a
+      -- note under IMPRIMATUR_VALIDATE_DEBUG; the view's formulas go on.
+      let mst ← getThe Meta.State
+      let r? : Except Exception (Option AbstractMVarsResult × Meta.State) ←
+        (Core.tryCatchRuntimeEx (do return .ok (← ((synonymEquation g r).run ctx).run mctx mst))
+          (fun ex => return .error ex) : CoreM _)
+      match r? with
+      | .ok (some ab, st) => set st; eqs := eqs.push (r, ab)
+      | .ok (none, st) => set st
+      | .error ex =>
+        if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+          IO.eprintln s!"validate: synonym {r.pat.head}: {← ex.toMessageData.toString}"
   if let some cache := ctx.synonyms then cache.set (some eqs)
   return eqs
 
@@ -445,6 +457,7 @@ partial def normalise (g : Validate.Grammar) (e : Expr) : RenderM Expr := do
   let chains := ctx.rules.filter fun r =>
     r.flatten && r.pat.binder?.isNone && !r.synonym && (r.variant.isNone || r.variant == ctx.variant)
   let rec go (e : Expr) : RenderM Expr := do
+    Denote.trace do return s!"normalise {e.getAppFn.constName?.getD `_} ({e.approxDepth})"
     if let some e' := unLet? e then return ← go e'
     match e with
     | .forallE n t b bi =>
@@ -545,12 +558,16 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
   -- heartbeat budget afresh; one that exhausts it is not validated, as for
   -- the parser.
   let body : RenderM (Expr × Array (Validate.Reading × Denote.Denotation)) := do
+    Denote.trace do return s!"formula {tex}"
     let e' ← normalise base e
+    Denote.trace do return "normalised"
     let τ ← inferType e'
+    Denote.trace do return s!"type {← ppExpr τ}"
     let mut typed : Array (Validate.Reading × Denote.Denotation) := #[]
     for r in rs do
       match ← Denote.run rules atoms r with
       | .ok d =>
+        Denote.trace do return "denoted; typing"
         if ← Denote.wellTyped d.term d.insts (some τ) then typed := typed.push (r, d)
         else if debug then
           IO.eprintln s!"validate: ill typed {r.text} = {← withOptions (pp.explicit.set · true) (ppExpr (← instantiateMVars d.term))} : {← ppExpr τ}"
