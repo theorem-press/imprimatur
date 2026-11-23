@@ -53,22 +53,11 @@ def theReading (rules : Array NotationRule) (atoms : Array Prod) (tex s : String
 
 /-- All the validation tests. -/
 def tests : TestM Unit := group "validate" do
-  -- The one reading is compared with the reading the renderer expected
-  -- (`Render.Expect`); `⁇` stands for a subterm it does not say how to read.
-  checkEq "extract/validate/matches"
-    (#[(n "app" [l "a", l "b"], n "app" [l "a", l "b"]),
-      (n "app" [.any, l "b"], n "app" [n "f" [l "x", l "y"], l "b"]),
-      (.any, n "anything" [l "at", l "all"]),
-      (n "app" [.any, .any], n "app" [l "a", l "b"]),
-      (n "app" [l "a", l "b"], n "app" [l "b", l "a"]),
-      (n "app" [.any], n "app" [l "a", l "b"]),
-      (n "app" [.any, l "c"], n "app" [l "a", l "b"])].map fun (e, g) => e.matches g)
-    #[true, true, true, true, false, false, false]
   -- Readings print as the bundle records them.
-  checkEq "extract/validate/text" (n "app" [n "f" [l "x", .any], l "b"]).text "app[f[x; ⁇]; b]"
+  checkEq "extract/validate/text" (n "app" [n "f" [l "x", l "y"], l "b"]).text "app[f[x; y]; b]"
   -- Left-associated application reads `e\; f\; e` as `(e f) e`. Had the
   -- renderer rendered `e (f e)` without its parentheses, the one reading
-  -- would not be what it expected, and the check reports it.
+  -- would not denote what it rendered, and the check reports it.
   let r := theReading #[app 100] atoms "e\\; f\\; e" "Tm"
   checkEq "extract/validate/reading-left" r (some "app[app[e; f]; e]")
   check "extract/validate/misread-caught"

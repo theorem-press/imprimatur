@@ -53,8 +53,9 @@ From an inventory of `extract/` (about 5,800 lines):
 - **Inherently `MetaM`:** turning an expression into a formula. Notation
   matching needs `isDefEq` and `whnfR`; `isProp` and binders
   (`withLocalDecl`) need the local context; `inferType` gives sorts. It also
-  writes to `IO.Ref`s (atoms, used rules, expected readings, the index's
-  events).
+  writes to `IO.Ref`s (atoms, used rules, the index's events), and the
+  denotation of a reading (`Denote`) builds terms with metavariables and
+  asks `isDefEq`.
 - **Toolchains:** the extractor builds on a matrix of Lean versions, and has
   no dependencies.
 

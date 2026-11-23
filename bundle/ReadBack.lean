@@ -91,11 +91,8 @@ def tokenize (s : String) : Array String := (tokenizeGo s.toList []).toArray
 
 /-- A reading: a tree named by what it reads as (a production's name, an
 atom's TeX, a bound variable's name), with its children in the order of the
-rule's pattern; or `any`, which the renderer writes for a form it does not
-say how to read, and which matches any subterm. -/
+rule's pattern. -/
 inductive Reading where
-  /-- Any reading (`⁇`). -/
-  | any
   /-- A reading named `name`, with its children. -/
   | node (name : String) (kids : List Reading)
   deriving Inhabited, Repr
@@ -103,7 +100,6 @@ inductive Reading where
 mutual
 /-- A reading as the bundle writes it: `name`, or `name[kid; kid]`. -/
 def Reading.text : Reading → String
-  | .any => "⁇"
   | .node n [] => n
   | .node n (k :: ks) => n ++ "[" ++ Reading.textList (k :: ks) ++ "]"
 termination_by r => sizeOf r
@@ -119,9 +115,7 @@ end
 mutual
 /-- Readings equal. -/
 def Reading.beq : Reading → Reading → Bool
-  | .any, .any => true
   | .node n ks, .node n' ks' => n == n' && Reading.beqList ks ks'
-  | _, _ => false
 termination_by r _ => sizeOf r
 
 /-- Lists of readings equal. -/
@@ -133,23 +127,6 @@ termination_by ks _ => sizeOf ks
 end
 
 instance : BEq Reading := ⟨Reading.beq⟩
-
-mutual
-/-- A reading matches the expected one: `any` matches any reading, and a
-node matches a node of the same name whose children match. -/
-def Reading.matches : Reading → Reading → Bool
-  | .any, _ => true
-  | .node n ks, .node n' ks' => n == n' && Reading.matchesList ks ks'
-  | .node _ _, .any => false
-termination_by r _ => sizeOf r
-
-/-- Children match, pairwise. -/
-def Reading.matchesList : List Reading → List Reading → Bool
-  | [], [] => true
-  | k :: ks, k' :: ks' => Reading.matches k k' && Reading.matchesList ks ks'
-  | _, _ => false
-termination_by ks _ => sizeOf ks
-end
 
 /-- The productions that are application. -/
 def appNames : List String :=
@@ -189,10 +166,6 @@ def mkReading (name : String) (order : Option (Array Nat)) (kids : Array Reading
     | f :: rest => appOf [f] rest
     | [] => .node "app" []
   else .node name kids
-
-/-- The reading of a form the renderer does not say how to read: it matches
-any reading. -/
-def anyReading : Reading := .any
 
 /-! ## The grammar -/
 

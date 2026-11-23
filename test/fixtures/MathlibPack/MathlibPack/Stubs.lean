@@ -46,6 +46,7 @@ structure NNReal where
 def NNReal.toReal (x : NNReal) : Real := x.val
 structure PNat where
   val : Nat
+instance : OfNat PNat n := ⟨⟨n⟩⟩
 structure EReal where
   val : Real
 def Real.toEReal (x : Real) : EReal := ⟨x⟩

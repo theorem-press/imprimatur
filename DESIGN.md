@@ -1454,20 +1454,45 @@ block is.
   gives it the coercion's sort, with its argument's bound (`inl x` for
   `x : A` is of sort `Sum(A, *)`); a reading can therefore be of several
   sorts, and a hole's binding chooses among them.
-- **One reading** must be the original expression. As it renders, the
-  renderer builds the reading it expects (`Render.Expect`): an atom reads as
-  its TeX, a rule as its pattern's shape with its holes' readings, and an
-  application, `∃`, `λ` or implication as the built-in form. A form it does
-  not say how to read (`∀` with its binders, `match`, chains, folded
-  binders, synonyms, Lean's fallback text) is `⁇`, which matches any
-  subterm; fallback text is besides a problem of the view in itself (§7.2),
-  since what it says is Lean's and not the paper's. A reading that does not
-  match is a *misread*, reported with both:
-  the emitter left out parentheses a reader needs, or the grammar does not
-  mirror the renderer. **Two** is an ambiguity, reported with both readings.
-  **None** means the grammar does not model what the renderer did, and the
-  formula is *not validated*; that is a gap in the validator, or a rendering
-  no reader could parse.
+- **What a reading denotes** (`Imprimatur.Denote`) is the Lean term a
+  reader who knows the notation takes it for: a rule's node is its pattern
+  instantiated at its children's denotations, with a fresh metavariable at
+  every position the notation does not write (implicit and instance
+  arguments, universe levels, hidden arguments, proofs); a built-in form is
+  the binder, arrow or application it is; an atom is the variable, constant
+  or literal it names, a numeral at a type to be found; and where a type
+  does not fit, Lean's own coercion is inserted (`Meta.coerce?`, or a
+  coercion rule of the notation whose instances exist), the operands of a
+  rule whose holes share a type brought to one type first, as `binop%`
+  does. A reading is *well typed* when its denotation type-checks at the
+  formula's type, with its instances found. A λ over a pattern and a `case`
+  analysis denote a metavariable, which takes whatever the formula has
+  there, so the rest of the formula is still checked (#41's remaining gap).
+- **The one well-typed reading must denote the formula.** The formula is
+  first taken as the notation reads it (`Render.normalise`): `let`s
+  unfolded, an instance binder left out or stated as the hypothesis it is
+  (§7.6), a λ over a proof as its body, `∃ h : p, q` over a proof as
+  `p ∧ q`, a chain of a flattening rule bracketed as the rule's
+  associativity has it, and each `synonym` rule applied as an equation
+  (its pattern rewritten to what its template reads back as, where the
+  renderer would have used it). The denotation must then be definitionally
+  equal to it at reducible transparency, which identifies `a ≠ b` with
+  `¬ a = b` and refuses `n + 0` for `n`; or, failing that, have the same
+  *skeleton*, the term with its implicit arguments, instances, universe
+  levels, binder types, proofs, invisible coercions and the types of
+  numerals left out, since the text does not write the coercions and
+  numeral types that tell `(n : ℝ) = m` from `n = m`. A reading that does
+  not is a *misread*, reported with what it denotes and what was rendered:
+  the emitter left out parentheses a reader needs, or the text says
+  something else. **Two** well-typed readings are an ambiguity, reported
+  with both; a reading the type checker rejects is no reading, so `|S\,n|`
+  as the cardinality of a set when `S\,n` is a finset is not one. **None**
+  means the grammar does not model what the renderer did, and the formula
+  is *not validated*; that is a gap in the validator, or a rendering no
+  reader could parse. Lean's fallback text is besides a problem of the view
+  in itself (§7.2), since what it says is Lean's and not the paper's. The
+  check runs with the entry's heartbeat budget afresh per formula, and a
+  formula that exhausts it is not validated, as for the parser.
 - **The proved part.** The chart parser that counts at most two readings
   is one total module, `Imprimatur.ReadBack`, proved sound and complete
   for any algebra of sorts (docs/verified-validator.md,
@@ -1488,17 +1513,19 @@ block is.
   rule does not allow, it shows it, as a constant applied
   (`\LeanMathConst{Option.some}\,x`). So the grammar holds every
   rendering, and the theorems are about the renderer's grammar, not a
-  narrowing of it (docs/coercion-chains.md, route A). The matcher decides structural matching, so a validated formula
-  (one reading, no flag, matching the expected reading) has in the grammar
-  no reading but the expected one, wherever that is definite
-  (`SpliceModel.pollack`). The model keeps the extractor's two inputs
+  narrowing of it (docs/coercion-chains.md, route A). A validated formula
+  (its readings returned with no flag, exactly one of them well typed, and
+  that one denoting the formula) has in the grammar no well-typed reading
+  but that one (`Validator.accepts_readsPart`); which readings are well
+  typed and which denote the part are Lean's judgement of the denotation,
+  and the model's parameters, as the sorts are. The model keeps the extractor's two inputs
   apart: the development `L` (what each key states and proves, and which
   subterms each view shows) and the notation `N` (how a part is printed,
   and the grammar that is read as), both written by others
   (`SpliceModel.Development`, `Notation`). The world they present renders
   by definition as the anatomy says, and a rendering reads back when the
   validator accepts everything printed of the statement: each formula with
-  one reading, no flag set, matching the expected one, and the sentence or
+  one well-typed reading, no flag set, denoting the part, and the sentence or
   figure *plain*, so that the parser undoes the layout
   (`Development.AcceptsAll`; the extractor decides plainness before it
   writes, `Layout.Prose.plain` and `Rule.plain`, and reports a failure as
@@ -1508,15 +1535,15 @@ block is.
   (`document_pollack`, `document_pollack_rules`,
   `document_pollack_formula`); the top-level theorems
   (`Development.check_sound`, `paper_true`) assume nothing of the
-  extractor beyond the model itself. Trusted still: where the expected reading has a
-  `⁇`, that `Validate.ofRule` follows `Render.fillTemplate`; the
+  extractor beyond the model itself. Trusted still: the denotation
+  (`Imprimatur.Denote`, a direct inverse of the pattern matcher), Lean's
+  type checker and `isDefEq`, which the statements themselves rest on, and
+  the notation's `synonym` declarations, which Lean does not check; and
+  that `Validate.ofRule` follows `Render.fillTemplate`, where the
   precedence each hole needs is one function they share, `Doc.holeNeeds`
   in the module `Imprimatur.Layout`, so that part holds by construction.
-  On
-  project B's standalone document, 610 of the 662 formulas with one reading
-  have an expected reading without `⁇`, 21 have one in part, and 31 have
-  none (#41 would close the gap). Making the emitter drop the parentheses its holes need is caught
-  as 6 misreads there (`(\lambda r\, q.\, …) = M` read as
+  Making the emitter drop the parentheses its holes need is caught
+  as misreads (`(\lambda r\, q.\, …) = M` read as
   `\lambda r\, q.\, (… = M)`).
 - **Side conditions** are found per formula: ambiguity (conditions 1–3),
   variables that print alike (4), and variables that print as another

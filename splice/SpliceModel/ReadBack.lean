@@ -15,8 +15,8 @@ that runs:
 
 - **Soundness** (`expr_sound`): every reading the parser returns is a
   reading in the grammar, with the sort it is given.
-- **Matching** (`matches_iff`): `Reading.matches` decides `Matches`, the
-  structural relation in which `any` stands for any reading.
+- **Equality** (`Reading.beq_iff`): `Reading.beq` decides equality of
+  readings.
 
 Sorts are the parser's parameter (`SortAlgebra`), so these hold for every
 algebra of sorts. Completeness is `SpliceModel.ReadBackComplete`.
@@ -26,100 +26,11 @@ namespace SpliceModel
 
 open Imprimatur.Validate
 
-/-! ## Matching -/
-
-mutual
-/-- A reading matches the expected one: `any` matches any reading, and a
-node matches a node of the same name whose children match, pairwise. -/
-inductive Matches : Reading → Reading → Prop
-  /-- `any` -/
-  | any (r : Reading) : Matches .any r
-  /-- the same name, and matching children -/
-  | node (n : String) {ks ks' : List Reading} : MatchesList ks ks' → Matches (.node n ks) (.node n ks')
-
-/-- Children match, pairwise. -/
-inductive MatchesList : List Reading → List Reading → Prop
-  /-- none -/
-  | nil : MatchesList [] []
-  /-- the first, then the rest -/
-  | cons {k k' : Reading} {ks ks' : List Reading} : Matches k k' → MatchesList ks ks' → MatchesList (k :: ks) (k' :: ks')
-end
-
-mutual
-theorem matches_iff : ∀ (e r : Reading), Reading.matches e r = true ↔ Matches e r
-  | .any, r => by simp [Reading.matches, Matches.any]
-  | .node n ks, .any => by
-    simp only [Reading.matches, Bool.false_eq_true, false_iff]
-    intro h; cases h
-  | .node n ks, .node n' ks' => by
-    simp only [Reading.matches, Bool.and_eq_true, beq_iff_eq]
-    constructor
-    · rintro ⟨rfl, h⟩
-      exact .node n ((matchesList_iff ks ks').mp h)
-    · intro h
-      cases h with
-      | node _ h => exact ⟨rfl, (matchesList_iff ks ks').mpr h⟩
-termination_by e _ => sizeOf e
-
-theorem matchesList_iff : ∀ (ks ks' : List Reading), Reading.matchesList ks ks' = true ↔ MatchesList ks ks'
-  | [], [] => by simp [Reading.matchesList, MatchesList.nil]
-  | [], _ :: _ => by
-    simp only [Reading.matchesList, Bool.false_eq_true, false_iff]
-    intro h; cases h
-  | _ :: _, [] => by
-    simp only [Reading.matchesList, Bool.false_eq_true, false_iff]
-    intro h; cases h
-  | k :: ks, k' :: ks' => by
-    simp only [Reading.matchesList, Bool.and_eq_true]
-    constructor
-    · rintro ⟨h1, h2⟩
-      exact .cons ((matches_iff k k').mp h1) ((matchesList_iff ks ks').mp h2)
-    · intro h
-      cases h with
-      | cons h1 h2 => exact ⟨(matches_iff k k').mpr h1, (matchesList_iff ks ks').mpr h2⟩
-termination_by ks _ => sizeOf ks
-end
-
-mutual
-/-- A reading with no `any` in it: what the parser finds. -/
-inductive Definite : Reading → Prop
-  /-- a node whose children are definite -/
-  | node (n : String) {ks : List Reading} : DefiniteList ks → Definite (.node n ks)
-
-/-- Readings each definite. -/
-inductive DefiniteList : List Reading → Prop
-  /-- none -/
-  | nil : DefiniteList []
-  /-- the first, then the rest -/
-  | cons {k : Reading} {ks : List Reading} : Definite k → DefiniteList ks → DefiniteList (k :: ks)
-end
-
-mutual
-/-- A definite reading matches an expected reading with no `any` only if it
-is that reading. -/
-theorem matches_definite_eq : ∀ {e r : Reading}, Definite e → Matches e r → e = r
-  | .node n ks, .node _ ks', .node _ hd, .node _ hm => by
-    rw [matchesList_definite_eq hd hm]
-  | .node _ _, .any, _, h => by cases h
-termination_by e _ _ _ => sizeOf e
-
-theorem matchesList_definite_eq : ∀ {ks ks' : List Reading}, DefiniteList ks → MatchesList ks ks' → ks = ks'
-  | [], [], _, _ => rfl
-  | k :: ks, k' :: ks', .cons hd hds, .cons hm hms => by
-    rw [matches_definite_eq hd hm, matchesList_definite_eq hds hms]
-  | [], _ :: _, _, h => by cases h
-  | _ :: _, [], _, h => by cases h
-termination_by ks _ _ _ => sizeOf ks
-end
-
 /-! ## Readings equal -/
 
 mutual
 /-- `Reading.beq` decides equality. -/
 theorem Reading.beq_iff : ∀ (a b : Reading), Reading.beq a b = true ↔ a = b
-  | .any, .any => by simp [Reading.beq]
-  | .any, .node _ _ => by simp [Reading.beq]
-  | .node _ _, .any => by simp [Reading.beq]
   | .node n ks, .node n' ks' => by
     simp only [Reading.beq, Bool.and_eq_true, beq_iff_eq, Reading.node.injEq]
     exact and_congr Iff.rfl (Reading.beqList_iff ks ks')

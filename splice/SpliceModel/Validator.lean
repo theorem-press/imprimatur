@@ -14,11 +14,13 @@ its authors write to say how a part of a statement is printed and read. The
 world the paper is true or false of is a function of the two
 (`Development.world`): a rendering reads back as a statement when the
 validator accepts everything the notation prints of it (`AcceptsAll`): each
-formula returns one reading, with no flag set, that matches the reading the
-renderer expects, and the sentence or figure is plain, so that the parser
-undoes its layout. By `pollack` (`SpliceModel.ReadBackComplete`), an
-accepted formula then has, in the grammar, no reading but the expected one,
-and the two reading-back assumptions of `Anatomy.Sound` (`SpliceModel.Views`)
+formula returns readings of which exactly one is well typed, with no flag
+set, and that one denotes the part it was printed from (`Denote`: its term,
+up to what the notation leaves implicit, is the part's), and the sentence or
+figure is plain, so that the parser undoes its layout. By `readBack_complete`
+(`SpliceModel.ReadBackComplete`), an accepted formula then has, in the
+grammar, no well-typed reading but that one, and the two reading-back
+assumptions of `Anatomy.Sound` (`SpliceModel.Views`)
 are theorems, as are its layout clauses, since the world prints by
 definition as the anatomy says: `Development.sound`, with no hypothesis.
 Theorem 1's `prose_true` and `rules_true` then say of a document that checks
@@ -33,7 +35,11 @@ namespace SpliceModel
 open Imprimatur Imprimatur.Layout Imprimatur.Validate
 
 /-- What the validator knows of a world's parts: a grammar, an algebra of
-sorts, and for each part its sort and the reading the renderer expects. -/
+sorts, and for each part its sort, which readings are well typed as it, and
+which denote it. The last two are Lean's judgement of a reading's
+denotation (`Imprimatur.Denote`): its term type-checks at the part's type;
+its term is the part's, up to what the notation leaves implicit. They are
+the model's parameters, as the sorts are. -/
 structure Validator (Part : Type) where
   /-- the sorts -/
   A : SortAlgebra
@@ -41,8 +47,10 @@ structure Validator (Part : Type) where
   G : Grammar
   /-- the sort a part is read at -/
   sort : Part → String
-  /-- the reading the renderer expects of a part -/
-  expect : Part → Reading
+  /-- whether a reading's denotation is well typed as the part -/
+  typed : Part → Reading → Bool
+  /-- whether a reading's denotation is the part -/
+  denotes : Part → Reading → Bool
 
 namespace Validator
 
@@ -52,21 +60,33 @@ variable {Part : Type} (V : Validator Part)
 def tokens (t : List Char) : Array String := tokenize (String.ofList t)
 
 /-- A formula reads back as a part: every reading of it in the grammar, as
-an expression of the part's sort, matches the expected one. -/
+an expression of the part's sort, that is well typed denotes the part. -/
 def ReadsPart (t : List Char) (q : Part) : Prop :=
-  ∀ rd σ, Exp V.A V.G (tokens t) (V.sort q) 0 none V.G.chain0 0 (tokens t).size rd σ → Matches (V.expect q) rd
+  ∀ rd σ, Exp V.A V.G (tokens t) (V.sort q) 0 none V.G.chain0 0 (tokens t).size rd σ →
+    V.typed q rd = true → V.denotes q rd = true
 
-/-- The validator accepts a formula as a part: the parser returns one
-reading, with no flag set, and it matches the expected one. This is what
-`Render` checks of each formula it emits. -/
+/-- The validator accepts a formula as a part: the parser returns its
+readings with no flag set, exactly one of them is well typed, and that one
+denotes the part. This is what `Render.validate` checks of each formula it
+emits. -/
 def Accepts (t : List Char) (q : Part) : Prop :=
-  ∃ rd, (readBackWith V.A V.G (tokens t) (V.sort q)).1 = #[rd] ∧
-    (readBackWith V.A V.G (tokens t) (V.sort q)).2.any = false ∧ (V.expect q).matches rd = true
+  ∃ rd, ((readBackWith V.A V.G (tokens t) (V.sort q)).1.filter (V.typed q)).toList = [rd] ∧
+    (readBackWith V.A V.G (tokens t) (V.sort q)).2.any = false ∧ V.denotes q rd = true
 
-/-- **A formula the validator accepts reads back as its part.** -/
+/-- **A formula the validator accepts reads back as its part.** Every
+reading in the grammar is among those the parser returned
+(`readBack_complete`); a well-typed one is then the one accepted. -/
 theorem accepts_readsPart {t : List Char} {q : Part} (h : V.Accepts t q) : V.ReadsPart t q := by
   obtain ⟨rd, h1, h2, h3⟩ := h
-  exact (pollack _ _ _ h1 h2 h3).2
+  intro rd' σ hexp hty
+  have hmem := readBack_complete (V.sort q) h2 hexp
+  have : rd' ∈ ((readBackWith V.A V.G (tokens t) (V.sort q)).1.filter (V.typed q)).toList := by
+    rw [Array.mem_toList_iff, Array.mem_filter]
+    exact ⟨hmem, hty⟩
+  rw [h1] at this
+  simp at this
+  subst this
+  exact h3
 
 end Validator
 

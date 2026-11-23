@@ -921,13 +921,6 @@ theorem readBack_sound (s : String) {rd : Reading} (h : rd ∈ (readBackWith A g
   have hT := (soundAll (A := A) (g := g) (ts := ts) (fuelFor g ts)).1 s 0 none g.chain0 0 ts.size {} Inv.empty
   exact ⟨σ, (hT.2 _ hmem).2⟩
 
-/-- **A validated formula reads as what it was rendered from.** When the
-parser returns one reading, and it matches the expected reading, that
-reading is a reading in the grammar, and it is the expected reading
-wherever the expected one is definite. -/
-theorem validated_sound (s : String) (ex rd : Reading) (h : (readBackWith A g ts s).1 = #[rd])
-    (hm : ex.matches rd = true) : (∃ σ, Exp A g ts s 0 none g.chain0 0 ts.size rd σ) ∧ Matches ex rd :=
-  ⟨readBack_sound s (by simp [h]), (matches_iff ex rd).mp hm⟩
 end
 
 end SpliceModel
