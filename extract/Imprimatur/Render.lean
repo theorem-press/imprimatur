@@ -383,6 +383,53 @@ def synonymEquation (g : Validate.Grammar) (r : NotationRule) : RenderM (Option 
     let lam ← mkLambdaFVars fvs (← instantiateMVars rhs)
     return some (← abstractMVars lam)
 
+/-- A synonym rule's template read back in the rest of the notation, with
+its shown variables as leaves named `?v`: the shape of text the rule
+writes, for `rewriteSynonyms`. `none` if the template does not read back
+as one thing. -/
+def synonymTemplate (g : Validate.Grammar) (r : NotationRule) : Option Validate.Reading := Id.run do
+  let names := (Denote.shownVars r).map (·.toString)
+  let some parts := (splitTemplate r.template (r.pat.vars.map (·.toString))).toOption | return none
+  let text := String.join (parts.toList.map fun | .inl t => t | .inr v => s!" {v} ")
+  let ts := Validate.tokenize text
+  let numerals := (ts.filter fun t => t.all Char.isDigit).toList.eraseDups.toArray
+  let atomProds : Array Validate.Prod := names.map (fun n =>
+    { name := s!"?{n}", sort := "*", prec := Doc.maxPrec, syms := (Validate.tokenize n).toList.map .tok }) ++
+    numerals.map fun n => { name := n, sort := "Nat", prec := Doc.maxPrec, syms := [.tok n] }
+  let (rs, flags) := Validate.readBack (g.extend atomProds) ts "*"
+  if flags.any then return none
+  let #[rd] := rs | return none
+  return some rd
+
+/-- A reading matched against a synonym's template reading, whose `?v`
+leaves are holes: what fills each hole, by the hole's name, or nothing
+where they differ. -/
+partial def matchTemplate (t r : Validate.Reading) (acc : List (String × Validate.Reading) := []) :
+    Option (List (String × Validate.Reading)) :=
+  match t, r with
+  | .node n [], r =>
+    if n.startsWith "?" then some ((n, r) :: acc)
+    else if r == .node n [] then some acc else none
+  | .node n ks, .node n' ks' =>
+    if n != n' || ks.length != ks'.length then none
+    else (ks.zip ks').foldlM (init := acc) fun acc (k, k') => matchTemplate k k' acc
+
+/-- A reading with each subtree shaped as a synonym's template rewritten to
+the synonym's pattern, children in the order the pattern shows them: `v ∈
+Val` read as `Membership.mem[Val; v]`, where no instance makes that well
+typed, is `IsValue[v]`, which the synonym declares it to mean. -/
+partial def rewriteSynonyms (syns : Array (NotationRule × Validate.Reading)) : Validate.Reading → Validate.Reading
+  | .node n ks => Id.run do
+    let r := Validate.Reading.node n (ks.map (rewriteSynonyms syns))
+    for (rule, t) in syns do
+      if let some bs := matchTemplate t r then
+        let kids := (Denote.shownVars rule).toList.filterMap fun v => (bs.find? (·.1 == s!"?{v}")).map (·.2)
+        return .node rule.pat.shape kids
+    return r
+
+/-- The synonym template readings computed so far, by notation variant. -/
+initialize synonymTemplateCache : IO.Ref (Array (String × Array (NotationRule × Validate.Reading))) ← IO.mkRef #[]
+
 /-- The synonym equations computed so far, by notation variant: they are
 closed terms, the same for every view and entry of a run. -/
 initialize synonymCache : IO.Ref (Array (String × Array (NotationRule × AbstractMVarsResult))) ← IO.mkRef #[]
@@ -413,6 +460,17 @@ def synonymEquations (g : Validate.Grammar) : RenderM (Array (NotationRule × Ab
           IO.eprintln s!"validate: synonym {r.pat.head}: {← ex.toMessageData.toString}"
   synonymCache.modify (·.push (variant, eqs))
   return eqs
+
+/-- The synonym template readings of the notation in scope, computed once
+per variant (`synonymTemplateCache`). -/
+def synonymTemplates (g : Validate.Grammar) : RenderM (Array (NotationRule × Validate.Reading)) := do
+  let ctx ← read
+  let variant := s!"{ctx.variant.getD ""}|{ctx.rules.size}|{hash (ctx.rules.map fun r => (r.template, r.pat.head.toString))}"
+  if let some (_, ts) := (← synonymTemplateCache.get).find? (·.1 == variant) then return ts
+  let ts := ctx.rules.filterMap fun r =>
+    if r.synonym && (r.variant.isNone || r.variant == ctx.variant) then (synonymTemplate g r).map (r, ·) else none
+  synonymTemplateCache.modify (·.push (variant, ts))
+  return ts
 
 /-- An expression with the synonym equations applied: each subterm a synonym
 rule matches becomes what the rule writes it as. -/
@@ -563,15 +621,28 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     let τ ← inferType e'
     Denote.trace do return s!"type {← ppExpr τ}"
     let mut typed : Array (Validate.Reading × Denote.Denotation) := #[]
-    for r in rs do
-      match ← Denote.run rules atoms r with
+    let attempt (r : Validate.Reading) : RenderM (Option Denote.Denotation) := do
+      match ← Denote.run rules atoms r (some τ) with
       | .ok d =>
         Denote.trace do return "denoted; typing"
-        if ← Denote.wellTyped d.term d.insts (some τ) then typed := typed.push (r, d)
-        else if debug then
+        if ← Denote.wellTyped d.term d.insts (some τ) then return some d
+        if debug then
           IO.eprintln s!"validate: ill typed {r.text} = {← withOptions (pp.explicit.set · true) (ppExpr (← instantiateMVars d.term))} : {← ppExpr τ}"
+        return none
       | .error msg =>
         if debug then IO.eprintln s!"validate: no denotation of {r.text}: {msg}"
+        return none
+    let syns ← synonymTemplates base
+    for r in rs do
+      match ← attempt r with
+      | some d => typed := typed.push (r, d)
+      | none =>
+        -- Ill typed as read: as the synonyms say the text means, if that
+        -- is another reading (`v ∈ Val` for `IsValue v`).
+        let r' := rewriteSynonyms syns r
+        if r' != r then
+          if debug then IO.eprintln s!"validate: by synonym {r.text} is {r'.text}"
+          if let some d ← attempt r' then typed := typed.push (r, d)
     return (e', typed)
   let mctx ← readThe Meta.Context
   let mst ← getThe Meta.State
