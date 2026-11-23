@@ -177,7 +177,13 @@ mutual
       let s ← (saveState : MetaM Meta.SavedState)
       let before ← (← read).insts.get
       try
-        let a' ← applyArgs (← mkConstWithFreshMVarLevels c.pat.head) [a] (coerced := true) (depth := depth - 1)
+        -- The coercion's result is `d` first, so that its argument is fit
+        -- knowing what it must be (`some (c, v, i)` against an `Option` of
+        -- a product with `v` coerced inside).
+        let f ← fillImplicits (← mkConstWithFreshMVarLevels c.pat.head)
+        if let .forallE _ _ b _ := ← whnf (← inferType f) then
+          if !b.hasLooseBVars then discard <| isDefEq b d
+        let a' ← applyArgs f [a] (coerced := true) (depth := depth - 1)
         if ← isDefEq (← inferType a') d then
           -- The coercion's instances must exist: `Int.cast` into `ℕ` does not.
           synthPendingInsts

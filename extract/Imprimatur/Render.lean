@@ -129,9 +129,6 @@ structure Ctx where
   /-- The grammar of the notation in scope (`Validate.notationGrammar`),
   built once for the formulas a view renders. -/
   grammar : Option Validate.Grammar := none
-  /-- The synonym rules as equations (`synonymEquations`), computed once
-  for the formulas a view renders. -/
-  synonyms : Option (IO.Ref (Option (Array (NotationRule × AbstractMVarsResult)))) := none
   /-- The chain of invisible coercions above the term being rendered: a
   coercion is hidden only when the reader's chain rule allows it there, so
   that every chain the renderer hides is one the reader reads
@@ -386,11 +383,18 @@ def synonymEquation (g : Validate.Grammar) (r : NotationRule) : RenderM (Option 
     let lam ← mkLambdaFVars fvs (← instantiateMVars rhs)
     return some (← abstractMVars lam)
 
-/-- The synonym equations of the notation in scope, computed once per view. -/
+/-- The synonym equations computed so far, by notation variant: they are
+closed terms, the same for every view and entry of a run. -/
+initialize synonymCache : IO.Ref (Array (String × Array (NotationRule × AbstractMVarsResult))) ← IO.mkRef #[]
+
+/-- The synonym equations of the notation in scope, computed once per
+variant (`synonymCache`). -/
 def synonymEquations (g : Validate.Grammar) : RenderM (Array (NotationRule × AbstractMVarsResult)) := do
   let ctx ← read
-  if let some cache := ctx.synonyms then
-    if let some eqs ← cache.get then return eqs
+  -- Keyed by the variant and the rules, for the tests, which run several
+  -- notations in one process.
+  let variant := s!"{ctx.variant.getD ""}|{ctx.rules.size}|{hash (ctx.rules.map fun r => (r.template, r.pat.head.toString))}"
+  if let some (_, eqs) := (← synonymCache.get).find? (·.1 == variant) then return eqs
   let mut eqs := #[]
   let mctx ← readThe Meta.Context
   for r in ctx.rules do
@@ -407,20 +411,19 @@ def synonymEquations (g : Validate.Grammar) : RenderM (Array (NotationRule × Ab
       | .error ex =>
         if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
           IO.eprintln s!"validate: synonym {r.pat.head}: {← ex.toMessageData.toString}"
-  if let some cache := ctx.synonyms then cache.set (some eqs)
+  synonymCache.modify (·.push (variant, eqs))
   return eqs
 
 /-- An expression with the synonym equations applied: each subterm a synonym
 rule matches becomes what the rule writes it as. -/
 def applySynonyms (eqs : Array (NotationRule × AbstractMVarsResult)) (e : Expr) : RenderM Expr := do
   if eqs.isEmpty then return e
-  let ctx ← read
+  -- The synonym applies where the renderer would have used it: where no
+  -- rule it prefers (`candidates`) matches first.
+  let eqs ← eqs.mapM fun (r, ab) => do return (r, ab, ← candidates r.head)
   Meta.transform e (pre := fun sub => do
-    for (r, ab) in eqs do
+    for (r, ab, preferred) in eqs do
       unless sub.getAppFn.isConstOf r.head do continue
-      -- The synonym applies where the renderer would have used it: where no
-      -- rule it prefers (`candidates`) matches first.
-      let preferred ← (candidates r.head).run ctx
       let mut taken := false
       for r' in preferred do
         if r'.pat == r.pat && r'.template == r.template && r'.variant == r.variant then break
@@ -544,13 +547,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
   let g := Validate.Grammar.of ((base.prods.map (·.1)).filter present ++ leaves)
   let h₀ ← IO.getNumHeartbeats
   let (rs, flags, steps) := Validate.readBackSteps g ts (← sortOf e)
-  -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering and
-  -- reading it back took (`Imprimatur.Timing`).
-  if ← Timing.on then
-    Timing.event "formula" ((← IO.monoMsNow) - t0)
-      [("key", toJson ctx.key), ("view", toJson ctx.view), ("render_ms", toJson renderMs),
-       ("tokens", toJson ts.size), ("steps", toJson steps), ("readings", toJson rs.size),
-       ("tex", toJson (String.ofList (tex.toList.take 120)))]
+  let tParsed ← IO.monoMsNow
   let rules := ctx.rules.filter fun r => r.variant.isNone || r.variant == ctx.variant
   let debug := (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1"
   -- The expression as the notation reads it, and its type: what the one
@@ -582,6 +579,14 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     (Core.tryCatchRuntimeEx
       (do return .ok (← withCurrHeartbeats (Denote.withDepth (body.run ctx) |>.run mctx mst)))
       (fun ex => return .error ex) : CoreM _)
+  -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering,
+  -- reading it back and denoting it took (`Imprimatur.Timing`).
+  if ← Timing.on then
+    Timing.event "formula" ((← IO.monoMsNow) - t0)
+      [("key", toJson ctx.key), ("view", toJson ctx.view), ("render_ms", toJson renderMs),
+       ("parse_ms", toJson (tParsed - t0)), ("denote_ms", toJson ((← IO.monoMsNow) - tParsed)),
+       ("tokens", toJson ts.size), ("steps", toJson steps), ("readings", toJson rs.size),
+       ("tex", toJson (String.ofList (tex.toList.take 120)))]
   let (e', typed) ← match denoted with
     | .ok (r, st) => set st; pure r
     | .error ex =>

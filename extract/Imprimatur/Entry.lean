@@ -177,9 +177,8 @@ def runRendered (s : Settings) (variant : Option String) (used : IO.Ref (Array S
   let t0 ← IO.monoMsNow
   let ctx ← renderCtx s variant used key root
   let problems ← IO.mkRef #[]
-  let synonyms ← IO.mkRef none
   let ctx := if s.validate then
-      { ctx with problems := some problems, synonyms := some synonyms,
+      { ctx with problems := some problems,
                  grammar := some (Validate.notationGrammar ctx.rules variant ctx.callVars
                    ctx.subscriptVars ctx.casesMatch ctx.listLiterals) }
     else ctx
