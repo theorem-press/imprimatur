@@ -1464,8 +1464,14 @@ block is.
   does not fit, Lean's own coercion is inserted (`Meta.coerce?`, or a
   coercion rule of the notation whose instances exist), the operands of a
   rule whose holes share a type brought to one type first, as `binop%`
-  does. A reading is *well typed* when its denotation type-checks at the
-  formula's type, with its instances found. A λ over a pattern and a `case`
+  does; the whole reading is fit to the formula's type the same way, so a
+  variable `x` written for `Tm.var x` goes through the coercion rule that
+  hides the constructor. A reading is *well typed* when its denotation
+  type-checks at the formula's type, with its instances found. A reading
+  that is not, but has a subtree shaped as a `synonym` rule's template
+  reads back, is read again with that subtree as the synonym's pattern:
+  `v ∈ Val`, read as membership in a predicate, which no instance types,
+  means `IsValue v`, as the synonym says. A λ over a pattern and a `case`
   analysis denote a metavariable, which takes whatever the formula has
   there, so the rest of the formula is still checked (#41's remaining gap).
 - **The one well-typed reading must denote the formula.** The formula is

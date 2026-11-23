@@ -82,6 +82,13 @@ unsafe def cases (env : Environment) : IO (Array (String × Bool)) := runMeta en
     out := out.push ("denote/cast-typed", ← Denote.wellTyped c insts (some prop))
     out := out.push ("denote/cast-skeleton", ← Denote.agrees rules orig d)
     out := out.push ("denote/cast-not-plus", !(← Denote.agrees rules (← mkAppM ``Eq #[← cast a, ← cast (← mkAppM ``HAdd.hAdd #[b, b])]) d))
+    -- `a` where an integer is expected is `↑a`: the whole reading is fit to
+    -- the type expected, through Lean's coercion.
+    match ← Denote.run rules atoms (l "a") (some int) with
+    | .error _ => out := out.push ("denote/fit-whole", false)
+    | .ok d =>
+      out := out.push ("denote/fit-whole-typed", ← Denote.wellTyped d.term d.insts (some int))
+      out := out.push ("denote/fit-whole-agrees", ← Denote.agrees rules (← cast a) d)
     -- `∀ x : ℕ, x = x` by the built-in form, with the bound variable named by the text.
     let r := n "∀" [l "x", l "\\mathbb{N}", n "Eq" [l "x", l "x"]]
     let atoms' := atoms.push { tex := "\\mathbb{N}", sort := "Sort", expr := some nat }

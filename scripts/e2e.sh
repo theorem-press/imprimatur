@@ -6,7 +6,8 @@
 #   1. copy it to e2e-out/ (the same depth, so its relative paths still work);
 #   2. run its steps (examples/X/steps, or `imprimatur build` then
 #      `imprimatur check`), which must all succeed;
-#   3. compare the spliced paper.tex with examples/X/expected/paper.tex;
+#   3. compare the spliced paper.tex with examples/X/expected/paper.tex, and
+#      what `check` says of it with examples/X/expected/check.txt;
 #   4. compile with pdflatex and with lualatex (latexmk); fail on errors,
 #      undefined control sequences or missing glyphs;
 #   5. compare pdftotext's output (in content order) with examples/X/expected/{pdflatex,lualatex}.txt.
@@ -122,6 +123,11 @@ for dir in examples/*/; do
     echo "  FAIL: external mode changed the host project"; status=1
   fi
   compare "$work/paper.tex" "$dir/expected/paper.tex" "spliced paper.tex"
+  # What `check` says of the built paper: its warnings (translation
+  # validation's among them) and errors, against examples/X/expected/check.txt,
+  # so that a verdict that changes is seen.
+  (cd "$work" && "$IMPRIMATUR" check > check.txt 2>&1) || true
+  compare "$work/check.txt" "$dir/expected/check.txt" "check output"
   for engine in pdflatex lualatex; do
     flag=$([ $engine = pdflatex ] && echo -pdf || echo -lualatex)
     if ! (cd "$work" && latexmk $flag -interaction=nonstopmode -halt-on-error -outdir=out-$engine paper.tex > latexmk-$engine.log 2>&1); then

@@ -269,8 +269,11 @@ warning[unfaithful-rendering]: Cats.lower_eq (prose): not plain: $\text{\$}\math
 and `Fintype.card R` as `|R|`, or a definition and what it unfolds to. Mark
 one `synonym`: reading back takes it as an equation, from its pattern to what
 its template reads back as in the rest of the notation, and rewrites a
-formula by it before asking whether the text denotes the formula. Lean does
-not check the equation; it is the paper's word, as the notation is.
+formula by it before asking whether the text denotes the formula. Where the
+template's own reading denotes nothing well typed (`v \in \mathit{Val}` for
+a predicate `IsValue v`, with no `Membership` instance to read `\in` by), the
+text is read as the synonym's pattern instead. Lean does not check the
+equation; it is the paper's word, as the notation is.
 
 ### Metavariables
 
