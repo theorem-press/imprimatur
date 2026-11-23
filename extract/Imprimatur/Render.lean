@@ -431,7 +431,9 @@ def applySynonyms (eqs : Array (NotationRule × AbstractMVarsResult)) (e : Expr)
         if vars.all fun v => bs.any (·.1 == v) then
           let args := vars.map fun v => ((bs.find? (·.1 == v)).map (·.2)).getD sub
           let (_, _, lam) ← openAbstractMVarsResult ab
-          return .visit (lam.beta args)
+          -- Once at this node, then its children: a synonym whose template
+          -- reads back to its own head would otherwise rewrite for ever.
+          return .continue (lam.beta args)
     return .continue)
 
 /-- The operands of a chain of a flattening rule, as the renderer collects
