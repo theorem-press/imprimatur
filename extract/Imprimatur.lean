@@ -15,6 +15,7 @@ import Imprimatur.Axioms
 import Imprimatur.Notation
 import Imprimatur.Commands
 import Imprimatur.Packs
+import Imprimatur.Denote
 import Imprimatur.Render
 import Imprimatur.Views.Math
 import Imprimatur.Views.Rules

@@ -9,6 +9,7 @@ import ExtractTest.Fixtures
 import ExtractTest.HashProps
 import ExtractTest.Doc
 import ExtractTest.Validate
+import ExtractTest.Denote
 import ExtractTest.ChainLaws
 import ExtractTest.SortLaws
 
@@ -34,6 +35,7 @@ unsafe def inProcess : TestM Unit := do
   ExtractTest.HashProps.tests
   ExtractTest.DocTests.tests
   ExtractTest.ValidateTests.tests
+  ExtractTest.DenoteTests.tests
   ExtractTest.ChainLaws.tests
   ExtractTest.SortLaws.tests
 

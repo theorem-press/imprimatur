@@ -1304,18 +1304,6 @@ theorem readBack_unique (s : String) {rd : Reading} (h : (readBackWith A g ts s)
   rw [h] at this
   simpa using this
 
-/-- **Pollack-consistency of a formula.** When the parser returns one
-reading with no flag set, and it matches the expected reading: the
-formula has a reading in the grammar, and every reading it has in the
-grammar matches the expected one. -/
-theorem pollack (s : String) (ex rd : Reading) (h : (readBackWith A g ts s).1 = #[rd])
-    (hf : (readBackWith A g ts s).2.any = false) (hm : ex.matches rd = true) :
-    (∃ σ, Exp A g ts s 0 none g.chain0 0 ts.size rd σ) ∧
-      ∀ rd' σ, Exp A g ts s 0 none g.chain0 0 ts.size rd' σ → Matches ex rd' :=
-  ⟨readBack_sound s (by simp [h]), fun rd' σ h' => by
-    rw [readBack_unique s h hf h']
-    exact (matches_iff ex rd).mp hm⟩
-
 end Complete
 
 end SpliceModel

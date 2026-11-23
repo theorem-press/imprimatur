@@ -12,6 +12,7 @@ import Imprimatur.Commands
 import Imprimatur.Views.Lean
 import Imprimatur.Requests
 import Imprimatur.Validate
+import Imprimatur.Denote
 
 /-!
 # Rendering expressions as mathematics
@@ -47,19 +48,6 @@ namespace Imprimatur.Render
 
 open Lean Meta
 
-/-- An atom written in a formula, for reading it back. -/
-structure Atom where
-  /-- Its TeX. -/
-  tex : String
-  /-- Its sort (`Validate`). -/
-  sort : String
-  /-- A bound variable's name, at its binder. -/
-  isVar : Bool := false
-  /-- The variable it is, if it is one. -/
-  fvar : Option FVarId := none
-  /-- The variable's name. -/
-  name : String := ""
-
 /-- What a view rendered, for the views that index the document: a notation
 rule that fired, a category's metavariable that appeared, or a declaration a
 view displayed (a grammar's type, a definition). Each is tagged with the key
@@ -79,16 +67,6 @@ inductive IndexEvent where
 /-- The events of an export, in the order the blocks were rendered. The
 views that index the document are rendered after all the others. -/
 initialize indexEvents : IO.Ref (Array IndexEvent) ← IO.mkRef #[]
-
-/-- What a formula being rendered should read back as (DESIGN §18.4): the
-expected readings of the subterms rendered so far, at this level, and how the
-form being rendered makes its own from them. A form without a frame reads as
-`Validate.anyReading`. -/
-structure Expect where
-  /-- The expected readings of the subterms rendered at this level. -/
-  kids : Array Validate.Reading := #[]
-  /-- This form's reading, from its subterms'. -/
-  frame : Option (Array Validate.Reading → Validate.Reading) := none
 
 /-- No invisible coercion above. -/
 def noChain : Validate.Chain := { visited := [], cast := false, count := none }
@@ -148,8 +126,6 @@ structure Ctx where
   problems : Option (IO.Ref (Array String)) := none
   /-- The atoms written in the formula being rendered. -/
   atoms : Option (IO.Ref (Array Atom)) := none
-  /-- The expected reading of the formula being rendered. -/
-  expect : Option (IO.Ref Expect) := none
   /-- The grammar of the notation in scope (`Validate.notationGrammar`),
   built once for the formulas a view renders. -/
   grammar : Option Validate.Grammar := none
@@ -307,8 +283,8 @@ def instanceHypothesis? (t : Expr) : RenderM (Option Expr) := do
 
 /-- Log an atom of the formula being rendered. -/
 def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none)
-    (name : String := "") : RenderM Unit := do
-  if let some r := (← read).atoms then r.modify (·.push { tex, sort, isVar, fvar, name })
+    (name : String := "") (expr : Option Expr := none) : RenderM Unit := do
+  if let some r := (← read).atoms then r.modify (·.push { tex, sort, isVar, fvar, name, expr })
 
 /-- A metavariable's base: its TeX without trailing primes and subscript, so
 `e_{1}'` is `e`. -/
@@ -342,10 +318,209 @@ partial def shownSortOf (e : Expr) : MetaM String := do
     else sortOf e
   | _ => sortOf e
 
-/-- Read a rendered formula back (DESIGN §18.4): it must have exactly one
-reading as an expression of `e`'s sort, and its free variables must print
-differently. Problems go to the context's `problems`. -/
-def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Reading)
+/-- What a `let` or `have` stands for: its body with the value put in for
+the variable. A statement means the same with the definition unfolded, and
+so renders in the paper's notation, where Lean's text for the `let` would
+not (#135). Metadata is dropped the same way. -/
+def unLet? (e : Expr) : Option Expr :=
+  match e with
+  | .letE _ _ v b _ => some (b.instantiate1 v)
+  | .mdata _ e => some e
+  | .app (.app (.app (.app (.const ``letFun _) _) _) v) f =>
+    some (match f with | .lam _ _ b _ => b.instantiate1 v | _ => .app f v)
+  | _ => none
+
+/-- A synonym rule as an equation (DESIGN §18.4): a λ over the variables
+its pattern shows, whose body is the denotation of its template read back
+in the rest of the notation, with the metavariables of that denotation
+abstracted, to be opened afresh at each use. The variables have the types
+the pattern gives them, and the reading taken is the one well typed at the
+pattern's type. `none` if the template does not read back as one thing. -/
+def synonymEquation (g : Validate.Grammar) (r : NotationRule) : RenderM (Option AbstractMVarsResult) := do
+  let ctx ← read
+  let debug := (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1"
+  let vars := Denote.shownVars r
+  let names := vars.map (·.toString)
+  let some parts := (splitTemplate r.template (r.pat.vars.map (·.toString))).toOption | return none
+  let text := String.join (parts.toList.map fun | .inl t => t | .inr v => s!" {v} ")
+  let ts := Validate.tokenize text
+  let numerals := (ts.filter fun t => t.all Char.isDigit).toList.eraseDups.toArray
+  let atomProds : Array Validate.Prod := names.map (fun n =>
+    { name := n, sort := "*", prec := Doc.maxPrec, syms := (Validate.tokenize n).toList.map .tok }) ++
+    numerals.map fun n => { name := n, sort := "Nat", prec := Doc.maxPrec, syms := [.tok n] }
+  let (rs, flags) := Validate.readBack (g.extend atomProds) ts "*"
+  if rs.isEmpty || flags.any then
+    if debug then IO.eprintln s!"validate: synonym {r.pat.head}: {rs.size} readings of {text}"
+    return none
+  let rules := ctx.rules.filter fun r' => r'.variant.isNone || r'.variant == ctx.variant
+  -- The variables' types, from the pattern: `Fintype a` makes `a` a type.
+  let insts ← IO.mkRef #[]
+  let coerced ← IO.mkRef #[]
+  let dctx : Denote.Ctx := { rules, coercions := rules.filter Denote.isCoercion, atoms := #[], insts, coerced }
+  let mvars ← vars.mapM fun _ => mkFreshExprMVar none
+  let lhs ← try (Denote.ofPat r.pat (vars.zip mvars)).run dctx catch ex =>
+    if debug then IO.eprintln s!"validate: synonym {r.pat.head}: pattern: {← ex.toMessageData.toString}"
+    return none
+  discard <| inferType lhs
+  let decls : Array (Name × (Array Expr → RenderM Expr)) :=
+    (names.zip mvars).map fun (n, m) => (Name.mkSimple n, fun _ => do instantiateMVars (← inferType m))
+  withLocalDeclsD decls fun fvs => do
+    let atoms : Array Atom := (names.zip fvs).map (fun (n, fv) =>
+      { tex := n, sort := "*", fvar := some fv.fvarId!, name := n, expr := some fv }) ++
+      numerals.map fun n => { tex := n, sort := "Nat", expr := some (mkRawNatLit n.toNat!) }
+    let mut found : Array Expr := #[]
+    for rd in rs do
+      match ← Denote.run rules atoms rd with
+      | .error msg => if debug then IO.eprintln s!"validate: synonym {r.pat.head}: {rd.text}: {msg}"
+      | .ok d =>
+        -- A synonym may write a class (a type) as a proposition: any type will do.
+        if ← Denote.wellTyped d.term d.insts none then found := found.push d.term
+    let #[rhs] := found
+      | if debug then IO.eprintln s!"validate: synonym {r.pat.head}: {found.size} well-typed readings of {text}"
+        return none
+    -- The pattern's variables are the metavariables; the equation is over the locals.
+    for (m, fv) in mvars.zip fvs do discard <| isDefEq m fv
+    let lam ← mkLambdaFVars fvs (← instantiateMVars rhs)
+    return some (← abstractMVars lam)
+
+/-- The synonym equations computed so far, by notation variant: they are
+closed terms, the same for every view and entry of a run. -/
+initialize synonymCache : IO.Ref (Array (String × Array (NotationRule × AbstractMVarsResult))) ← IO.mkRef #[]
+
+/-- The synonym equations of the notation in scope, computed once per
+variant (`synonymCache`). -/
+def synonymEquations (g : Validate.Grammar) : RenderM (Array (NotationRule × AbstractMVarsResult)) := do
+  let ctx ← read
+  -- Keyed by the variant and the rules, for the tests, which run several
+  -- notations in one process.
+  let variant := s!"{ctx.variant.getD ""}|{ctx.rules.size}|{hash (ctx.rules.map fun r => (r.template, r.pat.head.toString))}"
+  if let some (_, eqs) := (← synonymCache.get).find? (·.1 == variant) then return eqs
+  let mut eqs := #[]
+  let mctx ← readThe Meta.Context
+  for r in ctx.rules do
+    if r.synonym && (r.variant.isNone || r.variant == ctx.variant) then
+      -- A synonym whose equation exhausts the budget is left out, with a
+      -- note under IMPRIMATUR_VALIDATE_DEBUG; the view's formulas go on.
+      let mst ← getThe Meta.State
+      let r? : Except Exception (Option AbstractMVarsResult × Meta.State) ←
+        (Core.tryCatchRuntimeEx (do return .ok (← ((synonymEquation g r).run ctx).run mctx mst))
+          (fun ex => return .error ex) : CoreM _)
+      match r? with
+      | .ok (some ab, st) => set st; eqs := eqs.push (r, ab)
+      | .ok (none, st) => set st
+      | .error ex =>
+        if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+          IO.eprintln s!"validate: synonym {r.pat.head}: {← ex.toMessageData.toString}"
+  synonymCache.modify (·.push (variant, eqs))
+  return eqs
+
+/-- An expression with the synonym equations applied: each subterm a synonym
+rule matches becomes what the rule writes it as. -/
+def applySynonyms (eqs : Array (NotationRule × AbstractMVarsResult)) (e : Expr) : RenderM Expr := do
+  if eqs.isEmpty then return e
+  -- The synonym applies where the renderer would have used it: where no
+  -- rule it prefers (`candidates`) matches first.
+  let eqs ← eqs.mapM fun (r, ab) => do return (r, ab, ← candidates r.head)
+  Meta.transform e (pre := fun sub => do
+    for (r, ab, preferred) in eqs do
+      unless sub.getAppFn.isConstOf r.head do continue
+      let mut taken := false
+      for r' in preferred do
+        if r'.pat == r.pat && r'.template == r.template && r'.variant == r.variant then break
+        if (← r'.tryMatch sub).isSome then taken := true; break
+      if taken then continue
+      if let some bs ← r.tryMatch sub then
+        let vars := Denote.shownVars r
+        if vars.all fun v => bs.any (·.1 == v) then
+          let args := vars.map fun v => ((bs.find? (·.1 == v)).map (·.2)).getD sub
+          let (_, _, lam) ← openAbstractMVarsResult ab
+          -- Once at this node, then its children: a synonym whose template
+          -- reads back to its own head would otherwise rewrite for ever.
+          return .continue (lam.beta args)
+    return .continue)
+
+/-- The operands of a chain of a flattening rule, as the renderer collects
+them (`collect`). -/
+partial def chainOperands (r : NotationRule) (e : Expr) : MetaM (Array Expr) := do
+  match ← r.tryMatch e with
+  | some bs =>
+    let vs := r.pat.vars
+    match vs[0]?.bind (fun v => bs.find? (·.1 == v)), vs[1]?.bind (fun v => bs.find? (·.1 == v)) with
+    | some (_, a), some (_, b) => return (← chainOperands r a) ++ (← chainOperands r b)
+    | _, _ => return #[e]
+  | none => return #[e]
+
+/-- The expression rendered, as the notation reads it (DESIGN §18.4): `let`s
+unfolded, an instance binder left out or stated as the hypothesis it is
+(`instanceHypothesis?`), a λ over a proof as its body, `∃ h : p, q` over a
+proof as `p ∧ q`, and a chain of a flattening rule bracketed as the rule's
+associativity has it, the notation having declared the operation
+associative; then the synonym equations. These are what the renderer does
+to the expression besides writing it in the notation. -/
+partial def normalise (g : Validate.Grammar) (e : Expr) : RenderM Expr := do
+  let ctx ← read
+  let chains := ctx.rules.filter fun r =>
+    r.flatten && r.pat.binder?.isNone && !r.synonym && (r.variant.isNone || r.variant == ctx.variant)
+  let rec go (e : Expr) : RenderM Expr := do
+    Denote.trace do return s!"normalise {e.getAppFn.constName?.getD `_} ({e.approxDepth})"
+    if let some e' := unLet? e then return ← go e'
+    match e with
+    | .forallE n t b bi =>
+      if bi.isInstImplicit && !b.hasLooseBVars then
+        match ← instanceHypothesis? t with
+        | some h => return mkForall n .default (← go h) (← go b)
+        | none => return ← go b
+      let t' ← go t
+      withLocalDecl n bi t' fun x => do mkForallFVars #[x] (← go (b.instantiate1 x))
+    | .lam n t b bi =>
+      if (← isProp t) && !b.hasLooseBVar 0 then return ← go (b.lowerLooseBVars 1 1)
+      let t' ← go t
+      withLocalDecl n bi t' fun x => do mkLambdaFVars #[x] (← go (b.instantiate1 x))
+    | .app .. =>
+      if e.isAppOfArity ``Exists 2 then
+        if let .lam _ t b _ := e.appArg! then
+          if (← isProp t) && !b.hasLooseBVar 0 then return ← go (mkAnd t (b.lowerLooseBVars 1 1))
+      -- A chain of three or more operands of one type, rebracketed: the
+      -- notation declares it associative. A chain whose operands differ in
+      -- type (`(a, b, c)`) is bracketed as its types demand, and left.
+      for r in chains do
+        if e.getAppFn.isConstOf r.head && (← r.tryMatch e).isSome then
+          let ops ← chainOperands r e
+          let ty ← inferType e
+          let homogeneous ← ops.allM fun o => do withReducible <| isDefEq (← inferType o) ty
+          if ops.size ≥ 3 && homogeneous then
+            let ops ← ops.mapM go
+            -- The outer application, with its two explicit arguments replaced.
+            let some (_, #[_, _]) ← explicitArgsLoose e | break
+            let some ci := (← getEnv).find? e.getAppFn.constName! | break
+            let args := e.getAppArgs
+            let mut ty := ci.type
+            let mut idx : Array Nat := #[]
+            for i in [0:args.size] do
+              match ty with
+              | .forallE _ _ b bi =>
+                if bi.isExplicit then idx := idx.push i
+                ty := b
+              | _ => idx := idx.push i
+            let some i₀ := idx[0]? | break
+            let some i₁ := idx[1]? | break
+            let node (x y : Expr) : Expr := mkAppN e.getAppFn ((args.set! i₀ x).set! i₁ y)
+            if r.assoc == "right" then
+              let rev := ops.reverse
+              return rev.toList.tail!.foldl (fun acc o => node o acc) rev[0]!
+            else return ops.toList.tail!.foldl node ops[0]!
+      e.withApp fun f args => do return mkAppN (← go f) (← args.mapM go)
+    | .mdata _ e => go e
+    | _ => pure e
+  let e ← go e
+  applySynonyms (← synonymEquations g) e
+
+/-- Read a rendered formula back (DESIGN §18.4): exactly one of its readings
+must be well typed at the formula's type, and that reading must denote the
+formula (`Denote`), up to what the notation leaves implicit and reducible
+unfolding; and its free variables must print differently. Problems go to
+the context's `problems`. -/
+def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     (problems : IO.Ref (Array String)) (renderMs : Nat := 0) : RenderM Unit := do
   let ctx ← read
   let t0 ← IO.monoMsNow
@@ -372,34 +547,81 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
   let g := Validate.Grammar.of ((base.prods.map (·.1)).filter present ++ leaves)
   let h₀ ← IO.getNumHeartbeats
   let (rs, flags, steps) := Validate.readBackSteps g ts (← sortOf e)
-  -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering and
-  -- reading it back took (`Imprimatur.Timing`).
+  let tParsed ← IO.monoMsNow
+  let rules := ctx.rules.filter fun r => r.variant.isNone || r.variant == ctx.variant
+  let debug := (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1"
+  -- The expression as the notation reads it, and its type: what the one
+  -- reading must denote, and the type it must have. Then each reading's
+  -- denotation, kept if it is well typed; one whose denotation fails (a
+  -- type that fits nothing) is ill typed too. Each formula has the entry's
+  -- heartbeat budget afresh; one that exhausts it is not validated, as for
+  -- the parser.
+  let body : RenderM (Expr × Array (Validate.Reading × Denote.Denotation)) := do
+    Denote.trace do return s!"formula {tex}"
+    let e' ← normalise base e
+    Denote.trace do return "normalised"
+    let τ ← inferType e'
+    Denote.trace do return s!"type {← ppExpr τ}"
+    let mut typed : Array (Validate.Reading × Denote.Denotation) := #[]
+    for r in rs do
+      match ← Denote.run rules atoms r with
+      | .ok d =>
+        Denote.trace do return "denoted; typing"
+        if ← Denote.wellTyped d.term d.insts (some τ) then typed := typed.push (r, d)
+        else if debug then
+          IO.eprintln s!"validate: ill typed {r.text} = {← withOptions (pp.explicit.set · true) (ppExpr (← instantiateMVars d.term))} : {← ppExpr τ}"
+      | .error msg =>
+        if debug then IO.eprintln s!"validate: no denotation of {r.text}: {msg}"
+    return (e', typed)
+  let mctx ← readThe Meta.Context
+  let mst ← getThe Meta.State
+  let denoted : Except Exception ((Expr × Array (Validate.Reading × Denote.Denotation)) × Meta.State) ←
+    (Core.tryCatchRuntimeEx
+      (do return .ok (← withCurrHeartbeats (Denote.withDepth (body.run ctx) |>.run mctx mst)))
+      (fun ex => return .error ex) : CoreM _)
+  -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering,
+  -- reading it back and denoting it took (`Imprimatur.Timing`).
   if ← Timing.on then
     Timing.event "formula" ((← IO.monoMsNow) - t0)
       [("key", toJson ctx.key), ("view", toJson ctx.view), ("render_ms", toJson renderMs),
+       ("parse_ms", toJson (tParsed - t0)), ("denote_ms", toJson ((← IO.monoMsNow) - tParsed)),
        ("tokens", toJson ts.size), ("steps", toJson steps), ("readings", toJson rs.size),
        ("tex", toJson (String.ofList (tex.toList.take 120)))]
+  let (e', typed) ← match denoted with
+    | .ok (r, st) => set st; pure r
+    | .error ex =>
+      if debug then IO.eprintln s!"validate: denoting {tex} failed: {← ex.toMessageData.toString}"
+      problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
+      return
+  -- Free variables that print alike: the text cannot be read, and is
+  -- reported below for that, not as a misread.
+  let lctx ← getLCtx
+  let free := atoms.filterMap fun a => match a.fvar with
+    | some f => if lctx.contains f then some (f, a.tex) else none
+    | none => none
+  let alike := free.any fun (f, t) => free.any fun (f', t') => f != f' && t == t'
   -- IMPRIMATUR_VALIDATE_READINGS=1 prints each formula, as one tab-separated
-  -- line: its key, its TeX, the readings the parser found, and the reading
-  -- the renderer expected (the about paper's example diagram draws them).
+  -- line: its key, its TeX, the readings the parser found, and what the
+  -- well-typed ones denote (the about paper's example diagram draws them).
   if (← (IO.getEnv "IMPRIMATUR_VALIDATE_READINGS" : IO _)) == some "1" then
-    IO.eprintln s!"reading\t{(← read).key}\t{tex}\t{" | ".intercalate (rs.toList.map (·.text))}\t{expected.text}"
+    let dens ← typed.mapM fun (r, d) => do pure s!"{r.text} = {← ppExpr (← instantiateMVars d.term)}"
+    IO.eprintln s!"reading\t{ctx.key}\t{tex}\t{" | ".intercalate (rs.toList.map (·.text))}\t{" | ".intercalate dens.toList}"
   -- IMPRIMATUR_VALIDATE_STATS=1 counts the questions each formula asks, and
   -- the heartbeats (small allocations, in thousands) reading it back took.
   if (← (IO.getEnv "IMPRIMATUR_VALIDATE_STATS" : IO _)) == some "1" then
     let h₁ ← IO.getNumHeartbeats
     let log := (Validate.readBackLog g ts (← sortOf e)).2
-    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats key {(← read).key}: {tex}"
+    IO.eprintln s!"stats {ts.size} tokens {log.size} questions {(h₁ - h₀) / 1000} kbeats key {ctx.key}: {tex}"
     if log.size > 100000 then for l in log do IO.eprintln s!"  read {l}"
-  -- Two readings are two readings, whatever else was dropped.
-  if rs.size ≥ 2 then
+  -- Two well-typed readings are two readings, whatever else was dropped.
+  if typed.size ≥ 2 then
     -- IMPRIMATUR_VALIDATE_DEBUG=1 shows what was read where, and the atoms'
     -- sorts, which are what tell two readings apart.
     if (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
       IO.eprintln s!"validate: ambiguous {ts} as {← sortOf e}"
       for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
       for p in leaves do IO.eprintln s!"  atom {p.name} : {p.sort}"
-    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {rs[0]!.text} and as {rs[1]!.text}")
+    problems.modify (·.push s!"ambiguous: ${tex}$ reads as {typed[0]!.1.text} and as {typed[1]!.1.text}")
   else if flags.over then
     problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
   else if flags.pruned then
@@ -419,10 +641,22 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       for l in (Validate.readBackLog g ts (← sortOf e)).2 do IO.eprintln s!"  read {l}"
       for (p, b) in g.prods do IO.eprintln s!"  {p.name} : {p.sort} @{p.prec} := {repr b}"
     problems.modify (·.push s!"not validated, as the notation does not read it back: ${tex}$")
-  else if !expected.matches rs[0]! then
-    -- The one reading is not what was rendered: the grammar does not follow
-    -- the renderer here, or the emitter left out parentheses a reader needs.
-    problems.modify (·.push s!"misread: ${tex}$ reads as {rs[0]!.text}, but was rendered from {expected.text}")
+  else if alike then pure ()
+  else if typed.isEmpty then
+    -- Every reading is ill typed: the text names something else.
+    problems.modify (·.push s!"misread: ${tex}$ reads as {rs[0]!.text}, which is not well typed as \
+      `{← ppExpr e}` is")
+  else
+    let (r, d) := typed[0]!
+    -- The one reading is not what was rendered: the emitter left out
+    -- parentheses a reader needs, or the text says something else.
+    unless ← Denote.agrees rules e' d do
+      if debug then
+        let coes := rules.filter Denote.isCoercion
+        let chs := Denote.chainRules rules
+        IO.eprintln s!"validate: misread\n  rendered  {← ppExpr e}\n  as read   {← ppExpr e'}\n  denotes   {← ppExpr (← instantiateMVars d.term)}\n  skeleton  {repr (← Denote.skeleton coes (← instantiateMVars e') #[] chs)}\n  skeleton' {repr (← Denote.skeleton coes (← instantiateMVars d.term) d.coerced chs)}"
+      problems.modify (·.push s!"misread: ${tex}$ reads as {r.text}, that is \
+        `{← ppExpr (← instantiateMVars d.term)}`, but was rendered from `{← ppExpr e}`")
   -- A grammar category's metavariable stands for that category (the BNF
   -- convention: `e ::= e₁\;e₂`), so a variable of another type must not
   -- print as it.
@@ -463,10 +697,6 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
           (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${metavarBase a.tex}$"
         unless (← problems.get).contains p do problems.modify (·.push p)
   -- Free variables that print alike.
-  let lctx ← getLCtx
-  let free := atoms.filterMap fun a => match a.fvar with
-    | some f => if lctx.contains f then some (f, a.tex) else none
-    | none => none
   let mut seen : Array (FVarId × String) := #[]
   for (f, t) in free do
     -- Variables nothing uses are all `_`.
@@ -479,41 +709,6 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom) (expected : Validate.Read
       unless (← problems.get).contains p do problems.modify (·.push p)
     unless seen.any (·.1 == f) do seen := seen.push (f, t)
 
-/-- Set the frame of the form being rendered, if its reading is expected. -/
-def expectFrame (f : Option (Array Validate.Reading → Validate.Reading)) : RenderM Unit := do
-  if let some ex := (← read).expect then ex.modify ({ · with frame := f })
-
-/-- The form being rendered is an atom, which reads as its TeX. -/
-def expectLeaf (t : String) : RenderM Unit := expectFrame (some fun _ => .node t [])
-
-/-- The form being rendered is a built-in form (`Validate.builtins`) with
-these bound variables and `n` subterms. -/
-def expectForm (name : String) (vars : Array String) (n : Nat) : RenderM Unit :=
-  expectFrame (some fun kids =>
-    if kids.size == n then Validate.mkReading name none (vars.map (.node · []) ++ kids)
-    else Validate.anyReading)
-
-/-- The form being rendered is an application of `pre` and the subterms. -/
-def expectApp (pre : Array String) : RenderM Unit :=
-  expectFrame (some fun kids =>
-    -- A constant applied only to implicit arguments and proofs shows no
-    -- argument, so it reads as an atom: `Fin.castSucc`, not an application.
-    if kids.isEmpty && pre.size == 1 then .node pre[0]! []
-    else Validate.mkReading "application" none (pre.map (.node · []) ++ kids))
-
-
-/-- What a `let` or `have` stands for: its body with the value put in for
-the variable. A statement means the same with the definition unfolded, and
-so renders in the paper's notation, where Lean's text for the `let` would
-not (#135). Metadata is dropped the same way. -/
-def unLet? (e : Expr) : Option Expr :=
-  match e with
-  | .letE _ _ v b _ => some (b.instantiate1 v)
-  | .mdata _ e => some e
-  | .app (.app (.app (.app (.const ``letFun _) _) _) v) f =>
-    some (match f with | .lam _ _ b _ => b.instantiate1 v | _ => .app f v)
-  | _ => none
-
 mutual
 
   /-- Render an expression. A formula a view renders (not a part of one) is
@@ -522,26 +717,12 @@ mutual
     let ctx ← read
     if let (some problems, none) := (ctx.problems, ctx.atoms) then
       let atoms ← IO.mkRef #[]
-      let ex ← IO.mkRef ({} : Expect)
       let t0 ← IO.monoMsNow
-      let d ← withReader (fun c => { c with atoms := some atoms, expect := some ex }) (render e)
+      let d ← withReader (fun c => { c with atoms := some atoms }) (render e)
       let renderMs := (← IO.monoMsNow) - t0
-      validate e d (← atoms.get) (((← ex.get).kids[0]?).getD Validate.anyReading) problems renderMs
+      validate e d (← atoms.get) problems renderMs
       return d
-    let some ex := ctx.expect | renderForm e
-    -- This form's subterms' readings are collected afresh, and its own is
-    -- added to its parent's.
-    let saved ← ex.get
-    ex.set {}
-    let d ← try renderForm e catch err =>
-      ex.set { saved with kids := saved.kids.push Validate.anyReading }
-      throw err
-    let st ← ex.get
-    let r := match st.frame with
-      | some f => f st.kids
-      | none => Validate.anyReading
-    ex.set { saved with kids := saved.kids.push r }
-    return d
+    renderForm e
 
   /-- Render an expression, without reading it back. The chain of invisible
   coercions above it reaches only a coercion's rule; anything else is
@@ -570,6 +751,11 @@ mutual
       | _ => match e.getAppFn with
         | .const h _ => h
         | _ => .anonymous
+    -- `∃ h : p, q` over a proof the body does not mention is `p ∧ q`, before
+    -- any rule for `∃` binds `h` as a variable and loses the hypothesis.
+    if e.isAppOfArity ``Exists 2 then
+      if let .lam _ t b _ := e.appArg! then
+        if (← isProp t) && !b.hasLooseBVar 0 then return ← render (mkAnd t b)
     unless head.isAnonymous do
       let bare (r : NotationRule) : Bool :=
         r.pat.vars.any (fun v => r.template.trimAscii.toString == s!"#{v}")
@@ -600,7 +786,6 @@ mutual
           if let (false, some ch') := (rest.isEmpty, below noChain) then
             if let some d ← r.tryMatchK pre (fun bs => (fire ch' pre bs).run ctx) then
               let d ← apply d rest
-              expectFrame none
               return d
       if head == ``Exists then
         if let some d ← renderExists e then return d
@@ -611,15 +796,14 @@ mutual
         | some (_, t) => pure t
         | none => do varNameT (← f.getUserName) (← f.getType)
       logAtom t (← sortOf e) (fvar := some f) (name := (← f.getUserName).eraseMacroScopes.toString)
-      expectLeaf t
+        (expr := some e)
       return .tex t
-    | .sort .zero => logAtom "\\mathrm{Prop}" "Sort"; expectLeaf "\\mathrm{Prop}"; return .tex "\\mathrm{Prop}"
-    | .sort _ => logAtom "\\mathrm{Type}" "Sort"; expectLeaf "\\mathrm{Type}"; return .tex "\\mathrm{Type}"
-    | .lit (.natVal n) => logAtom (toString n) "Nat"; expectLeaf (toString n); return .tex (toString n)
+    | .sort .zero => logAtom "\\mathrm{Prop}" "Sort" (expr := some e); return .tex "\\mathrm{Prop}"
+    | .sort _ => logAtom "\\mathrm{Type}" "Sort" (expr := some e); return .tex "\\mathrm{Type}"
+    | .lit (.natVal n) => logAtom (toString n) "Nat" (expr := some e); return .tex (toString n)
     | .lit (.strVal s) =>
       let t := s!"\\text\{``{TeX.escape s}''}"
-      logAtom t "String"
-      expectLeaf t
+      logAtom t "String" (expr := some e)
       return .tex t
     | .forallE .. => renderForall e
     | .lam n t b bi =>
@@ -641,7 +825,6 @@ mutual
         -- branches of `if h : c then a else b` are `a` and `b`.
         if ← isProp t then
           let body ← render e'
-          expectFrame (some fun kids => kids[0]?.getD Validate.anyReading)
           return body
         -- `fun p => match p with | (a, b) => e` destructures its argument:
         -- it is written with the pattern for its binder, `λ (a, b).\, e`.
@@ -649,12 +832,10 @@ mutual
         let body ← render e'
         logAtom (← varNameT n t) "*" (isVar := true)
         let v ← varNameT n t
-        expectForm "λ" #[v] 1
         return .node 0 #[.tex s!"\\lambda {v}.\\,", .child 0 body]
     | .const h _ =>
       let t := constTeX (← read).strip h
-      logAtom t (← sortOf e)
-      expectLeaf t
+      logAtom t (← sortOf e) (expr := some e)
       return .tex t
     | .app .. =>
       if ← isMatcherApp e then
@@ -672,9 +853,8 @@ mutual
           let shown ← args.filterM fun a => do return !(← isProof a)
           let sorts ← shown.mapM fun a => (shownSortOf a : MetaM String)
           let sort := sorts.foldr (fun a acc => s!"({a} → {acc})") (← sortOf e)
-          logAtom t sort
+          logAtom t sort (expr := some f)
           let d ← apply (.tex t) args
-          expectApp #[t]
           return d
         | none => delab e
       | .fvar _ =>
@@ -690,20 +870,16 @@ mutual
           for (a, i) in e.getAppArgs.toList.zip (List.range e.getAppNumArgs) do
             if i > 0 then parts := parts.push (.tex ", ")
             parts := parts.push (.child 0 (← render a))
-          expectApp #[]
           return .node Doc.maxPrec (parts.push (.tex "}"))
         if (← read).callVars then
           let mut parts : Array Doc := #[.child Doc.maxPrec (← render f)]
           for a in e.getAppArgs do
             parts := parts ++ #[.tex "(", .child 0 (← render a), .tex ")"]
-          expectApp #[]
           return .node Doc.maxPrec parts
         let d ← apply (← render f) e.getAppArgs
-        expectApp #[]
         return d
       | .lam .. =>
         let d ← apply (← render f) e.getAppArgs
-        expectApp #[]
         return d
       | _ => delab e
     | _ => delab e
@@ -736,7 +912,12 @@ mutual
       | fillTemplate r bs #[] e
     let xs := xs.push xv
     let ctx ← read
-    match ← r.tryMatchK body (fun bs' => do return some (← (foldBinders r bs' x p xs body).run ctx)) with
+    -- A binder over a proof is a hypothesis, not a variable (`renderExists`
+    -- writes `∃ h : p, q` as `p ∧ q`): the fold stops before it.
+    match ← r.tryMatchK body (fun bs' => do
+        if let some (_, xv') := bs'.find? (·.1 == x) then
+          if ← isProp (← inferType xv') then return none
+        return some (← (foldBinders r bs' x p xs body).run ctx)) with
     | some d => return d
     | none => fillTemplate r bs #[(x, xs)] e
 
@@ -751,10 +932,7 @@ mutual
     -- A template that is one variable shows that variable as it is.
     if let #[.inr v] := parts then
       if let some a := get v then
-        let d ← render a
-        -- A coercion is invisible: its reading is its argument's.
-        expectFrame (some fun kids => kids[0]?.getD Validate.anyReading)
-        return d
+        return ← render a
     -- Flatten a chain: `a ∘ (b ∘ c)` becomes one n-ary node.
     let operands ← if r.flatten && r.pat.binder?.isNone then collect r e else pure #[]
     let topHoles := Id.run do
@@ -815,13 +993,6 @@ mutual
           | none => out := out.push (.tex s!"?{v}")
         holeIdx := holeIdx + 1
         if depth == 0 then topIdx := topIdx + 1
-    -- The reading: the rule's production with its holes' readings. Chains,
-    -- folded binders and synonyms are left unchecked.
-    match (if r.flatten || !multi.isEmpty then none else Validate.ofRule r) with
-    | some p =>
-      let n := (p.order.map (·.size)).getD 0
-      expectFrame (some fun kids => if kids.size == n then Validate.mkReading p.name p.order kids else Validate.anyReading)
-    | none => expectFrame none
     return .node r.prec out
 
   /-- The operands of a chain of a flattening rule. -/
@@ -852,10 +1023,8 @@ mutual
         if mem.isAppOfArity ``Membership.mem 5 && mem.appArg! == x then
           let s ← render mem.appFn!.appArg!
           let p ← render body.appArg!
-          expectForm "bounded ∃" #[v] 2
           return some (.node 0 #[.tex s!"\\exists {v} \\in ", .child 50 s, .tex ",\\ ", .brk, .child 0 p])
       let p ← render body
-      expectForm "∃" #[v] 1
       return some (.node 0 #[.tex s!"\\exists {v},\\ ", .brk, .child 0 p])
 
   /-- `∀` and implication. -/
@@ -874,7 +1043,6 @@ mutual
       let arrow := if isProp then "\\implies" else "\\to"
       let lhs ← render t
       let rhs ← render b
-      expectForm (if isProp then "implication" else "function type") #[] 2
       return .node 25 #[.child 26 lhs, .brk, .tex s!" {arrow} ", .child 25 rhs]
     withLocalDecl n bi t fun x => do
       let body := b.instantiate1 x
@@ -954,7 +1122,6 @@ mutual
     withDestructuring x e fun pat rhs => (do
       let p ← withReader (fun c => { c with inPattern := true }) (render pat)
       let b ← render rhs
-      expectForm "λ" #[] 2
       return some (.node 0 #[.tex "\\lambda ", .child Doc.maxPrec p, .tex ".\\,", .child 0 b])
       : RenderM (Option Doc)).run ctx
 
@@ -970,7 +1137,7 @@ mutual
       let msg := s!"not validated: `{line}` is Lean's own text for a subterm nothing renders, \
         in which the paper's notation does not apply"
       problems.modify fun ps => if ps.contains msg then ps else ps.push msg
-    logAtom t (← sortOf e)
+    logAtom t (← sortOf e) (expr := some e)
     return .text t line.length
 
 end

@@ -5,6 +5,33 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Translation validation compares Lean terms (#144). A reading of a
+  formula's TeX now *denotes* a term (`Imprimatur.Denote`): each rule's
+  pattern instantiated at its children, metavariables where the notation
+  writes nothing, Lean's coercions where types require them. A formula is
+  faithful when exactly one of its readings is well typed at the formula's
+  type and that reading denotes the formula, up to reducible unfolding and
+  what the notation declares invisible (synonyms, coercions, instance
+  binders, proofs). The renderer's description of its own output
+  (`Render.Expect`, the `⁇` wildcard, `Reading.matches`) is gone, and with
+  it #41: `∀`, `match`, chains, folded binders and synonyms are checked
+  like everything else. A reading the type checker rejects no longer counts
+  as an ambiguity (`|S\,n|` as a set's cardinality when `S\,n` is a
+  finset). The model's `Validator` takes `typed` and `denotes` in place of
+  `expect`; `SpliceModel.pollack` and `validated_sound` are replaced by
+  `Validator.accepts_readsPart`. Found by the new check: in a `flatten`
+  rule for `∃`, folding ran through a binder over a proof and lost the
+  hypothesis (`∃ n, ∃ _ : 0 < n, p` was written `∃ n, x.\, p`); `∃ h : p, q`
+  is now `p ∧ q` before any rule for `∃` applies, and a fold stops at a
+  proof. `IMPRIMATUR_VALIDATE_DEBUG=1` reports why a reading has no
+  denotation or is ill typed, and what a misread denotes;
+  `IMPRIMATUR_DENOTE_TRACE=1` prints each step. On the LLMbda paper (345
+  formulas) denotation takes 3.8 s in all, 6 ms a formula at the median,
+  and reports four formulas: three where the text hides both `EvalResult.ok`
+  and `LabelledValue.toExpr` around one variable, whose type a reader cannot
+  then recover, and one rule over a λ with a constrained pattern that the
+  denotation does not cover yet.
+
 - The nightly CI checks out con-leche at the commit `papers/con-leche` is
   written against (7cb7a45, its README's), where before it cloned `master`,
   which on 2026-11-20 deleted two of the theorems the paper cites and so

@@ -91,7 +91,7 @@ taken, so `#k'` is variable `k` followed by a prime.
 | `sep := ", "` | the text between the variables of a folded binder rule |
 | `assoc := left` | which side of a chain at the rule's own precedence needs no parentheses: `left` (the default), `right`, or `none` (both sides parenthesised, as for `∧` next to `∨` in some papers) |
 | `(variant := "v")` | an alternative notation, chosen per block with `notation=v` |
-| `synonym` | the rule writes an expression as another rule writes one it equals, by definition or by a lemma (`Nat.card R` as `\|R\|`, like `Fintype.card R`), so reading a formula back identifies the two |
+| `synonym` | the rule writes an expression as another rule writes one it equals, by definition or by a lemma (`Nat.card R` as `\|R\|`, like `Fintype.card R`); reading back takes the rule as an equation, and rewrites the expression by it before comparing |
 
 **Parentheses** are added from precedences:
 
@@ -267,7 +267,10 @@ warning[unfaithful-rendering]: Cats.lower_eq (prose): not plain: $\text{\$}\math
 
 **Synonyms.** Two rules may write equal things alike on purpose: `Nat.card R`
 and `Fintype.card R` as `|R|`, or a definition and what it unfolds to. Mark
-one `synonym`, and the two readings are one.
+one `synonym`: reading back takes it as an equation, from its pattern to what
+its template reads back as in the rest of the notation, and rewrites a
+formula by it before asking whether the text denotes the formula. Lean does
+not check the equation; it is the paper's word, as the notation is.
 
 ### Metavariables
 

@@ -1,5 +1,15 @@
 # Plan: Pollack-consistency, proved
 
+> **Status (2026-11-23, #144).** The matcher and the renderer's expected
+> readings described below are gone. A reading now *denotes* a Lean term
+> (`Imprimatur.Denote`), and a formula is validated when exactly one of its
+> readings is well typed and that one denotes the formula, up to reducible
+> unfolding and what the notation declares invisible; the model's
+> `Validator` takes `typed` and `denotes` as parameters, and
+> `accepts_readsPart` replaces `pollack` and `validated_sound`. DESIGN
+> §18.4 is current; this document predates it where it speaks of `Expect`,
+> `matches` or `⁇`.
+
 **Status: done**, on branch `pollack-plan` (phases A–G), with these changes
 to the plan below, each taken because the proof asked for it:
 
