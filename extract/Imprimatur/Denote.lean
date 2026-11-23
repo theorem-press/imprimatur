@@ -923,7 +923,11 @@ def agrees (rules : Array NotationRule) (orig : Expr) (d : Denotation) : MetaM B
   let r ← observing? <| withDepth <| approxDefEq do
     unless ← withReducible (isDefEq orig d.term) do throwError "differ"
   if r.isSome then return true
-  sameSkeleton rules orig d.term d.coerced
+  let bySkeleton ← sameSkeleton rules orig d.term d.coerced
+  -- IMPRIMATUR_VALIDATE_DEBUG=1 names the formulas the skeleton alone accepts.
+  if bySkeleton && (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+    IO.eprintln s!"validate: by skeleton: {← ppExpr orig}\n  denoted {← ppExpr (← instantiateMVars d.term)}"
+  return bySkeleton
 
 end Denote
 
