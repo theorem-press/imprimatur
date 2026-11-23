@@ -1464,9 +1464,18 @@ block is.
   does not fit, Lean's own coercion is inserted (`Meta.coerce?`, or a
   coercion rule of the notation whose instances exist), the operands of a
   rule whose holes share a type brought to one type first, as `binop%`
-  does; the whole reading is fit to the formula's type the same way, so a
-  variable `x` written for `Tm.var x` goes through the coercion rule that
-  hides the constructor. A reading is *well typed* when its denotation
+  does, and as it does for `a ++ b`, whose holes the default instance of
+  `HAppend` ties; the whole reading is fit to the formula's type the same
+  way, so a variable `x` written for `Tm.var x` goes through the coercion
+  rule that hides the constructor. A fit that a sibling may decide is put
+  off until the node's other arguments, or the binder's scope, have been
+  read: an operand of known type where the type expected is still open
+  (`"and" :: y`, where `y` fixes the element type and `"and"` is then
+  coerced to it), and a bound variable at a use where a hidden constructor
+  could take it to the type expected (`stmt(k) = S` for `W.stmt k = some
+  S`, with `S` a statement by its next use); a variable so used at several
+  types takes the one at which its other uses fit. A reading is *well typed*
+  when its denotation
   type-checks at the formula's type, with its instances found. A reading
   that is not, but has a subtree shaped as a `synonym` rule's template
   reads back, is read again with that subtree as the synonym's pattern:

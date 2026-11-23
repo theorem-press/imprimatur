@@ -101,7 +101,44 @@ unsafe def cases (env : Environment) : IO (Array (String × Bool)) := runMeta en
       out := out.push ("denote/forall-agrees", ← Denote.agrees rules orig d)
     -- A rule's node that no rule reads is no denotation.
     out := out.push ("denote/unknown", (← denote (n "Nowhere.nothing" [l "a"])).isNone)
-    return out
+    -- With `Option.some` hidden by a rule: `∃ S, g S = S ∧ S = a`, where
+    -- `g : ℕ → Option ℕ`, reads with `S` a natural, as its second use has
+    -- it, and the first use through `some`; the first use alone would make
+    -- `S` an option, and the second ill typed.
+    let hide (c : Name) (vars : Array (Name × String)) (template : String) (sort : String)
+        (prec : Nat := 1024) : NotationRule :=
+      { pat := .app c (vars.map (.var ·.1)), template, prec, assoc := "left", sort, holeSorts := vars }
+    let rules' := rules.push (hide ``Option.some #[(`x, "*")] "#x" "*")
+      |>.push (hide ``HAppend.hAppend #[(`a, "?α"), (`b, "?β")] "#a \\mathbin{+\\!\\!+} #b" "?α" 65)
+    let optNat ← mkAppM ``Option #[nat]
+    let listInt ← mkAppM ``List #[int]
+    let gTy ← mkArrow nat optNat
+    let more : Array (String × Bool) ← withLocalDeclD `g gTy fun g => withLocalDeclD `ys listInt fun ys => do
+      let mut out : Array (String × Bool) := #[]
+      let atoms' := atoms.push { tex := "g", sort := "*", fvar := some g.fvarId!, name := "g", expr := some g }
+        |>.push { tex := "ys", sort := "*", fvar := some ys.fvarId!, name := "ys", expr := some ys }
+      let r := n "∃" [l "S", n "And" [n "Eq" [n "app" [l "g", l "S"], l "S"], n "Eq" [l "S", l "a"]]]
+      match ← Denote.run rules' atoms' r (some prop) with
+      | .error _ => out := out.push ("denote/postponed-some", false)
+      | .ok d =>
+        out := out.push ("denote/postponed-some-typed", ← Denote.wellTyped d.term d.insts (some prop))
+        let orig ← withLocalDeclD `S nat fun S => do
+          let eq1 ← mkAppM ``Eq #[mkApp g S, ← mkAppM ``Option.some #[S]]
+          let eq2 ← mkAppM ``Eq #[S, a]
+          mkAppM ``Exists #[← mkLambdaFVars #[S] (mkAnd eq1 eq2)]
+        out := out.push ("denote/postponed-some-agrees", ← Denote.agrees rules' orig d)
+      -- `[a] ++ ys` with `ys : List ℤ`: the holes of `++` have their own
+      -- type variables, which the default instance of `HAppend` ties, so
+      -- the literal's element is cast to ℤ.
+      let r := n "HAppend.hAppend" [n "list" [l "a"], l "ys"]
+      match ← Denote.run rules' atoms' r (some listInt) with
+      | .error _ => out := out.push ("denote/default-group", false)
+      | .ok d =>
+        out := out.push ("denote/default-group-typed", ← Denote.wellTyped d.term d.insts (some listInt))
+        let orig ← mkAppM ``HAppend.hAppend #[← mkAppM ``List.cons #[← cast a, ← mkAppOptM ``List.nil #[some int]], ys]
+        out := out.push ("denote/default-group-agrees", ← Denote.agrees rules' orig d)
+      return out
+    return out ++ more
 
 /-- All the denotation tests. -/
 unsafe def tests : TestM Unit := group "denote" do

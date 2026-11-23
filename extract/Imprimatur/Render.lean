@@ -356,9 +356,15 @@ def synonymEquation (g : Validate.Grammar) (r : NotationRule) : RenderM (Option 
   -- The variables' types, from the pattern: `Fintype a` makes `a` a type.
   let insts ← IO.mkRef #[]
   let coerced ← IO.mkRef #[]
-  let dctx : Denote.Ctx := { rules, coercions := rules.filter Denote.isCoercion, atoms := #[], insts, coerced }
+  let postponed : IO.Ref (Array (Expr × Expr × Nat × Bool)) ← IO.mkRef #[]
+  let dctx : Denote.Ctx := { rules, coercions := rules.filter Denote.isCoercion, atoms := #[], insts, coerced, postponed }
   let mvars ← vars.mapM fun _ => mkFreshExprMVar none
-  let lhs ← try (Denote.ofPat r.pat (vars.zip mvars)).run dctx catch ex =>
+  -- The pattern's variables take the types the pattern gives them: what
+  -- `ofPat` put off is resolved before they are read.
+  let lhs ← try (do
+      let lhs ← Denote.ofPat r.pat (vars.zip mvars)
+      Denote.resolvePostponed (force := true)
+      instantiateMVars lhs : Denote.DenoteM Expr).run dctx catch ex =>
     if debug then IO.eprintln s!"validate: synonym {r.pat.head}: pattern: {← ex.toMessageData.toString}"
     return none
   discard <| inferType lhs

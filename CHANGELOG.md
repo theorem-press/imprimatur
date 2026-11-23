@@ -5,6 +5,19 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The denotation of a reading puts off a fit that a sibling may decide
+  (DESIGN §18.4): an operand of known type where the type expected is
+  still open (`"and" :: y`, where `y` fixes the element type and `"and"`
+  then goes through the rule that hides `Tok.kw`), and a bound variable
+  at a use where a hidden constructor could take it to the type expected
+  (`stmt(k) = S` for `W.stmt k = some S`, with `S` a statement by its next
+  use); a variable so used at several types takes the one at which its
+  other uses fit. The holes of an operator whose class has a default
+  instance are brought to one type as that instance has it (`a ++ b`, as
+  Lean's `binop%` does), so `xs ++ [".}"]` reads with the literal's
+  element coerced. The about paper, whose notation hides `Option.some`
+  and the token constructors, had 47 formulas reported for these; it now
+  checks clean.
 - Translation validation compares Lean terms (#144). A reading of a
   formula's TeX now *denotes* a term (`Imprimatur.Denote`): each rule's
   pattern instantiated at its children, metavariables where the notation
