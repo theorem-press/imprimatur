@@ -628,7 +628,8 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     unless ← Denote.agrees rules e' d do
       if debug then
         let coes := rules.filter Denote.isCoercion
-        IO.eprintln s!"validate: misread\n  rendered  {← ppExpr e}\n  as read   {← ppExpr e'}\n  denotes   {← ppExpr (← instantiateMVars d.term)}\n  skeleton  {repr (← Denote.skeleton coes (← instantiateMVars e'))}\n  skeleton' {repr (← Denote.skeleton coes (← instantiateMVars d.term) d.coerced)}"
+        let chs := Denote.chainRules rules
+        IO.eprintln s!"validate: misread\n  rendered  {← ppExpr e}\n  as read   {← ppExpr e'}\n  denotes   {← ppExpr (← instantiateMVars d.term)}\n  skeleton  {repr (← Denote.skeleton coes (← instantiateMVars e') #[] chs)}\n  skeleton' {repr (← Denote.skeleton coes (← instantiateMVars d.term) d.coerced chs)}"
       problems.modify (·.push s!"misread: ${tex}$ reads as {r.text}, that is \
         `{← ppExpr (← instantiateMVars d.term)}`, but was rendered from `{← ppExpr e}`")
   -- A grammar category's metavariable stands for that category (the BNF

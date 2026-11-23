@@ -128,6 +128,11 @@ def synthPendingInsts : DenoteM Unit := do
     | some (some v) => discard <| isDefEq (mkMVar m) v
     | _ => pure ()
 
+/-- IMPRIMATUR_DENOTE_TRACE=1 prints each step of a denotation, to see
+where one that exhausts its budget was. -/
+def trace (msg : MetaM String) : MetaM Unit := do
+  if (← (IO.getEnv "IMPRIMATUR_DENOTE_TRACE" : IO _)) == some "1" then IO.eprintln s!"denote: {← msg}"
+
 /-- A fresh metavariable for a binder the notation does not write. -/
 def implicitMVar (d : Expr) (bi : BinderInfo) : DenoteM Expr := do
   let m ← mkFreshExprMVar d
@@ -146,6 +151,7 @@ mutual
   else (if `coerce`) through a coercion rule of the notation whose result
   fits. -/
   partial def fit (a d : Expr) (coerce : Bool := true) : DenoteM Expr := do
+    trace do return s!"fit {← ppExpr a} : {← ppExpr (← inferType a)} to {← ppExpr d}"
     let ta ← inferType a
     -- A value where a function from a proof is expected, before `ta`, which
     -- may be open, is unified with the function type.
@@ -194,6 +200,7 @@ mutual
   notation (once: `coerced`). -/
   partial def applyArgs (f : Expr) (args : List Expr) (coerced : Bool := false)
       (skipProofs : Bool := true) : DenoteM Expr := do
+    trace do return s!"apply {← ppExpr f} to {args.length} arguments"
     match args with
     | [] => fillImplicits f
     | a :: rest =>
@@ -356,6 +363,7 @@ def homogenise (r : NotationRule) (bs : Array (Name × Expr)) : DenoteM (Array (
 mutual
   /-- What a reading denotes, under the bound variables in scope. -/
   partial def denote (r : Reading) (bound : List (String × Expr)) : DenoteM Expr := do
+    trace do return s!"reading {r.text}"
     match r with
     | .node name [] => leaf name bound
     | .node name kids => node name kids bound
@@ -461,7 +469,12 @@ mutual
         let rightward : DenoteM Expr := do
           let rev := ops.reverse
           rev.tail!.foldlM (init := rev.head!) fun acc o => step o acc
-        let (first, second) := if r.assoc == "right" then (rightward, leftward) else (leftward, rightward)
+        -- Operands of different types (`(a, b, c)`, where the holes have
+        -- their own type variables) nest to the right, as Lean's notations do.
+        let heterogeneous := (r.holeSorts.filterMap fun (v, so) =>
+          if v == a || v == b then some so else none).toList.eraseDups.length > 1
+        let (first, second) :=
+          if r.assoc == "right" || heterogeneous then (rightward, leftward) else (leftward, rightward)
         let s ← (saveState : MetaM Meta.SavedState)
         try
           return ← first
@@ -585,15 +598,37 @@ mutual
     | _, _ => false
 end
 
-/-- The skeleton of a term, under the notation's coercion rules and the
-coercions `coerced` inserted. Bound variables are de Bruijn indices, so
-skeletons are equal up to renaming. -/
-partial def skeleton (coercions : Array NotationRule) (e : Expr) (coerced : Array (Expr × Expr) := #[]) :
-    MetaM Skel := do
+/-- The operands of a chain of a flattening rule, however it is bracketed. -/
+partial def chainOperands (r : NotationRule) (e : Expr) : MetaM (Array Expr) := do
+  match ← r.tryMatch e with
+  | some bs =>
+    let vs := r.pat.vars
+    match vs[0]?.bind (fun v => bs.find? (·.1 == v)), vs[1]?.bind (fun v => bs.find? (·.1 == v)) with
+    | some (_, a), some (_, b) => return (← chainOperands r a) ++ (← chainOperands r b)
+    | _, _ => return #[e]
+  | none => return #[e]
+
+/-- The rules that flatten a chain, which the notation declares associative. -/
+def chainRules (rules : Array NotationRule) : Array NotationRule :=
+  rules.filter fun r => r.flatten && r.pat.binder?.isNone && !r.synonym
+
+/-- The skeleton of a term, under the notation's coercion rules, its chain
+rules and the coercions `coerced` inserted. Bound variables are de Bruijn
+indices, so skeletons are equal up to renaming; a chain is flat, however
+it was bracketed. -/
+partial def skeleton (coercions : Array NotationRule) (e : Expr) (coerced : Array (Expr × Expr) := #[])
+    (chains : Array NotationRule := #[]) : MetaM Skel := do
   let e := e.consumeMData
   -- A coercion Lean inserted is its argument.
   for (c, a) in coerced do
-    if (← instantiateMVars c) == e then return ← skeleton coercions (← instantiateMVars a) coerced
+    if (← instantiateMVars c) == e then return ← skeleton coercions (← instantiateMVars a) coerced chains
+  -- A chain is its operands, flat.
+  if !e.hasLooseBVars then
+    for r in chains do
+      if (← r.tryMatch e).isSome then
+        let ops ← chainOperands r e
+        if ops.size ≥ 3 then
+          return .node s!"chain {r.pat.head}" (← ops.toList.mapM (skeleton coercions · coerced chains))
   match e with
   | .mvar _ => return .any
   | .bvar i => return .node s!"#{i}" []
@@ -607,11 +642,11 @@ partial def skeleton (coercions : Array NotationRule) (e : Expr) (coerced : Arra
     -- is not written where the body uses it either, so a reading has a
     -- metavariable there, which is left out of the skeleton as proofs are.
     if !t.hasLooseBVars && (← (try Meta.isProp t catch _ => pure false)) then
-      return ← skeleton coercions b coerced
-    return .node "λ" [← skeleton coercions b coerced]
-  | .forallE _ t b _ => return .node "∀" [← skeleton coercions t, ← skeleton coercions b coerced]
-  | .letE _ _ v b _ => skeleton coercions (b.instantiate1 v) coerced
-  | .proj _ i x => return .node s!".{i}" [← skeleton coercions x coerced]
+      return ← skeleton coercions b coerced chains
+    return .node "λ" [← skeleton coercions b coerced chains]
+  | .forallE _ t b _ => return .node "∀" [← skeleton coercions t, ← skeleton coercions b coerced chains]
+  | .letE _ _ v b _ => skeleton coercions (b.instantiate1 v) coerced chains
+  | .proj _ i x => return .node s!".{i}" [← skeleton coercions x coerced chains]
   | .app .. =>
     let f := e.getAppFn
     if let .mvar _ := f then return .any
@@ -622,7 +657,7 @@ partial def skeleton (coercions : Array NotationRule) (e : Expr) (coerced : Arra
       | .const h _ =>
         -- An invisible coercion is its argument.
         if coercions.any (·.pat.head == h) then
-          if let some (_, #[a]) ← explicitArgsLoose e then return ← skeleton coercions a coerced
+          if let some (_, #[a]) ← explicitArgsLoose e then return ← skeleton coercions a coerced chains
         -- The explicit arguments that are not proofs, by the binders'
         -- types: a proof the notation hides is a metavariable, which says
         -- nothing of itself.
@@ -647,20 +682,22 @@ partial def skeleton (coercions : Array NotationRule) (e : Expr) (coerced : Arra
     let head ← match f with
       | .const h _ => pure h.toString
       | _ => pure ""
-    let kids ← shown.toList.mapM (skeleton coercions · coerced)
+    let kids ← shown.toList.mapM (skeleton coercions · coerced chains)
     let fk ← match f with
       | .const .. => pure []
-      | _ => pure [← skeleton coercions f coerced]
+      | _ => pure [← skeleton coercions f coerced chains]
     return .node head (fk ++ kids)
   | _ => return .node "?" []
 
 /-- Whether two terms have the same skeleton, the second under the
 coercions inserted in it. -/
-def sameSkeleton (coercions : Array NotationRule) (a b : Expr) (coerced : Array (Expr × Expr)) :
+def sameSkeleton (rules : Array NotationRule) (a b : Expr) (coerced : Array (Expr × Expr)) :
     MetaM Bool := do
+  let coercions := rules.filter isCoercion
+  let chains := chainRules rules
   let a ← instantiateMVars a
   let b ← instantiateMVars b
-  return Skel.eq (← skeleton coercions a) (← skeleton coercions b coerced)
+  return Skel.eq (← skeleton coercions a #[] chains) (← skeleton coercions b coerced chains)
 
 /-- Whether a denotation is well typed at `τ`: it type-checks, its type
 unifies with `τ`, and each instance whose type is known is found. The
@@ -689,7 +726,7 @@ def agrees (rules : Array NotationRule) (orig : Expr) (d : Denotation) : MetaM B
   let r ← observing? <| withDepth <| approxDefEq do
     unless ← withReducible (isDefEq orig d.term) do throwError "differ"
   if r.isSome then return true
-  sameSkeleton (rules.filter isCoercion) orig d.term d.coerced
+  sameSkeleton rules orig d.term d.coerced
 
 end Denote
 
