@@ -165,6 +165,10 @@ A wrapper command `imprimatur` runs the whole flow:
 - `imprimatur build` runs scan, then export, then apply. With `--timing`,
   both programs log where the time goes to `.imprimatur/timing.jsonl`, and
   the run ends with a summary naming the slowest entries, views and formulas.
+  With `--log`, the extractor writes what translation validation (§18.4)
+  made of each formula to `.imprimatur/validation.jsonl`, one JSON line
+  each with its TeX, its readings, what the well-typed one denotes, the term
+  it was rendered from and the verdict, and the run ends with the counts.
 - `imprimatur check` runs the same steps without writing, and exits non-zero if
   anything is out of date or fails a trust check.
 

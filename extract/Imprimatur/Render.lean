@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Lean
 import Imprimatur.Timing
+import Imprimatur.ValidationLog
 import Imprimatur.Doc
 import Imprimatur.Trust
 import Imprimatur.TeX
@@ -588,6 +589,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     (problems : IO.Ref (Array String)) (renderMs : Nat := 0) : RenderM Unit := do
   let ctx ← read
   let t0 ← IO.monoMsNow
+  let before := (← problems.get).size
   let tex := d.render 100000
   let ts := Validate.tokenize tex
   if ts.isEmpty then return
@@ -656,6 +658,31 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     (Core.tryCatchRuntimeEx
       (do return .ok (← withCurrHeartbeats (Denote.withDepth (body.run ctx) |>.run mctx mst)))
       (fun ex => return .error ex) : CoreM _)
+  -- IMPRIMATUR_VALIDATION_LOG: the formula, its readings, what the well-typed
+  -- ones denote, the term it was rendered from, and the verdict, which is
+  -- read off the problem this formula added, if any (`Imprimatur.ValidationLog`).
+  let logEvent (typed : Array (Validate.Reading × Denote.Denotation)) (e' : Option Expr) (alike : Bool) :
+      RenderM Unit := do
+    unless ← ValidationLog.on do return
+    let ps ← problems.get
+    let news := ps.extract before ps.size
+    let (verdict, reason) := match news[0]? with
+      | some p =>
+        (if p.startsWith "misread" then "misread" else if p.startsWith "ambiguous" then "ambiguous"
+         else "not validated", p)
+      | none => if alike then ("skipped", "two free variables print alike") else ("validated", "")
+    let dens ← typed.mapM fun (_, d) => do return toJson (← ppExpr (← instantiateMVars d.term)).pretty
+    let now ← IO.monoMsNow
+    let mut fields : List (String × Json) :=
+      [("key", toJson ctx.key), ("view", toJson ctx.view), ("tex", toJson tex), ("verdict", toJson verdict)]
+    unless reason.isEmpty do fields := fields ++ [("reason", toJson reason)]
+    fields := fields ++ [("readings", toJson (rs.map (·.text))), ("typed", toJson (typed.map (·.1.text))),
+      ("denotes", Json.arr dens), ("rendered", toJson (← ppExpr e).pretty)]
+    if let some e' := e' then
+      if e' != e then fields := fields ++ [("normalised", toJson (← ppExpr e').pretty)]
+    fields := fields ++ [("tokens", toJson ts.size), ("steps", toJson steps), ("ms", toJson (now - t0)),
+      ("parse_ms", toJson (tParsed - t0)), ("denote_ms", toJson (now - tParsed))]
+    ValidationLog.event fields
   -- IMPRIMATUR_TIMING: the formula, its sizes, and the time rendering,
   -- reading it back and denoting it took (`Imprimatur.Timing`).
   if ← Timing.on then
@@ -669,6 +696,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
     | .error ex =>
       if debug then IO.eprintln s!"validate: denoting {tex} failed: {← ex.toMessageData.toString}"
       problems.modify (·.push s!"not validated, as reading it back took too long: ${tex}$")
+      logEvent #[] none false
       return
   -- Free variables that print alike: the text cannot be read, and is
   -- reported below for that, not as a misread.
@@ -734,6 +762,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
         IO.eprintln s!"validate: misread\n  rendered  {← ppExpr e}\n  as read   {← ppExpr e'}\n  denotes   {← ppExpr (← instantiateMVars d.term)}\n  skeleton  {repr (← Denote.skeleton coes (← instantiateMVars e') #[] chs)}\n  skeleton' {repr (← Denote.skeleton coes (← instantiateMVars d.term) d.coerced chs)}"
       problems.modify (·.push s!"misread: ${tex}$ reads as {r.text}, that is \
         `{← ppExpr (← instantiateMVars d.term)}`, but was rendered from `{← ppExpr e}`")
+  logEvent typed (some e') alike
   -- A grammar category's metavariable stands for that category (the BNF
   -- convention: `e ::= e₁\;e₂`), so a variable of another type must not
   -- print as it.
