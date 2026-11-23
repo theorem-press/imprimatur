@@ -6,6 +6,7 @@ import Splice.Cli
 import Splice.Checker
 import Splice.Sha256
 import Splice.Timing
+import Splice.ValidationLog
 
 /-!
 # The `imprimatur` command
@@ -36,7 +37,9 @@ How the extractor runs depends on the mode (DESIGN §6.3):
 
 Requests and the bundle go in `.imprimatur/` next to `imprimatur.toml`.
 With `--timing`, so does `timing.jsonl`, where the splicer and the extractor
-record where the time went, summarised at the end (`Splice.Timing`).
+record where the time went, summarised at the end (`Splice.Timing`); with
+`--log`, `validation.jsonl`, where the extractor records what translation
+validation made of each formula, counted at the end (`Splice.ValidationLog`).
 -/
 
 namespace Splice.Wrapper
@@ -45,10 +48,10 @@ open Cli Imprimatur
 
 /-- The usage message. -/
 def usage : String :=
-  "usage: imprimatur [--config FILE] build [--timing] [--no-checker] [--no-install] [apply options]
-       imprimatur [--config FILE] check [--timing] [--no-checker] [--no-install] [check options]
+  "usage: imprimatur [--config FILE] build [--timing] [--log] [--no-checker] [--no-install] [apply options]
+       imprimatur [--config FILE] check [--timing] [--log] [--no-checker] [--no-install] [check options]
        imprimatur [--config FILE] accept KEY... | --all
-       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing] [--no-checker] [--no-install]
+       imprimatur [--config FILE] show KEY [--view VIEW]... [--timing] [--log] [--no-checker] [--no-install]
        imprimatur toolchain install VERSION   (external mode; build does it when none is cached)
        imprimatur [--config FILE] scan|apply|check|strip|migrate-slots ...  (see imprimatur-splice --help)"
 
@@ -180,6 +183,15 @@ def timingSummary (root : System.FilePath) (a : Args) : IO String := do
   let text ← IO.FS.readFile (root / timingFile)
   return Timing.summary text timingFile
 
+/-- The validation log of a run with `--log`, relative to `root`. -/
+def logFile : String := ".imprimatur/validation.jsonl"
+
+/-- The counts of the validation log, if there is one, for the end of the output. -/
+def logSummary (root : System.FilePath) (a : Args) : IO String := do
+  unless a.log do return ""
+  let text ← if ← (root / logFile).pathExists then IO.FS.readFile (root / logFile) else pure ""
+  return ValidationLog.summary text logFile
+
 /-- Load the document, write requests (all of the document's, or `only`
 one key's), and run the extractor. Returns the bundle's path relative to
 `root`, and the extractor's warnings; or, if the document has errors, those
@@ -205,11 +217,16 @@ def runExport (root : System.FilePath) (a : Args) (only : Option (String × Arra
   let bundle := workAbs / "bundle.json"
   -- A run's timing log starts empty; the extractor appends to it.
   let timing := workAbs / "timing.jsonl"
-  let env : Array (String × Option String) ← if a.timing then do
+  let mut env : Array (String × Option String) ← if a.timing then do
       if ← timing.pathExists then IO.FS.removeFile timing
       timingEvent root a "scan" scanMs
       pure #[("IMPRIMATUR_TIMING", some timing.toString)]
     else pure #[]
+  -- So does its validation log, which the extractor alone writes.
+  if a.log then
+    let log := workAbs / "validation.jsonl"
+    if ← log.pathExists then IO.FS.removeFile log
+    env := env.push ("IMPRIMATUR_VALIDATION_LOG", some log.toString)
   let only := only.map fun (k, vs) =>
     (k, if vs.isEmpty then (docViews doc k).getD #["math"] else vs)
   writeAtomic reqs (requests doc only)
@@ -307,7 +324,7 @@ def flow (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × Stri
     let t0 ← IO.monoMsNow
     let (code, out) ← (Cli.run (cliArgs a rel) root : IO _)
     timingEvent root a (if a.command == "build" then "apply" else a.command) ((← IO.monoMsNow) - t0)
-    return (code, warnings ++ out ++ (← timingSummary root a))
+    return (code, warnings ++ out ++ (← timingSummary root a) ++ (← logSummary root a))
 where
   /-- The splicer's arguments for the same run. -/
   cliArgs (a : Args) (bundle : String) : List String :=
@@ -354,7 +371,7 @@ def «show» (root : System.FilePath) (a : Args) : ExceptT String IO (UInt32 × 
     let n := (e.statement.views.filter (wanted.contains ·.1)).size
     return (if e.statement.errors.isEmpty then 0 else 1,
       out ++ s!"show: {n} view{if n == 1 then "" else "s"}, {problems} problem{if problems == 1 then "" else "s"}\n" ++
-        (← timingSummary root a))
+        (← timingSummary root a) ++ (← logSummary root a))
 
 /-- Run `imprimatur` with arguments `args` in directory `root`. -/
 def run (args : List String) (root : System.FilePath) : IO (UInt32 × String) := do

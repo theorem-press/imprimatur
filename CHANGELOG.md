@@ -5,6 +5,16 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `imprimatur build --log` (and `check`, `accept`, `show`) writes what
+  translation validation made of each formula to
+  `.imprimatur/validation.jsonl`: one JSON line each, with its key, view
+  and TeX, the readings the parser found, the well-typed ones and what they
+  denote, the term it was rendered from (and the term as the notation reads
+  it, when that differs), the verdict (`validated`, `misread`, `ambiguous`,
+  `not validated` or `skipped`) with its reason, and the time it took; the
+  run ends with the counts. Until now a validated formula left no trace,
+  and the one per-formula log was on the extractor's stderr, which the
+  splicer does not show.
 - Translation validation compares Lean terms (#144). A reading of a
   formula's TeX now *denotes* a term (`Imprimatur.Denote`): each rule's
   pattern instantiated at its children, metavariables where the notation
