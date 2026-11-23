@@ -405,6 +405,7 @@ def applySynonyms (eqs : Array (NotationRule × AbstractMVarsResult)) (e : Expr)
   let ctx ← read
   Meta.transform e (pre := fun sub => do
     for (r, ab) in eqs do
+      unless sub.getAppFn.isConstOf r.head do continue
       -- The synonym applies where the renderer would have used it: where no
       -- rule it prefers (`candidates`) matches first.
       let preferred ← (candidates r.head).run ctx
@@ -465,10 +466,10 @@ partial def normalise (g : Validate.Grammar) (e : Expr) : RenderM Expr := do
       -- notation declares it associative. A chain whose operands differ in
       -- type (`(a, b, c)`) is bracketed as its types demand, and left.
       for r in chains do
-        if (← r.tryMatch e).isSome then
+        if e.getAppFn.isConstOf r.head && (← r.tryMatch e).isSome then
           let ops ← chainOperands r e
           let ty ← inferType e
-          let homogeneous ← ops.allM fun o => do isDefEq (← inferType o) ty
+          let homogeneous ← ops.allM fun o => do withReducible <| isDefEq (← inferType o) ty
           if ops.size ≥ 3 && homogeneous then
             let ops ← ops.mapM go
             -- The outer application, with its two explicit arguments replaced.
@@ -560,7 +561,7 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
   let mst ← getThe Meta.State
   let denoted : Except Exception ((Expr × Array (Validate.Reading × Denote.Denotation)) × Meta.State) ←
     (Core.tryCatchRuntimeEx
-      (do return .ok (← withCurrHeartbeats ((body.run ctx).run mctx mst)))
+      (do return .ok (← withCurrHeartbeats (Denote.withDepth (body.run ctx) |>.run mctx mst)))
       (fun ex => return .error ex) : CoreM _)
   let (e', typed) ← match denoted with
     | .ok (r, st) => set st; pure r

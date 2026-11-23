@@ -159,6 +159,13 @@ mutual
       if !body.hasLooseBVars && !(← whnf ta).isForall && (← isPropDomain dom) then
         if ← isDefEq ta body then return .lam `h dom a .default
     if ← isDefEq ta d then return a
+    -- A pair where a pair type is expected: each component fit, so that a
+    -- coercion the notation hides inside `(C, V)` is found there.
+    if a.isAppOfArity ``Prod.mk 4 then
+      if let .app (.app (.const `Prod _) α) β := ← whnf d then
+        let x ← fit (a.getArg! 2) α coerce
+        let y ← fit (a.getArg! 3) β coerce
+        return ← mkAppOptM ``Prod.mk #[some α, some β, some x, some y]
     match ← coerce? a d with
     | .some a' =>
       (← read).coerced.modify (·.push (a', a))
@@ -178,7 +185,9 @@ mutual
             if before.contains m then continue
             unless ← m.isAssigned do ok := false
           if ok then return a'
-      catch _ => pure ()
+          trace do return s!"coercion {c.pat.head}: an instance is missing"
+        else trace do return s!"coercion {c.pat.head}: {← ppExpr (← inferType a')} is not {← ppExpr d}"
+      catch ex => trace do return s!"coercion {c.pat.head}: {← ex.toMessageData.toString}"
       (restoreState s : MetaM Unit)
     throwError "{← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
 
