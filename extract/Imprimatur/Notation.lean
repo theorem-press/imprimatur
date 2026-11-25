@@ -63,15 +63,20 @@ partial def Pat.specificity : Pat → Nat
   | .arrow d c => 1 + d.specificity + c.specificity
   | _ => 0
 
-/-- The variables of a pattern, in order. -/
-partial def Pat.vars : Pat → Array Name
-  | .var n => #[n]
-  | .app _ args => args.foldl (· ++ ·.vars) #[]
-  | .constrained p _ => p.vars
-  | .lam x b => #[x] ++ b.vars
-  | .pi x d b => #[x] ++ d.vars ++ b.vars
-  | .arrow d c => d.vars ++ c.vars
-  | _ => #[]
+/-- The variables of a pattern, in order, each once: a bound variable
+(`∃ n, s = f n`) is listed where its binder is, not again where it is used,
+since a rule's parts are one per variable. -/
+partial def Pat.vars (p : Pat) : Array Name :=
+  go p |>.foldl (fun acc v => if acc.contains v then acc else acc.push v) #[]
+where
+  go : Pat → Array Name
+    | .var n => #[n]
+    | .app _ args => args.foldl (· ++ go ·) #[]
+    | .constrained p _ => go p
+    | .lam x b => #[x] ++ go b
+    | .pi x d b => #[x] ++ go d ++ go b
+    | .arrow d c => go d ++ go c
+    | _ => #[]
 
 /-- The variable a binder pattern binds, and the variable its body is, when
 the pattern is `fun x => p`, `∀ x, p` or a constant applied to one of them

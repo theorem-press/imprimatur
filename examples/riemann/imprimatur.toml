@@ -4,6 +4,8 @@ lean_project = "host"
 mode = "external"
 imports = ["Riemann"]
 notation = ["notation/RiemannTeX.lean"]
+# The PDF is published: a rendering that does not read back is an error.
+validate = "error"
 strip_namespaces = ["Riemann", "HurwitzZeta", "WeakFEPair", "Complex", "DirichletCharacter"]
 
 # The public version links every statement to its Lean on GitHub:

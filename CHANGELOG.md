@@ -5,6 +5,13 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `validate = "error"` in `imprimatur.toml` makes a rendering that does not
+  read back as its statement an error of `check`, not a warning; the
+  semantics and riemann examples, whose PDFs the site serves, set it, so a
+  misread fails their builds. A binder rule whose template shows the bound
+  variable twice (`#s \ne -2(#n + 1) \text{ for every } #n`) was read with
+  its parts misassigned, so the clause misread in prose; the two readings
+  of a repeated variable are now one, or `?` when they differ.
 - Under the `url` profile, a dependency's declarations link into their own
   repository: the bundle records a declaration's Lake package, and the
   splicer takes the package's link template from the Lean project's

@@ -62,6 +62,13 @@ def tests : TestM Unit := group "validate" do
   checkEq "extract/validate/reading-left" r (some "app[app[e; f]; e]")
   check "extract/validate/misread-caught"
     (r.any fun r => r != (n "app" [l "e", n "app" [l "f", l "e"]]).text && r == (n "app" [n "app" [l "e", l "f"], l "e"]).text)
+  -- A template that shows a variable twice (`for every n`) reads as one
+  -- child for it, or as `?` when the text names two different variables.
+  let twice := mk `Foo #[(`e, "Tm"), (`a, "Nat")] "#e \\ne -2(#a + 1) \\text{ for every } #a" "Prop"
+  checkEq "extract/validate/repeated-var"
+    (theReading #[twice] atoms "e \\ne -2(a + 1) \\text{ for every } a" "Prop") (some "Foo[e; a]")
+  checkEq "extract/validate/repeated-var-mismatch"
+    (theReading #[twice] atoms "e \\ne -2(a + 1) \\text{ for every } b" "Prop") (some "Foo[e; ?]")
   -- Tokens: control words and symbols, characters; spaces and breaks dropped.
   checkEq "extract/validate/tokens" (tokenize "\\Gamma \\vdash e_{1}\\; x\\,y \\LeanBreak z")
     #["\\Gamma", "\\vdash", "e", "_", "{", "1", "}", "\\;", "x", "\\,", "y", "z"]

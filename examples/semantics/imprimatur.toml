@@ -4,6 +4,8 @@ lean_project = "host"
 mode = "external"
 imports = ["Stlc"]
 notation = ["notation/StlcTeX.lean"]
+# The PDF is published: a rendering that does not read back is an error.
+validate = "error"
 strip_namespaces = ["Stlc"]
 
 # The public version links every block, example and checked sentence to its

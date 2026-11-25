@@ -198,7 +198,7 @@ open_scoped = []                          # e.g. ["Topology", "BigOperators"], f
 notation_packs = ["core", "logic"]        # §7.5
 verbatim_envs = []                        # extra environments the scanner skips (§10.1)
 known_macros = []                         # macros packages define, e.g. ["toprule"] (§10.3)
-validate = true                           # read rendered formulas back (§18.4)
+validate = true                           # read rendered formulas back (§18.4); "error" makes a misread an error
 default_profile = "submission"
 
 [profile.submission]
