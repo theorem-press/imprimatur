@@ -55,6 +55,9 @@ latex_notation ∫ t in S, f => r"\int_{#S} #f \,\mathrm{d}#t" prec := 67
 latex_notation Set.Ioi a => r"(#a, \infty)"
 latex_notation Set.Ioo a b => r"(#a, #b)"
 latex_notation Set.indicator S f => r"\mathbf{1}_{#S}\,#f" prec := 70
+-- A series over the integers names its index set: the pack's `\sum^{\infty}`
+-- is read as a series over ℕ, and the theta function sums over all of ℤ.
+latex_notation ∑' (n : ℤ), f => r"\sum_{#n \in \mathbb{Z}} #f" prec := 67
 -- The theta kernels and Jacobi's theta function.
 latex_notation evenKernel a x => r"K^{+}_{#a}(#x)"
 latex_notation cosKernel a x => r"K^{\cos}_{#a}(#x)"

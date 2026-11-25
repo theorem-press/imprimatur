@@ -41,9 +41,8 @@ Definition 1 (The terms of the theta function).
 ·τ
 Definition 2 (Jacobi’s theta function).
 θ(z, τ) =
-∞
 X
-n
+n∈Z
 θn(z, τ)
 Definition 3 (The terms of its derivative).
 θ′
@@ -51,9 +50,8 @@ n(z, τ) = 2 · π · i · n · θn(z, τ)
 Definition 4 (The derivative of the theta function).
 θ′
 (z, τ) =
-∞
 X
-n
+n∈Z
 θ′
 n(z, τ)
 Definition 5 (A variant of the derivative).
@@ -521,3 +519,8 @@ fined as the integral of t ^ (s - 1) 
 f over Ioi 0
 ζ riemannZeta The Riemann zeta function ζ(s)
 ζ(s) riemannZeta The Riemann zeta function ζ(s)
+P
+n∈Z f tsum
+P
+’ i, f i is the unconditional sum
+of f if it exists, or 0 otherwise

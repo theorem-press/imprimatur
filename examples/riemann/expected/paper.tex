@@ -74,9 +74,9 @@ variant of the derivative, $\theta''$, is what the odd kernel below needs.
 \[\LeanMath{\begin{aligned}\theta_{n}(z, \tau) &= e^{2 \cdot \pi \cdot \mathrm{i} \cdot n \cdot z + \pi \cdot \mathrm{i} \cdot n^{2} \cdot \tau}\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=BwlTMP_aLz]{jacobiTheta₂}{Jacobi's theta function}
+\begin{leandefinition}[def, sum=_WsAhWf3wb]{jacobiTheta₂}{Jacobi's theta function}
 \label{def:jacobiThetau2082}
-\[\LeanMath{\begin{aligned}\theta(z, \tau) &= \sum_{n}^{\infty} \theta_{n}(z, \tau)\end{aligned}}\]
+\[\LeanMath{\begin{aligned}\theta(z, \tau) &= \sum_{n \in \mathbb{Z}} \theta_{n}(z, \tau)\end{aligned}}\]
 \end{leandefinition}
 
 \begin{leandefinition}[def, sum=H022_QD8DO]{jacobiTheta₂'_term}{The terms of its derivative}
@@ -84,9 +84,9 @@ variant of the derivative, $\theta''$, is what the odd kernel below needs.
 \[\LeanMath{\begin{aligned}\theta'_{n}(z, \tau) &= 2 \cdot \pi \cdot \mathrm{i} \cdot n \cdot \theta_{n}(z, \tau)\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=qd3AU_svGq]{jacobiTheta₂'}{The derivative of the theta function}
+\begin{leandefinition}[def, sum=CeW0wOFEex]{jacobiTheta₂'}{The derivative of the theta function}
 \label{def:jacobiThetau2082'}
-\[\LeanMath{\begin{aligned}\theta'(z, \tau) &= \sum_{n}^{\infty} \theta'_{n}(z, \tau)\end{aligned}}\]
+\[\LeanMath{\begin{aligned}\theta'(z, \tau) &= \sum_{n \in \mathbb{Z}} \theta'_{n}(z, \tau)\end{aligned}}\]
 \end{leandefinition}
 
 \begin{leandefinition}[def, sum=NIBqDF-DYM]{HurwitzZeta.jacobiTheta₂''}{A variant of the derivative}
@@ -381,7 +381,7 @@ Mathlib's definitions; in particular, $\zeta$ is Mathlib's
 \texttt{riemannZeta}, whose value at $1$ is the reason for the clause
 $s \ne 1$ above.
 
-\begin{leannotation}[sum=FIhjhd_XeV, dflt=BOiE5tLQbX]{Notation}{Index of notation}
+\begin{leannotation}[sum=U8SOM1aXrf, dflt=w8VEQGt5ot]{Notation}{Index of notation}
 \begin{longtable}{@{}l@{\quad}l@{\quad}p{.45\linewidth}@{}}
 \multicolumn{3}{@{}l}{\textit{Lean}}\\
 $\tfrac{1}{2}$ & \texttt{HDiv.hDiv} & \leanslot{HDiv.hDiv/0}{\LeanCodeInline{a / b} computes the result of dividing \LeanCodeInline{a} by \LeanCodeInline{b}}\\
@@ -445,6 +445,7 @@ $\mathcal{M}(f)$ & \texttt{mellin} & \leanslot{mellin/0}{The Mellin transform of
 $\mathcal{M}(f)(s)$ & \texttt{mellin} & \leanslot{mellin/1}{The Mellin transform of a function \LeanCodeInline{f} (for a complex exponent \LeanCodeInline{s}), defined as the integral of \LeanCodeInline{t \textasciicircum{} (s - 1) • f} over \LeanCodeInline{Ioi 0}}\\
 $\zeta$ & \texttt{riemannZeta} & \leanslot{riemannZeta/0}{The Riemann zeta function \LeanCodeInline{ζ(s)}}\\
 $\zeta(s)$ & \texttt{riemannZeta} & \leanslot{riemannZeta/1}{The Riemann zeta function \LeanCodeInline{ζ(s)}}\\
+$\sum_{n \in \mathbb{Z}} f$ & \texttt{tsum} & \leanslot{tsum/0}{\LeanCodeInline{∑' i, f i} is the unconditional sum of \LeanCodeInline{f} if it exists, or 0 otherwise}\\
 \end{longtable}
 \end{leannotation}
 
