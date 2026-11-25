@@ -1,0 +1,12 @@
+paper.tex:294:1: warning[claim]: Riemann.riemannHypothesis is stated as a claim: its proof is sorry
+paper.tex:294:1: warning[unfaithful-rendering]: Riemann.riemannHypothesis (prose|unfold=): misread: $s \ne -2(n + 1) \text{ for every } n \in \mathbb{N}$ reads as (Not (Exists (fun _ => (Eq _ (HMul.hMul (Neg.neg (OfNat.ofNat 2){0:Complex}){0:Complex} (HAdd.hAdd Nat.cast{0:Complex} (OfNat.ofNat 1){0:Complex}){0:Complex, 1:Complex, 2:Complex}){0:Complex, 1:Complex, 2:Complex}){0:Complex})){0:Nat})[n; n; s], which is not well typed as `¬∃ n, s = -2 * (↑n + 1)` is
+paper.tex:304:13: warning[claim]: Riemann.riemannHypothesis is stated as a claim: its proof is sorry
+paper.tex:308:1: warning[claim]: Riemann.riemannZeta_eq_zero_re is stated as a claim: its proof is sorry
+paper.tex:308:1: warning[unfaithful-rendering]: Riemann.riemannZeta_eq_zero_re (prose): misread: $s \ne -2(n + 1) \text{ for every } n \in \mathbb{N}$ reads as (Not (Exists (fun _ => (Eq _ (HMul.hMul (Neg.neg (OfNat.ofNat 2){0:Complex}){0:Complex} (HAdd.hAdd Nat.cast{0:Complex} (OfNat.ofNat 1){0:Complex}){0:Complex, 1:Complex, 2:Complex}){0:Complex, 1:Complex, 2:Complex}){0:Complex})){0:Nat})[n; n; s], which is not well typed as `¬∃ n, s = -2 * (↑n + 1)` is
+paper.tex:322:26: warning[claim]: Riemann.LFunction_ne_zero_of_half_lt_re is stated as a claim: its proof is sorry
+paper.tex:324:1: warning[claim]: Riemann.LFunction_ne_zero_of_half_lt_re is stated as a claim: its proof is sorry
+paper.tex:334:1: warning[claim]: Riemann.LFunction_eq_zero_re is stated as a claim: its proof is sorry
+paper.tex:344:1: warning[claim]: Riemann.LFunction_eq_zero_re_of_isPrimitive is stated as a claim: its proof is sorry
+paper.tex:344:1: warning[claim]: Riemann.LFunction_eq_zero_re is stated as a claim: its proof is sorry
+paper.tex:346:1: warning[claim]: Riemann.LFunction_eq_zero_re_of_isPrimitive is stated as a claim: its proof is sorry
+check: 0 stale, 0 errors, 11 warnings

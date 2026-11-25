@@ -251,7 +251,7 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
 | D§9.1 | `unfold`: a named proposition is shown unfolded under its binders, in `math` and `prose` and with `forall`; a head a rule writes (`≠`) is kept | `extract/golden/Statements`, `e2e/riemann` | M5 |
 | D§9.1 | `claim`: the `sorry` of a claim is a warning on its block and its `\leancheck`, an error on an item without the option; a sorried cone is still an error; a proved claim warns of nothing | `splice/golden/claim`, `e2e/riemann` | M6 |
-| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases` | M5 |
+| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment`; a key's spaces and non-ASCII characters in a label | `splice/golden/aliases`, `splice/config/label-key` | M5 |
 | D§10.1 | definitions of imprimatur's macros are not uses | `splice/golden/definitions` | M5 |
 | D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases` | M5 |
 | D§9.2 | aliases map existing environments onto `leanblock` | `splice/config/alias-slots`, `splice/golden/basic`, `splice/golden/positional-slots` | M1 |
@@ -279,6 +279,7 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§10.5 | comparator manifests, including `@challenge` entries | `splice/golden/manifests`, `extract/manifests/challenge-keys`, `extract/manifests/challenge-statement-matches`, `extract/manifests/unknown-challenge`, `extract/golden/Manifests` | M3 |
 | D§11 | profiles `relative` (default), `url`, `none` for `\leanref` and the `meta` view | `splice/tex-escape`, `splice/config/url-needs-template`, `splice/golden/refs`, `splice/golden/meta-source` | M1 |
 | D§11 | `src=` on blocks, inline items and `\leancheck` under `url`, and `srcbase=` on a block whose rows link (`\LeanSourceRef`, the index views): written with the commit, never stale in `check`, removed under the other profiles; typeset as links by `imprimatur.sty` (#122) | `splice/golden/source-links`, `extract/index/golden`, `e2e/source-links` | M6 |
+| D§11 | a dependency's declarations link into their own repository: the bundle names the package, the template comes from the Lean project's manifest (GitHub) or the profile's `packages` table, and `srcbase=` carries a base per package the rows name | `extract/source/packaged-path`, `extract/source/unpackaged-path`, `splice/links/manifest-github`, `splice/links/manifest-configured`, `splice/links/manifest-unlinked`, `splice/links/template-package`, `splice/links/template-unknown-package`, `splice/links/template-project`, `splice/links/srcbase-packages` | M6 |
 | D§11 | `check --anonymous` | — | M6 |
 | D§12 | `show` prints one key's renderings and problems, fails on a missing key, and writes nothing | `e2e/show` | M6 |
 | D§12 | every command in the table exists and prints usage | — | M6 |

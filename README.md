@@ -1,5 +1,8 @@
 # imprimatur
 
+**Deterministic reliability of the mathematical statements in your LaTeX
+document: backed by Lean, but you need only read the PDF.**
+
 *Imprimatur* ("let it be printed") keeps the LaTeX of a paper in step with a
 Lean 4 development.
 
@@ -61,6 +64,24 @@ each sentence against the Lean result it names
 ([docs/trust.md](docs/trust.md#tying-prose-to-lean-leancheck-and-accept)).
 Clone to PDF took about a minute on one machine; the first run also
 downloads Lean v4.35.0.
+
+## A note written by an AI, checked by imprimatur
+
+[What the archive claims](https://theorem-press.github.io/imprimatur/examples/riemann/paper.pdf)
+is an eleven-page note on the Lean archive released on 20 November 2026 as a
+proof of the Riemann Hypothesis. It was written by Claude, in a session with
+imprimatur's author, and every mathematical statement in it was generated
+by imprimatur from Lean: the five theorems the archive claims, stated with
+`sorry` for every proof so that the file says what is claimed and proves
+nothing, and before them the definitions behind those theorems, pulled in
+from Mathlib from Jacobi's theta function up to the zeta function and the
+Dirichlet $L$-functions, so that the note is self-contained down to real and
+complex arithmetic. The prose between the statements is the AI's; the
+statements are not, and `imprimatur check` reports that each one reads
+back as the Lean it was rendered from. Every statement, definition and row
+of the index links to its line in Lean, in the archive's challenge file or
+in Mathlib at the revision it pins. The source is
+[examples/riemann](examples/riemann/README.md).
 
 ## What it looks like
 

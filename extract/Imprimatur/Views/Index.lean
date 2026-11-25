@@ -5,6 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 import Imprimatur.Render
 import Imprimatur.TeX
 import Imprimatur.Compat
+import Imprimatur.Bundle
 
 /-!
 # Views that index the document
@@ -168,6 +169,12 @@ partial def _root_.Imprimatur.Pat.consts : Pat → Array Name
   | .arrow d c => d.consts ++ c.consts
   | _ => #[]
 
+/-- A row's link to its Lean, `\LeanSourceRef{path}{line}{text}`, with the
+package first when the declaration is a dependency's (DESIGN §11). -/
+def sourceRef (s : Source) (text : String) : String :=
+  let pkg := match s.package with | some p => s!"[{p}]" | none => ""
+  s!"\\LeanSourceRef{pkg}\{{TeX.escape s.path}}\{{s.line}}\{{text}}"
+
 /-- The package a module belongs to, as the reader knows it. -/
 def packageOf (mod : Name) : String :=
   match mod.getRoot.toString with
@@ -178,7 +185,7 @@ def packageOf (mod : Name) : String :=
 each: the library's (`scope=library`, the default), the project's
 (`scope=project`), or both (`scope=all`). Notation packs (logic and the like)
 are left out unless the block asks for them (`packs=true`). -/
-def vocabularyView (srcOf : Name → MetaM (Option (String × Nat)))
+def vocabularyView (srcOf : Name → MetaM (Option Source))
     (opts : Array (String × String)) : RenderM String := do
   let env ← getEnv
   let roots := (← read).imports.map (·.getRoot)
@@ -233,12 +240,13 @@ def vocabularyView (srcOf : Name → MetaM (Option (String × Nat)))
     -- namespaces it strips.
     let shown := Views.stripName (← read).strip head
     let name := s!"\\texttt\{{TeX.escape shown.toString}}"
-    -- The project's constants link to their Lean (DESIGN §11).
-    let name ← if (modOf head).any (roots.contains ·.getRoot) then
-        match ← srcOf head with
-        | some (p, l) => pure s!"\\LeanSourceRef\{{TeX.escape p}}\{{l}}\{{name}}"
-        | none => pure name
-      else pure name
+    -- The project's constants link to their Lean, and a dependency's into
+    -- its package (DESIGN §11).
+    let name ← match ← srcOf head with
+      | some s =>
+        if s.package.isSome || (modOf head).any (roots.contains ·.getRoot) then pure (sourceRef s name)
+        else pure name
+      | none => pure name
     out := out ++ s!"${← ruleTeX r}$ & {name} & \\leanslot\{{head}/{n}}\{{← docSentence head}}\\\\\n"
   out := out ++ "\\end{longtable}\n"
   return out
@@ -249,7 +257,7 @@ def standardAxioms : Array Name := #[``propext, ``Classical.choice, ``Quot.sound
 /-- Each result the document states, in document order: where it is, its Lean
 declaration, the declaration's source, and the axioms it rests on beyond the
 standard ones. Definitions are listed too with `kinds=all`. -/
-def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
+def provenanceView (srcOf : Name → MetaM (Option Source))
     (axOf : Name → MetaM (Array Name)) (opts : Array (String × String)) : RenderM String := do
   let env ← getEnv
   let all := opts.any (· == ("kinds", "all"))
@@ -267,15 +275,15 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
     let kind (l : String) : String :=
       match (l.splitOn ":")[0]! with
       | "thm" => "Thm.~" | "lem" => "Lemma~" | "prop" => "Prop.~"
-      | "cor" => "Cor.~" | "def" => "Def.~" | "claim" => "Claim~" | _ => ""
+      | "cor" => "Cor.~" | "def" => "Def.~" | "claim" => "Claim~" | "fact" => "Fact~" | _ => ""
     let wh := match b.label with
       | some l => s!"{kind l}\\ref\{{l}}, p.~\\pageref\{{l}}"
       | none => ""
     -- The location, a link to the Lean under the `url` profile (DESIGN §11).
     let src := match ← srcOf c.name with
-      | some (p, l) =>
-        let shown := s!"\\texttt\{{"/\\allowbreak ".intercalate ((p.splitOn "/").map TeX.escape)}:{l}}"
-        s!"\\LeanSourceRef\{{TeX.escape p}}\{{l}}\{{shown}}"
+      | some s =>
+        let shown := s!"\\texttt\{{"/\\allowbreak ".intercalate ((s.path.splitOn "/").map TeX.escape)}:{s.line}}"
+        sourceRef s shown
       | none => ""
     let ax ← axOf c.name
     let extra := ax.filter (!standardAxioms.contains ·)
@@ -293,7 +301,7 @@ def provenanceView (srcOf : Name → MetaM (Option (String × Nat)))
   return out
 
 /-- Run an index view. -/
-def runIndexView (base : String) (srcOf : Name → MetaM (Option (String × Nat)))
+def runIndexView (base : String) (srcOf : Name → MetaM (Option Source))
     (axOf : Name → MetaM (Array Name)) (opts : Array (String × String)) : RenderM String :=
   match base with
   | "conventions" => conventionsView

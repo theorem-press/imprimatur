@@ -104,10 +104,14 @@ def Kind.ofString? (s : String) : Option Kind :=
 
 /-- Where a declaration is. -/
 structure Source where
-  /-- the file, relative to the Lean project root -/
+  /-- the file, relative to the Lean project root, or to the package's root
+  when `package` is set -/
   path : String
   /-- the line, from 1 -/
   line : Nat
+  /-- the Lake package the file belongs to, as `.lake/packages/NAME` names
+  it, when the declaration is a dependency's (DESIGN §11) -/
+  package : Option String := none
   deriving DecidableEq, Repr
 
 /-- A declaration, as a key names it. -/
@@ -426,7 +430,8 @@ def Entry.toJson (e : Entry (Image TeX) Verdict) : Json :=
   Json.mkObj <|
     [("kind", .str e.decl.kind.toString), ("decl", .str e.decl.name)] ++
     opt "source" (e.decl.source.map fun s =>
-      Json.mkObj [("path", .str s.path), ("line", Lean.toJson s.line)]) ++
+      Json.mkObj ([("path", .str s.path), ("line", Lean.toJson s.line)] ++
+        (match s.package with | some p => [("package", Json.str p)] | none => []))) ++
     opt "doc" (e.decl.doc.map .str) ++
     [("axioms", strs v.axioms), ("sorry", .bool v.usesSorry)] ++
     opt "cone" (v.cone.map fun c => Json.mkObj [
@@ -535,7 +540,8 @@ private def entryOfJson (key : String) (j : Json) : Except String (Entry (Image 
     let line ← match (← field s!"{w}.source" s "line").getNat? with
       | .ok n => if n ≥ 1 then pure n else throw s!"{w}.source.line must be at least 1"
       | .error _ => throw s!"{w}.source.line must be a natural number"
-    pure { path, line : Source }
+    let package ← optional s "package" (str s!"{w}.source.package")
+    pure { path, line, package : Source }
   let doc ← optional j "doc" (str s!"{w}.doc")
   let axioms ← (optional j "axioms" (strsOf s!"{w}.axioms")).map (·.getD #[])
   let usesSorry ← (optional j "sorry" fun s => match s.getBool? with

@@ -91,7 +91,9 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
 ```
 
 - **`label`** gives each block a label made from its key (spaces become
-  `-`). A key stated again, say in an appendix, gets **`repeat_suffix`** on
+  `-`, and a character outside ASCII becomes `u` and its code point in hex,
+  `WeakFEPair.Λ` giving `WeakFEPair.u39b`, since LuaLaTeX cannot hold the
+  characters `imprimatur.sty` makes active in a label). A key stated again, say in an appendix, gets **`repeat_suffix`** on
   its second label, then the suffix with `2`, `3`, … on later ones.
 - **`template`** is the content, with `{content}` for the view's text, and
   `{label}`, `{key}` and `{title}` (the block's second argument). The
@@ -186,7 +188,20 @@ imprimatur build --profile public --commit "$(git rev-parse HEAD)"
 ```
 
 `{path}` is the file inside the Lean project, so the template names the
-project's directory in the repository. With hyperref loaded by the paper, a
+project's directory in the repository. A dependency's declaration, a
+Mathlib definition the paper states, links into its own repository: for a
+package on GitHub, from the Lean project's `lake-manifest.json` alone, at
+the revision it pins; for any package, from a `packages` table in the
+profile, with `{rev}` for that revision:
+
+```toml
+[profile.public]
+source_links = "url"
+url_template = "https://github.com/ORG/REPO/blob/{commit}/lean/{path}#L{line}"
+packages = { mathlib = "https://github.com/leanprover-community/mathlib4/blob/{rev}/{path}#L{line}" }
+```
+
+A dependency with neither gets no link. With hyperref loaded by the paper, a
 wrapped block's title becomes the link, and a block without a title, a block
 without a wrap, an inline item and a `\leancheck` get a small marker,
 `\LeanSourceMarkText` (`↗`), after them; without hyperref nothing is

@@ -62,10 +62,17 @@ def testJson : TestM Unit := group "json" do
   | .error e => fail "extract/requests/imports" e
   checkError "extract/requests/schema" (parseRequests "{\"schema\": \"x\", \"requests\": {}}") "schema"
 
+/-- A dependency's source file names its package (DESIGN §11). -/
+def testSource : TestM Unit := group "source" do
+  checkEq "extract/source/packaged-path"
+    (packagedPath "/h/p/.lake/packages/mathlib/Mathlib/A/B.lean") (some ("mathlib", "Mathlib/A/B.lean"))
+  checkEq "extract/source/unpackaged-path" (packagedPath "/h/p/Riemann/Statements.lean") none
+
 /-- All unit tests. -/
 def tests : TestM Unit := do
   testTeX
   testTokens
   testJson
+  testSource
 
 end ExtractTest.Unit

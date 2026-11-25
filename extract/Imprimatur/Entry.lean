@@ -52,25 +52,39 @@ def kindOf (env : Environment) (c : ConstantInfo) : Kind :=
   | .recInfo _ => .recursor
   | .quotInfo _ => .quotient
 
-/-- The source file of a constant, relative to `root`, and its line. A file
-outside `root` is named by its module (`A/B.lean`), so the bundle never holds
+/-- A file under a Lake dependency, `…/.lake/packages/NAME/PATH`: the package
+and the path inside it. -/
+def packagedPath (abs : String) : Option (String × String) :=
+  match abs.splitOn "/.lake/packages/" with
+  | [] | [_] => none
+  | parts =>
+    match parts.getLast!.splitOn "/" with
+    | name :: p@(_ :: _) => some (name, "/".intercalate p)
+    | _ => none
+
+/-- The source file of a constant and its line: relative to `root`, or, for
+a dependency's, to its package with the package named (DESIGN §11). A file
+outside both is named by its module (`A/B.lean`), so the bundle never holds
 an absolute path (DESIGN §8). -/
-def sourceOf (root : System.FilePath) (n : Name) : MetaM (Option (String × Nat)) := do
+def sourceOf (root : System.FilePath) (n : Name) : MetaM (Option Source) := do
   let some ranges ← findDeclarationRanges? n | return none
   let env ← getEnv
   let some idx := env.getModuleIdxFor? n | return none
   let some mod := Compat.moduleName? env idx | return none
   let byModule := "/".intercalate (mod.components.map (·.toString)) ++ ".lean"
+  let line := ranges.selectionRange.pos.line
   let sp ← getSrcSearchPath
-  let path ← match ← sp.findModuleWithExt "lean" mod with
-    | some p =>
-      let abs ← IO.FS.realPath p
-      let rootAbs ← IO.FS.realPath root
-      let pre := rootAbs.toString ++ "/"
-      if abs.toString.startsWith pre then pure (abs.toString.drop pre.length).toString
-      else pure byModule
-    | none => pure byModule
-  return some (path, ranges.selectionRange.pos.line)
+  match ← sp.findModuleWithExt "lean" mod with
+  | some p =>
+    let abs ← IO.FS.realPath p
+    if let some (package, path) := packagedPath abs.toString then
+      return some { path, line, package }
+    let rootAbs ← IO.FS.realPath root
+    let pre := rootAbs.toString ++ "/"
+    if abs.toString.startsWith pre then
+      return some { path := (abs.toString.drop pre.length).toString, line }
+    return some { path := byModule, line }
+  | none => return some { path := byModule, line }
 
 /-- The axioms a constant depends on, sorted. -/
 def axiomsOf (n : Name) : MetaM (Array Name) := do
@@ -381,7 +395,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
   let untrusted := cone.issues.map (·.1.toString) |>.foldl (fun a n => if a.contains n then a else a.push n) #[]
   return {
     decl := { kind := kindOf env c, name := c.name.toString, doc,
-              source := src.map fun (path, line) => { path, line } },
+              source := src },
     statement := {
       -- Without a complete cone there is no statement hash: `\leancheck` then
       -- reports `no-hash` rather than comparing against a partial one.

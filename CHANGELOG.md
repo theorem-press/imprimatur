@@ -5,6 +5,21 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Under the `url` profile, a dependency's declarations link into their own
+  repository: the bundle records a declaration's Lake package, and the
+  splicer takes the package's link template from the Lean project's
+  `lake-manifest.json` (a package on GitHub needs no configuration) or from
+  the profile's `packages` table (`mathlib = "…/{rev}/{path}#L{line}"`).
+  The index views' rows name the package, and `srcbase=` carries one base
+  per package. Until now a Mathlib definition's link pointed into the host
+  project's directory.
+- The riemann example's note is self-contained: a section of preliminaries
+  pulls the definitions behind the five claims in from Mathlib, as their
+  equations (`[def]`), from the bottom up: Jacobi's theta function, the
+  theta kernels, the Mellin transform, `Γ`, the Hurwitz zeta functions and
+  then `riemannZeta`; the `L`-functions and primitivity; with the lemmas
+  that characterise Mathlib's irreducible definitions shown as facts. `imprimatur.sty` maps `∫`, `√` and `⧸`, which
+  Mathlib's docstrings use, for pdfLaTeX.
 - The denotation of a reading puts off a fit that a sibling may decide
   (DESIGN §18.4): an operand of known type where the type expected is
   still open (`"and" :: y`, where `y` fixes the element type and `"and"`
