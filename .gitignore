@@ -10,6 +10,9 @@ _site/
 /examples/**/*.fls
 /examples/**/*.fdb_latexmk
 /examples/**/*.pdf
+# The riemann note's PDF is committed: the site serves it, and building it
+# needs Mathlib, which the Pages workflow does not fetch.
+!/examples/riemann/paper.pdf
 /examples/**/*.synctex.gz
 /examples/**/*.out
 /examples/*/host/lake-manifest.json
