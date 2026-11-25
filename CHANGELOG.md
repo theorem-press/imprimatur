@@ -5,6 +5,11 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Reading a rendering back, a λ where a function type is expected takes
+  the type's domain for its binder and has its body fit to the codomain, so
+  a coercion the notation hides in the body is found: `λ r.\,r` for
+  `fun r => ↑r` under `Fin.val i => "#i"` was reported as a misread, the
+  binder's type being open when the body was read.
 - In the `grammar` and `grammar|display` views of a structure, a field's
   type names the structure's earlier fields plainly: `plan : Fin self.n →
   Row` is set as `plan : ℕ_{<n} → Row`, where it was set with the notation

@@ -93,4 +93,7 @@ structure Run where
   /-- the term at each step -/
   step : Fin len → Tm
 
+/-- The number of each step of a run, as a natural number. -/
+def Run.index (r : Run) : Fin r.len → Nat := fun i => i
+
 end Stlc

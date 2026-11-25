@@ -1,5 +1,43 @@
 {
   "entries": {
+    "Index": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 12,
+        "untrusted": []
+      },
+      "decl": "Index",
+      "errors": {
+        "grammar": "Stlc.Run.index is not an inductive type",
+        "grammar|display": "Stlc.Run.index is not an inductive type",
+        "math|def=": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule=",
+        "rules": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules",
+        "rules|exclude=beta": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|exclude=beta",
+        "rules|include=beta,app_right": "Index names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
+      },
+      "kind": "group",
+      "macros": ["\\LeanClause", "\\LeanMathConst", "\\begin", "\\deq", "\\end", "\\in", "\\leanslot", "\\mathbb", "\\textsf"],
+      "sorry": false,
+      "stmtHash": "fa799a8b59c31beb03b6caa47e889828deb306baf0cf4dc1026ca32a3a3a8a1e",
+      "validation": {
+        "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": []
+      },
+      "views": {
+        "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{Run.index}\\,r\\,i \\;\\deq\\; i}{\\leanslot{Stlc.Run.index}{The number of each step of a run, as a natural number}}\n\\end{LeanDisplay}",
+        "clauses|types=": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{Run.index}\\,r\\,a \\in \\mathbb{N}}{for $r \\in \\LeanMathConst{Run}$, $a \\in \\LeanMathConst{Fin}\\,(\\LeanMathConst{Run.len}\\,r)$}\\\\\n\\LeanClause{\\LeanMathConst{Run.index}\\,r\\,i \\;\\deq\\; i}{\\leanslot{Stlc.Run.index}{The number of each step of a run, as a natural number}}\n\\end{LeanDisplay}",
+        "clauses|types=size": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{Run.index}\\,r\\,i \\;\\deq\\; i}{\\leanslot{Stlc.Run.index}{The number of each step of a run, as a natural number}}\n\\end{LeanDisplay}",
+        "fixture.rulelist": "\\textsf{Index}"
+      }
+    },
     "Lookup and size": {
       "axioms": [],
       "cone": {

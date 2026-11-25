@@ -69,7 +69,7 @@ def fixtures : Array Fixture := #[
     views := #["math", "prose", "math|unfold=", "prose|unfold=", "math|forall=", "math|forall=|unfold="] },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
     keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
-      "Lookup and size", "Types and terms", "Prod", "Stlc.Claim", "Stlc.Run", "Run",
+      "Lookup and size", "Types and terms", "Prod", "Stlc.Claim", "Stlc.Run", "Run", "Index",
       "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
       "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist",
@@ -400,8 +400,10 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
          (d.splitOn "\\,len \\to").length == 2)
       (view "Run" "grammar|display")
     -- Each display was read back and found clean: a verdict, the empty list.
+    -- `Index` is `fun i => ↑i` under a rule that hides the coercion: the λ
+    -- is fit to its function type binder by binder, the body coerced.
     checkEq "extract/display/validated"
-      (#["Lookup and size", "Types and terms"].filter fun k =>
+      (#["Lookup and size", "Types and terms", "Index"].filter fun k =>
         !(((entry? r.bundle k).bind (·.getObjVal? "validation" |>.toOption)).map fun v =>
           (v.getObj?.toOption.map fun kvs => kvs.toArray.all fun (_, ps) => ps == Json.arr #[]).getD false).getD false)
       #[]

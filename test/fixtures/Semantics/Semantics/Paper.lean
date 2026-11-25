@@ -50,6 +50,10 @@ latex_display "Types and terms" := [Ty, Tm]
 -- A title that also names a declaration (core's `Prod`) is the display's.
 latex_display "Prod" := [Ty]
 latex_display "Run" := [Run]
+-- A λ whose body is a bound variable coerced by a notation that hides the
+-- coercion (`fun i => ↑i` as `λ i.\,i`): read back binder by binder.
+latex_notation Fin.val i => "#i"
+latex_display "Index" := [Run.index]
 
 latex_category Tm => "e"
 latex_category Ty => r"\tau"

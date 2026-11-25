@@ -200,6 +200,15 @@ mutual
         trace do return s!"put off {← ppExpr a} : {← ppExpr ta} where {← ppExpr d'} is expected"
         return m
     if ← isDefEq ta d then return a
+    -- A λ where a function type is expected: its binder takes the domain
+    -- and its body is fit to the codomain, so that a coercion the notation
+    -- hides in the body is found there (`λ r.\,r` for `fun r => ↑r`, the
+    -- binder's type being open until now).
+    if let .lam x t b bi := a then
+      if let .forallE _ dom cod _ := ← whnf d then
+        if ← isDefEq t dom then
+          return ← withLocalDecl x bi dom fun fv => do
+            mkLambdaFVars #[fv] (← fit (b.instantiate1 fv) (cod.instantiate1 fv) depth)
     -- A pair where a pair type is expected: each component fit, so that a
     -- coercion the notation hides inside `(C, V)` is found there.
     if a.isAppOfArity ``Prod.mk 4 then
