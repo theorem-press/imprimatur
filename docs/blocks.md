@@ -91,7 +91,9 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
 ```
 
 - **`label`** gives each block a label made from its key (spaces become
-  `-`). A key stated again, say in an appendix, gets **`repeat_suffix`** on
+  `-`, and a character outside ASCII becomes `u` and its code point in hex,
+  `WeakFEPair.Λ` giving `WeakFEPair.u39b`, since LuaLaTeX cannot hold the
+  characters `imprimatur.sty` makes active in a label). A key stated again, say in an appendix, gets **`repeat_suffix`** on
   its second label, then the suffix with `2`, `3`, … on later ones.
 - **`template`** is the content, with `{content}` for the view's text, and
   `{label}`, `{key}` and `{title}` (the block's second argument). The

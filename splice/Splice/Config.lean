@@ -49,11 +49,21 @@ structure Alias where
   comment : Bool := false
   deriving Repr, BEq
 
+/-- A key in a label: spaces become `-`, and a character outside ASCII
+becomes `u` and its code point in hex (`WeakFEPair.Λ` is
+`WeakFEPair.u39b`), since `imprimatur.sty` makes the characters Lean prints
+active and LuaLaTeX cannot then hold them in a label. -/
+def labelKey (key : String) : String :=
+  key.foldl (init := "") fun acc c =>
+    if c == ' ' then acc.push '-'
+    else if c.toNat < 128 then acc.push c
+    else acc ++ "u" ++ String.ofList (Nat.toDigits 16 c.toNat)
+
 /-- The label of a block with key `key`: its `occurrence`-th (from 0) with
 this alias and key. -/
 def Alias.labelFor (a : Alias) (key : String) (occurrence : Nat) : Option String :=
   a.label.map fun t =>
-    let base := t.replace "{key}" (key.replace " " "-")
+    let base := t.replace "{key}" (labelKey key)
     match occurrence, a.repeatSuffix with
     | 0, _ | _, none => base
     | 1, some suffix => base ++ suffix

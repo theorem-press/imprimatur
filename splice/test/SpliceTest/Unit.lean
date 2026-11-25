@@ -72,6 +72,8 @@ def testConfig : TestM Unit := group "config" do
       (some { macros := #["\\entry"], arg := 2, idArg := 1 })
     check "splice/config/leanblock-builtin" (c.alias? "leanblock").isSome
     checkEq "splice/config/allowed-axioms" c.allowedAxioms #["propext"]
+    -- A key in a label: spaces as `-`, a character outside ASCII as its code point.
+    checkEq "splice/config/label-key" (labelKey "WeakFEPair.Λ₀ x") "WeakFEPair.u39bu2080-x"
   checkError "splice/config/unknown-key" (Config.parse "schema = 1\nmain = \"a\"\nmian = 1\n")
     "unknown key 'mian'"
   checkError "splice/config/missing-schema" (Config.parse "main = \"a\"\n") "schema = 1"

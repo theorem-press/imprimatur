@@ -1,9 +1,11 @@
 # What the archive claims
 
-A note of two pages that states the five theorems the Lean archive released by
-Levent Alpöge on 2026-11-20 claims to prove, the Riemann Hypothesis and the
+A note that states the five theorems the Lean archive released by Levent
+Alpöge on 2026-11-20 claims to prove, the Riemann Hypothesis and the
 Generalized Riemann Hypothesis for Dirichlet L-functions, in the words of their
-Lean statements ([paper.tex](paper.tex), the result in
+Lean statements, after a section of preliminaries that pulls the definitions
+behind them in from Mathlib, down to real and complex arithmetic, integrals
+and sums ([paper.tex](paper.tex), the result in
 [expected/paper.tex](expected/paper.tex)). It is imprimatur's first example
 on a Mathlib host, and its first on statements whose proofs are not in the
 development (#137).
@@ -18,6 +20,18 @@ reads the proofs.
 
 What the note shows:
 
+- Mathlib's definitions as their equations (`[def]`): the chain from
+  `riemannZeta` down through the Hurwitz zeta functions, the functional
+  equation pairs, the Mellin transform, the theta kernels and Jacobi's theta
+  function, and from `DirichletCharacter.LFunction` down to the conductor;
+  where Mathlib makes a definition irreducible (the kernels, `Γ`), the lemma
+  that characterises it is shown as a fact instead;
+- notation for a definition written point-free (`riemannZeta` beside
+  `riemannZeta s`), a `synonym` rule for `π` as a complex number, so that the
+  reading is tried only where the real `π` is ill typed, and rules for the
+  bundled homomorphisms `ZMod.toAddCircle` and `changeLevel` themselves,
+  since a pattern cannot write their application (the coercion to a function
+  carries a λ in an implicit argument);
 - a theorem whose statement is a named proposition, Mathlib's
   `RiemannHypothesis`, rendered with the definition unfolded (`[unfold]`);
 - an instance binder, `[NeZero N]`, stated as a hypothesis because the

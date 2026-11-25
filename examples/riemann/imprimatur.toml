@@ -4,7 +4,7 @@ lean_project = "host"
 mode = "external"
 imports = ["Riemann"]
 notation = ["notation/RiemannTeX.lean"]
-strip_namespaces = ["Riemann"]
+strip_namespaces = ["Riemann", "HurwitzZeta", "WeakFEPair", "Complex", "DirichletCharacter"]
 
 # The public version links every statement to its Lean on GitHub:
 # imprimatur build --profile public --commit SHA (DESIGN §11).
@@ -17,3 +17,7 @@ url_template = "https://github.com/theorem-press/imprimatur/blob/{commit}/exampl
 leanclaim = { view = "prose", wrap = "claim", label = "claim:{key}" }
 leannotation = { view = "vocabulary|scope=all" }
 leanprovenance = { view = "provenance" }
+# The preliminaries: Mathlib's definitions, as their equations, and the lemmas
+# that characterise the definitions Mathlib makes irreducible.
+leandefinition = { view = "math", wrap = "definition", label = "def:{key}", template = "\\label{{label}}\n\\[{content}\\]" }
+leanfact = { view = "math", wrap = "fact", label = "fact:{key}", template = "\\label{{label}}\n\\[{content}\\]" }

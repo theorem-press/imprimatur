@@ -250,7 +250,7 @@ does not list; `scripts/gen-std-macros.py` regenerates the list.
 | D§9.1 | block options: `include`/`exclude` and the theorem modifiers (`show`/`hide` are not implemented) | `extract/golden/Semantics`, `splice/golden/basic` | M5 |
 | D§9.1 | `unfold`: a named proposition is shown unfolded under its binders, in `math` and `prose` and with `forall`; a head a rule writes (`≠`) is kept | `extract/golden/Statements`, `e2e/riemann` | M5 |
 | D§9.1 | `claim`: the `sorry` of a claim is a warning on its block and its `\leancheck`, an error on an item without the option; a sorried cone is still an error; a proved claim warns of nothing | `splice/golden/claim`, `e2e/riemann` | M6 |
-| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment` | `splice/golden/aliases` | M5 |
+| D§9.2 | alias options `label`, `repeat_suffix`, `template`, `comment`; a key's spaces and non-ASCII characters in a label | `splice/golden/aliases`, `splice/config/label-key` | M5 |
 | D§10.1 | definitions of imprimatur's macros are not uses | `splice/golden/definitions` | M5 |
 | D§10.1 | conditionals: blocks in branches that are off (`\iffalse`, `\newif` switches) are maintained but not typeset; the document inventory | `splice/golden/conditionals`, `splice/golden/aliases` | M5 |
 | D§9.2 | aliases map existing environments onto `leanblock` | `splice/config/alias-slots`, `splice/golden/basic`, `splice/golden/positional-slots` | M1 |

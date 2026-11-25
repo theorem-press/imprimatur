@@ -56,6 +56,12 @@ latex_notation (variant := "named")? PATTERN => "TEMPLATE" OPTIONS…
   example, `@LE.le (Set _) _ a b` matches `≤` only on sets.
 - A constant applied to fewer arguments than it takes matches that partial
   application, as in `Summable (M.weight c)`.
+- A bundled homomorphism applied to an argument, `ZMod.toAddCircle j` for
+  `toAddCircle : ZMod N →+ UnitAddCircle`, cannot be a pattern: the
+  coercion to a function carries a `fun` in an implicit argument, which is
+  reported as a binder that is not a pattern variable. Write a rule for the
+  homomorphism itself (`ZMod.toAddCircle => r"\iota"`); the `core` pack
+  writes the application.
 - **Binders.** A pattern may bind a variable: `fun x => e`, `∀ x, p`,
   `∃ x, p`, `∑' x, f`, `{x | p}`, or any constant applied to a `fun`. The
   variable is rendered as the bound name, and the body under it. `∀ x, p`
