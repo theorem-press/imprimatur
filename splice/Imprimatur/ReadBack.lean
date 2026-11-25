@@ -145,12 +145,22 @@ def appOf (fs rest : List Reading) : Reading :=
   | _ => .node "app" (fs ++ rest)
 
 /-- Children in the order of the rule's pattern, from the order the template
-shows them, when the rule gives one for this many. -/
+shows them, when the rule gives one for this many. A variable the template
+shows twice (`#s \ne -2(#n + 1) \text{ for every } #n`) has two children
+for one variable: they are one child when they read alike, and a child that
+reads as nothing, `?`, when they do not, so that the text names the same
+variable at both places or denotes nothing. -/
 def reorder (order : Option (Array Nat)) (kids : Array Reading) : List Reading :=
   match order with
   | some o =>
     if o.size == kids.size then
-      ((o.zip kids).toList.mergeSort (fun a b => a.1 ≤ b.1)).map (·.2)
+      let sorted := (o.zip kids).toList.mergeSort (fun a b => a.1 ≤ b.1)
+      sorted.foldl (init := ([] : List (Nat × Reading))) (fun acc (i, k) =>
+        match acc with
+        | (j, k') :: rest =>
+          if i == j then (j, if k.text == k'.text then k' else .node "?" []) :: rest
+          else (i, k) :: acc
+        | [] => [(i, k)]) |>.reverse.map (·.2)
     else kids.toList
   | none => kids.toList
 

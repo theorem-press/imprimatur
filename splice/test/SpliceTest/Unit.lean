@@ -74,6 +74,11 @@ def testConfig : TestM Unit := group "config" do
     checkEq "splice/config/allowed-axioms" c.allowedAxioms #["propext"]
     -- A key in a label: spaces as `-`, a character outside ASCII as its code point.
     checkEq "splice/config/label-key" (labelKey "WeakFEPair.Λ₀ x") "WeakFEPair.u39bu2080-x"
+  match Config.parse "schema = 1\nmain = \"a\"\nvalidate = \"error\"\n" with
+  | .ok c => check "splice/config/validate-error" (c.strictValidation && c.validate == some true)
+  | .error e => check "splice/config/validate-error" false e
+  checkError "splice/config/validate-bad" (Config.parse "schema = 1\nmain = \"a\"\nvalidate = \"strict\"\n")
+    "true, false or \"error\""
   checkError "splice/config/unknown-key" (Config.parse "schema = 1\nmain = \"a\"\nmian = 1\n")
     "unknown key 'mian'"
   checkError "splice/config/missing-schema" (Config.parse "main = \"a\"\n") "schema = 1"

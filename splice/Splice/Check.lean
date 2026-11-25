@@ -113,6 +113,9 @@ def auditKey (cfg : Config) (bundle : Bundle (Image TeX) Verdict) (it : Item) (l
         -- A metavariable that does not tell the reader a variable's type
         -- (`latex_style categories := unique` or `strict`) is an error.
         if p.startsWith "category: " then Diag.err "category" loc s!"{key} ({view}): {(p.drop 10).toString}"
+        -- An error under `validate = "error"`, for a document that must not
+        -- be published with one.
+        else if cfg.strictValidation then Diag.err "unfaithful-rendering" loc s!"{key} ({view}): {p}"
         else Diag.warn "unfaithful-rendering" loc s!"{key} ({view}): {p}"
     else #[])
 

@@ -162,6 +162,9 @@ structure Config where
   /-- Whether the extractor reads rendered formulas back (DESIGN §18.4);
   `none` means its default, which is to. -/
   validate : Option Bool := none
+  /-- `validate = "error"`: a rendering that does not read back as its
+  statement is an error of `check`, not a warning (DESIGN §18.4). -/
+  strictValidation : Bool := false
   /-- Macros that packages the paper loads define, so that generated content
   may use them (`known_macros`; DESIGN §10.3), with their backslashes. -/
   knownMacros : Array String := #[]
@@ -313,7 +316,10 @@ def Config.parse (text : String) : Except String Config := do
         match v with
         | .int n => if n ≥ 20 then cfg := { cfg with width := some n.toNat } else throw "width must be at least 20"
         | _ => throw s!"width must be a number, not {v.typeName}"
-      | "validate" => cfg := { cfg with validate := some (← expectBool k v) }
+      | "validate" => match v with
+        | .str "error" => cfg := { cfg with validate := some true, strictValidation := true }
+        | .str other => throw s!"{k} must be true, false or \"error\", not {repr other}"
+        | _ => cfg := { cfg with validate := some (← expectBool k v) }
       | "lean_project" => cfg := { cfg with leanProject := ← expectStr k v }
       | "mode" =>
         let m ← expectStr k v
