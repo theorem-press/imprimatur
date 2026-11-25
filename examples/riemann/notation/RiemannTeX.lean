@@ -82,6 +82,8 @@ latex_notation ((N : ℕ) : ℂ) ^ (-s) => r"#N^{-#s}" prec := 75
 latex_notation Complex.ofReal x => r"#x"
 latex_notation Function.update f a b => r"#f[#a \mapsto #b]"
 latex_notation (if c then a else b : ℂ) => r"(#a \text{ if } #c\text{, else } #b)"
+-- Scalar multiplication, with a bullet: as a dot it would pun with the
+-- product of numbers, which a complex number times a complex number also is.
 latex_notation a • b => r"#a \bullet #b" prec := 70 assoc := none
 latex_notation UnitAddCircle => r"\mathbb{R}/\mathbb{Z}"
 

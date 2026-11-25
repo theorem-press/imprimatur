@@ -7,10 +7,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 - The riemann example's note is self-contained: a section of preliminaries
   pulls the definitions behind the five claims in from Mathlib, as their
-  equations (`[def]`), from `riemannZeta` down to the Mellin transform and
-  Jacobi's theta function and from `DirichletCharacter.LFunction` down to
-  the conductor, with the lemmas that characterise Mathlib's irreducible
-  definitions shown as facts. `imprimatur.sty` maps `∫`, `√` and `⧸`, which
+  equations (`[def]`), from the bottom up: Jacobi's theta function, the
+  theta kernels, the Mellin transform, `Γ`, the Hurwitz zeta functions and
+  then `riemannZeta`; the `L`-functions and primitivity; with the lemmas
+  that characterise Mathlib's irreducible definitions shown as facts. `imprimatur.sty` maps `∫`, `√` and `⧸`, which
   Mathlib's docstrings use, for pdfLaTeX.
 - `imprimatur build --log` (and `check`, `accept`, `show`) writes what
   translation validation made of each formula to

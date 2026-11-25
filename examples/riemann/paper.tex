@@ -56,75 +56,49 @@ and primitivity. None of them is elementary, and Mathlib does not define
 $\zeta$ by its Dirichlet series, which converges only to the right of
 $\Re s = 1$, but as a meromorphic function on all of $\mathbb{C}$, built from
 the Mellin transform of a theta function. This section pulls that chain of
-definitions in from Mathlib, down to real and complex arithmetic, integrals
-and sums, so that the note says what it claims without reference to
-Mathlib's text. Each definition is rendered from Mathlib's defining equation,
-in the order a reader meets them: a definition uses the ones below it. Where
-Mathlib makes a definition irreducible and characterises it by a lemma, as
-for the theta kernels and $\Gamma$, the lemma is shown instead, as a fact
-Mathlib proves.
+definitions in from Mathlib, from the bottom up, so that the note says what
+it claims without reference to Mathlib's text: each definition uses only
+real and complex arithmetic, integrals and sums, and the definitions above
+it. Each is rendered from Mathlib's defining equation. Where Mathlib makes a
+definition irreducible and characterises it by a lemma, as for the theta
+kernels and $\Gamma$, the lemma is shown instead, as a fact Mathlib proves.
 
-\subsection{The zeta function}
+\subsection{Theta functions and their Mellin transforms}
 
-The zeta function is the even part of the Hurwitz zeta function at the point
-$0$ of the circle $\mathbb{R}/\mathbb{Z}$, which Mathlib writes
-$\zeta^{+}_{a}(s)$ for a point $a$ of the circle.
+Jacobi's theta function is a series over the integers, and its derivative
+in the first variable is the series of the derivatives of the terms. A
+variant of the derivative, $\theta''$, is what the odd kernel below needs.
 
-\begin{leandefinition}[def, sum=ObuDf-hTEK]{riemannZeta}{The zeta function}
-\label{def:riemannZeta}
-\[\LeanMath{\begin{aligned}\zeta &= \zeta^{+}_{0}\end{aligned}}\]
+\begin{leandefinition}[def, sum=D0gbudZeiV]{jacobiTheta₂_term}{The terms of the theta function}
+\label{def:jacobiThetau2082_term}
+\[\LeanMath{\begin{aligned}\theta_{n}(z, \tau) &= e^{2 \cdot \pi \cdot \mathrm{i} \cdot n \cdot z + \pi \cdot \mathrm{i} \cdot n^{2} \cdot \tau}\end{aligned}}\]
 \end{leandefinition}
 
-The even Hurwitz zeta function is its completed form $\Lambda^{+}_{a}$
-divided by Deligne's $\Gamma_{\mathbb{R}}$, except at $s = 0$, where both
-vanish and the value is set by hand: $f[a \mapsto b]$ is the function $f$
-with its value at $a$ replaced by $b$.
-
-\begin{leandefinition}[def, sum=gdpdhk82ca]{HurwitzZeta.hurwitzZetaEven}{The even Hurwitz zeta function}
-\label{def:HurwitzZeta.hurwitzZetaEven}
-\[\LeanMath{\begin{aligned}\zeta^{+}_{a} &= (\lambda s.\,\Lambda^{+}_{a}(s) / \Gamma_{\mathbb{R}}(s))[0 \mapsto (-1 / 2 \text{ if } a = 0\text{, else } 0)]\end{aligned}}\]
+\begin{leandefinition}[def, sum=BwlTMP_aLz]{jacobiTheta₂}{Jacobi's theta function}
+\label{def:jacobiThetau2082}
+\[\LeanMath{\begin{aligned}\theta(z, \tau) &= \sum_{n}^{\infty} \theta_{n}(z, \tau)\end{aligned}}\]
 \end{leandefinition}
 
-The completed form comes from a pair of functions $\mathcal{P}^{+}_{a}$
-related by a functional equation under $x \mapsto 1/x$. Mathlib's
-$\Lambda_{P}$ is the Mellin transform of the pair's first function, with its
-constant terms at $0$ and $\infty$ subtracted so that the integral converges,
-and the two poles this introduces put back.
-
-\begin{leandefinition}[def, sum=u4Q9nvIfDr]{HurwitzZeta.completedHurwitzZetaEven}{The completed even Hurwitz zeta function}
-\label{def:HurwitzZeta.completedHurwitzZetaEven}
-\[\LeanMath{\begin{aligned}\Lambda^{+}_{a}(s) &= \Lambda_{\mathcal{P}^{+}_{a}}(s / 2) / 2\end{aligned}}\]
+\begin{leandefinition}[def, sum=H022_QD8DO]{jacobiTheta₂'_term}{The terms of its derivative}
+\label{def:jacobiThetau2082'_term}
+\[\LeanMath{\begin{aligned}\theta'_{n}(z, \tau) &= 2 \cdot \pi \cdot \mathrm{i} \cdot n \cdot \theta_{n}(z, \tau)\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=2zctRaz6RT]{WeakFEPair.Λ}{The completed transform of a pair}
-\label{def:WeakFEPair.u39b}
-\[\LeanMath{\begin{aligned}\Lambda_{P}(s) &= \Lambda^{0}_{P}(s) - (1 / s) \bullet f^{0}_{P} - (\varepsilon_{P} / (k_{P} - s)) \bullet g^{0}_{P}\end{aligned}}\]
+\begin{leandefinition}[def, sum=qd3AU_svGq]{jacobiTheta₂'}{The derivative of the theta function}
+\label{def:jacobiThetau2082'}
+\[\LeanMath{\begin{aligned}\theta'(z, \tau) &= \sum_{n}^{\infty} \theta'_{n}(z, \tau)\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=iCqrfjPw5K]{WeakFEPair.Λ₀}{The entire part of the transform}
-\label{def:WeakFEPair.u39bu2080}
-\[\LeanMath{\begin{aligned}\Lambda^{0}_{P} &= \mathcal{M}(\tilde{f}_{P})\end{aligned}}\]
+\begin{leandefinition}[def, sum=NIBqDF-DYM]{HurwitzZeta.jacobiTheta₂''}{A variant of the derivative}
+\label{def:HurwitzZeta.jacobiThetau2082''}
+\[\LeanMath{\begin{aligned}\theta''(z, \tau) &= e^{\pi \cdot \mathrm{i} \cdot z^{2} \cdot \tau} \cdot (\theta'(z \cdot \tau, \tau) / (2 \cdot \pi \cdot \mathrm{i}) + z \cdot \theta(z \cdot \tau, \tau))\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=Q9DaJqWm5C]{WeakFEPair.f_modif}{The first function with its constant terms removed}
-\label{def:WeakFEPair.f_modif}
-\[\LeanMath{\begin{aligned}\tilde{f}_{P} &= \mathbf{1}_{(1, \infty)}\,(\lambda x.\,f_{P}\,x - f^{0}_{P}) + \mathbf{1}_{(0, 1)}\,(\lambda x.\,f_{P}\,x - (\varepsilon_{P} \cdot x^{-k_{P}}) \bullet g^{0}_{P})\end{aligned}}\]
-\end{leandefinition}
-
-\begin{leandefinition}[def, sum=botFrI29QE]{mellin}{The Mellin transform}
-\label{def:mellin}
-\[\LeanMath{\begin{aligned}\mathcal{M}(f)(s) &= \int_{(0, \infty)} t^{s - 1} \bullet f\,t \,\mathrm{d}t\end{aligned}}\]
-\end{leandefinition}
-
-A pair $P$ has two functions $f_P$ and $g_P$ on $(0, \infty)$, a weight
-$k_P$, a root number $\varepsilon_P$, and constant terms $f^{0}_P$ and
-$g^{0}_P$ at infinity, with $f_P(1/x) = \varepsilon_P x^{k_P} g_P(x)$. The
-even pair at $a$ has $f = K^{+}_{a}$ and $g = K^{\cos}_{a}$, the two theta
-kernels below, weight $\tfrac12$, root number $1$, and constant terms $1$ if
-$a = 0$ and $0$ otherwise for $f$, and $1$ for $g$
-\leancheck{HurwitzZeta.hurwitzEvenFEPair, WeakFEPair}. The kernels are
-Mathlib's irreducible definitions, characterised by the following facts in
-terms of Jacobi's theta function.
+Four kernels on $(0, \infty)$, indexed by a point $a$ of the circle
+$\mathbb{R}/\mathbb{Z}$, are the functions whose Mellin transforms will be
+the even and odd parts of the Hurwitz zeta function. They are Mathlib's
+irreducible definitions, characterised by the following facts, in which $a$
+and $x$ are real and the kernel is taken at the image of $a$ on the circle.
 
 \begin{leanfact}[sum=tz_iWgXl2U]{HurwitzZeta.evenKernel_def}{The even kernel}
 \label{fact:HurwitzZeta.evenKernel_def}
@@ -136,25 +110,72 @@ terms of Jacobi's theta function.
 \[\LeanMath{K^{\cos}_{a}(x) = \theta(a, \mathrm{i} \cdot x)}\]
 \end{leanfact}
 
-\begin{leandefinition}[def, sum=BwlTMP_aLz]{jacobiTheta₂}{Jacobi's theta function}
-\label{def:jacobiThetau2082}
-\[\LeanMath{\begin{aligned}\theta(z, \tau) &= \sum_{n}^{\infty} \theta_{n}(z, \tau)\end{aligned}}\]
+\begin{leanfact}[sum=x7s81Wc33D]{HurwitzZeta.oddKernel_def}{The odd kernel}
+\label{fact:HurwitzZeta.oddKernel_def}
+\[\LeanMath{K^{-}_{a}(x) = \theta''(a, \mathrm{i} \cdot x)}\]
+\end{leanfact}
+
+\begin{leanfact}[sum=eWui0GdHSf]{HurwitzZeta.sinKernel_def}{The sine kernel}
+\label{fact:HurwitzZeta.sinKernel_def}
+\[\LeanMath{K^{\sin}_{a}(x) = \theta'(a, \mathrm{i} \cdot x) / (-2 \cdot \pi)}\]
+\end{leanfact}
+
+The Mellin transform of a function $f$ on $(0, \infty)$ with values in a
+complex normed space $E$ is the integral below. The bullet in $z \bullet v$
+is the product of a complex number $z$ and a vector $v$ of $E$, Lean's
+scalar multiplication, written apart from the product of two numbers since
+a complex number times a complex number is both.
+
+\begin{leandefinition}[def, sum=botFrI29QE]{mellin}{The Mellin transform}
+\label{def:mellin}
+\[\LeanMath{\begin{aligned}\mathcal{M}(f)(s) &= \int_{(0, \infty)} t^{s - 1} \bullet f\,t \,\mathrm{d}t\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=D0gbudZeiV]{jacobiTheta₂_term}{Its terms}
-\label{def:jacobiThetau2082_term}
-\[\LeanMath{\begin{aligned}\theta_{n}(z, \tau) &= e^{2 \cdot \pi \cdot \mathrm{i} \cdot n \cdot z + \pi \cdot \mathrm{i} \cdot n^{2} \cdot \tau}\end{aligned}}\]
+A pair $P$ of functions related by a functional equation under
+$x \mapsto 1/x$ has two functions $f_P$ and $g_P$ on $(0, \infty)$ with
+values in $E$, a weight $k_P$, a root number $\varepsilon_P$, and constant
+terms $f^{0}_P$ and $g^{0}_P$ at infinity, with
+$f_P(1/x) = \varepsilon_P x^{k_P} g_P(x)$ \leancheck{WeakFEPair}. Its
+transform $\Lambda_P$ is the Mellin transform of $f_P$ with its constant
+terms at $0$ and $\infty$ removed, so that the integral converges, and the
+two poles this introduces put back.
+
+\begin{leandefinition}[def, sum=Q9DaJqWm5C]{WeakFEPair.f_modif}{The first function with its constant terms removed}
+\label{def:WeakFEPair.f_modif}
+\[\LeanMath{\begin{aligned}\tilde{f}_{P} &= \mathbf{1}_{(1, \infty)}\,(\lambda x.\,f_{P}\,x - f^{0}_{P}) + \mathbf{1}_{(0, 1)}\,(\lambda x.\,f_{P}\,x - (\varepsilon_{P} \cdot x^{-k_{P}}) \bullet g^{0}_{P})\end{aligned}}\]
 \end{leandefinition}
 
-Finally the Gamma factor. Mathlib defines $\Gamma$ on all of $\mathbb{C}$ by
-the integral where it converges and by the recurrence
-$\Gamma(s + 1) = s\,\Gamma(s)$ elsewhere, through an auxiliary definition
-that is not mathematically interesting; the two facts below are what it
-proves of the result \leancheck{Complex.Gamma}.
+\begin{leandefinition}[def, sum=iCqrfjPw5K]{WeakFEPair.Λ₀}{The entire part of the transform}
+\label{def:WeakFEPair.u39bu2080}
+\[\LeanMath{\begin{aligned}\Lambda^{0}_{P} &= \mathcal{M}(\tilde{f}_{P})\end{aligned}}\]
+\end{leandefinition}
 
-\begin{leandefinition}[def, sum=0Swt3CYXWl]{Complex.Gammaℝ}{Deligne's Gamma factor}
-\label{def:Complex.Gammau211d}
-\[\LeanMath{\begin{aligned}\Gamma_{\mathbb{R}}(s) &= \pi^{-s / 2} \cdot \Gamma(s / 2)\end{aligned}}\]
+\begin{leandefinition}[def, sum=2zctRaz6RT]{WeakFEPair.Λ}{The completed transform of a pair}
+\label{def:WeakFEPair.u39b}
+\[\LeanMath{\begin{aligned}\Lambda_{P}(s) &= \Lambda^{0}_{P}(s) - (1 / s) \bullet f^{0}_{P} - (\varepsilon_{P} / (k_{P} - s)) \bullet g^{0}_{P}\end{aligned}}\]
+\end{leandefinition}
+
+Two such pairs are built from the kernels. The even pair at $a$,
+$\mathcal{P}^{+}_{a}$, has $f = K^{+}_{a}$ and $g = K^{\cos}_{a}$, weight
+$\tfrac12$, root number $1$, and constant terms $1$ if $a = 0$ and $0$
+otherwise for $f$, and $1$ for $g$
+\leancheck{HurwitzZeta.hurwitzEvenFEPair}. The odd pair at $a$,
+$\mathcal{P}^{-}_{a}$, has $f = K^{-}_{a}$ and $g = K^{\sin}_{a}$, weight
+$\tfrac32$, root number $1$, and both constant terms $0$
+\leancheck{HurwitzZeta.hurwitzOddFEPair}.
+
+\subsection{The Gamma function}
+
+Mathlib defines $\Gamma$ on all of $\mathbb{C}$ by Euler's integral where
+it converges and by the recurrence $\Gamma(s + 1) = s\,\Gamma(s)$
+elsewhere, through an auxiliary definition that is not mathematically
+interesting; the two facts are what it proves of the result
+\leancheck{Complex.Gamma}. Deligne's $\Gamma_{\mathbb{R}}$ is the Gamma
+factor of the functional equation.
+
+\begin{leandefinition}[def, sum=xCZOAYlwQ0]{Complex.GammaIntegral}{Euler's integral}
+\label{def:Complex.GammaIntegral}
+\[\LeanMath{\begin{aligned}\Gamma^{\!\int}(s) &= \int_{(0, \infty)} \exp(-x) \cdot x^{s - 1} \,\mathrm{d}x\end{aligned}}\]
 \end{leandefinition}
 
 \begin{leanfact}[sum=c9zEDWOvsf]{Complex.Gamma_eq_integral}{The Gamma function, where the integral converges}
@@ -167,9 +188,53 @@ proves of the result \leancheck{Complex.Gamma}.
 \[\LeanMath{s \ne 0 \implies \Gamma(s + 1) = s \cdot \Gamma(s)}\]
 \end{leanfact}
 
-\begin{leandefinition}[def, sum=xCZOAYlwQ0]{Complex.GammaIntegral}{The Gamma integral}
-\label{def:Complex.GammaIntegral}
-\[\LeanMath{\begin{aligned}\Gamma^{\!\int}(s) &= \int_{(0, \infty)} \exp(-x) \cdot x^{s - 1} \,\mathrm{d}x\end{aligned}}\]
+\begin{leandefinition}[def, sum=0Swt3CYXWl]{Complex.Gammaℝ}{Deligne's Gamma factor}
+\label{def:Complex.Gammau211d}
+\[\LeanMath{\begin{aligned}\Gamma_{\mathbb{R}}(s) &= \pi^{-s / 2} \cdot \Gamma(s / 2)\end{aligned}}\]
+\end{leandefinition}
+
+\subsection{The Hurwitz zeta functions and $\zeta$}
+
+The completed even and odd Hurwitz zeta functions at $a$ are the transforms
+of the two pairs, at $s/2$ and $(s+1)/2$ and halved. Dividing by the Gamma
+factor gives the even and odd parts of the Hurwitz zeta function; the even
+part is set by hand at $s = 0$, where both the completed function and
+$\Gamma_{\mathbb{R}}$ vanish: $f[a \mapsto b]$ is the function $f$ with its
+value at $a$ replaced by $b$.
+
+\begin{leandefinition}[def, sum=u4Q9nvIfDr]{HurwitzZeta.completedHurwitzZetaEven}{The completed even Hurwitz zeta function}
+\label{def:HurwitzZeta.completedHurwitzZetaEven}
+\[\LeanMath{\begin{aligned}\Lambda^{+}_{a}(s) &= \Lambda_{\mathcal{P}^{+}_{a}}(s / 2) / 2\end{aligned}}\]
+\end{leandefinition}
+
+\begin{leandefinition}[def, sum=IBIj6vWMqq]{HurwitzZeta.completedHurwitzZetaOdd}{The completed odd Hurwitz zeta function}
+\label{def:HurwitzZeta.completedHurwitzZetaOdd}
+\[\LeanMath{\begin{aligned}\Lambda^{-}_{a}(s) &= \Lambda_{\mathcal{P}^{-}_{a}}((s + 1) / 2) / 2\end{aligned}}\]
+\end{leandefinition}
+
+\begin{leandefinition}[def, sum=gdpdhk82ca]{HurwitzZeta.hurwitzZetaEven}{The even part of the Hurwitz zeta function}
+\label{def:HurwitzZeta.hurwitzZetaEven}
+\[\LeanMath{\begin{aligned}\zeta^{+}_{a} &= (\lambda s.\,\Lambda^{+}_{a}(s) / \Gamma_{\mathbb{R}}(s))[0 \mapsto (-1 / 2 \text{ if } a = 0\text{, else } 0)]\end{aligned}}\]
+\end{leandefinition}
+
+\begin{leandefinition}[def, sum=muXCfnbA1Z]{HurwitzZeta.hurwitzZetaOdd}{The odd part}
+\label{def:HurwitzZeta.hurwitzZetaOdd}
+\[\LeanMath{\begin{aligned}\zeta^{-}_{a}(s) &= \Lambda^{-}_{a}(s) / \Gamma_{\mathbb{R}}(s + 1)\end{aligned}}\]
+\end{leandefinition}
+
+The Hurwitz zeta function is the sum of the two parts, and the zeta
+function is the even part at the point $0$ of the circle. For
+$\Re s > 1$ these agree with the series $\sum_{n \ge 0} (n + a)^{-s}$ and
+$\sum_{n \ge 1} n^{-s}$, which Mathlib proves and this note does not need.
+
+\begin{leandefinition}[def, sum=Ewg0DTIMEo]{HurwitzZeta.hurwitzZeta}{The Hurwitz zeta function}
+\label{def:HurwitzZeta.hurwitzZeta}
+\[\LeanMath{\begin{aligned}\zeta_{a}(s) &= \zeta^{+}_{a}(s) + \zeta^{-}_{a}(s)\end{aligned}}\]
+\end{leandefinition}
+
+\begin{leandefinition}[def, sum=ObuDf-hTEK]{riemannZeta}{The zeta function}
+\label{def:riemannZeta}
+\[\LeanMath{\begin{aligned}\zeta &= \zeta^{+}_{0}\end{aligned}}\]
 \end{leandefinition}
 
 \subsection{Dirichlet characters and their $L$-functions}
@@ -177,83 +242,30 @@ proves of the result \leancheck{Complex.Gamma}.
 A Dirichlet character modulo $N$ is, in Mathlib, a multiplicative character
 of $\mathbb{Z}/N\mathbb{Z}$ with values in $\mathbb{C}$: a homomorphism of
 monoids that sends every non-unit to $0$
-\leancheck{DirichletCharacter, MulChar}. Its $L$-function $L(\chi, s)$ is
-defined as $\mathcal{L}(\chi, s)$, the $L$-function of $\chi$ as a function
-on $\mathbb{Z}/N\mathbb{Z}$ \leancheck{DirichletCharacter.LFunction}, which
-Mathlib builds as a combination of Hurwitz zeta functions at the points
-$j/N$ of the circle: $\iota$ sends $j$ modulo $N$ to $j/N$ modulo $1$
-\leancheck{ZMod.toAddCircle}.
+\leancheck{DirichletCharacter, MulChar}. The $L$-function of a function
+$\Phi$ on $\mathbb{Z}/N\mathbb{Z}$ is a combination of Hurwitz zeta
+functions at the points $j/N$ of the circle, where $\iota$ sends $j$ modulo
+$N$ to $j/N$ modulo $1$ \leancheck{ZMod.toAddCircle}; the $L$-function
+$L(\chi, s)$ of a character is $\mathcal{L}(\chi, s)$, with $\chi$ as a
+function on $\mathbb{Z}/N\mathbb{Z}$ \leancheck{DirichletCharacter.LFunction}.
 
 \begin{leandefinition}[def, sum=AebIKqzGj3]{ZMod.LFunction}{The $L$-function of a function on $\mathbb{Z}/N\mathbb{Z}$}
 \label{def:ZMod.LFunction}
 \[\LeanMath{\begin{aligned}\mathcal{L}(\Phi, s) &= N^{-s} \cdot (\sum_{j} \Phi\,j \cdot \zeta_{\iota\,j}(s))\end{aligned}}\]
 \end{leandefinition}
 
+Lastly, primitivity. A character $\chi$ modulo $N$ factors through a
+modulus $d$ when $d$ divides $N$, which is what the first existential below
+ranges over, and $\chi$ is the lift $\mathrm{lift}\,\chi_0$ of a character
+$\chi_0$ modulo $d$ along the projection
+$\mathbb{Z}/N\mathbb{Z} \to \mathbb{Z}/d\mathbb{Z}$
+\leancheck{DirichletCharacter.changeLevel}. Its conductor is the least
+modulus it factors through, and it is primitive when the conductor is $N$
+itself.
 
-The Hurwitz zeta function is the sum of its even part, defined above, and
-its odd part, which is built the same way from a second pair.
-
-\begin{leandefinition}[def, sum=Ewg0DTIMEo]{HurwitzZeta.hurwitzZeta}{The Hurwitz zeta function}
-\label{def:HurwitzZeta.hurwitzZeta}
-\[\LeanMath{\begin{aligned}\zeta_{a}(s) &= \zeta^{+}_{a}(s) + \zeta^{-}_{a}(s)\end{aligned}}\]
-\end{leandefinition}
-
-\begin{leandefinition}[def, sum=muXCfnbA1Z]{HurwitzZeta.hurwitzZetaOdd}{Its odd part}
-\label{def:HurwitzZeta.hurwitzZetaOdd}
-\[\LeanMath{\begin{aligned}\zeta^{-}_{a}(s) &= \Lambda^{-}_{a}(s) / \Gamma_{\mathbb{R}}(s + 1)\end{aligned}}\]
-\end{leandefinition}
-
-\begin{leandefinition}[def, sum=IBIj6vWMqq]{HurwitzZeta.completedHurwitzZetaOdd}{The completed odd part}
-\label{def:HurwitzZeta.completedHurwitzZetaOdd}
-\[\LeanMath{\begin{aligned}\Lambda^{-}_{a}(s) &= \Lambda_{\mathcal{P}^{-}_{a}}((s + 1) / 2) / 2\end{aligned}}\]
-\end{leandefinition}
-
-The odd pair at $a$ has $f = K^{-}_{a}$ and $g = K^{\sin}_{a}$, weight
-$\tfrac32$, root number $1$, and both constant terms $0$
-\leancheck{HurwitzZeta.hurwitzOddFEPair}. Its kernels are characterised by
-the derivative of the theta function in its first variable, and a variant of
-it.
-
-\begin{leanfact}[sum=x7s81Wc33D]{HurwitzZeta.oddKernel_def}{The odd kernel}
-\label{fact:HurwitzZeta.oddKernel_def}
-\[\LeanMath{K^{-}_{a}(x) = \theta''(a, \mathrm{i} \cdot x)}\]
-\end{leanfact}
-
-\begin{leanfact}[sum=eWui0GdHSf]{HurwitzZeta.sinKernel_def}{The sine kernel}
-\label{fact:HurwitzZeta.sinKernel_def}
-\[\LeanMath{K^{\sin}_{a}(x) = \theta'(a, \mathrm{i} \cdot x) / (-2 \cdot \pi)}\]
-\end{leanfact}
-
-\begin{leandefinition}[def, sum=NIBqDF-DYM]{HurwitzZeta.jacobiTheta₂''}{The variant}
-\label{def:HurwitzZeta.jacobiThetau2082''}
-\[\LeanMath{\begin{aligned}\theta''(z, \tau) &= e^{\pi \cdot \mathrm{i} \cdot z^{2} \cdot \tau} \cdot (\theta'(z \cdot \tau, \tau) / (2 \cdot \pi \cdot \mathrm{i}) + z \cdot \theta(z \cdot \tau, \tau))\end{aligned}}\]
-\end{leandefinition}
-
-\begin{leandefinition}[def, sum=qd3AU_svGq]{jacobiTheta₂'}{The derivative of the theta function}
-\label{def:jacobiThetau2082'}
-\[\LeanMath{\begin{aligned}\theta'(z, \tau) &= \sum_{n}^{\infty} \theta'_{n}(z, \tau)\end{aligned}}\]
-\end{leandefinition}
-
-\begin{leandefinition}[def, sum=H022_QD8DO]{jacobiTheta₂'_term}{Its terms}
-\label{def:jacobiThetau2082'_term}
-\[\LeanMath{\begin{aligned}\theta'_{n}(z, \tau) &= 2 \cdot \pi \cdot \mathrm{i} \cdot n \cdot \theta_{n}(z, \tau)\end{aligned}}\]
-\end{leandefinition}
-
-Lastly, primitivity. A character modulo $N$ factors through a modulus $d$
-when $d$ divides $N$, which is what the first existential below ranges over,
-and $\chi$ is the lift $\mathrm{lift}\,\chi_0$ of a character $\chi_0$ modulo
-$d$ along the projection $\mathbb{Z}/N\mathbb{Z} \to \mathbb{Z}/d\mathbb{Z}$
-\leancheck{DirichletCharacter.changeLevel}. Its conductor is the least such
-$d$, and it is primitive when the conductor is $N$ itself.
-
-\begin{leandefinition}[def, sum=bJp4mTHNBt]{DirichletCharacter.IsPrimitive}{Primitive characters}
-\label{def:DirichletCharacter.IsPrimitive}
-\[\LeanMath{\begin{aligned}\chi \text{ is primitive} &= \mathfrak{f}(\chi) = n\end{aligned}}\]
-\end{leandefinition}
-
-\begin{leandefinition}[def, sum=azhYsWmuoI]{DirichletCharacter.conductor}{The conductor}
-\label{def:DirichletCharacter.conductor}
-\[\LeanMath{\begin{aligned}\mathfrak{f}(\chi) &= \inf \mathcal{F}(\chi)\end{aligned}}\]
+\begin{leandefinition}[def, sum=i4iPvoH_LX]{DirichletCharacter.FactorsThrough}{Factoring through a modulus}
+\label{def:DirichletCharacter.FactorsThrough}
+\[\LeanMath{\begin{aligned}\chi \text{ factors through } d &= \exists h,\ \exists \chi_{0},\ \chi = \mathrm{lift}\,\chi_{0}\end{aligned}}\]
 \end{leandefinition}
 
 \begin{leandefinition}[def, sum=ojvOnn5cn-]{DirichletCharacter.conductorSet}{The moduli a character factors through}
@@ -261,9 +273,14 @@ $d$, and it is primitive when the conductor is $N$ itself.
 \[\LeanMath{\begin{aligned}\mathcal{F}(\chi) &= \{d \mid \chi \text{ factors through } d\}\end{aligned}}\]
 \end{leandefinition}
 
-\begin{leandefinition}[def, sum=i4iPvoH_LX]{DirichletCharacter.FactorsThrough}{Factoring through a modulus}
-\label{def:DirichletCharacter.FactorsThrough}
-\[\LeanMath{\begin{aligned}\chi \text{ factors through } d &= \exists h,\ \exists \chi_{0},\ \chi = \mathrm{lift}\,\chi_{0}\end{aligned}}\]
+\begin{leandefinition}[def, sum=azhYsWmuoI]{DirichletCharacter.conductor}{The conductor}
+\label{def:DirichletCharacter.conductor}
+\[\LeanMath{\begin{aligned}\mathfrak{f}(\chi) &= \inf \mathcal{F}(\chi)\end{aligned}}\]
+\end{leandefinition}
+
+\begin{leandefinition}[def, sum=bJp4mTHNBt]{DirichletCharacter.IsPrimitive}{Primitive characters}
+\label{def:DirichletCharacter.IsPrimitive}
+\[\LeanMath{\begin{aligned}\chi \text{ is primitive} &= \mathfrak{f}(\chi) = n\end{aligned}}\]
 \end{leandefinition}
 
 \section{The Riemann Hypothesis}
@@ -339,16 +356,16 @@ and their rows say what Mathlib's proofs rest on. A reader who wants more than t
 do, neither of which this note can do for them: run the Comparator on the
 archive against these statements, and read the archive.
 
-\begin{leanprovenance}[sum=H-pkcUEsBB]{Provenance}{Provenance}
+\begin{leanprovenance}[sum=vYSwRX4yuj]{Provenance}{Provenance}
 \begin{longtable}{@{}l@{\quad}l@{\quad}>{\raggedright\arraybackslash}p{.3\linewidth}@{\quad}l@{}}
 \textit{Result} & \textit{Lean} & \textit{Source} & \textit{Axioms}\\
 \hline\endhead
 \ref{fact:HurwitzZeta.evenKernel_def}, p.~\pageref{fact:HurwitzZeta.evenKernel_def} & \texttt{evenKernel\_def} & \LeanSourceRef{Mathlib/NumberTheory/LSeries/HurwitzZetaEven.lean}{79}{\texttt{Mathlib/\allowbreak NumberTheory/\allowbreak LSeries/\allowbreak HurwitzZetaEven.lean:79}} & standard\\
 \ref{fact:HurwitzZeta.cosKernel_def}, p.~\pageref{fact:HurwitzZeta.cosKernel_def} & \texttt{cosKernel\_def} & \LeanSourceRef{Mathlib/NumberTheory/LSeries/HurwitzZetaEven.lean}{95}{\texttt{Mathlib/\allowbreak NumberTheory/\allowbreak LSeries/\allowbreak HurwitzZetaEven.lean:95}} & standard\\
-\ref{fact:Complex.Gamma_eq_integral}, p.~\pageref{fact:Complex.Gamma_eq_integral} & \texttt{Gamma\_eq\_integral} & \LeanSourceRef{Mathlib/Analysis/SpecialFunctions/Gamma/Basic.lean}{319}{\texttt{Mathlib/\allowbreak Analysis/\allowbreak SpecialFunctions/\allowbreak Gamma/\allowbreak Basic.lean:319}} & standard\\
-\ref{fact:Complex.Gamma_add_one}, p.~\pageref{fact:Complex.Gamma_add_one} & \texttt{Gamma\_add\_one} & \LeanSourceRef{Mathlib/Analysis/SpecialFunctions/Gamma/Basic.lean}{312}{\texttt{Mathlib/\allowbreak Analysis/\allowbreak SpecialFunctions/\allowbreak Gamma/\allowbreak Basic.lean:312}} & standard\\
 \ref{fact:HurwitzZeta.oddKernel_def}, p.~\pageref{fact:HurwitzZeta.oddKernel_def} & \texttt{oddKernel\_def} & \LeanSourceRef{Mathlib/NumberTheory/LSeries/HurwitzZetaOdd.lean}{114}{\texttt{Mathlib/\allowbreak NumberTheory/\allowbreak LSeries/\allowbreak HurwitzZetaOdd.lean:114}} & standard\\
 \ref{fact:HurwitzZeta.sinKernel_def}, p.~\pageref{fact:HurwitzZeta.sinKernel_def} & \texttt{sinKernel\_def} & \LeanSourceRef{Mathlib/NumberTheory/LSeries/HurwitzZetaOdd.lean}{135}{\texttt{Mathlib/\allowbreak NumberTheory/\allowbreak LSeries/\allowbreak HurwitzZetaOdd.lean:135}} & standard\\
+\ref{fact:Complex.Gamma_eq_integral}, p.~\pageref{fact:Complex.Gamma_eq_integral} & \texttt{Gamma\_eq\_integral} & \LeanSourceRef{Mathlib/Analysis/SpecialFunctions/Gamma/Basic.lean}{319}{\texttt{Mathlib/\allowbreak Analysis/\allowbreak SpecialFunctions/\allowbreak Gamma/\allowbreak Basic.lean:319}} & standard\\
+\ref{fact:Complex.Gamma_add_one}, p.~\pageref{fact:Complex.Gamma_add_one} & \texttt{Gamma\_add\_one} & \LeanSourceRef{Mathlib/Analysis/SpecialFunctions/Gamma/Basic.lean}{312}{\texttt{Mathlib/\allowbreak Analysis/\allowbreak SpecialFunctions/\allowbreak Gamma/\allowbreak Basic.lean:312}} & standard\\
 Claim~\ref{claim:Riemann.riemannHypothesis}, p.~\pageref{claim:Riemann.riemannHypothesis} & \texttt{riemannHypothesis} & \LeanSourceRef{Riemann/Statements.lean}{17}{\texttt{Riemann/\allowbreak Statements.lean:17}} & \textbf{sorry}\\
 Claim~\ref{claim:Riemann.riemannZeta_eq_zero_re}, p.~\pageref{claim:Riemann.riemannZeta_eq_zero_re} & \texttt{riemannZeta\_eq\_zero\_re} & \LeanSourceRef{Riemann/Statements.lean}{20}{\texttt{Riemann/\allowbreak Statements.lean:20}} & \textbf{sorry}\\
 Claim~\ref{claim:Riemann.LFunction_ne_zero_of_half_lt_re}, p.~\pageref{claim:Riemann.LFunction_ne_zero_of_half_lt_re} & \texttt{LFunction\_ne\_zero\_of\_half\_lt\_re} & \LeanSourceRef{Riemann/Statements.lean}{26}{\texttt{Riemann/\allowbreak Statements.lean:26}} & \textbf{sorry}\\

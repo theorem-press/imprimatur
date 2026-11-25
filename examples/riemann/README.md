@@ -20,12 +20,13 @@ reads the proofs.
 
 What the note shows:
 
-- Mathlib's definitions as their equations (`[def]`): the chain from
-  `riemannZeta` down through the Hurwitz zeta functions, the functional
-  equation pairs, the Mellin transform, the theta kernels and Jacobi's theta
-  function, and from `DirichletCharacter.LFunction` down to the conductor;
-  where Mathlib makes a definition irreducible (the kernels, `Γ`), the lemma
-  that characterises it is shown as a fact instead;
+- Mathlib's definitions as their equations (`[def]`), from the bottom up so
+  that nothing is used before it is defined: Jacobi's theta function, the
+  theta kernels, the Mellin transform and the functional-equation pairs, `Γ`,
+  the Hurwitz zeta functions and then `riemannZeta`; the `L`-function of a
+  function on `ZMod N`, and primitivity down from factoring through a
+  modulus; where Mathlib makes a definition irreducible (the kernels, `Γ`),
+  the lemma that characterises it is shown as a fact instead;
 - notation for a definition written point-free (`riemannZeta` beside
   `riemannZeta s`), a `synonym` rule for `π` as a complex number, so that the
   reading is tried only where the real `π` is ill typed, and rules for the

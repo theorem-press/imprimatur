@@ -22,73 +22,51 @@ The claims use four of Mathlib’s definitions: the zeta function ζ, the Dirich
 characters Char(N), their L-functions L(χ, s), and primitivity. None of them is
 elementary, and Mathlib does not define ζ by its Dirichlet series, which converges
 only to the right of ℜs = 1, but as a meromorphic function on all of C, built
-from the Mellin transform of a theta function. This section pulls that chain
-of definitions in from Mathlib, down to real and complex arithmetic, integrals
-and sums, so that the note says what it claims without reference to Mathlib’s
-text. Each definition is rendered from Mathlib’s defining equation, in the order
-a reader meets them: a definition uses the ones below it. Where Mathlib makes
-a definition irreducible and characterises it by a lemma, as for the theta kernels
-and Γ, the lemma is shown instead, as a fact Mathlib proves.
+from the Mellin transform of a theta function. This section pulls that chain of
+definitions in from Mathlib, from the bottom up, so that the note says what it
+claims without reference to Mathlib’s text: each definition uses only real and
+complex arithmetic, integrals and sums, and the definitions above it. Each is
+rendered from Mathlib’s defining equation. Where Mathlib makes a definition
+irreducible and characterises it by a lemma, as for the theta kernels and Γ, the
+lemma is shown instead, as a fact Mathlib proves.
 1https://alpo.ge/remark.pdf
 2https://github.com/Deicyde/riemann-hypothesis does this for the five statements.
-1.1 The zeta function
-The zeta function is the even part of the Hurwitz zeta function at the point 0
-of the circle R/Z, which Mathlib writes ζ+
-a (s) for a point a of the circle.
-Definition 1 (The zeta function).
-ζ = ζ+
-0
-The even Hurwitz zeta function is its completed form Λ+
-a divided by Deligne’s
-ΓR, except at s = 0, where both vanish and the value is set by hand: f[a 7→ b]
-is the function f with its value at a replaced by b.
-Definition 2 (The even Hurwitz zeta function).
-ζ+
-a = (λs. Λ+
-a (s)/ΓR(s))[0 7→ (−1/2 if a = 0, else 0)]
-The completed form comes from a pair of functions P+
-a related by a func-
-tional equation under x 7→ 1/x. Mathlib’s ΛP is the Mellin transform of the
-pair’s first function, with its constant terms at 0 and ∞ subtracted so that the
-integral converges, and the two poles this introduces put back.
-Definition 3 (The completed even Hurwitz zeta function).
-Λ+
-a (s) = ΛP+
-a
-(s/2)/2
-Definition 4 (The completed transform of a pair).
-ΛP (s) = Λ0
-P (s) − (1/s) • f0
-P − (εP /(kP − s)) • g0
-P
-Definition 5 (The entire part of the transform).
-Λ0
-P = M( ˜
-fP )
-Definition 6 (The first function with its constant terms removed).
-˜
-fP = 1(1,∞) (λx. fP x − f0
-P ) + 1(0,1) (λx. fP x − (εP · x−kP
-) • g0
-P )
-Definition 7 (The Mellin transform).
-M(f)(s) =
-Z
-(0,∞)
-ts−1
-• f t dt
-A pair P has two functions fP and gP on (0, ∞), a weight kP , a root number
-εP , and constant terms f0
-P and g0
-P at infinity, with fP (1/x) = εP xkP
-gP (x). The
-even pair at a has f = K+
-a and g = Kcos
-a , the two theta kernels below, weight
-1
-2 , root number 1, and constant terms 1 if a = 0 and 0 otherwise for f, and
-1 for g. The kernels are Mathlib’s irreducible definitions, characterised by the
-following facts in terms of Jacobi’s theta function.
+1.1 Theta functions and their Mellin transforms
+Jacobi’s theta function is a series over the integers, and its derivative in the first
+variable is the series of the derivatives of the terms. A variant of the derivative,
+θ′′
+, is what the odd kernel below needs.
+Definition 1 (The terms of the theta function).
+θn(z, τ) = e2·π·i·n·z+π·i·n2
+·τ
+Definition 2 (Jacobi’s theta function).
+θ(z, τ) =
+∞
+X
+n
+θn(z, τ)
+Definition 3 (The terms of its derivative).
+θ′
+n(z, τ) = 2 · π · i · n · θn(z, τ)
+Definition 4 (The derivative of the theta function).
+θ′
+(z, τ) =
+∞
+X
+n
+θ′
+n(z, τ)
+Definition 5 (A variant of the derivative).
+θ′′
+(z, τ) = eπ·i·z2
+·τ
+· (θ′
+(z · τ, τ)/(2 · π · i) + z · θ(z · τ, τ))
+Four kernels on (0, ∞), indexed by a point a of the circle R/Z, are the
+functions whose Mellin transforms will be the even and odd parts of the Hurwitz
+zeta function. They are Mathlib’s irreducible definitions, characterised by the
+following facts, in which a and x are real and the kernel is taken at the image
+of a on the circle.
 Fact 1 (The even kernel).
 K+
 a (x) = e−π·a2
@@ -97,29 +75,67 @@ a (x) = e−π·a2
 Fact 2 (The cosine kernel).
 Kcos
 a (x) = θ(a, i · x)
-Definition 8 (Jacobi’s theta function).
-θ(z, τ) =
-∞
-X
-n
-θn(z, τ)
-Definition 9 (Its terms).
-θn(z, τ) = e2·π·i·n·z+π·i·n2
-·τ
-Finally the Gamma factor. Mathlib defines Γ on all of C by the integral
-where it converges and by the recurrence Γ(s + 1) = s Γ(s) elsewhere, through
-an auxiliary definition that is not mathematically interesting; the two facts
-below are what it proves of the result.
-Definition 10 (Deligne’s Gamma factor).
-ΓR(s) = π−s/2
-· Γ(s/2)
-Fact 3 (The Gamma function, where the integral converges).
-0 < ℜs =⇒ Γ(s) = Γ
-R
-(s)
-Fact 4 (The Gamma function, elsewhere).
-s ̸= 0 =⇒ Γ(s + 1) = s · Γ(s)
-Definition 11 (The Gamma integral).
+Fact 3 (The odd kernel).
+K−
+a (x) = θ′′
+(a, i · x)
+Fact 4 (The sine kernel).
+Ksin
+a (x) = θ′
+(a, i · x)/(−2 · π)
+The Mellin transform of a function f on (0, ∞) with values in a complex
+normed space E is the integral below. The bullet in z • v is the product of
+a complex number z and a vector v of E, Lean’s scalar multiplication, written
+apart from the product of two numbers since a complex number times a complex
+number is both.
+Definition 6 (The Mellin transform).
+M(f)(s) =
+Z
+(0,∞)
+ts−1
+• f t dt
+A pair P of functions related by a functional equation under x 7→ 1/x has
+two functions fP and gP on (0, ∞) with values in E, a weight kP , a root number
+εP , and constant terms f0
+P and g0
+P at infinity, with fP (1/x) = εP xkP
+gP (x). Its
+transform ΛP is the Mellin transform of fP with its constant terms at 0 and ∞
+removed, so that the integral converges, and the two poles this introduces put
+back.
+Definition 7 (The first function with its constant terms removed).
+˜
+fP = 1(1,∞) (λx. fP x − f0
+P ) + 1(0,1) (λx. fP x − (εP · x−kP
+) • g0
+P )
+Definition 8 (The entire part of the transform).
+Λ0
+P = M( ˜
+fP )
+Definition 9 (The completed transform of a pair).
+ΛP (s) = Λ0
+P (s) − (1/s) • f0
+P − (εP /(kP − s)) • g0
+P
+Two such pairs are built from the kernels. The even pair at a, P+
+a , has
+f = K+
+a and g = Kcos
+a , weight 1
+2 , root number 1, and constant terms 1 if a = 0
+and 0 otherwise for f, and 1 for g. The odd pair at a, P−
+a , has f = K−
+a and
+g = Ksin
+a , weight 3
+2 , root number 1, and both constant terms 0.
+1.2 The Gamma function
+Mathlib defines Γ on all of C by Euler’s integral where it converges and by the
+recurrence Γ(s + 1) = s Γ(s) elsewhere, through an auxiliary definition that is
+not mathematically interesting; the two facts are what it proves of the result.
+Deligne’s ΓR is the Gamma factor of the functional equation.
+Definition 10 (Euler’s integral).
 Γ
 R
 (s) =
@@ -127,76 +143,82 @@ Z
 (0,∞)
 exp(−x) · xs−1
 dx
-1.2 Dirichlet characters and their L-functions
+Fact 5 (The Gamma function, where the integral converges).
+0 < ℜs =⇒ Γ(s) = Γ
+R
+(s)
+Fact 6 (The Gamma function, elsewhere).
+s ̸= 0 =⇒ Γ(s + 1) = s · Γ(s)
+Definition 11 (Deligne’s Gamma factor).
+ΓR(s) = π−s/2
+· Γ(s/2)
+1.3 The Hurwitz zeta functions and ζ
+The completed even and odd Hurwitz zeta functions at a are the transforms of
+the two pairs, at s/2 and (s + 1)/2 and halved. Dividing by the Gamma factor
+gives the even and odd parts of the Hurwitz zeta function; the even part is set
+by hand at s = 0, where both the completed function and ΓR vanish: f[a 7→ b]
+is the function f with its value at a replaced by b.
+Definition 12 (The completed even Hurwitz zeta function).
+Λ+
+a (s) = ΛP+
+a
+(s/2)/2
+Definition 13 (The completed odd Hurwitz zeta function).
+Λ−
+a (s) = ΛP−
+a
+((s + 1)/2)/2
+Definition 14 (The even part of the Hurwitz zeta function).
+ζ+
+a = (λs. Λ+
+a (s)/ΓR(s))[0 7→ (−1/2 if a = 0, else 0)]
+Definition 15 (The odd part).
+ζ−
+a (s) = Λ−
+a (s)/ΓR(s + 1)
+The Hurwitz zeta function is the sum of the two parts, and the zeta function
+is the even part at the point 0 of the circle. For ℜs > 1 these agree with the
+series
+P
+n≥0(n + a)−s
+and
+P
+n≥1 n−s
+, which Mathlib proves and this note does
+not need.
+Definition 16 (The Hurwitz zeta function).
+ζa(s) = ζ+
+a (s) + ζ−
+a (s)
+Definition 17 (The zeta function).
+ζ = ζ+
+0
+1.4 Dirichlet characters and their L-functions
 A Dirichlet character modulo N is, in Mathlib, a multiplicative character of
-Z/NZ with values in C: a homomorphism of monoids that sends every non-
-unit to 0. Its L-function L(χ, s) is defined as L(χ, s), the L-function of χ as
-a function on Z/NZ, which Mathlib builds as a combination of Hurwitz zeta
-functions at the points j/N of the circle: ι sends j modulo N to j/N modulo 1.
-Definition 12 (The L-function of a function on Z/NZ).
+Z/NZ with values in C: a homomorphism of monoids that sends every non-unit
+to 0. The L-function of a function Φ on Z/NZ is a combination of Hurwitz zeta
+functions at the points j/N of the circle, where ι sends j modulo N to j/N
+modulo 1; the L-function L(χ, s) of a character is L(χ, s), with χ as a function
+on Z/NZ.
+Definition 18 (The L-function of a function on Z/NZ).
 L(Φ, s) = N−s
 · (
 X
 j
 Φ j · ζι j(s))
-The Hurwitz zeta function is the sum of its even part, defined above, and
-its odd part, which is built the same way from a second pair.
-Definition 13 (The Hurwitz zeta function).
-ζa(s) = ζ+
-a (s) + ζ−
-a (s)
-Definition 14 (Its odd part).
-ζ−
-a (s) = Λ−
-a (s)/ΓR(s + 1)
-Definition 15 (The completed odd part).
-Λ−
-a (s) = ΛP−
-a
-((s + 1)/2)/2
-The odd pair at a has f = K−
-a and g = Ksin
-a , weight 3
-2 , root number 1, and
-both constant terms 0. Its kernels are characterised by the derivative of the
-theta function in its first variable, and a variant of it.
-Fact 5 (The odd kernel).
-K−
-a (x) = θ′′
-(a, i · x)
-Fact 6 (The sine kernel).
-Ksin
-a (x) = θ′
-(a, i · x)/(−2 · π)
-Definition 16 (The variant).
-θ′′
-(z, τ) = eπ·i·z2
-·τ
-· (θ′
-(z · τ, τ)/(2 · π · i) + z · θ(z · τ, τ))
-Definition 17 (The derivative of the theta function).
-θ′
-(z, τ) =
-∞
-X
-n
-θ′
-n(z, τ)
-Definition 18 (Its terms).
-θ′
-n(z, τ) = 2 · π · i · n · θn(z, τ)
-Lastly, primitivity. A character modulo N factors through a modulus d when
-d divides N, which is what the first existential below ranges over, and χ is the
-lift lift χ0 of a character χ0 modulo d along the projection Z/NZ → Z/dZ. Its
-conductor is the least such d, and it is primitive when the conductor is N itself.
-Definition 19 (Primitive characters).
-χ is primitive = f(χ) = n
-Definition 20 (The conductor).
-f(χ) = inf F(χ)
-Definition 21 (The moduli a character factors through).
-F(χ) = {d | χ factors through d}
-Definition 22 (Factoring through a modulus).
+Lastly, primitivity. A character χ modulo N factors through a modulus d
+when d divides N, which is what the first existential below ranges over, and χ is
+the lift lift χ0 of a character χ0 modulo d along the projection Z/NZ → Z/dZ.
+Its conductor is the least modulus it factors through, and it is primitive when
+the conductor is N itself.
+Definition 19 (Factoring through a modulus).
 χ factors through d = ∃h, ∃χ0, χ = lift χ0
+Definition 20 (The moduli a character factors through).
+F(χ) = {d | χ factors through d}
+Definition 21 (The conductor).
+f(χ) = inf F(χ)
+Definition 22 (Primitive characters).
+χ is primitive = f(χ) = n
 2 The Riemann Hypothesis
 Mathlib defines the Riemann Hypothesis as a proposition, and the archive’s
 headline theorem proves that proposition. The claim is stated here with the
@@ -249,58 +271,57 @@ Mathlib’s proofs rest on. A reader who wants more than the statements has two
 things to do, neither of which this note can do for them: run the Comparator
 on the archive against these statements, and read the archive.
 Result Lean Source Axioms
-1, p. 3 evenKernel def .lake/packages/
+1, p. 2 evenKernel def .lake/packages/
 mathlib/Mathlib/
 NumberTheory/
 LSeries/
 HurwitzZetaEven.lean:79
 standard
-2, p. 3 cosKernel def .lake/packages/
+2, p. 2 cosKernel def .lake/packages/
 mathlib/Mathlib/
 NumberTheory/
 LSeries/
 HurwitzZetaEven.lean:95
 standard
-3, p. 3 Gamma eq integral .lake/packages/
+3, p. 2 oddKernel def .lake/packages/
+mathlib/Mathlib/
+NumberTheory/
+LSeries/
+HurwitzZetaOdd.lean:114
+standard
+4, p. 2 sinKernel def .lake/packages/
+mathlib/Mathlib/
+NumberTheory/
+LSeries/
+HurwitzZetaOdd.lean:135
+standard
+5, p. 3 Gamma eq integral .lake/packages/
 mathlib/Mathlib/
 Analysis/
 SpecialFunctions/
 Gamma/
 Basic.lean:319
 standard
-4, p. 3 Gamma add one .lake/packages/
+6, p. 4 Gamma add one .lake/packages/
 mathlib/Mathlib/
 Analysis/
 SpecialFunctions/
 Gamma/
 Basic.lean:312
 standard
-5, p. 4 oddKernel def .lake/packages/
-mathlib/Mathlib/
-NumberTheory/
-LSeries/
-HurwitzZetaOdd.lean:114
-standard
-6, p. 4 sinKernel def .lake/packages/
-mathlib/Mathlib/
-NumberTheory/
-LSeries/
-HurwitzZetaOdd.lean:135
-standard
 Claim 1, p. 5 riemannHypothesis Riemann/
 Statements.lean:17
 sorry
-Claim 2, p. 5 riemannZeta eq zero re Riemann/
+Claim 2, p. 6 riemannZeta eq zero re Riemann/
 Statements.lean:20
 sorry
-Result Lean Source Axioms
-Claim 3, p. 5 LFunction ne zero of half lt re Riemann/
+Claim 3, p. 6 LFunction ne zero of half lt re Riemann/
 Statements.lean:26
 sorry
-Claim 4, p. 5 LFunction eq zero re Riemann/
+Claim 4, p. 6 LFunction eq zero re Riemann/
 Statements.lean:32
 sorry
-Claim 5, p. 5 LFunction eq zero re of isPrimitive Riemann/
+Claim 5, p. 6 LFunction eq zero re of isPrimitive Riemann/
 Statements.lean:37
 sorry
 The standard axioms are propext, Classical.choice and Quot.sound.
