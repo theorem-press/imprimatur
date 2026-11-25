@@ -252,7 +252,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       | .error msg => errors := errors.push (v, msg)
     else if let (some ds, "clauses") := (disp, spec.base) then
       -- A display of definitions (`latex_display`).
-      let (res, ps) ← run (Views.clausesView ds spec.types).run
+      let (res, ps) ← run (Views.clausesView ds spec.types (spec.opt "include") (spec.opt "exclude")).run
       validation := validation.push (v, ps)
       match res with
       | .ok t => views := views.push (v, t)
@@ -361,7 +361,9 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
           | .error msg => errors := errors.push (other, msg)
       else if base == "clauses" || (base == "grammar" && spec.opts.any (·.1 == "display")) then
         -- One definition, or one type, in display form.
-        let act := if base == "clauses" then Views.clausesView #[c.name] spec.types else Views.displayGrammarView #[c.name]
+        let act := if base == "clauses" then
+            Views.clausesView #[c.name] spec.types (spec.opt "include") (spec.opt "exclude")
+          else Views.displayGrammarView #[c.name]
         let (res, ps) ← run act.run
         validation := validation.push (other, ps)
         match res with

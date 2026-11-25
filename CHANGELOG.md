@@ -5,6 +5,11 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `include=` and `exclude=` on a `clauses` block select a definition's
+  equations by the constants of their left-hand sides, so a display can show
+  some cases of a definition by cases (`[include=randomized,noInterference]`
+  on the meaning of the assumptions), as they select the rules of a `rules`
+  figure.
 - In the `grammar` and `grammar|display` views of a structure, a field's
   type names the structure's earlier fields plainly: `plan : Fin self.n →
   Row` is set as `plan : ℕ_{<n} → Row`, where it was set with the notation

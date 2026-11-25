@@ -73,7 +73,8 @@ def fixtures : Array Fixture := #[
       "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
       "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist",
-      "clauses", "clauses|types=", "clauses|types=size", "grammar|display"] },
+      "clauses", "clauses|types=", "clauses|types=size", "clauses|include=lam,app",
+      "clauses|exclude=var,unit", "grammar|display"] },
   { dir := "Patterns", module := `Patterns, strip := #[`Patterns],
     keys := #["Patterns.three", "Patterns.nested", "Patterns.side", "Patterns.safeHead",
       "Patterns.konst", "Patterns.ident", "Patterns.Tagged", "Patterns.Side"],
@@ -369,6 +370,15 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
       (((view "Stlc.size" "clauses").splitOn "\\deq").length == 5) (view "Stlc.size" "clauses")
     -- `types=`: every definition's signature row, `f(x) ∈ T` with its
     -- binders' types as the text; `types=size`: only that definition's.
+    -- `include=` and `exclude=` select equations by the constants of their
+    -- left-hand sides: `size`'s `lam` and `app` cases, or all but `var` and `unit`.
+    let incl := view "Lookup and size" "clauses|include=lam,app"
+    check "extract/display/clauses-include"
+      ((incl.splitOn "\\LeanClause").length == 3 && (incl.splitOn "\\leanslot{Stlc.size}").length == 2 &&
+        (incl.splitOn "\\leanslot{Stlc.lookup}").length == 1) incl
+    let excl := view "Lookup and size" "clauses|exclude=var,unit"
+    check "extract/display/clauses-exclude"
+      ((excl.splitOn "\\LeanClause").length == 4 && (excl.splitOn "\\leanslot{Stlc.lookup}").length == 2) excl
     let typed := view "Lookup and size" "clauses|types="
     check "extract/display/clauses-types"
       ((typed.splitOn "\\LeanClause").length == 8 && (typed.splitOn "}{for $").length == 3 &&

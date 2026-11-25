@@ -62,9 +62,20 @@ def wantsSignature (types : Option (Array String)) (d : Name) : Bool :=
   | some #[] => true
   | some names => names.any fun n => d.toString == n || d.toString.endsWith ("." ++ n)
 
+/-- Whether `include=` and `exclude=` select an equation, by the constants
+its left-hand side mentions, named by their last component: for a definition
+by cases, `include=randomized,noInterference` keeps the cases of those
+constructors. -/
+def selectEqn (lhs : Expr) (incl excl : Array String) : Bool :=
+  let short (c : Name) := match c with | .str _ s => s | _ => c.toString
+  let names := lhs.foldConsts (#[] : Array String) fun c acc => acc.push (short c)
+  (incl.isEmpty || names.any incl.contains) && !names.any excl.contains
+
 /-- The rows of definitions, `lhs ≜ rhs`: the `clauses` view. With `types`,
-a definition's signature row precedes its equations (`signatureRow`). -/
-def clausesView (decls : Array Name) (types : Option (Array String) := none) : RenderM String := do
+a definition's signature row precedes its equations (`signatureRow`); `incl`
+and `excl` select the equations shown (`selectEqn`). -/
+def clausesView (decls : Array Name) (types : Option (Array String) := none)
+    (incl excl : Array String := #[]) : RenderM String := do
   let cats := projectCategories (← getEnv)
   let mut rows : Array String := #[]
   for d in decls do
@@ -76,16 +87,24 @@ def clausesView (decls : Array Name) (types : Option (Array String) := none) : R
     -- The definition of a type shows the metavariable that ranges over it.
     let isType ← forallTelescope (← getConstInfo d).type fun _ b => return b.isSort
     let mv := if isType then (cats.find? (·.1 == d)).map (·.2) else none
-    for (e, n) in es.toList.zip (List.range es.size) do
-      let eqn ← nameEqnBinders (restoreEqnNames (← getConstInfo e).type) d
+    let mut n := 0
+    for e in es do
+      let ty := (← getConstInfo e).type
+      -- `include=` and `exclude=` select equations by the constants of their
+      -- left-hand sides.
+      let keep ← forallTelescope ty fun _ b =>
+        return !b.isAppOfArity ``Eq 3 || selectEqn b.appFn!.appArg! incl excl
+      unless keep do continue
+      let eqn ← nameEqnBinders (restoreEqnNames ty) d
       let row ← equationRow eqn
       let row := row.replace " &= " " \\;\\deq\\; "
       let row := match mv, n with
         | some m, 0 => s!"{m} \\in {row}"
         | _, _ => row
-      -- The description goes with the first equation.
+      -- The description goes with the first equation shown.
       let desc := if n == 0 then s!"\\leanslot\{{d}}\{{doc}}" else ""
       rows := rows.push s!"\\LeanClause\{{row}}\{{desc}}"
+      n := n + 1
   return "\\begin{LeanDisplay}\n" ++ "\\\\\n".intercalate rows.toList ++ "\n\\end{LeanDisplay}"
 
 /-- The rows of grammars: the `grammar|display` view. -/

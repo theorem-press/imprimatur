@@ -193,7 +193,10 @@ as rows `e ::=` followed by the alternatives. Two views write that form:
   With `types` on the block (`[types]`, or `[types=f,g]` for some of the
   display's definitions), a definition's signature precedes its equations
   as a row `f(x, y) ∈ T`, whose text names the binders' types: `for x ∈ A,
-  y ∈ B`.
+  y ∈ B`. `include=` and `exclude=` select equations by the constants
+  their left-hand sides mention, named by their last component: for a
+  definition by cases, `[include=randomized,noInterference]` keeps those
+  cases, and the description goes with the first case shown.
 - **`grammar|display`** sets each inductive type as `\LeanCategory{e \in
   \mathit{Term}}{…}`, followed by its constructors as `\LeanEntry{…}{…}`
   rows; a structure's fields are one record entry, or, when they are
