@@ -1,5 +1,8 @@
 # imprimatur
 
+**Deterministic reliability of the mathematical statements in your LaTeX
+document: backed by Lean, but you need only read the PDF.**
+
 *Imprimatur* ("let it be printed") keeps the LaTeX of a paper in step with a
 Lean 4 development.
 
