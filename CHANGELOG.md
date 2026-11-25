@@ -5,6 +5,14 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- Under the `url` profile, a dependency's declarations link into their own
+  repository: the bundle records a declaration's Lake package, and the
+  splicer takes the package's link template from the Lean project's
+  `lake-manifest.json` (a package on GitHub needs no configuration) or from
+  the profile's `packages` table (`mathlib = "…/{rev}/{path}#L{line}"`).
+  The index views' rows name the package, and `srcbase=` carries one base
+  per package. Until now a Mathlib definition's link pointed into the host
+  project's directory.
 - The riemann example's note is self-contained: a section of preliminaries
   pulls the definitions behind the five claims in from Mathlib, as their
   equations (`[def]`), from the bottom up: Jacobi's theta function, the

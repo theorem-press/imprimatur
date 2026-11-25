@@ -41,7 +41,11 @@ What the note shows:
   `check` warns of the `sorry` instead of failing, and the provenance table
   says **sorry** on every row;
 - an index of the notation, each entry with the Mathlib constant it stands
-  for.
+  for;
+- under the public profile (`imprimatur build --profile public --commit
+  SHA`), every definition and fact pulled in from Mathlib links to its line
+  in mathlib4 at the revision the host pins, from `lake-manifest.json`
+  alone, in the provenance table and the index as well as on the blocks.
 
 To build it, with imprimatur installed as in
 [Try it in two minutes](../../README.md#try-it-in-two-minutes):

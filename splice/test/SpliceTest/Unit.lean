@@ -256,11 +256,38 @@ def testWords : TestM Unit := group "golden-runner" do
     (SpliceTest.Golden.splitWords "!replace f.tex \"a \\b\" \"say \\\"hi\\\"\"")
     ["!replace", "f.tex", "a \\b", "say \"hi\""]
 
+/-- Source links of a dependency's declarations (DESIGN §11). -/
+def testLinks : TestM Unit := group "links" do
+  let manifest := "{\"packages\": [{\"url\": \"https://github.com/leanprover-community/mathlib4.git\", \
+    \"rev\": \"abc\", \"name\": \"mathlib\"}, {\"url\": \"git@example.org:x.git\", \"rev\": \"def\", \
+    \"name\": \"x\"}, {\"url\": \"git@example.org:y.git\", \"rev\": \"0\", \"name\": \"y\"}]}"
+  match packageTemplates manifest #[("x", "https://example.org/x/{rev}/{path}#L{line}")] with
+  | .ok ps =>
+    checkEq "splice/links/manifest-github" ((ps.find? (·.1 == "mathlib")).map (·.2))
+      (some "https://github.com/leanprover-community/mathlib4/blob/abc/{path}#L{line}")
+    checkEq "splice/links/manifest-configured" ((ps.find? (·.1 == "x")).map (·.2))
+      (some "https://example.org/x/def/{path}#L{line}")
+    check "splice/links/manifest-unlinked" (ps.all (·.1 != "y")) "a package off GitHub with no template has no link"
+  | .error e => check "splice/links/manifest-github" false e
+  let pks := #[("mathlib", "https://m/abc/{path}#L{line}")]
+  checkEq "splice/links/template-package"
+    (templateFor "h" pks { path := "Mathlib/A.lean", line := 3, package := some "mathlib" }) (some "https://m/abc/{path}#L{line}")
+  checkEq "splice/links/template-unknown-package"
+    (templateFor "h" pks { path := "A.lean", line := 1, package := some "x" }) none
+  checkEq "splice/links/template-project" (templateFor "h" pks { path := "A.lean", line := 1 }) (some "h")
+  let links := SourceLinks.url "https://h/{commit}/{path}#L{line}" pks
+  match baseOf links (some "c0") "\\LeanSourceRef[mathlib]{Mathlib/A.lean}{3}{x} \\LeanSourceRef{B.lean}{1}{y}" with
+  | .ok (some b) =>
+    let want := "https://h/c0/\\LeanSrcPath\\#L\\LeanSrcLine|mathlib|https://m/abc/\\LeanSrcPath\\#L\\LeanSrcLine"
+    checkEq "splice/links/srcbase-packages" b want
+  | _ => check "splice/links/srcbase-packages" false "no srcbase"
+
 /-- All unit tests. -/
 def tests : TestM Unit := do
   testToml
   testConfig
   testBundle
+  testLinks
   testHash
   testFill
   testScan

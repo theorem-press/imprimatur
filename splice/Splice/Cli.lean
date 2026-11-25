@@ -150,9 +150,21 @@ private def loadBundle (root : System.FilePath) (a : Args) :
   | .ok bundle => return bundle
   | .error e => throw s!"bundle {b}: {e}"
 
-private def applyOpts (cfg : Config) (a : Args) : Except String ApplyOpts := do
+private def applyOpts (root : System.FilePath) (cfg : Config) (a : Args) :
+    ExceptT String CliM ApplyOpts := do
   let name := a.profile.getD cfg.defaultProfile
   let some links := cfg.profile? name | throw s!"no profile named {name}"
+  -- Under the `url` profile a dependency's declarations link into its own
+  -- repository, by the Lean project's manifest (DESIGN §11).
+  let links ← match links with
+    | .url t pk =>
+      let mf := root / cfg.leanProject / "lake-manifest.json"
+      if ← mf.pathExists then
+        match packageTemplates (← IO.FS.readFile mf) pk with
+        | .ok ps => pure (.url t ps)
+        | .error e => throw e
+      else pure (.url t pk)
+    | l => pure l
   return { force := a.force, keepStale := a.keepStale, renames := a.renames, links,
            commit := a.commit }
 
@@ -176,7 +188,7 @@ def runIn (root : System.FilePath) (a : Args) : ExceptT String CliM UInt32 := do
     return 0
   | "apply" | "check" | "migrate-slots" =>
     let bundle ← loadBundle root a
-    let opts ← (match applyOpts cfg a with | .ok o => pure o | .error e => throw e : ExceptT String CliM _)
+    let opts ← applyOpts root cfg a
     let opts := { opts with migrate := a.command == "migrate-slots" }
     let o := plan doc bundle opts
     if a.command == "check" then

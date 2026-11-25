@@ -45,7 +45,8 @@
 % change the style; without hyperref they print the title alone, and nothing.
 % A block whose rows link on their own (the index views) carries srcbase=
 % instead, the URL template with the commit filled in and \LeanSrcPath and
-% \LeanSrcLine for the path and line, and each \LeanSourceRef{path}{line}{text}
+% \LeanSrcLine for the path and line, then |package|template for each
+% dependency its rows name, and each \LeanSourceRef[package]{path}{line}{text}
 % in its content completes a link from it (below).
 \newif\ifimprimatur@hyper
 \AtBeginDocument{\@ifpackageloaded{hyperref}{\imprimatur@hypertrue}{}}
@@ -140,25 +141,50 @@
 % against" and "holds \leancheck{k}." read naturally.
 \NewDocumentCommand \leancheck { O{} m } { \unskip \__imprimatur_src_mark:n { #1 } }
 
-% \LeanSourceRef{path}{line}{text}: the text, linked to the Lean at path:line
-% when the block has srcbase= and hyperref is loaded. The path and line go in
-% for \LeanSrcPath and \LeanSrcLine by replacement, not expansion, so the
-% escaped characters of a URL (\#, \_, \&, \~) reach \href as they are.
-\cs_new_protected:Npn \__imprimatur_source_ref:nnn #1#2#3
+% \LeanSourceRef[package]{path}{line}{text}: the text, linked to the Lean at
+% path:line when the block has srcbase= and hyperref is loaded: by the first
+% base of srcbase=, or, with a package, by the package's base, listed after
+% the first as |package|base (DESIGN §11). The path and line go in for
+% \LeanSrcPath and \LeanSrcLine by replacement, not expansion, so the escaped
+% characters of a URL (\#, \_, \&, \~) reach \href as they are.
+\seq_new:N \l__imprimatur_bases_seq
+\tl_new:N \l__imprimatur_name_tl
+\cs_new_protected:Npn \__imprimatur_source_ref:nnnn #1#2#3#4
   {
-    \tl_if_empty:NTF \l__imprimatur_srcbase_tl { #3 }
+    \tl_if_empty:NTF \l__imprimatur_srcbase_tl { #4 }
       {
         \ifimprimatur@hyper
-          \tl_set_eq:NN \l__imprimatur_url_tl \l__imprimatur_srcbase_tl
-          \tl_replace_all:Nnn \l__imprimatur_url_tl { \LeanSrcPath } { #1 }
-          \tl_replace_all:Nnn \l__imprimatur_url_tl { \LeanSrcLine } { #2 }
-          \exp_args:NV \href \l__imprimatur_url_tl { #3 }
+          \seq_set_split:NnV \l__imprimatur_bases_seq { | } \l__imprimatur_srcbase_tl
+          \tl_clear:N \l__imprimatur_url_tl
+          \seq_pop_left:NN \l__imprimatur_bases_seq \l__imprimatur_url_tl
+          \tl_if_blank:nF { #1 }
+            {
+              % The packages' bases follow the project's, each as its name
+              % and then its base.
+              \tl_clear:N \l__imprimatur_url_tl
+              \bool_until_do:nn { \seq_if_empty_p:N \l__imprimatur_bases_seq }
+                {
+                  \seq_pop_left:NN \l__imprimatur_bases_seq \l__imprimatur_name_tl
+                  \seq_pop_left:NN \l__imprimatur_bases_seq \l_tmpa_tl
+                  \str_if_eq:eeT { \l__imprimatur_name_tl } { #1 }
+                    {
+                      \tl_set_eq:NN \l__imprimatur_url_tl \l_tmpa_tl
+                      \seq_clear:N \l__imprimatur_bases_seq
+                    }
+                }
+            }
+          \tl_if_empty:NTF \l__imprimatur_url_tl { #4 }
+            {
+              \tl_replace_all:Nnn \l__imprimatur_url_tl { \LeanSrcPath } { #2 }
+              \tl_replace_all:Nnn \l__imprimatur_url_tl { \LeanSrcLine } { #3 }
+              \exp_args:NV \href \l__imprimatur_url_tl { #4 }
+            }
         \else
-          #3
+          #4
         \fi
       }
   }
-\NewDocumentCommand \LeanSourceRef { m m m } { \__imprimatur_source_ref:nnn { #1 } { #2 } { #3 } }
+\NewDocumentCommand \LeanSourceRef { O{} m m m } { \__imprimatur_source_ref:nnnn { #1 } { #2 } { #3 } { #4 } }
 \ExplSyntaxOff
 % \leanindex: the table of every key used (generated from v0.5).
 \NewDocumentCommand\leanindex{}{}

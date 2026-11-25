@@ -2,6 +2,7 @@
 Copyright (c) 2026 The imprimatur authors.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
+import Lean.Data.Json
 import Splice.Toml
 
 /-!
@@ -81,11 +82,41 @@ def Alias.fill (a : Alias) (content key title : String) (label : Option String) 
 inductive SourceLinks where
   /-- A path relative to the Lean project, with a line number. -/
   | relative
-  /-- A URL built from a template. -/
-  | url (template : String)
+  /-- A URL built from a template; a dependency's declarations from its
+  package's template, by name. -/
+  | url (template : String) (packages : Array (String × String))
   /-- No locations. -/
   | none
   deriving Repr, BEq
+
+/-- The link templates of the Lean project's dependencies, from its
+`lake-manifest.json` (DESIGN §11): a package's own from the profile
+(`configured`, with `{rev}` for the revision the manifest pins), or, for a
+package on GitHub, `URL/blob/REV/{path}#L{line}`. A dependency with neither
+gets no links; a configured package the manifest does not name keeps its
+template as written. -/
+def packageTemplates (manifest : String) (configured : Array (String × String)) :
+    Except String (Array (String × String)) := do
+  let j ← match Lean.Json.parse manifest with
+    | .ok j => pure j
+    | .error e => throw s!"lake-manifest.json: {e}"
+  let pkgs ← match j.getObjValAs? (Array Lean.Json) "packages" with
+    | .ok ps => pure ps
+    | .error e => throw s!"lake-manifest.json: {e}"
+  let mut out : Array (String × String) := #[]
+  for p in pkgs do
+    let .ok name := p.getObjValAs? String "name" | continue
+    let .ok rev := p.getObjValAs? String "rev" | continue
+    match configured.find? (·.1 == name) with
+    | some (_, t) => out := out.push (name, t.replace "{rev}" rev)
+    | none =>
+      let url := (p.getObjValAs? String "url").toOption.getD ""
+      if url.startsWith "https://github.com/" then
+        let base := if url.endsWith ".git" then (url.take (url.length - 4)).toString else url
+        out := out.push (name, s!"{base}/blob/{rev}/\{path}#L\{line}")
+  for (name, t) in configured do
+    unless out.any (·.1 == name) do out := out.push (name, t)
+  return out
 
 /-- The splicer's configuration. -/
 structure Config where
@@ -212,14 +243,19 @@ private def parseAlias (name : String) (v : Toml) : Except String Alias := do
 private def parseProfile (name : String) (v : Toml) : Except String SourceLinks := do
   let where_ := s!"[profile.{name}]"
   let kvs ← expectTable where_ v
-  checkKeys where_ kvs ["source_links", "url_template"]
+  checkKeys where_ kvs ["source_links", "url_template", "packages"]
   let links ← expectStr s!"{where_}.source_links" ((v.find? "source_links").getD (.str "relative"))
   match links with
   | "relative" => return .relative
   | "none" => return .none
   | "url" =>
     let some t := v.find? "url_template" | throw s!"{where_}: source_links = \"url\" needs url_template"
-    return .url (← expectStr s!"{where_}.url_template" t)
+    -- A dependency's own template, with `{rev}` for its pinned revision.
+    let packages ← match v.find? "packages" with
+      | some p => (← expectTable s!"{where_}.packages" p).mapM fun (k, pv) => do
+          return (k, ← expectStr s!"{where_}.packages.{k}" pv)
+      | none => pure #[]
+    return .url (← expectStr s!"{where_}.url_template" t) packages
   | other => throw s!"{where_}.source_links must be relative, url or none, not {repr other}"
 
 /-- Read a configuration from the text of `imprimatur.toml`. -/

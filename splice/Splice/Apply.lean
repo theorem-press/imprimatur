@@ -82,26 +82,13 @@ def texEscape (s : String) : String :=
     | '~' => "\\textasciitilde{}" | '^' => "\\textasciicircum{}"
     | c => c.toString) ""
 
-/-- The text of a `\leanref` (DESIGN §11). -/
-def renderRef (links : SourceLinks) (commit : Option String) (key : String)
-    (e : Entry (Image TeX) Verdict) : Except String String :=
-  match links, e.decl.source with
-  | .none, _ => .ok ""
-  | _, none => .error s!"the bundle has no source location for {key}"
-  | .relative, some src => .ok s!"{texEscape src.path}:{src.line}"
-  | .url tmpl, some src => do
-    let needsCommit := (tmpl.splitOn "{commit}").length > 1
-    let c ← match commit with
-      | some c => pure c
-      | none =>
-        if needsCommit then throw "the url profile needs a commit (--commit)" else pure ""
-    let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
-    return s!"\\url\{{url}}"
-
-/-- A URL as an option value: `#`, `%`, `&` and `~` escaped, so that the
-option list reads it and `\href` reads it back. -/
-def urlEscape (u : String) : String :=
-  (((u.replace "#" "\\#").replace "%" "\\%").replace "&" "\\&").replace "~" "\\~"
+/-- The template of a declaration's links under the `url` profile: the
+project's, or, for a dependency's declaration, its package's, when the
+profile has one (DESIGN §11). -/
+def templateFor (tmpl : String) (packages : Array (String × String)) (src : Source) : Option String :=
+  match src.package with
+  | some p => (packages.find? (·.1 == p)).map (·.2)
+  | none => some tmpl
 
 /-- The commit a `url` template needs, or the empty string when it names
 none. -/
@@ -112,15 +99,36 @@ def commitFor (tmpl : String) (commit : Option String) : Except String String :=
     if (tmpl.splitOn "{commit}").length > 1 then throw "the url profile needs a commit (--commit)"
     else pure ""
 
+/-- The text of a `\leanref` (DESIGN §11). A dependency's declaration whose
+package has no template is located as under the `relative` profile. -/
+def renderRef (links : SourceLinks) (commit : Option String) (key : String)
+    (e : Entry (Image TeX) Verdict) : Except String String :=
+  match links, e.decl.source with
+  | .none, _ => .ok ""
+  | _, none => .error s!"the bundle has no source location for {key}"
+  | .relative, some src => .ok s!"{texEscape src.path}:{src.line}"
+  | .url tmpl pks, some src => do
+    let some t := templateFor tmpl pks src | return s!"{texEscape src.path}:{src.line}"
+    let c ← commitFor t commit
+    let url := ((t.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
+    return s!"\\url\{{url}}"
+
+/-- A URL as an option value: `#`, `%`, `&` and `~` escaped, so that the
+option list reads it and `\href` reads it back. -/
+def urlEscape (u : String) : String :=
+  (((u.replace "#" "\\#").replace "%" "\\%").replace "&" "\\&").replace "~" "\\~"
+
 /-- The value of an item's `src=` option (DESIGN §11): under the `url`
 profile, the permalink of the entry's declaration, escaped for the option
-list; otherwise none. An entry without a source location gets no link. -/
+list; otherwise none. An entry without a source location, or a dependency's
+whose package has no template, gets no link. -/
 def srcOf (links : SourceLinks) (commit : Option String) (e : Entry (Image TeX) Verdict) :
     Except String (Option String) :=
   match links, e.decl.source with
-  | .url tmpl, some src => do
-    let c ← commitFor tmpl commit
-    let url := ((tmpl.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
+  | .url tmpl pks, some src => do
+    let some t := templateFor tmpl pks src | return none
+    let c ← commitFor t commit
+    let url := ((t.replace "{commit}" c).replace "{path}" src.path).replace "{line}" (toString src.line)
     return some (urlEscape url)
   | _, _ => .ok none
 
@@ -132,17 +140,30 @@ def controlWord (s ph cs : String) : String :=
   | first :: rest =>
     rest.foldl (fun acc p => acc ++ cs ++ (if !p.isEmpty && p.front.isAlpha then " " else "") ++ p) first
 
+/-- The packages the rows of some content name, `\LeanSourceRef[NAME]`, each
+once. -/
+def packagesIn (content : String) : Array String :=
+  ((content.splitOn "\\LeanSourceRef[").drop 1).foldl (init := #[]) fun acc rest =>
+    let name := (rest.takeWhile (· != ']')).toString
+    if name.isEmpty || acc.contains name then acc else acc.push name
+
 /-- The value of a block's `srcbase=` option (DESIGN §11): under the `url`
 profile, the template with the commit filled in and `{path}` and `{line}`
-left as the macros `\LeanSrcPath` and `\LeanSrcLine`, escaped like `src=`;
-otherwise none. `imprimatur.sty` completes each `\LeanSourceRef` of the
+left as the macros `\LeanSrcPath` and `\LeanSrcLine`, escaped like `src=`,
+then `|NAME|template` for each package the content's rows name that has
+one (no `=`, which a key's value may not hold unbraced); otherwise none. `imprimatur.sty` completes each `\LeanSourceRef` of the
 block's content from it. -/
-def baseOf (links : SourceLinks) (commit : Option String) : Except String (Option String) :=
+def baseOf (links : SourceLinks) (commit : Option String) (content : String) :
+    Except String (Option String) :=
   match links with
-  | .url tmpl => do
+  | .url tmpl pks => do
     let c ← commitFor tmpl commit
-    let t := urlEscape (tmpl.replace "{commit}" c)
-    return some (controlWord (controlWord t "{path}" "\\LeanSrcPath") "{line}" "\\LeanSrcLine")
+    let word (t : String) : String :=
+      controlWord (controlWord (urlEscape t) "{path}" "\\LeanSrcPath") "{line}" "\\LeanSrcLine"
+    let mut v := word (tmpl.replace "{commit}" c)
+    for p in packagesIn content do
+      if let some (_, t) := pks.find? (·.1 == p) then v := v ++ s!"|{p}|{word t}"
+    return some v
   | _ => .ok none
 
 /-- Whether content completes links from `srcbase=`: it has a
@@ -151,7 +172,7 @@ def needsBase (content : String) : Bool := (content.splitOn "\\LeanSourceRef").l
 
 /-- The `srcbase=` an item's content needs. -/
 def baseFor (o : ApplyOpts) (content : String) : Except String (Option String) :=
-  if needsBase content then baseOf o.links o.commit else .ok none
+  if needsBase content then baseOf o.links o.commit content else .ok none
 
 /-- Where a view leaves the source location for the splicer to fill. -/
 def metaSourceMarker : String := "\\leanmetasource{}"

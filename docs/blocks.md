@@ -188,7 +188,20 @@ imprimatur build --profile public --commit "$(git rev-parse HEAD)"
 ```
 
 `{path}` is the file inside the Lean project, so the template names the
-project's directory in the repository. With hyperref loaded by the paper, a
+project's directory in the repository. A dependency's declaration, a
+Mathlib definition the paper states, links into its own repository: for a
+package on GitHub, from the Lean project's `lake-manifest.json` alone, at
+the revision it pins; for any package, from a `packages` table in the
+profile, with `{rev}` for that revision:
+
+```toml
+[profile.public]
+source_links = "url"
+url_template = "https://github.com/ORG/REPO/blob/{commit}/lean/{path}#L{line}"
+packages = { mathlib = "https://github.com/leanprover-community/mathlib4/blob/{rev}/{path}#L{line}" }
+```
+
+A dependency with neither gets no link. With hyperref loaded by the paper, a
 wrapped block's title becomes the link, and a block without a title, a block
 without a wrap, an inline item and a `\leancheck` get a small marker,
 `\LeanSourceMarkText` (`↗`), after them; without hyperref nothing is

@@ -1043,6 +1043,17 @@ gets no link. Under the other profiles the splicer removes `src=`, so a
 paper built for the public and then for submission again holds no URL. A
 `rules` block over several constructors links to the inductive type.
 
+A dependency's declaration, a Mathlib definition the paper states, lives in
+another repository. The bundle records its Lake package, as
+`.lake/packages/NAME` names it, with the path inside the package, and the
+splicer links it by that package's template: the profile's `packages` table
+(`mathlib = "https://…/{rev}/{path}#L{line}"`, with `{rev}` the revision the
+Lean project's `lake-manifest.json` pins), or, for a package on GitHub, the
+manifest's URL as `URL/blob/REV/{path}#L{line}`, with no configuration. A
+dependency with neither gets no link. The index views' rows name the
+package, `\LeanSourceRef[mathlib]{path}{line}{text}`, and `srcbase=` lists
+the packages' bases after the project's, `|mathlib|…`.
+
 A block whose rows have sources of their own links row by row: the
 extractor writes `\LeanSourceRef{path}{line}{text}` around each of the
 project's constants in the `vocabulary` table and around the location in
