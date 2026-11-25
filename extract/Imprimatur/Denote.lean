@@ -73,6 +73,16 @@ structure Ctx where
   /-- The coercions Lean inserted: each result with its argument, so that a
   skeleton can see through them (`skeleton`). -/
   coerced : IO.Ref (Array (Expr × Expr))
+  /-- The fits put off until a sibling fixes a type (`fit`,
+  `resolvePostponed`): a placeholder, the term it stands for, the depth of
+  the fit, and whether it waits past the end of its node (`late`). -/
+  postponed : IO.Ref (Array (Expr × Expr × Nat × Bool))
+  /-- Whether `fit` may put a fit off; not while the postponed are resolved. -/
+  postpone : Bool := true
+  /-- Whether a fit put off for an open type expected waits past its node:
+  the elements of a list literal do, since the list's type comes from where
+  the list is. -/
+  late : Bool := false
 
 /-- Denotation: `MetaM` with the context. Errors are readings the
 denotation does not cover, or ill-typed ones. -/
@@ -166,6 +176,29 @@ mutual
     if let .forallE _ dom body _ := ← whnf d then
       if !body.hasLooseBVars && !(← whnf ta).isForall && (← isPropDomain dom) then
         if ← isDefEq ta body then return .lam `h dom a .default
+    -- A fit a sibling may decide is put off (`resolvePostponed`), a
+    -- placeholder standing in: an operand of known type where the type
+    -- expected is still open (`"and" :: y`, where `y` fixes the element
+    -- type, and `"and"` is then coerced to it); and an operand of open type
+    -- (a bound variable at its first use) where a constructor the notation
+    -- hides could take it to the type expected (`stmt(k) = S` for
+    -- `W.stmt k = some S`, with `S` a statement by its next use). Unifying
+    -- at once would fix the type the wrong way round.
+    if (← read).postpone then
+      let ta ← instantiateMVars ta
+      let d' ← instantiateMVars d
+      let hides ← match d'.getAppFn.constName? with
+        | some h => (← read).coercions.anyM fun c => do return (← resultHead c.pat.head) == some h
+        | none => pure false
+      -- The first waits for the rest of its node's arguments, the second
+      -- for the rest of the binder's scope.
+      let byNode := d'.isMVar && !ta.hasExprMVar
+      let byScope := ta.isMVar && !d'.isMVar && hides
+      if byNode || byScope then
+        let m ← mkFreshExprMVar d'
+        (← read).postponed.modify (·.push (m, a, depth, byScope || (← read).late))
+        trace do return s!"put off {← ppExpr a} : {← ppExpr ta} where {← ppExpr d'} is expected"
+        return m
     if ← isDefEq ta d then return a
     -- A pair where a pair type is expected: each component fit, so that a
     -- coercion the notation hides inside `(C, V)` is found there.
@@ -265,6 +298,70 @@ mutual
         throwError "{← ppExpr f} is applied, but is not a function"
 end
 
+/-- Resolve the fits put off (`fit`), at the end of a node: each whose
+types are now known, each that waited for this node's arguments, and, when
+`force`, each that `may` be forced, is fit as it stands, through a coercion
+where one is needed; the rest wait on. The instances the types decide are
+then found, as after any argument. Placeholders of attempts rolled back are
+dropped. -/
+def resolvePostponed (force : Bool) (may : MVarId → Bool := fun _ => true) : DenoteM Unit := do
+  let ref := (← read).postponed
+  let mctx ← getMCtx
+  let mut pending := (← ref.get).filter fun (m, _, _, _) => (mctx.findDecl? m.mvarId!).isSome
+  ref.set #[]
+  let mut keep := #[]
+  let mut resolved := false
+  -- A variable of open type used at several types, each able to hide a
+  -- constructor (`qs` in `ctors(S) = qs ∧ … print*(qs)`, for `some qs` and
+  -- `qs`): its type is the one of its uses at which the others fit, through
+  -- the constructors they hide. The first use would otherwise decide.
+  if force then
+    let mut solved : Array MVarId := #[]
+    for (_, a, _, late) in pending do
+      let group := pending.filter fun (m', a', _, _) => a' == a && !solved.contains m'.mvarId!
+      if group.size < 2 || !late then continue
+      let ta ← instantiateMVars (← inferType a)
+      unless ta.isMVar do continue
+      for (mc, _, _, _) in group do
+        let st ← (saveState : MetaM Meta.SavedState)
+        let ok ← try
+            let dc ← instantiateMVars (← inferType mc)
+            unless ← isDefEq ta dc do throwError "no"
+            for (m, a, depth, _) in group do
+              let d ← instantiateMVars (← inferType m)
+              let a' ← withReader (fun c => { c with postpone := false }) (fit a d depth)
+              unless ← isDefEq m a' do throwError "no"
+            pure true
+          catch _ => pure false
+        if ok then
+          trace do return s!"{← ppExpr a} is of the type {← ppExpr (← instantiateMVars (← inferType mc))}"
+          solved := solved ++ group.map (·.1.mvarId!)
+          resolved := true
+          break
+        else (restoreState st : MetaM Unit)
+    pending := pending.filter fun (m, _, _, _) => !solved.contains m.mvarId!
+  for (m, a, depth, late) in pending do
+    if ← m.mvarId!.isAssigned then continue
+    let ta ← instantiateMVars (← inferType a)
+    let d ← instantiateMVars (← inferType m)
+    if (d.isMVar || ta.isMVar) && late && !(force && may m.mvarId!) then
+      keep := keep.push (m, a, depth, late)
+      continue
+    trace do return s!"resolve {← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
+    let a' ← withReader (fun c => { c with postpone := false }) (fit a d depth)
+    unless ← isDefEq m a' do throwError "{← ppExpr a'} is not of the type {← ppExpr d}"
+    resolved := true
+  ref.modify (keep ++ ·)
+  if resolved then synthPendingInsts
+
+/-- A computation under a binder: the fits put off inside it are resolved
+before the binder closes, since they may mention its variable. -/
+def inScope (x : DenoteM Expr) : DenoteM Expr := do
+  let before := (← (← read).postponed.get).map (·.1.mvarId!)
+  let e ← x
+  resolvePostponed (force := true) (may := fun m => !before.contains m)
+  instantiateMVars e
+
 /-- A variable's denotation, to be computed when the binder it is under has
 its type: the body of `fun i => f` is read with `i`'s type known. -/
 abbrev Thunks := Array (Name × DenoteM Expr)
@@ -300,14 +397,14 @@ mutual
       -- `(fun _ => ENNReal)`) is a local of its own.
       let some (_, fv) := bs.find? (·.1 == x)
         | withLocalDeclD x (← mkFreshTypeMVar) fun fv => do
-            mkLambdaFVars #[fv] (← ofPat body (bs.push (x, fv)) lazy)
+            mkLambdaFVars #[fv] (← inScope (ofPat body (bs.push (x, fv)) lazy))
       if let some d := expected then
         if let .forallE _ dom _ _ := ← whnf d then discard <| isDefEq (← inferType fv) dom
       mkLambdaFVars #[fv] (← ofPat body bs lazy)
     | .pi x dom body =>
       let d ← ofPat dom bs lazy
       let some (_, fv) := bs.find? (·.1 == x)
-        | withLocalDeclD x d fun fv => do mkForallFVars #[fv] (← ofPat body (bs.push (x, fv)) lazy)
+        | withLocalDeclD x d fun fv => do mkForallFVars #[fv] (← inScope (ofPat body (bs.push (x, fv)) lazy))
       unless ← isDefEq (← inferType fv) d do throwError "the binder's type does not match"
       mkForallFVars #[fv] (← ofPat body bs lazy)
     | .arrow dom cod => mkArrow (← ofPat dom bs lazy) (← ofPat cod bs lazy)
@@ -347,16 +444,56 @@ def numeral (n : Nat) : DenoteM Expr := do
   (← read).insts.modify (·.push inst.mvarId!)
   pure (mkApp3 (mkConst ``OfNat.ofNat [u]) α (mkRawNatLit n) inst)
 
+/-- The variables of a rule's pattern that a default instance of its head's
+class makes of one type, as `binop%` does for `a ++ b`: `HAppend.hAppend a
+b` has `a : α` and `b : β`, and the default `HAppend α α α` ties them.
+Empty when the head has no class with a default instance, or the pattern
+is not the head at variables. -/
+def defaultGroup (r : NotationRule) : MetaM (Array Name) := do
+  let .app h args := r.pat | return #[]
+  let some ci := (← getEnv).find? h | return #[]
+  let (ms, bis, _) ← forallMetaTelescope ci.type
+  let some i := bis.findIdx? (·.isInstImplicit) | return #[]
+  let ty ← instantiateMVars (← inferType ms[i]!)
+  let some cls := ty.getAppFn.constName? | return #[]
+  let params := ty.getAppArgs
+  for (inst, _) in ← getDefaultInstances cls do
+    let (_, _, ity) ← forallMetaTelescope (← inferType (← mkConstWithFreshMVarLevels inst))
+    let cargs := ity.getAppArgs
+    if cargs.size != params.size then continue
+    -- The parameters the default instance makes one: those at positions
+    -- whose arguments are the same metavariable as the first's.
+    let tied := (List.range cargs.size).filter fun k => cargs[k]! == cargs[0]!
+    if tied.length < 2 then continue
+    let tiedParams := tied.map fun k => params[k]!
+    -- The explicit binders typed by one of them, and the pattern's
+    -- variables at those binders.
+    let mut vars := #[]
+    let mut e := 0
+    for j in [0:bis.size] do
+      unless bis[j]!.isExplicit do continue
+      let d ← instantiateMVars (← inferType ms[j]!)
+      if tiedParams.any (· == d) then
+        if let some (Pat.var v) := args[e]? then vars := vars.push v
+      e := e + 1
+    if vars.size ≥ 2 then return vars
+  return #[]
+
 /-- Bring the operands of a rule whose holes share a type variable to one
 type, as `binop%` does: when their types differ, the first type every
 operand fits, through a coercion where needed. -/
 def homogenise (r : NotationRule) (bs : Array (Name × Expr)) : DenoteM (Array (Name × Expr)) := do
   let mut bs := bs
-  let groups : Array (String × Array Name) := r.holeSorts.foldl (init := #[]) fun acc (v, s) =>
+  let mut groups : Array (String × Array Name) := r.holeSorts.foldl (init := #[]) fun acc (v, s) =>
     if !isTyVar s || s.any (· == '(') then acc
     else match acc.findIdx? (·.1 == s) with
       | some i => acc.modify i fun (s, vs) => (s, vs.push v)
       | none => acc.push (s, #[v])
+  -- Holes of their own type variables that the head's default instance
+  -- ties (`a ++ b`).
+  if groups.all (·.2.size < 2) then
+    let tied ← defaultGroup r
+    if tied.size ≥ 2 then groups := groups.push ("default", tied)
   for (_, vs) in groups do
     let members := vs.filterMap fun v => bs.find? (·.1 == v)
     if members.size < 2 then continue
@@ -371,11 +508,10 @@ def homogenise (r : NotationRule) (bs : Array (Name × Expr)) : DenoteM (Array (
       -- it (`Subtype.mk a` beside `a`, through `Subtype.val`).
       for ((v, e), t) in members.zip tys do
         if t.hasExprMVar then
-          unless ← isDefEq t t₀ do
-            try
-              let e' ← fit e t₀
-              bs := bs.map fun (v', e'') => if v' == v then (v, e') else (v', e'')
-            catch _ => pure ()
+          try
+            let e' ← fit e t₀
+            bs := bs.map fun (v', e'') => if v' == v then (v, e') else (v', e'')
+          catch _ => pure ()
       continue
     let mut chosen : Option Expr := none
     let ctx ← read
@@ -383,7 +519,7 @@ def homogenise (r : NotationRule) (bs : Array (Name × Expr)) : DenoteM (Array (
       if chosen.isSome then break
       let test : MetaM Bool := withoutModifyingState do
         try
-          for (_, e) in members do discard <| (fit e t).run ctx
+          for (_, e) in members do discard <| (fit e t).run { ctx with postpone := false }
           pure true
         catch _ => pure false
       if ← test then chosen := some t
@@ -399,7 +535,10 @@ mutual
     trace do return s!"reading {r.text}"
     match r with
     | .node name [] => leaf name bound
-    | .node name kids => node name kids bound
+    | .node name kids =>
+      let e ← node name kids bound
+      resolvePostponed (force := false)
+      pure e
 
   /-- A leaf: a bound variable, an atom, or a rule that shows no variable. -/
   partial def leaf (name : String) (bound : List (String × Expr)) : DenoteM Expr := do
@@ -425,25 +564,25 @@ mutual
     | "∀", [.node v [], t, body] =>
       let ty ← denote t bound
       withLocalDeclD (Name.mkSimple v) ty fun x =>
-        do mkForallFVars #[x] (← denote body ((v, x) :: bound))
+        do mkForallFVars #[x] (← inScope (denote body ((v, x) :: bound)))
     | "bounded ∀", [.node v [], s, body] =>
       let s ← denote s bound
       withLocalDeclD (Name.mkSimple v) (← mkFreshTypeMVar) fun x => do
         let mem ← applyArgs (← mkConstWithFreshMVarLevels ``Membership.mem) [s, x]
-        mkForallFVars #[x] (← mkArrow mem (← denote body ((v, x) :: bound)))
+        mkForallFVars #[x] (← inScope do mkArrow mem (← denote body ((v, x) :: bound)))
     | "∃", [.node v [], body] =>
       withLocalDeclD (Name.mkSimple v) (← mkFreshTypeMVar) fun x => do
-        let p ← mkLambdaFVars #[x] (← denote body ((v, x) :: bound))
+        let p ← mkLambdaFVars #[x] (← inScope (denote body ((v, x) :: bound)))
         applyArgs (← mkConstWithFreshMVarLevels ``Exists) [p]
     | "bounded ∃", [.node v [], s, body] =>
       let s ← denote s bound
       withLocalDeclD (Name.mkSimple v) (← mkFreshTypeMVar) fun x => do
         let mem ← applyArgs (← mkConstWithFreshMVarLevels ``Membership.mem) [s, x]
-        let p ← mkLambdaFVars #[x] (mkAnd mem (← denote body ((v, x) :: bound)))
+        let p ← mkLambdaFVars #[x] (← inScope do return mkAnd mem (← denote body ((v, x) :: bound)))
         applyArgs (← mkConstWithFreshMVarLevels ``Exists) [p]
     | "λ", [.node v [], body] =>
       withLocalDeclD (Name.mkSimple v) (← mkFreshTypeMVar) fun x =>
-        do mkLambdaFVars #[x] (← denote body ((v, x) :: bound))
+        do mkLambdaFVars #[x] (← inScope (denote body ((v, x) :: bound)))
     -- A λ over a pattern and a case analysis stand for any subterm: the
     -- metavariable takes what the formula has there (#41's remaining gap).
     | "λ", _ => mkFreshExprMVar none
@@ -453,8 +592,11 @@ mutual
       let u ← mkFreshLevelMVar
       let α ← mkFreshExprMVar (mkSort (mkLevelSucc u))
       let nil := mkApp (mkConst ``List.nil [u]) α
-      es.foldrM (init := nil) fun e acc => do
-        pure (mkApp3 (mkConst ``List.cons [u]) α (← fit e α) acc)
+      -- The elements wait for the list's type, which comes from where the
+      -- list is: `[" be types"]` where tokens are expected.
+      withReader (fun c => { c with late := true }) do
+        es.foldrM (init := nil) fun e acc => do
+          pure (mkApp3 (mkConst ``List.cons [u]) α (← fit e α) acc)
     | _, _ => ruleNode name kids bound
 
   /-- A rule's node: the rules whose pattern has this shape, tried in turn. -/
@@ -540,7 +682,10 @@ mutual
     let binderPairs := binderPairs ++ (hidden.map fun v => (v, none)).toList
     -- A variable under a binder is read when the binder's type is known.
     let under := underBinder r.pat
-    withBinders binderPairs #[] bound fun bs0 bound' => do
+    -- A rule with binders is a scope: what is put off under them is
+    -- resolved before they close.
+    let scope (x : DenoteM Expr) : DenoteM Expr := if binderPairs.isEmpty then x else inScope x
+    withBinders binderPairs #[] bound fun bs0 bound' => scope do
       let mut bs := bs0
       let mut lazy : Thunks := #[]
       for (v, k) in pairs do
@@ -574,7 +719,7 @@ mutual
     match names with
     | [] => denote body bound
     | n :: rest =>
-      withLocalDeclD (Name.mkSimple n) (← mkFreshTypeMVar) fun fv => do
+      withLocalDeclD (Name.mkSimple n) (← mkFreshTypeMVar) fun fv => inScope do
         let inner ← foldBinders r x p rest body ((n, fv) :: bound)
         ofPat r.pat ((← hiddenBindings r) ++ #[(x, fv), (p, inner)])
 end
@@ -601,6 +746,7 @@ def run (rules : Array NotationRule) (atoms : Array Atom) (r : Reading) (τ : Op
     MetaM (Except String Denotation) := do
   let insts ← IO.mkRef #[]
   let coerced ← IO.mkRef #[]
+  let postponed : IO.Ref (Array (Expr × Expr × Nat × Bool)) ← IO.mkRef #[]
   let coercions := rules.filter isCoercion
   trace do return s!"coercions: {coercions.map (·.pat.head)}"
   let s ← saveState
@@ -611,9 +757,11 @@ def run (rules : Array NotationRule) (atoms : Array Atom) (r : Reading) (τ : Op
     -- goes through the coercion rule that hides the constructor.
     let e ← withDepth <| approxDefEq <| (do
       let e ← denote r []
-      match τ with
-      | some τ => fit e τ
-      | none => pure e).run { rules, coercions, atoms, insts, coerced }
+      let e ← match τ with
+        | some τ => fit e τ
+        | none => pure e
+      resolvePostponed (force := true)
+      instantiateMVars e).run { rules, coercions, atoms, insts, coerced, postponed }
     return .ok { term := e, insts := ← insts.get, coerced := ← coerced.get }
   catch ex =>
     let msg ← ex.toMessageData.toString
@@ -775,7 +923,11 @@ def agrees (rules : Array NotationRule) (orig : Expr) (d : Denotation) : MetaM B
   let r ← observing? <| withDepth <| approxDefEq do
     unless ← withReducible (isDefEq orig d.term) do throwError "differ"
   if r.isSome then return true
-  sameSkeleton rules orig d.term d.coerced
+  let bySkeleton ← sameSkeleton rules orig d.term d.coerced
+  -- IMPRIMATUR_VALIDATE_DEBUG=1 names the formulas the skeleton alone accepts.
+  if bySkeleton && (← (IO.getEnv "IMPRIMATUR_VALIDATE_DEBUG" : IO _)) == some "1" then
+    IO.eprintln s!"validate: by skeleton: {← ppExpr orig}\n  denoted {← ppExpr (← instantiateMVars d.term)}"
+  return bySkeleton
 
 end Denote
 
