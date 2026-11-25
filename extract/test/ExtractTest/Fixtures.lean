@@ -73,7 +73,7 @@ def fixtures : Array Fixture := #[
       "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
       "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist",
-      "clauses", "grammar|display"] },
+      "clauses", "clauses|types=", "clauses|types=size", "grammar|display"] },
   { dir := "Patterns", module := `Patterns, strip := #[`Patterns],
     keys := #["Patterns.three", "Patterns.nested", "Patterns.side", "Patterns.safeHead",
       "Patterns.konst", "Patterns.ident", "Patterns.Tagged", "Patterns.Side"],
@@ -367,6 +367,15 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
         (clauses.splitOn "\\leanslot{Stlc.size}").length == 2) clauses
     check "extract/display/clauses-one-definition"
       (((view "Stlc.size" "clauses").splitOn "\\deq").length == 5) (view "Stlc.size" "clauses")
+    -- `types=`: every definition's signature row, `f(x) ∈ T` with its
+    -- binders' types as the text; `types=size`: only that definition's.
+    let typed := view "Lookup and size" "clauses|types="
+    check "extract/display/clauses-types"
+      ((typed.splitOn "\\LeanClause").length == 8 && (typed.splitOn "}{for $").length == 3 &&
+        (typed.splitOn "\\in \\mathbb{N}").length >= 2) typed
+    let typedOne := view "Lookup and size" "clauses|types=size"
+    check "extract/display/clauses-types-named"
+      ((typedOne.splitOn "\\LeanClause").length == 7 && (typedOne.splitOn "}{for $").length == 2) typedOne
     let grammar := view "Types and terms" "grammar|display"
     check "extract/display/grammar"
       ((grammar.splitOn "\\LeanCategory{\\tau \\in").length == 2 &&

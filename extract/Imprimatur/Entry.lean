@@ -131,6 +131,11 @@ def ViewSpec.opt (v : ViewSpec) (k : String) : Array String :=
   | some (_, x) => (x.splitOn ",").toArray.map (·.trimAscii.toString) |>.filter (!·.isEmpty)
   | none => #[]
 
+/-- The `types` option of the `clauses` view: `types=` asks for every
+definition's signature row, `types=f,g` for those named. -/
+def ViewSpec.types (v : ViewSpec) : Option (Array String) :=
+  if v.opts.any (·.1 == "types") then some (v.opt "types") else none
+
 /-- Parse `view[:variant][|key=value]*`. -/
 def parseViewSpec (s : String) : ViewSpec :=
   match s.splitOn "|" with
@@ -233,7 +238,7 @@ def groupEntry (s : Settings) (r : Request) (g : Option RuleGroup) (used : IO.Re
       | .error msg => errors := errors.push (v, msg)
     else if let (some ds, "clauses") := (disp, spec.base) then
       -- A display of definitions (`latex_display`).
-      let (res, ps) ← run (Views.clausesView ds).run
+      let (res, ps) ← run (Views.clausesView ds spec.types).run
       validation := validation.push (v, ps)
       match res with
       | .ok t => views := views.push (v, t)
@@ -342,7 +347,7 @@ def entryFor (root : System.FilePath) (s : Settings) (r : Request) (c : Constant
           | .error msg => errors := errors.push (other, msg)
       else if base == "clauses" || (base == "grammar" && spec.opts.any (·.1 == "display")) then
         -- One definition, or one type, in display form.
-        let act := if base == "clauses" then Views.clausesView #[c.name] else Views.displayGrammarView #[c.name]
+        let act := if base == "clauses" then Views.clausesView #[c.name] spec.types else Views.displayGrammarView #[c.name]
         let (res, ps) ← run act.run
         validation := validation.push (other, ps)
         match res with

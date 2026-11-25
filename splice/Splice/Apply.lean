@@ -226,7 +226,7 @@ def itemView (cfg : Config) (it : Item) : String :=
     | none => view
   -- Options the extractor renders with (DESIGN §9.1), in a fixed order:
   -- `rules|include=App,Lam`, `math|rule=`.
-  ["include", "exclude", "rule", "def", "forall", "unfold", "names"].foldl (fun v k =>
+  ["include", "exclude", "rule", "def", "forall", "unfold", "names", "types"].foldl (fun v k =>
     match it.opts.find? (·.key == k) with
     | some o => v ++ "|" ++ k ++ "=" ++ (",".intercalate ((o.value.splitOn ",").map (·.trimAscii.toString)))
     | none => v) view

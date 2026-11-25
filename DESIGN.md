@@ -788,7 +788,10 @@ The options of `leanblock`:
     RiemannHypothesis` is shown as the proposition Mathlib's definition
     names, not as its name (#137). `≠`, a definition too, stays as the
     pack's rule writes it;
-  - `names=short|full` sets how much of each name's namespace is shown.
+  - `names=short|full` sets how much of each name's namespace is shown;
+  - `types`, on a `clauses` display, states a definition's type before its
+    equations, as the row `f(x, y) ∈ T` with its binders' types as text
+    (`types=f,g` for some of the display's definitions).
 - **`claim`**, on a block, inline item or `\leancheck`: the result is stated
   but not proved in this development, on purpose, as in a note that says
   what another project's Lean proves from a file that restates its theorems

@@ -5,6 +5,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- The `clauses` view states a definition's type on request: with `types`
+  on the block (`[types]`, or `[types=f,g]` for some of a display's
+  definitions), a row `f(x, y) ∈ T` precedes the definition's equations,
+  with the binders' types as its text, `for x ∈ A, y ∈ B`.
 - `imprimatur build --log` (and `check`, `accept`, `show`) writes what
   translation validation made of each formula to
   `.imprimatur/validation.jsonl`: one JSON line each, with its key, view

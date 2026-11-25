@@ -190,6 +190,10 @@ as rows `e ::=` followed by the alternatives. Two views write that form:
 
 - **`clauses`** sets each definition by its equations, `lhs ≜ rhs`; the
   definition of a type shows its category's metavariable (`m ∈ T ≜ …`).
+  With `types` on the block (`[types]`, or `[types=f,g]` for some of the
+  display's definitions), a definition's signature precedes its equations
+  as a row `f(x, y) ∈ T`, whose text names the binders' types: `for x ∈ A,
+  y ∈ B`.
 - **`grammar|display`** sets each inductive type as `\LeanCategory{e \in
   \mathit{Term}}{…}`, followed by its constructors as `\LeanEntry{…}{…}`
   rows; a structure's fields are one record entry, or, when they are

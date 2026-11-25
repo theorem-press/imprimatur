@@ -102,9 +102,9 @@ LEANCLAUSE = { view = "math", comment = true, template = "\\clause{{content}}{{t
   `[sum=…]` after the marker name.
 
 **Options** go in the optional argument: `view`, `wrap`, `label`, `sum`,
-`dflt`, `src`, `srcbase`, `notation`, `include`, `exclude`, and the theorem
-modifiers `rule`, `def`, `forall`, `unfold` and `names` ([views.md](views.md)),
-and `claim`. The splicer writes `sum=`, `dflt=`, `src=` and `srcbase=` itself.
+`dflt`, `src`, `srcbase`, `notation`, `include`, `exclude`, the theorem
+modifiers `rule`, `def`, `forall`, `unfold` and `names`, a display's `types`
+([views.md](views.md)), and `claim`. The splicer writes `sum=`, `dflt=`, `src=` and `srcbase=` itself.
 
 **`claim`** marks an item, or a `\leancheck`, whose result is stated but not
 proved in the development: its proof is `sorry` on purpose, as when a paper
