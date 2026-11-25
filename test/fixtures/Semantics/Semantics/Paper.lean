@@ -49,6 +49,7 @@ latex_display "Lookup and size" := [lookup, size]
 latex_display "Types and terms" := [Ty, Tm]
 -- A title that also names a declaration (core's `Prod`) is the display's.
 latex_display "Prod" := [Ty]
+latex_display "Run" := [Run]
 
 latex_category Tm => "e"
 latex_category Ty => r"\tau"

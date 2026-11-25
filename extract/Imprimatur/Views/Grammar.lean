@@ -28,6 +28,8 @@ without one, the type's name is used.
 is the constructor's docstring, which the authors may then rewrite.
 
 **Structures.** A structure's fields are listed with `\LeanField{name}{type}{slot}`.
+A field's type names the earlier fields plainly: `plan : Fin self.n → Row`
+is set as `plan : ℕ_{<n} → Row`, not with `n_{self}`.
 -/
 
 namespace Imprimatur.Views
@@ -37,6 +39,27 @@ open Lean Meta Render
 /-- A slot for an author-owned description. -/
 def slot (id : Name) (doc : Option String) : String :=
   s!"\\leanslot\{{id}}\{{TeX.markdown ((doc.getD "").trimAscii.toString)}}"
+
+/-- `k` on a field's type with the structure's earlier fields named plainly:
+each projection of `self` becomes a local variable named after its field, so
+`Fin self.n` renders as `Fin n`, not as the notation of `Study.n` applied to
+`self`. `params` are the structure's parameters, `self` the instance, both
+opened from the projection's type. -/
+def withFieldsNamed {α : Type} (structName : Name) (params : Array Expr) (self : Expr)
+    (body : Expr) (k : Expr → RenderM α) : RenderM α := do
+  let lvls := (← inferType self).getAppFn.constLevels!
+  go (getStructureFields (← getEnv) structName).toList 0 #[] lvls
+where
+  go (fields : List Name) (idx : Nat) (subst : Array (Expr × Expr)) (lvls : List Level) :
+      RenderM α :=
+    let replace (e : Expr) := e.replace fun t => (subst.find? (·.1 == t)).map (·.2)
+    match fields with
+    | [] => k (replace body)
+    | f :: fs => do
+      let proj := mkAppN (.const (structName ++ f) lvls) (params.push self)
+      let ty := replace (← inferType proj)
+      withLocalDeclD f ty fun v =>
+        go fs (idx + 1) (subst.push (proj, v) |>.push (.proj structName idx self, v)) lvls
 
 /-- One constructor as an alternative. -/
 def alternative (c : ConstantInfo) : RenderM String := do
@@ -76,13 +99,14 @@ def grammarView (c : ConstantInfo) : RenderM String := do
       let proj := c.name ++ f
       let some pci := env.find? proj | continue
       -- A field's type keeps its own binders (`kind : Key → Kind`): only the
-      -- structure's parameters and the `self` binder are opened, and `self`
-      -- is written as the category's letter.
+      -- structure's parameters and the `self` binder are opened, `self`
+      -- is written as the category's letter, and its fields by their names.
       let ty ← forallBoundedTelescope pci.type (some (nparams + 1)) fun xs body => do
         let self := xs.back!
         let lctx := (← getLCtx).setUserName self.fvarId! (if hasCat then Name.mkSimple cat else `self)
         Meta.withLCtx lctx (← getLocalInstances) do
-          return (← render body).render 100000
+          withFieldsNamed c.name xs.pop self body fun body =>
+            return (← render body).render 100000
       let fdoc ← findDocString? env proj
       out := out.push s!"\\LeanField\{{TeX.escape f.toString}}\{{ty}}\{{slot proj fdoc}}"
   else

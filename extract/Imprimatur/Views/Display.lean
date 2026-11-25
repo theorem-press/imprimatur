@@ -106,7 +106,7 @@ def displayGrammarView (tys : Array Name) : RenderM String := do
     let entries ← if documented then
         -- A structure whose fields are documented is set one field to a row,
         -- each with its description; the field's type keeps its own binders,
-        -- and `self` is written as the category's letter.
+        -- `self` is written as the category's letter, and its fields by name.
         fieldNames.mapM fun f => do
           let proj := ty ++ f
           let pci ← getConstInfo proj
@@ -114,7 +114,8 @@ def displayGrammarView (tys : Array Name) : RenderM String := do
             let self := xs.back!
             let lctx := (← getLCtx).setUserName self.fvarId! (if hasCat then Name.mkSimple letter else `self)
             Meta.withLCtx lctx (← getLocalInstances) do
-              return (← render body).render 100000
+              withFieldsNamed ty xs.pop self body fun body =>
+                return (← render body).render 100000
           return s!"\\LeanEntry\{\\mathit\{{TeX.escape f.toString}} : {fty}}\{\\leanslot\{{proj}}\{{← docSentence proj}}}"
       else if isStructure env ty then
         i.ctors.toArray.mapM fun c => do

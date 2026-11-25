@@ -5,6 +5,10 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- In the `grammar` and `grammar|display` views of a structure, a field's
+  type names the structure's earlier fields plainly: `plan : Fin self.n →
+  Row` is set as `plan : ℕ_{<n} → Row`, where it was set with the notation
+  of `n` applied to the instance (`n_{self}`, or `n_s` under a category).
 - The `clauses` view states a definition's type on request: with `types`
   on the block (`[types]`, or `[types=f,g]` for some of a display's
   definitions), a row `f(x, y) ∈ T` precedes the definition's equations,
