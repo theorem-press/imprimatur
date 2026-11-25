@@ -206,9 +206,22 @@ mutual
     -- binder's type being open until now).
     if let .lam x t b bi := a then
       if let .forallE _ dom cod _ := ← whnf d then
-        if ← isDefEq t dom then
+        let s ← (saveState : MetaM Meta.SavedState)
+        try
+          unless ← isDefEq t dom do throwError "the binder's type does not match"
           return ← withLocalDecl x bi dom fun fv => do
             mkLambdaFVars #[fv] (← fit (b.instantiate1 fv) (cod.instantiate1 fv) depth)
+        catch ex =>
+          (restoreState s : MetaM Unit)
+          -- The body may need a type that the node's result decides (the
+          -- domain `?d.rows.El`, with `d` implicit and fixed by where the
+          -- application goes): the λ is put off until then.
+          if (← read).postpone && (← instantiateMVars d).hasExprMVar then
+            let m ← mkFreshExprMVar d
+            (← read).postponed.modify (·.push (m, a, depth, true))
+            trace do return s!"put off {← ppExpr a} where {← ppExpr d} is expected, until its types are known"
+            return m
+          throw ex
     -- A pair where a pair type is expected: each component fit, so that a
     -- coercion the notation hides inside `(C, V)` is found there.
     if a.isAppOfArity ``Prod.mk 4 then
@@ -353,7 +366,9 @@ def resolvePostponed (force : Bool) (may : MVarId → Bool := fun _ => true) : D
     if ← m.mvarId!.isAssigned then continue
     let ta ← instantiateMVars (← inferType a)
     let d ← instantiateMVars (← inferType m)
-    if (d.isMVar || ta.isMVar) && late && !(force && may m.mvarId!) then
+    -- A λ put off waits while the function type expected has open parts.
+    let lamOpen := a.isLambda && d.hasExprMVar
+    if ((d.isMVar || ta.isMVar) && late || lamOpen) && !(force && may m.mvarId!) then
       keep := keep.push (m, a, depth, late)
       continue
     trace do return s!"resolve {← ppExpr a} : {← ppExpr ta} where {← ppExpr d} is expected"
