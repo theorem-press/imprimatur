@@ -31,8 +31,40 @@ namespace Imprimatur.Views
 
 open Lean Meta Render
 
-/-- The rows of definitions, `lhs ≜ rhs`: the `clauses` view. -/
-def clausesView (decls : Array Name) : RenderM String := do
+/-- The signature of a definition as a row: the definition applied to its
+binders, in the type it returns, `f(x, y) ∈ T`, with the binders' types as
+the row's text, `for x ∈ A, y ∈ B`. An instance binder is left out, as the
+`math` view leaves it out of a statement; a binder that is a proposition is
+written as that proposition. Generic binder names (`a`, `x✝`) are named
+after their categories, as in an equation. -/
+def signatureRow (d : Name) : RenderM String := do
+  let ci ← getConstInfo d
+  let ty ← nameEqnBinders ci.type (some d)
+  forallTelescope ty fun xs body => do
+    let lhs ← render (mkAppN (.const d (ci.levelParams.map mkLevelParam)) xs)
+    let res ← render body
+    let mut binders : Array String := #[]
+    for x in xs do
+      let decl ← x.fvarId!.getDecl
+      if decl.binderInfo.isInstImplicit then continue
+      let t := decl.type
+      let tTeX := (← render t).render 100000
+      if ← isProp t then binders := binders.push s!"${tTeX}$"
+      else binders := binders.push s!"${← varNameT decl.userName t} \\in {tTeX}$"
+    let text := if binders.isEmpty then "" else "for " ++ ", ".intercalate binders.toList
+    return s!"\\LeanClause\{{lhs.render 100000} \\in {res.render 100000}}\{{text}}"
+
+/-- Whether `types` (the `clauses` view's option) asks for the signature of
+`d`: `types=` asks for every definition's, `types=f,g` for those named. -/
+def wantsSignature (types : Option (Array String)) (d : Name) : Bool :=
+  match types with
+  | none => false
+  | some #[] => true
+  | some names => names.any fun n => d.toString == n || d.toString.endsWith ("." ++ n)
+
+/-- The rows of definitions, `lhs ≜ rhs`: the `clauses` view. With `types`,
+a definition's signature row precedes its equations (`signatureRow`). -/
+def clausesView (decls : Array Name) (types : Option (Array String) := none) : RenderM String := do
   let cats := projectCategories (← getEnv)
   let mut rows : Array String := #[]
   for d in decls do
@@ -40,6 +72,7 @@ def clausesView (decls : Array Name) : RenderM String := do
       | throwError "{d} has no equations: the clauses view shows definitions"
     noteShown d
     let doc ← docSentence d
+    if wantsSignature types d then rows := rows.push (← signatureRow d)
     -- The definition of a type shows the metavariable that ranges over it.
     let isType ← forallTelescope (← getConstInfo d).type fun _ b => return b.isSort
     let mv := if isType then (cats.find? (·.1 == d)).map (·.2) else none
@@ -73,7 +106,7 @@ def displayGrammarView (tys : Array Name) : RenderM String := do
     let entries ← if documented then
         -- A structure whose fields are documented is set one field to a row,
         -- each with its description; the field's type keeps its own binders,
-        -- and `self` is written as the category's letter.
+        -- `self` is written as the category's letter, and its fields by name.
         fieldNames.mapM fun f => do
           let proj := ty ++ f
           let pci ← getConstInfo proj
@@ -81,7 +114,8 @@ def displayGrammarView (tys : Array Name) : RenderM String := do
             let self := xs.back!
             let lctx := (← getLCtx).setUserName self.fvarId! (if hasCat then Name.mkSimple letter else `self)
             Meta.withLCtx lctx (← getLocalInstances) do
-              return (← render body).render 100000
+              withFieldsNamed ty xs.pop self body fun body =>
+                return (← render body).render 100000
           return s!"\\LeanEntry\{\\mathit\{{TeX.escape f.toString}} : {fty}}\{\\leanslot\{{proj}}\{{← docSentence proj}}}"
       else if isStructure env ty then
         i.ctors.toArray.mapM fun c => do

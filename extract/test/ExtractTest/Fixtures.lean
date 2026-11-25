@@ -69,11 +69,11 @@ def fixtures : Array Fixture := #[
     views := #["math", "prose", "math|unfold=", "prose|unfold=", "math|forall=", "math|forall=|unfold="] },
   { dir := "Semantics", module := `Semantics, strip := #[`Stlc],
     keys := #["Stlc.HasType", "Stlc.Step", "Typing and evaluation", "Stlc.Tm", "Stlc.Ty",
-      "Lookup and size", "Types and terms", "Prod", "Stlc.Claim",
+      "Lookup and size", "Types and terms", "Prod", "Stlc.Claim", "Stlc.Run", "Run",
       "Stlc.size", "Stlc.step_app", "Preservation", "Stlc.size_pos"],
     views := #["rules", "rules|include=beta,app_right", "rules|exclude=beta", "grammar",
       "math|rule=", "math|forall=", "math|def=", "math|names=full", "fixture.rulelist",
-      "clauses", "grammar|display"] },
+      "clauses", "clauses|types=", "clauses|types=size", "grammar|display"] },
   { dir := "Patterns", module := `Patterns, strip := #[`Patterns],
     keys := #["Patterns.three", "Patterns.nested", "Patterns.side", "Patterns.safeHead",
       "Patterns.konst", "Patterns.ident", "Patterns.Tagged", "Patterns.Side"],
@@ -367,6 +367,15 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
         (clauses.splitOn "\\leanslot{Stlc.size}").length == 2) clauses
     check "extract/display/clauses-one-definition"
       (((view "Stlc.size" "clauses").splitOn "\\deq").length == 5) (view "Stlc.size" "clauses")
+    -- `types=`: every definition's signature row, `f(x) ∈ T` with its
+    -- binders' types as the text; `types=size`: only that definition's.
+    let typed := view "Lookup and size" "clauses|types="
+    check "extract/display/clauses-types"
+      ((typed.splitOn "\\LeanClause").length == 8 && (typed.splitOn "}{for $").length == 3 &&
+        (typed.splitOn "\\in \\mathbb{N}").length >= 2) typed
+    let typedOne := view "Lookup and size" "clauses|types=size"
+    check "extract/display/clauses-types-named"
+      ((typedOne.splitOn "\\LeanClause").length == 7 && (typedOne.splitOn "}{for $").length == 2) typedOne
     let grammar := view "Types and terms" "grammar|display"
     check "extract/display/grammar"
       ((grammar.splitOn "\\LeanCategory{\\tau \\in").length == 2 &&
@@ -378,6 +387,18 @@ unsafe def goldenTest (f : Fixture) : TestM Unit := do
     check "extract/grammar/structure-header-notation"
       (((view "Stlc.Claim" "grammar").splitOn "\\LeanStructure{\\mathit{Claim}}").length == 2)
       (view "Stlc.Claim" "grammar")
+    -- A field's type names the earlier fields plainly (`Fin len`), not as a
+    -- projection of `self`.
+    check "extract/grammar/structure-fields-named"
+      (let g := view "Stlc.Run" "grammar"
+       (g.splitOn "self").length == 1 && (g.splitOn "\\LeanField{step}{").length == 2 &&
+         (g.splitOn "\\,len \\to").length == 2)
+      (view "Stlc.Run" "grammar")
+    check "extract/display/structure-fields-named"
+      (let d := view "Run" "grammar|display"
+       (d.splitOn "self").length == 1 && (d.splitOn "\\LeanEntry{\\mathit{step} : ").length == 2 &&
+         (d.splitOn "\\,len \\to").length == 2)
+      (view "Run" "grammar|display")
     -- Each display was read back and found clean: a verdict, the empty list.
     checkEq "extract/display/validated"
       (#["Lookup and size", "Types and terms"].filter fun k =>

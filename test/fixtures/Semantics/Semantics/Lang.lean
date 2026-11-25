@@ -86,4 +86,11 @@ structure Claim where
   /-- its type -/
   ty : Ty
 
+/-- A run: some steps, and the term at each. -/
+structure Run where
+  /-- the number of steps -/
+  len : Nat
+  /-- the term at each step -/
+  step : Fin len → Tm
+
 end Stlc

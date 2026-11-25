@@ -20,17 +20,21 @@
         "rules|include=beta,app_right": "Lookup and size names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
       },
       "kind": "group",
-      "macros": ["\\Gamma", "\\LeanClause", "\\LeanCodeInline", "\\LeanMathConst", "\\begin", "\\deq", "\\end", "\\lambda", "\\leanslot", "\\textsf"],
+      "macros": ["\\Gamma", "\\LeanClause", "\\LeanCodeInline", "\\LeanMathConst", "\\begin", "\\deq", "\\end", "\\in", "\\lambda", "\\leanslot", "\\mathbb", "\\textsf"],
       "sorry": false,
       "stmtHash": "9646ccca0e62aeb34bac35add63666386fb31d88ce4b0393dfe0af672c630067",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": []
       },
       "views": {
         "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{lookup}\\,\\Gamma\\,i \\;\\deq\\; \\LeanMathConst{GetElem?.getElem?}\\,\\Gamma\\,i}{\\leanslot{Stlc.lookup}{Lookup in a context}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
+        "clauses|types=": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{lookup}\\,\\Gamma\\,i \\in \\LeanMathConst{Option}\\,\\LeanMathConst{Ty}}{for $\\Gamma \\in \\LeanMathConst{Ctx}$, $i \\in \\mathbb{N}$}\\\\\n\\LeanClause{\\LeanMathConst{lookup}\\,\\Gamma\\,i \\;\\deq\\; \\LeanMathConst{GetElem?.getElem?}\\,\\Gamma\\,i}{\\leanslot{Stlc.lookup}{Lookup in a context}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,e \\in \\mathbb{N}}{for $e \\in \\LeanMathConst{Tm}$}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
+        "clauses|types=size": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{lookup}\\,\\Gamma\\,i \\;\\deq\\; \\LeanMathConst{GetElem?.getElem?}\\,\\Gamma\\,i}{\\leanslot{Stlc.lookup}{Lookup in a context}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,e \\in \\mathbb{N}}{for $e \\in \\LeanMathConst{Tm}$}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
         "fixture.rulelist": "\\textsf{Lookup and size}"
       }
     },
@@ -45,6 +49,8 @@
       "doc": "A theorem with hypotheses (for the `rule` and `forall` modifiers).",
       "errors": {
         "clauses": "Stlc.step_app has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.step_app has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.step_app has no equations: the clauses view shows definitions",
         "grammar": "the grammar view needs an inductive type",
         "grammar|display": "Stlc.step_app is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
@@ -62,6 +68,8 @@
       "stmtHash": "a89b1dbdcec418d3aed4cb5fa598881a30819d69a4bd5e0006f63648a3dec5d2",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -90,6 +98,8 @@
       "decl": "Prod",
       "errors": {
         "clauses": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Ty has no equations: the clauses view shows definitions",
         "math|def=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
         "math|forall=": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
         "math|names=full": "Prod names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
@@ -104,6 +114,8 @@
       "stmtHash": "d19cac7ea59c8bfca71dd1d5660d58a6a09c49ccd248b8a09c603bf42c1c491d",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": []
@@ -112,6 +124,44 @@
         "fixture.rulelist": "\\textsf{Prod}",
         "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}",
         "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\tau \\in \\LeanMathConst{Ty}}{\\leanslot{Stlc.Ty}{Types}}\\\\\n\\LeanEntry{\\mathsf{b}}{\\leanslot{Stlc.Ty.base}{The base type}}\\\\\n\\LeanEntry{a \\to b}{\\leanslot{Stlc.Ty.arrow}{Functions}}\n\\end{LeanDisplay}"
+      }
+    },
+    "Run": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 10,
+        "untrusted": []
+      },
+      "decl": "Run",
+      "errors": {
+        "clauses": "Stlc.Run has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Run has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Run has no equations: the clauses view shows definitions",
+        "math|def=": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
+        "math|forall=": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
+        "math|names=full": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
+        "math|rule=": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|rule=",
+        "rules": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules",
+        "rules|exclude=beta": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|exclude=beta",
+        "rules|include=beta,app_right": "Run names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not rules|include=beta,app_right"
+      },
+      "kind": "group",
+      "macros": ["\\LeanCategory", "\\LeanEntry", "\\LeanMathConst", "\\begin", "\\end", "\\leanslot", "\\mathbb", "\\mathit", "\\textsf", "\\to"],
+      "sorry": false,
+      "stmtHash": "8c8677fef3083534b235af5489a539d5fd3bce37841671923929ae7a95d9382e",
+      "validation": {
+        "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": []
+      },
+      "views": {
+        "fixture.rulelist": "\\textsf{Run}",
+        "grammar": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Run}}{\\leanslot{Stlc.Run}{A run: some steps, and the term at each}}\\\\\n\\LeanEntry{\\mathit{len} : \\mathbb{N}}{\\leanslot{Stlc.Run.len}{the number of steps}}\\\\\n\\LeanEntry{\\mathit{step} : \\LeanMathConst{Fin}\\,len \\to \\LeanMathConst{Tm}}{\\leanslot{Stlc.Run.step}{the term at each step}}\n\\end{LeanDisplay}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Run}}{\\leanslot{Stlc.Run}{A run: some steps, and the term at each}}\\\\\n\\LeanEntry{\\mathit{len} : \\mathbb{N}}{\\leanslot{Stlc.Run.len}{the number of steps}}\\\\\n\\LeanEntry{\\mathit{step} : \\LeanMathConst{Fin}\\,len \\to \\LeanMathConst{Tm}}{\\leanslot{Stlc.Run.step}{the term at each step}}\n\\end{LeanDisplay}"
       }
     },
     "Stlc.Claim": {
@@ -124,7 +174,9 @@
       "decl": "Stlc.Claim",
       "doc": "A typing claim.",
       "errors": {
-        "clauses": "Stlc.Claim has no equations: the clauses view shows definitions"
+        "clauses": "Stlc.Claim has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Claim has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Claim has no equations: the clauses view shows definitions"
       },
       "kind": "structure",
       "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanField", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\LeanStructure", "\\begin", "\\end", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathit", "\\mathrm", "\\textsf"],
@@ -137,6 +189,8 @@
       "stmtHash": "69713b9806cea917f9d537d4f29cd56ad1bfe803367a25a404b590c06957b355",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -174,6 +228,8 @@
       "doc": "Typing. Labels come from docstrings.",
       "errors": {
         "clauses": "Stlc.HasType has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.HasType has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.HasType has no equations: the clauses view shows definitions",
         "grammar": "Stlc.HasType is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
       },
       "kind": "inductive",
@@ -187,6 +243,8 @@
       "stmtHash": "bcd5ea338db26567bb6b94bdb39bb976c43ce9cc88b3cfdf909cb0e25c08eb36",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -212,6 +270,59 @@
         "rules|include=beta,app_right": "\\begin{mathpar}\n\\end{mathpar}"
       }
     },
+    "Stlc.Run": {
+      "axioms": [],
+      "cone": {
+        "reasons": {},
+        "size": 10,
+        "untrusted": []
+      },
+      "decl": "Stlc.Run",
+      "doc": "A run: some steps, and the term at each.",
+      "errors": {
+        "clauses": "Stlc.Run has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Run has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Run has no equations: the clauses view shows definitions"
+      },
+      "kind": "structure",
+      "macros": ["\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanField", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\LeanSort", "\\LeanStructure", "\\begin", "\\end", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathbb", "\\mathit", "\\mathrm", "\\textsf", "\\to"],
+      "sigHash": "b4c648ba51c4e8e9c70137050eb57c75519ce151242aa823a299d18e396eb3f5",
+      "sorry": false,
+      "source": {
+        "line": 90,
+        "path": "Semantics/Lang.lean"
+      },
+      "stmtHash": "8c8677fef3083534b235af5489a539d5fd3bce37841671923929ae7a95d9382e",
+      "validation": {
+        "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
+        "fixture.rulelist": [],
+        "grammar": [],
+        "grammar|display": [],
+        "math|def=": [],
+        "math|forall=": [],
+        "math|names=full": [],
+        "math|rule=": [],
+        "rules": [],
+        "rules|exclude=beta": [],
+        "rules|include=beta,app_right": []
+      },
+      "views": {
+        "fixture.rulelist": "\\textsf{Stlc.Run}: mk",
+        "grammar": "\\begin{LeanGrammar}\n\\LeanStructure{\\LeanMathConst{Run}}{A run: some steps, and the term at each.}\n\\LeanField{len}{\\mathbb{N}}{\\leanslot{Stlc.Run.len}{the number of steps}}\n\\LeanField{step}{\\LeanMathConst{Fin}\\,len \\to \\LeanMathConst{Tm}}{\\leanslot{Stlc.Run.step}{the term at each step}}\n\\end{LeanGrammar}",
+        "grammar|display": "\\begin{LeanDisplay}\n\\LeanCategory{\\LeanMathConst{Run}}{\\leanslot{Stlc.Run}{A run: some steps, and the term at each}}\\\\\n\\LeanEntry{\\mathit{len} : \\mathbb{N}}{\\leanslot{Stlc.Run.len}{the number of steps}}\\\\\n\\LeanEntry{\\mathit{step} : \\LeanMathConst{Fin}\\,len \\to \\LeanMathConst{Tm}}{\\leanslot{Stlc.Run.step}{the term at each step}}\n\\end{LeanDisplay}",
+        "lean": "\\LeanCode{%\n\\LeanKeyword{structure} \\LeanConst{Run} : \\LeanSort{Type}}",
+        "math|def=": "\\LeanMath{\\LeanMathConst{Run} : \\mathrm{Type}}",
+        "math|forall=": "\\LeanMath{\\mathrm{Type}}",
+        "math|names=full": "\\LeanMath{\\LeanMathConst{Stlc.Run} : \\mathrm{Type}}",
+        "math|rule=": "\\LeanMath{\\LeanMathConst{Run} : \\mathrm{Type}}",
+        "meta": "\\LeanMeta{\\leanmetasource{}}{}{\\LeanSorryFree}{A run: some steps, and the term at each.}",
+        "rules": "\\begin{mathpar}\n\n\\inferrule[Mk]\n  { }\n  { \\LeanMathConst{Run} }\n\n\\end{mathpar}",
+        "rules|exclude=beta": "\\begin{mathpar}\n\n\\inferrule[Mk]\n  { }\n  { \\LeanMathConst{Run} }\n\n\\end{mathpar}",
+        "rules|include=beta,app_right": "\\begin{mathpar}\n\\end{mathpar}"
+      }
+    },
     "Stlc.Step": {
       "axioms": [],
       "cone": {
@@ -223,6 +334,8 @@
       "doc": "Small-step reduction. Labels come from the constructor names.",
       "errors": {
         "clauses": "Stlc.Step has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Step has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Step has no equations: the clauses view shows definitions",
         "grammar": "Stlc.Step is an inductive predicate; the rules view shows predicates, the grammar view shows inductive types"
       },
       "kind": "inductive",
@@ -236,6 +349,8 @@
       "stmtHash": "e76370a2950fdd08ee59ebd5aa660ed4a3f08a206b7de94adeceed2c40323e36",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": ["variables e and e both print as $e$, in $e \\longrightarrow e$"],
@@ -271,7 +386,9 @@
       "decl": "Stlc.Tm",
       "doc": "Terms, with de Bruijn variables.",
       "errors": {
-        "clauses": "Stlc.Tm has no equations: the clauses view shows definitions"
+        "clauses": "Stlc.Tm has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Tm has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Tm has no equations: the clauses view shows definitions"
       },
       "kind": "inductive",
       "macros": ["\\LeanAlternative", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\textsf"],
@@ -284,6 +401,8 @@
       "stmtHash": "8cfc6f91ea41d3a118e34916502a747519762ee3516598d311beff5f21dae928",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -320,7 +439,9 @@
       "decl": "Stlc.Ty",
       "doc": "Types.",
       "errors": {
-        "clauses": "Stlc.Ty has no equations: the clauses view shows definitions"
+        "clauses": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Ty has no equations: the clauses view shows definitions"
       },
       "kind": "inductive",
       "macros": ["\\LeanAlternative", "\\LeanCategory", "\\LeanCode", "\\LeanConst", "\\LeanEntry", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanProduction", "\\LeanSorryFree", "\\LeanSort", "\\and", "\\begin", "\\end", "\\in", "\\inferrule", "\\leanmetasource", "\\leanslot", "\\mathrm", "\\mathsf", "\\tau", "\\textsf", "\\to"],
@@ -333,6 +454,8 @@
       "stmtHash": "d19cac7ea59c8bfca71dd1d5660d58a6a09c49ccd248b8a09c603bf42c1c491d",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -376,7 +499,7 @@
         "rules|include=beta,app_right": "the rules view needs an inductive predicate or a constructor"
       },
       "kind": "definition",
-      "macros": ["\\LeanClause", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\deq", "\\end", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathbb", "\\textsf", "\\to"],
+      "macros": ["\\LeanClause", "\\LeanCode", "\\LeanCodeInline", "\\LeanConst", "\\LeanKeyword", "\\LeanMath", "\\LeanMathConst", "\\LeanMeta", "\\LeanSorryFree", "\\begin", "\\deq", "\\end", "\\in", "\\lambda", "\\leanmetasource", "\\leanslot", "\\mathbb", "\\textsf", "\\to"],
       "sigHash": "e2b7c5d63bcf8722ed871cc6b816ecdb1de5cfdc12b6f564253261a992c5cdd8",
       "sorry": false,
       "source": {
@@ -386,6 +509,8 @@
       "stmtHash": "1023a99e325d3da1e08812cdb3962a3e3e4f6cf68660997333e3a8967a0d3b63",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -396,6 +521,8 @@
       },
       "views": {
         "clauses": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
+        "clauses|types=": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{size}\\,e \\in \\mathbb{N}}{for $e \\in \\LeanMathConst{Tm}$}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
+        "clauses|types=size": "\\begin{LeanDisplay}\n\\LeanClause{\\LeanMathConst{size}\\,e \\in \\mathbb{N}}{for $e \\in \\LeanMathConst{Tm}$}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,x_{\\_} \\;\\deq\\; 1}{\\leanslot{Stlc.size}{The size of a term, by recursion (for the \\LeanCodeInline{def} modifier)}}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) \\;\\deq\\; \\LeanMathConst{size}\\,e + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,(e_{1}\\; e_{2}) \\;\\deq\\; \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1}{}\\\\\n\\LeanClause{\\LeanMathConst{size}\\,() \\;\\deq\\; 1}{}\n\\end{LeanDisplay}",
         "fixture.rulelist": "\\textsf{Stlc.size}",
         "lean": "\\LeanCode{%\n\\LeanKeyword{def} \\LeanConst{size} : \\LeanConst{Tm} → \\LeanConst{Nat}}",
         "math|def=": "\\LeanMath{\\begin{aligned}\\LeanMathConst{size}\\,x_{\\_} &= 1 \\\\ \\LeanMathConst{size}\\,(\\lambda{:}\\_.\\, e) &= \\LeanMathConst{size}\\,e + 1 \\\\ \\LeanMathConst{size}\\,(e_{1}\\; e_{2}) &= \\LeanMathConst{size}\\,e_{1} + \\LeanMathConst{size}\\,e_{2} + 1 \\\\ \\LeanMathConst{size}\\,() &= 1\\end{aligned}}",
@@ -416,6 +543,8 @@
       "doc": "A clash with the paper's metavariables, for translation validation: `τ`\nstands for types (`latex_category Ty`), but here it names a number.",
       "errors": {
         "clauses": "Stlc.size_pos has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.size_pos has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.size_pos has no equations: the clauses view shows definitions",
         "grammar": "the grammar view needs an inductive type",
         "grammar|display": "Stlc.size_pos is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
@@ -433,6 +562,8 @@
       "stmtHash": "d0a319c63731ab4a768538cb0ec931fbfc204910d44cfe74bf7bf6518b79433d",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -462,6 +593,8 @@
       "doc": "A theorem with hypotheses (for the `rule` and `forall` modifiers).",
       "errors": {
         "clauses": "Stlc.step_app has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.step_app has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.step_app has no equations: the clauses view shows definitions",
         "grammar": "the grammar view needs an inductive type",
         "grammar|display": "Stlc.step_app is not an inductive type",
         "rules": "the rules view needs an inductive predicate or a constructor",
@@ -479,6 +612,8 @@
       "stmtHash": "a89b1dbdcec418d3aed4cb5fa598881a30819d69a4bd5e0006f63648a3dec5d2",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": [],
@@ -507,6 +642,8 @@
       "decl": "Types and terms",
       "errors": {
         "clauses": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "clauses|types=": "Stlc.Ty has no equations: the clauses view shows definitions",
+        "clauses|types=size": "Stlc.Ty has no equations: the clauses view shows definitions",
         "math|def=": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
         "math|forall=": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|forall=",
         "math|names=full": "Types and terms names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|names=full",
@@ -521,6 +658,8 @@
       "stmtHash": "a2aa2a46dc71fde644ebe9e8e6fd6907384ef0082d2b210dde96aeee5ddf2f9a",
       "validation": {
         "clauses": [],
+        "clauses|types=": [],
+        "clauses|types=size": [],
         "fixture.rulelist": [],
         "grammar": [],
         "grammar|display": []
@@ -541,6 +680,8 @@
       "decl": "Typing and evaluation",
       "errors": {
         "clauses": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not clauses",
+        "clauses|types=": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not clauses|types=",
+        "clauses|types=size": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not clauses|types=size",
         "grammar": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not grammar",
         "grammar|display": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not grammar|display",
         "math|def=": "Typing and evaluation names no declaration, so only a group's rules view, a display's clauses or grammar view, or a custom view applies, not math|def=",
