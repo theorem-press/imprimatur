@@ -211,7 +211,6 @@ A type is `T`, a function `f`, a number `n`, a list `l` and a Boolean `b`;
 binders of other types keep their names, as do binders the definition `defn`
 names itself (an author's `a` is not generic). -/
 def nameEqnBinders (e : Expr) (defn : Option Name := none) : MetaM Expr := do
-  let cats := projectCategories (← getEnv)
   let (own, params) ← match defn with
     | some d => do
       let c ← getConstInfo d
@@ -253,9 +252,9 @@ def nameEqnBinders (e : Expr) (defn : Option Name := none) : MetaM Expr := do
       -- A type is `T`, and a function `f`.
       if t.isSort then return some "T"
       if t.isForall then return some "f"
+      if let some l := (← Render.categoryLetter? d.type).bind letterName then return some l
       match t.getAppFn with
       | .const c _ =>
-        if let some l := (cats.find? (·.1 == c)).bind fun (_, m) => letterName m then return some l
         -- Otherwise a conventional letter for a few common types.
         return match c with
           | ``Nat => some "n"

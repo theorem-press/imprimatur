@@ -258,9 +258,10 @@ inductive NotationEntry where
   | convention (c : PremiseConvention)
   /-- The metavariable of a grammar category (`latex_category`). -/
   | category (ty : Name) (tex : String)
-  /-- The arguments a category's type is shown at (`latex_category T A => "m"`),
-  when it is not shown at its own parameters. -/
-  | categoryArgs (ty : Name) (args : Array Name)
+  /-- The type of a category declared with arguments (`latex_category T A … =>
+  "m"`): `T A …`, which its metavariable ranges over, and which the table of
+  conventions writes. -/
+  | categoryType (ty : Name) (tex : String) (type : Expr)
   /-- A custom view (`@[latex_view "name"]`) and the function that renders it. -/
   | view (name : String) (fn : Name)
   /-- A key of the document and the declaration it names (`latex_entry`),
@@ -343,10 +344,11 @@ def projectCategories (env : Environment) : Array (Name × String) :=
     | .category t m => some (t, m)
     | _ => none
 
-/-- The arguments categories' types are shown at, when declared. -/
-def projectCategoryArgs (env : Environment) : Array (Name × Array Name) :=
+/-- The types of the categories declared with arguments (`latex_category List
+Prog => "p"`), each with its head and metavariable. -/
+def projectCategoryTypes (env : Environment) : Array (Name × String × Expr) :=
   (notationExt.getState env).filterMap fun
-    | .categoryArgs t as => some (t, as)
+    | .categoryType t m ty => some (t, m, ty)
     | _ => none
 
 /-- The explicit arguments of an application, given the head's type: implicit

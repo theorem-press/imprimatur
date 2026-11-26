@@ -127,6 +127,24 @@ they are, with three adjustments:
 - names longer than one letter are set in `\mathit` and escaped, unless the
   style says otherwise.
 
+## `latex_category`
+
+```lean
+latex_category Tm => "e"
+latex_category Judg Name => "J"
+latex_category List Tm => r"\overline{e}"
+```
+
+The metavariable of a grammar category: the letter that ranges over a type,
+as $e$ ranges over terms in BNF. The `grammar` views head a type's
+production with it (`e ::= …`), the `conventions` table lists it with its
+type, and reading back holds a variable written with it to that type (see
+[Metavariables](#metavariables)). With arguments, the category is the type
+at those arguments only: `List Tm` is $\overline{e}$, and a `List Nat` is no
+category's unless `List` is declared bare as well. A type is looked up as
+written and then unfolded, so an `abbrev` (`Decls := List (Name × List
+Name)`) may have a category under its own name.
+
 ## `latex_style`
 
 ```lean
@@ -300,7 +318,11 @@ trusted.
   subscripts and primes are kept, so `q : Prog` is $P$, `t₁ : Ty` is
   $\tau_1$ and `e' : Tm` is $e'$. Two variables of one formula
   that then print alike (`a b : Prog`, both $P$) are an error: rename them
-  `a₁ a₂`.
+  `a₁ a₂`. In a production of a grammar, which shows what a form takes by
+  its variables' letters alone, a variable whose type has no category is an
+  error too: `design(plans, trials, vars)` says nothing of its arguments'
+  types, where `design(n₁, n₂, \overline{x{:}a})` says them all, once `n`,
+  `x` and `a` are declared.
 
 ```lean
 latex_style categories := strict

@@ -1409,7 +1409,11 @@ constructors; the `def` view reads as the equation lemmas.
    another type must not print as it, with or without subscripts and primes.
    A letter may stand for several types, as a paper's programs and a
    development's representation of them, declared by one `latex_category`
-   each; types are compared after unfolding reducible definitions.
+   each; types are compared after unfolding reducible definitions. Under
+   `latex_style categories := strict` the converse holds in a grammar's
+   productions, which show what a form takes by its letters alone: every
+   variable's type has a metavariable, so `design(n₁, n₂, \overline{x{:}a})`
+   says what a leaf design takes.
 
 **Source and glyphs.** The theorem is about TeX source. A reader sees
 glyphs, and two tokens can print alike: `\;` (application) prints as space,

@@ -58,8 +58,12 @@ where
     | f :: fs => do
       let proj := mkAppN (.const (structName ++ f) lvls) (params.push self)
       let ty := replace (← inferType proj)
-      withLocalDeclD f ty fun v =>
-        go fs (idx + 1) (subst.push (proj, v) |>.push (.proj structName idx self, v)) lvls
+      withLocalDeclD f ty fun v => do
+        -- The field keeps its name under every category style: it names
+        -- the field, not any value of its type.
+        let t ← varName f
+        withReader (fun c => { c with overrides := c.overrides.push (v.fvarId!, t) }) do
+          go fs (idx + 1) (subst.push (proj, v) |>.push (.proj structName idx self, v)) lvls
 
 /-- One constructor as an alternative. -/
 def alternative (c : ConstantInfo) : RenderM String := do
@@ -69,7 +73,9 @@ def alternative (c : ConstantInfo) : RenderM String := do
     let args := xs.extract i.numParams xs.size
     let params := xs.extract 0 i.numParams
     let e := mkAppN (mkAppN (.const c.name (c.levelParams.map .param)) params) args
-    return (← render e).render 100000
+    -- A production's variables are metavariables (`Render.validate`).
+    withReader (fun ctx => { ctx with production := true }) do
+      return (← render e).render 100000
 
 /-- The `grammar` view of an inductive type or structure. -/
 def grammarView (c : ConstantInfo) : RenderM String := do

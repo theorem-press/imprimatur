@@ -5,6 +5,14 @@ All notable changes to imprimatur are recorded here. Versions follow
 
 ## Unreleased
 
+- `latex_category` takes a type at arguments: `latex_category List Prog =>
+  r"\vec{P}"` is the category of lists of programs, and a `List Nat` is no
+  category's. Under `latex_style categories := strict`, a production of a
+  grammar with a variable whose type has no metavariable is an
+  `error[category]`, since a production shows no types: `design(plans,
+  trials, vars)` said nothing of what a leaf design takes. A structure's
+  field named in a later field's type keeps its name under `strict`, where
+  it was written as its type's letter.
 - Reading a rendering back, a λ where a function type is expected takes
   the type's domain for its binder and has its body fit to the codomain, so
   a coercion the notation hides in the body is found: `λ r.\,r` for

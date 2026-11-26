@@ -438,17 +438,26 @@ syntax (name := latexStyle) "latex_style " ident " := " ident : command
   modifyEnv (notationExt.addEntry · (.style key value))
 
 /-- `latex_category T => "e"`: the metavariable of grammar category `T`
-(the `grammar` view). `latex_category T A₁ … => "e"` also says the category is
-`T` at the arguments `A₁ …` (the judgements `Judg Name`), which is how the
-table of conventions writes its type. -/
-syntax (name := latexCategory) "latex_category " ident (ppSpace ident)* " => " str : command
+(the `grammar` view). `latex_category T A₁ … => "e"` is the category of the
+type `T A₁ …` (the judgements `Judg Name`, the lists `List Prog`): its
+metavariable ranges over `T` at those arguments only, and the table of
+conventions writes its type so. -/
+syntax (name := latexCategory) "latex_category " ident (ppSpace term:max)* " => " str : command
 
 /-- Elaborate `latex_category`. -/
 @[command_elab latexCategory] def elabLatexCategory : CommandElab := fun stx => do
   let t ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
-  let args ← stx[2].getArgs.mapM fun a => liftCoreM (realizeGlobalConstNoOverloadWithInfo a)
   let some tex := stx[4].isStrLit? | throwErrorAt stx[4] "expected a string"
   modifyEnv (notationExt.addEntry · (.category t tex))
-  unless args.isEmpty do modifyEnv (notationExt.addEntry · (.categoryArgs t args))
+  let args := stx[2].getArgs
+  unless args.isEmpty do
+    -- The category is the type applied to its arguments, elaborated as a type.
+    let ty ← liftTermElabM do
+      let e ← Term.elabType (Syntax.mkApp ⟨stx[1]⟩ (args.map (⟨·⟩)))
+      Term.synthesizeSyntheticMVarsNoPostponing
+      let e ← instantiateMVars e
+      if e.hasMVar then throwErrorAt stx[2] "the arguments do not fix the type {e}"
+      pure e
+    modifyEnv (notationExt.addEntry · (.categoryType t tex ty))
 
 end Imprimatur

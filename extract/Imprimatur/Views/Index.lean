@@ -47,17 +47,18 @@ def docSentence (n : Name) : MetaM String := do
   let d := if d.endsWith "." then (d.dropEnd 1).toString else d
   return TeX.markdown d
 
-/-- A type as TeX: applied to the arguments its category names
-(`latex_category Judg Name => "J"`), or else to its parameters and indices.
-A binder Lean named itself (`Vec : Nat → Type`) is named after its type's
-metavariable. -/
-def typeTeX (ty : Name) : RenderM String := do
+/-- A type as TeX: at the arguments its category names (`latex_category Judg
+Name => "J"`, for the category with metavariable `tex`), or else applied to
+its parameters and indices. A binder Lean named itself (`Vec : Nat → Type`)
+is named after its type's metavariable. -/
+def typeTeX (ty : Name) (tex : Option String := none) : RenderM String := do
   let env ← getEnv
   let ci ← getConstInfo ty
   let cats := projectCategories env
   let c := Expr.const ty (ci.levelParams.map Level.param)
-  if let some (_, args) := (projectCategoryArgs env).find? (·.1 == ty) then
-    return (← render (mkAppN c (args.map (Expr.const · [])))).render 100000
+  if let some (_, _, t) := (projectCategoryTypes env).find? fun (c, m, _) =>
+      c == ty && (tex.isNone || tex == some m) then
+    return (← render t).render 100000
   forallTelescope ci.type fun xs _ => do
     let mut lctx ← getLCtx
     for x in xs do
@@ -127,7 +128,7 @@ def conventionsView : RenderM String := do
   let mut out := "\\begin{longtable}{@{}l@{\\quad}l@{\\quad}p{.4\\linewidth}@{\\quad}l@{}}\n"
   out := out ++ "\\textit{Variable} & \\textit{Type} & & \\textit{Shown in}\\\\\n\\hline\\endhead\n"
   for (_, tex, ty, wh, _) in sorted do
-    out := out ++ s!"${tex}$ & ${← typeTeX ty}$ & \\leanslot\{{ty}}\{{← docSentence ty}} & {wh}\\\\\n"
+    out := out ++ s!"${tex}$ & ${← typeTeX ty tex}$ & \\leanslot\{{ty}}\{{← docSentence ty}} & {wh}\\\\\n"
   -- Each metavariable convention the document uses (DESIGN §7.6): its
   -- metavariable stands for a variable of the predicate whose premise it
   -- hides, which is shown where the predicate is displayed, else where the

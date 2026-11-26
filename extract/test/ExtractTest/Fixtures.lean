@@ -241,10 +241,11 @@ unsafe def indexTest : TestM Unit := group "index" do
   golden "extract/index/golden" ("golden" / "Index.tex")
     (s!"% conventions\n{conv}% vocabulary\n{vocab}% provenance\n{prov}")
 
-/-- `latex_style categories := strict`, on the `Categories` fixture. Its two
+/-- `latex_style categories := strict`, on the `Categories` fixture. Its
 notation modules give `Prog` the metavariable $P$, and `Rep` either its own
-($\overline{P}$, in `Strict`) or $P$ too (`Clash`). The style is the project's,
-so each is imported on its own. -/
+($\overline{P}$, in `Strict` and `Bare`) or $P$ too (`Clash`); `Strict` gives
+`Nat` one and `Bare` does not. The style is the project's, so each is
+imported on its own. -/
 unsafe def categoriesTest : TestM Unit := group "categories" do
   let dir := fixturesDir / "Categories"
   let lib := dir / ".lake" / "build" / "lib" / "lean"
@@ -252,14 +253,17 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   let run (m : Name) : IO String := do
     let env ← Compat.importPrivate #[m]
     let settings : Settings := { imports := #[m], stripNamespaces := #[`Cats] }
-    let reqs := #["Cats.lower_eq", "Cats.symm"].map fun k => { key := k, views := #["math"] }
+    let reqs := #["Cats.lower_eq", "Cats.symm", "Cats.lists"].map fun k => { key := k, views := #["math"] }
+    let reqs := reqs.push { key := "Cats.Des", views := #["grammar"] }
     let (entries, _) ← exportEntries env dir settings reqs
     return renderBundle entries none
-  let math (b k : String) : String :=
-    ((entry? b k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String "math")).toOption).getD ""
-  let problems (b k : String) : Array String :=
+  let viewOf (b k v : String) : String :=
+    ((entry? b k).bind fun e => (e.getObjVal? "views" >>= (·.getObjValAs? String v)).toOption).getD ""
+  let math (b k : String) : String := viewOf b k "math"
+  let problemsOf (b k v : String) : Array String :=
     ((entry? b k).bind fun e =>
-      (e.getObjVal? "validation" >>= (·.getObjValAs? (Array String) "math")).toOption).getD #[]
+      (e.getObjVal? "validation" >>= (·.getObjValAs? (Array String) v)).toOption).getD #[]
+  let problems (b k : String) : Array String := problemsOf b k "math"
   let strict ← run `Categories.Strict
   -- `q : Prog` and `r : Rep` are written with their types' metavariables.
   let m := math strict "Cats.lower_eq"
@@ -270,6 +274,25 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   check "extract/categories/strict-print-alike"
     ((problems strict "Cats.symm").any (·.startsWith "category: variables a and b both print as $P$"))
     (toString (problems strict "Cats.symm"))
+  -- A category at arguments: `ps : List Prog` is $\vec{P}$, and `ns : List
+  -- Nat`, which no category covers, keeps its name.
+  let m := math strict "Cats.lists"
+  check "extract/categories/applied-type"
+    ((m.splitOn "\\vec{P}").length > 1 && (m.splitOn "\\mathit{ns}").length > 1) m
+  checkEq "extract/categories/applied-clean" (problems strict "Cats.lists") #[]
+  -- A production is written with metavariables: `n`, $\vec{P}$, $D_1$, $D_2$.
+  let g := viewOf strict "Cats.Des" "grammar"
+  check "extract/categories/production"
+    ((g.splitOn "\\mathsf{copies}(n, \\vec{P})").length > 1 && (g.splitOn "D_{1} \\parallel D_{2}").length > 1) g
+  checkEq "extract/categories/production-clean" (problemsOf strict "Cats.Des" "grammar") #[]
+  -- Without a metavariable for `Nat`, the production does not say what `n`
+  -- ranges over: an error, since the production shows no types.
+  let bare ← run `Categories.Bare
+  check "extract/categories/production-undeclared"
+    ((problemsOf bare "Cats.Des" "grammar").any
+      (·.startsWith "category: the variable n has type Nat, which has no metavariable"))
+    (toString (problemsOf bare "Cats.Des" "grammar"))
+  checkEq "extract/categories/production-undeclared-only" (problemsOf bare "Cats.Des" "grammar").size 1
   let clash ← run `Categories.Clash
   check "extract/categories/unique-letter"
     ((problems clash "Cats.lower_eq").any (·.startsWith "category: the metavariable $P$ stands for Cats.Prog, Cats.Rep"))

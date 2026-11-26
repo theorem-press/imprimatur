@@ -115,6 +115,10 @@ structure Ctx where
   document : DocumentInfo := {}
   /-- The key being rendered, as the document writes it. -/
   key : String := ""
+  /-- Rendering a production of a grammar (`Views.alternative`), which shows
+  its variables' types only by their letters: under `latex_style categories
+  := strict`, each variable's type must have a metavariable. -/
+  production : Bool := false
   /-- The view being rendered (`math`, `rules`, …), for the timing log. -/
   view : String := ""
   /-- The project's root, for source locations. -/
@@ -204,15 +208,28 @@ def categoriesStyle : MetaM String := do
   return ((projectStyles (← getEnv)).find? (·.1 == "categories")).map (·.2) |>.getD "loose"
 
 /-- The metavariable of the category a type belongs to: its head's, or, for a
-type that unfolds (`abbrev`), the head's of what it unfolds to. -/
+type that unfolds (`abbrev`), the head's of what it unfolds to. A category
+declared with arguments (`latex_category List Prog => "p"`) is the type at
+those arguments only, and is preferred to one declared bare (`latex_category
+List => "l"`), which is the type at any. -/
 def categoryLetter? (ty : Expr) : MetaM (Option String) := do
-  let cats := projectCategories (← getEnv)
-  let of (t : Expr) : Option String := match t.getAppFn with
-    | .const h _ => (cats.find? (·.1 == h)).map (·.2)
-    | _ => none
+  let env ← getEnv
+  let cats := projectCategories env
+  let types := projectCategoryTypes env
+  let of (t : Expr) : MetaM (Option String) := do
+    let .const h _ := t.getAppFn | return none
+    let mut bare : Option String := none
+    for (c, m) in cats do
+      if c != h then continue
+      match types.find? fun (c', m', _) => c' == c && m' == m with
+      | some (_, _, cty) =>
+        -- Compared without assigning anything still open in the formula.
+        if ← (try withNewMCtxDepth (isDefEq t cty) catch _ => pure false) then return some m
+      | none => if bare.isNone then bare := some m
+    return bare
   let ty ← instantiateMVars ty
-  if let some m := of ty then return some m
-  try return of (← whnfR ty) catch _ => return none
+  if let some m ← of ty then return some m
+  try of (← whnfR ty) catch _ => return none
 
 /-- The decorations of a variable's name: its subscript (from trailing
 digits) and its primes, as TeX. -/
@@ -801,6 +818,19 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
       unless tys.any (·.toString == head a.sort) || keys.contains (head a.sort) do
         let p := s!"{pre}the variable {a.name} prints as ${a.tex}$, which stands for {ty} \
           (latex_category), but has type {a.sort}: name it differently, or change the metavariable ${metavarBase a.tex}$"
+        unless (← problems.get).contains p do problems.modify (·.push p)
+  -- A production of a grammar says what a form takes only by its variables'
+  -- letters (`design(n, \overline{x})`), so under `strict` every variable
+  -- in one has a declared metavariable.
+  if (← read).production && (← categoriesStyle) == "strict" then
+    for a in atoms do
+      let some f := a.fvar | continue
+      if a.sort == "*" || Validate.isTyVar a.sort || a.sort.startsWith "'" then continue
+      let some d := lctx.find? f | continue
+      if (← categoryLetter? d.type).isNone then
+        let p := s!"category: the variable {a.name} has type {← ppExpr d.type}, which has no \
+          metavariable, so the production does not say what it ranges over: declare one \
+          (latex_category)"
         unless (← problems.get).contains p do problems.modify (·.push p)
   -- Free variables that print alike.
   let mut seen : Array (FVarId × String) := #[]
