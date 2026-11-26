@@ -10,9 +10,12 @@ All notable changes to imprimatur are recorded here. Versions follow
   category's. Under `latex_style categories := strict`, a production of a
   grammar with a variable whose type has no metavariable is an
   `error[category]`, since a production shows no types: `design(plans,
-  trials, vars)` said nothing of what a leaf design takes. A structure's
-  field named in a later field's type keeps its name under `strict`, where
-  it was written as its type's letter.
+  trials, vars)` said nothing of what a leaf design takes. Under `strict`,
+  several variables of one category with no decorations of their own
+  (`plans trials : ℕ`) are numbered in the order they are bound, `n₁` and
+  `n₂`, where they were an error to be fixed by renaming the Lean. A
+  structure's field named in a later field's type keeps its name under
+  `strict`, where it was written as its type's letter.
 - Reading a rendering back, a λ where a function type is expected takes
   the type's domain for its binder and has its body fit to the codomain, so
   a coercion the notation hides in the body is found: `λ r.\,r` for

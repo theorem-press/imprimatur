@@ -246,11 +246,22 @@ def nameDecorations (n : Name) : String :=
 /-- The TeX of a variable of type `ty`. With `latex_style categories :=
 strict`, a variable of a category's type is written with the category's
 metavariable and its own decorations (`t : Ty` as $\tau$, `t₁` as
-$\tau_{1}$), so the reader knows its type from its letter. -/
+$\tau_{1}$), so the reader knows its type from its letter. Several
+variables in scope of one category with no decorations of their own
+(`plans trials : ℕ`) are numbered in the order they are bound ($n_{1}$,
+$n_{2}$), as BNF numbers them; their Lean names are the development's. -/
 def varNameT (n : Name) (ty : Expr) : RenderM String := do
   if (← categoriesStyle) == "strict" then
     if let some m ← categoryLetter? ty then
-      return m ++ nameDecorations n
+      let deco := nameDecorations n
+      unless deco.isEmpty do return m ++ deco
+      -- The undecorated variables of this category in scope, in order.
+      let same ← (← getLCtx).foldlM (init := #[]) fun (acc : Array Name) d => do
+        if d.isImplementationDetail || !(nameDecorations d.userName).isEmpty then return acc
+        if (← categoryLetter? d.type) == some m then return acc.push d.userName else return acc
+      if same.size > 1 then
+        if let some i := same.idxOf? n then return s!"{m}_\{{i + 1}}"
+      return m
   varName n
 
 /-- The TeX of a constant without notation. -/

@@ -253,7 +253,8 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   let run (m : Name) : IO String := do
     let env ← Compat.importPrivate #[m]
     let settings : Settings := { imports := #[m], stripNamespaces := #[`Cats] }
-    let reqs := #["Cats.lower_eq", "Cats.symm", "Cats.lists"].map fun k => { key := k, views := #["math"] }
+    let reqs := #["Cats.lower_eq", "Cats.symm", "Cats.symm'", "Cats.lists"].map fun k =>
+      { key := k, views := #["math"] }
     let reqs := reqs.push { key := "Cats.Des", views := #["grammar"] }
     let (entries, _) ← exportEntries env dir settings reqs
     return renderBundle entries none
@@ -270,10 +271,15 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   check "extract/categories/strict-renames"
     (m == "\\LeanMath{\\mathsf{lower}(P) = \\overline{P} \\implies \\mathsf{lower}(P) = \\overline{P}}") m
   checkEq "extract/categories/strict-clean" (problems strict "Cats.lower_eq") #[]
-  -- `a b : Prog` are both $P$: an error, not a warning.
+  -- `a b : Prog`, undecorated, are numbered in order: $P_1$ and $P_2$.
+  let m := math strict "Cats.symm"
+  check "extract/categories/strict-numbers"
+    (m == "\\LeanMath{P_{1} = P_{2} \\implies P_{2} = P_{1}}") m
+  checkEq "extract/categories/strict-numbers-clean" (problems strict "Cats.symm") #[]
+  -- `a₁ b₁ : Prog` are both $P_1$: an error, not a warning.
   check "extract/categories/strict-print-alike"
-    ((problems strict "Cats.symm").any (·.startsWith "category: variables a and b both print as $P$"))
-    (toString (problems strict "Cats.symm"))
+    ((problems strict "Cats.symm'").any (·.startsWith "category: variables a₁ and b₁ both print as $P_{1}$"))
+    (toString (problems strict "Cats.symm'"))
   -- A category at arguments: `ps : List Prog` is $\vec{P}$, and `ns : List
   -- Nat`, which no category covers, keeps its name.
   let m := math strict "Cats.lists"

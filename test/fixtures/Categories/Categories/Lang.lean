@@ -22,8 +22,11 @@ def lower : Prog → Rep
 /-- Variables named for neither type: written with their types' letters. -/
 theorem lower_eq (q : Prog) (r : Rep) (h : lower q = r) : lower q = r := h
 
-/-- Two programs named `a` and `b`: both written `P`. -/
+/-- Two programs named `a` and `b`: written `P₁` and `P₂`, in order. -/
 theorem symm (a b : Prog) (h : a = b) : b = a := h.symm
+
+/-- Two programs named `a₁` and `b₁`: both written `P₁`. -/
+theorem symm' (a₁ b₁ : Prog) (h : a₁ = b₁) : b₁ = a₁ := h.symm
 
 /-- Designs. -/
 inductive Des where

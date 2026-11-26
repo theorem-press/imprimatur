@@ -316,9 +316,11 @@ trusted.
 - **`strict`**. As `unique`, and a variable whose type has a category is
   written with the category's letter, whatever its Lean name: only the name's
   subscripts and primes are kept, so `q : Prog` is $P$, `t₁ : Ty` is
-  $\tau_1$ and `e' : Tm` is $e'$. Two variables of one formula
-  that then print alike (`a b : Prog`, both $P$) are an error: rename them
-  `a₁ a₂`. In a production of a grammar, which shows what a form takes by
+  $\tau_1$ and `e' : Tm` is $e'$. Several variables of one category with
+  no decorations of their own (`plans trials : ℕ`) are numbered in the order
+  they are bound, $n_1$ and $n_2$. Two variables of one formula that still
+  print alike (`a₁ b₁ : Prog`, both $P_1$) are an error: rename one. In a
+  production of a grammar, which shows what a form takes by
   its variables' letters alone, a variable whose type has no category is an
   error too: `design(plans, trials, vars)` says nothing of its arguments'
   types, where `design(n₁, n₂, \overline{x{:}a})` says them all, once `n`,
