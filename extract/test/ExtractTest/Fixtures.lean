@@ -253,7 +253,7 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   let run (m : Name) : IO String := do
     let env ← Compat.importPrivate #[m]
     let settings : Settings := { imports := #[m], stripNamespaces := #[`Cats] }
-    let reqs := #["Cats.lower_eq", "Cats.symm", "Cats.symm'", "Cats.lists"].map fun k =>
+    let reqs := #["Cats.lower_eq", "Cats.symm", "Cats.symm'", "Cats.lists", "Cats.nats"].map fun k =>
       { key := k, views := #["math"] }
     let reqs := reqs.push { key := "Cats.Des", views := #["grammar"] }
     let (entries, _) ← exportEntries env dir settings reqs
@@ -280,6 +280,12 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   check "extract/categories/strict-print-alike"
     ((problems strict "Cats.symm'").any (·.startsWith "category: variables a₁ and b₁ both print as $P_{1}$"))
     (toString (problems strict "Cats.symm'"))
+  -- A category with two metavariables: `n` and `k` keep their names, and
+  -- `m`, named by neither, takes the category's own, numbered apart from `n`.
+  let m := math strict "Cats.nats"
+  check "extract/categories/several-letters"
+    (m == "\\LeanMath{n = k \\implies k + n_{1} = n + n_{1}}") m
+  checkEq "extract/categories/several-letters-clean" (problems strict "Cats.nats") #[]
   -- A category at arguments: `ps : List Prog` is $\vec{P}$, and `ns : List
   -- Nat`, which no category covers, keeps its name.
   let m := math strict "Cats.lists"

@@ -13,7 +13,7 @@ latex_style categories := strict
 latex_category Prog => "P"
 latex_category Rep => r"\overline{P}"
 latex_category Des => "D"
-latex_category Nat => "n"
+latex_category Nat => "n" "k"
 -- A category at arguments: lists of programs, not lists of numbers.
 latex_category List Prog => r"\vec{P}"
 latex_notation lower p => r"\mathsf{lower}(#p)"

@@ -115,7 +115,12 @@ def conventionsView : RenderM String := do
     let some (order, key) ← (do
         if let some f ← firstOf shown then return some f
         firstOf seen) | continue
-    rows := rows.push (order, tex, ty, ← whereTeX key, i)
+    -- A category's metavariables (`latex_category Name => "x" "y"`) share a row.
+    if let some j := rows.findIdx? (·.2.2.1 == ty) then
+      let (o, t, _, w, k) := rows[j]!
+      rows := rows.set! j (o, s!"{t}, {tex}", ty, w, k)
+    else
+      rows := rows.push (order, tex, ty, ← whereTeX key, i)
   -- A metavariable's rows together, where it first appears; rows shown in
   -- the same block in the order the notation module declares them.
   let lt (a b : Nat × Nat) : Bool := a.1 < b.1 || (a.1 == b.1 && a.2 < b.2)

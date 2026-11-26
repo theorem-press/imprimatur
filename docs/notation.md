@@ -143,7 +143,11 @@ type, and reading back holds a variable written with it to that type (see
 at those arguments only: `List Tm` is $\overline{e}$, and a `List Nat` is no
 category's unless `List` is declared bare as well. A type is looked up as
 written and then unfolded, so an `abbrev` (`Decls := List (Name × List
-Name)`) may have a category under its own name.
+Name)`) may have a category under its own name. Several strings give the
+category several metavariables, as $x$, $y$, $v$ and $w$ may all range over
+names (`latex_category Name => "x" "y" "v" "w"`): the first is the
+category's own, which heads its grammar, and the table of conventions lists
+them together.
 
 ## `latex_style`
 
@@ -316,9 +320,12 @@ trusted.
 - **`strict`**. As `unique`, and a variable whose type has a category is
   written with the category's letter, whatever its Lean name: only the name's
   subscripts and primes are kept, so `q : Prog` is $P$, `t₁ : Ty` is
-  $\tau_1$ and `e' : Tm` is $e'$. Several variables of one category with
-  no decorations of their own (`plans trials : ℕ`) are numbered in the order
-  they are bound, $n_1$ and $n_2$. Two variables of one formula that still
+  $\tau_1$ and `e' : Tm` is $e'$. A variable named by one of its category's
+  metavariables keeps its name (`v : Name`, when `v` is one). Several other
+  variables of one category with no decorations of their own (`plans trials
+  : ℕ`) are numbered in the order they are bound, $n_1$ and $n_2$, as they
+  are when a variable in scope is named by the category's own letter. Two
+  variables of one formula that still
   print alike (`a₁ b₁ : Prog`, both $P_1$) are an error: rename one. In a
   production of a grammar, which shows what a form takes by
   its variables' letters alone, a variable whose type has no category is an

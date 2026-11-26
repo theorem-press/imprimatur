@@ -441,23 +441,27 @@ syntax (name := latexStyle) "latex_style " ident " := " ident : command
 (the `grammar` view). `latex_category T A₁ … => "e"` is the category of the
 type `T A₁ …` (the judgements `Judg Name`, the lists `List Prog`): its
 metavariable ranges over `T` at those arguments only, and the table of
-conventions writes its type so. -/
-syntax (name := latexCategory) "latex_category " ident (ppSpace term:max)* " => " str : command
+conventions writes its type so. `latex_category T => "x" "y"` gives the
+category several metavariables, all ranging over `T`: the first is the
+category's own, which heads its grammar. -/
+syntax (name := latexCategory) "latex_category " ident (ppSpace term:max)* " => " (ppSpace str)+ : command
 
 /-- Elaborate `latex_category`. -/
 @[command_elab latexCategory] def elabLatexCategory : CommandElab := fun stx => do
   let t ← liftCoreM (realizeGlobalConstNoOverloadWithInfo stx[1])
-  let some tex := stx[4].isStrLit? | throwErrorAt stx[4] "expected a string"
-  modifyEnv (notationExt.addEntry · (.category t tex))
+  let texs ← stx[4].getArgs.mapM fun s => do
+    let some tex := s.isStrLit? | throwErrorAt s "expected a string"
+    pure tex
   let args := stx[2].getArgs
-  unless args.isEmpty do
-    -- The category is the type applied to its arguments, elaborated as a type.
-    let ty ← liftTermElabM do
-      let e ← Term.elabType (Syntax.mkApp ⟨stx[1]⟩ (args.map (⟨·⟩)))
-      Term.synthesizeSyntheticMVarsNoPostponing
-      let e ← instantiateMVars e
-      if e.hasMVar then throwErrorAt stx[2] "the arguments do not fix the type {e}"
-      pure e
-    modifyEnv (notationExt.addEntry · (.categoryType t tex ty))
+  -- The category is the type applied to its arguments, elaborated as a type.
+  let ty? ← if args.isEmpty then pure none else some <$> liftTermElabM do
+    let e ← Term.elabType (Syntax.mkApp ⟨stx[1]⟩ (args.map (⟨·⟩)))
+    Term.synthesizeSyntheticMVarsNoPostponing
+    let e ← instantiateMVars e
+    if e.hasMVar then throwErrorAt stx[2] "the arguments do not fix the type {e}"
+    pure e
+  for tex in texs do
+    modifyEnv (notationExt.addEntry · (.category t tex))
+    if let some ty := ty? then modifyEnv (notationExt.addEntry · (.categoryType t tex ty))
 
 end Imprimatur

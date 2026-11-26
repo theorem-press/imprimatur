@@ -207,29 +207,35 @@ metavariable). -/
 def categoriesStyle : MetaM String := do
   return ((projectStyles (← getEnv)).find? (·.1 == "categories")).map (·.2) |>.getD "loose"
 
-/-- The metavariable of the category a type belongs to: its head's, or, for a
-type that unfolds (`abbrev`), the head's of what it unfolds to. A category
-declared with arguments (`latex_category List Prog => "p"`) is the type at
-those arguments only, and is preferred to one declared bare (`latex_category
-List => "l"`), which is the type at any. -/
-def categoryLetter? (ty : Expr) : MetaM (Option String) := do
+/-- The metavariables of the category a type belongs to, the category's own
+first: its head's, or, for a type that unfolds (`abbrev`), the head's of what
+it unfolds to. A category declared with arguments (`latex_category List Prog
+=> "p"`) is the type at those arguments only, and is preferred to one
+declared bare (`latex_category List => "l"`), which is the type at any. -/
+def categoryLetters (ty : Expr) : MetaM (Array String) := do
   let env ← getEnv
   let cats := projectCategories env
   let types := projectCategoryTypes env
-  let of (t : Expr) : MetaM (Option String) := do
-    let .const h _ := t.getAppFn | return none
-    let mut bare : Option String := none
+  let of (t : Expr) : MetaM (Array String) := do
+    let .const h _ := t.getAppFn | return #[]
+    let mut typed : Array String := #[]
+    let mut bare : Array String := #[]
     for (c, m) in cats do
       if c != h then continue
       match types.find? fun (c', m', _) => c' == c && m' == m with
       | some (_, _, cty) =>
         -- Compared without assigning anything still open in the formula.
-        if ← (try withNewMCtxDepth (isDefEq t cty) catch _ => pure false) then return some m
-      | none => if bare.isNone then bare := some m
-    return bare
+        if ← (try withNewMCtxDepth (isDefEq t cty) catch _ => pure false) then typed := typed.push m
+      | none => bare := bare.push m
+    return if typed.isEmpty then bare else typed
   let ty ← instantiateMVars ty
-  if let some m ← of ty then return some m
-  try of (← whnfR ty) catch _ => return none
+  let ms ← of ty
+  unless ms.isEmpty do return ms
+  try of (← whnfR ty) catch _ => return #[]
+
+/-- The category's own metavariable of a type (`categoryLetters`). -/
+def categoryLetter? (ty : Expr) : MetaM (Option String) :=
+  return (← categoryLetters ty)[0]?
 
 /-- The decorations of a variable's name: its subscript (from trailing
 digits) and its primes, as TeX. -/
@@ -243,6 +249,16 @@ def nameDecorations (n : Name) : String :=
     ((subscripts.find? (·.1 == c)).map (·.2)).getD c)
   (if digits.isEmpty then "" else s!"_\{{digits}}") ++ String.ofList (List.replicate primes '\'')
 
+/-- A metavariable's base: its TeX without trailing primes and subscript, so
+`e_{1}'` is `e`. -/
+def metavarBase (t : String) : String := Id.run do
+  let mut t := t
+  while t.endsWith "'" do t := (t.dropEnd 1).toString
+  if t.endsWith "}" then
+    let parts := t.splitOn "_{"
+    if parts.length ≥ 2 then t := "_{".intercalate (parts.dropLast)
+  return t
+
 /-- The TeX of a variable of type `ty`. With `latex_style categories :=
 strict`, a variable of a category's type is written with the category's
 metavariable and its own decorations (`t : Ty` as $\tau$, `t₁` as
@@ -252,14 +268,25 @@ variables in scope of one category with no decorations of their own
 $n_{2}$), as BNF numbers them; their Lean names are the development's. -/
 def varNameT (n : Name) (ty : Expr) : RenderM String := do
   if (← categoriesStyle) == "strict" then
-    if let some m ← categoryLetter? ty then
+    let ms ← categoryLetters ty
+    if let some m := ms[0]? then
       let deco := nameDecorations n
+      -- A variable named by one of the category's metavariables keeps it.
+      let own ← varName n
+      if ms.contains (metavarBase own) then return own
       unless deco.isEmpty do return m ++ deco
-      -- The undecorated variables of this category in scope, in order.
-      let same ← (← getLCtx).foldlM (init := #[]) fun (acc : Array Name) d => do
-        if d.isImplementationDetail || !(nameDecorations d.userName).isEmpty then return acc
-        if (← categoryLetter? d.type) == some m then return acc.push d.userName else return acc
-      if same.size > 1 then
+      -- The undecorated variables of this category in scope that no
+      -- metavariable names, in order; numbered when there are several, or
+      -- when a variable in scope is named by the category's own letter.
+      let (same, taken) ← (← getLCtx).foldlM (init := (#[], false))
+        fun (acc : Array Name × Bool) d => do
+          if d.isImplementationDetail then return acc
+          unless (← categoryLetters d.type)[0]? == some m do return acc
+          let t := metavarBase (← varName d.userName)
+          if t == m then return (acc.1, true)
+          if ms.contains t || !(nameDecorations d.userName).isEmpty then return acc
+          return (acc.1.push d.userName, acc.2)
+      if same.size > 1 || taken then
         if let some i := same.idxOf? n then return s!"{m}_\{{i + 1}}"
       return m
   varName n
@@ -314,16 +341,6 @@ def instanceHypothesis? (t : Expr) : RenderM (Option Expr) := do
 def logAtom (tex : String) (sort : String) (isVar : Bool := false) (fvar : Option FVarId := none)
     (name : String := "") (expr : Option Expr := none) : RenderM Unit := do
   if let some r := (← read).atoms then r.modify (·.push { tex, sort, isVar, fvar, name, expr })
-
-/-- A metavariable's base: its TeX without trailing primes and subscript, so
-`e_{1}'` is `e`. -/
-def metavarBase (t : String) : String := Id.run do
-  let mut t := t
-  while t.endsWith "'" do t := (t.dropEnd 1).toString
-  if t.endsWith "}" then
-    let parts := t.splitOn "_{"
-    if parts.length ≥ 2 then t := "_{".intercalate (parts.dropLast)
-  return t
 
 /-- The elements of a list literal: a chain of `List.cons` ending in
 `List.nil`. -/

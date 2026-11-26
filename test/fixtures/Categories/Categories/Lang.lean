@@ -35,6 +35,10 @@ inductive Des where
   /-- side by side -/
   | beside (d₁ d₂ : Des)
 
+/-- Numbers named `n` and `k`, both metavariables of `Nat` in `Strict`, and
+`m`, which is written with the category's own letter, numbered apart from `n`. -/
+theorem nats (n k m : Nat) (h : n = k) : k + m = n + m := by rw [h]
+
 /-- A list of programs, which a category may be declared for, and a list of
 numbers, which none is. -/
 theorem lists (ps : List Prog) (ns : List Nat) (h : ps.length = ns.length) :
