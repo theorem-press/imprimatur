@@ -19,3 +19,7 @@ latex_category List Prog => r"\vec{P}"
 latex_notation lower p => r"\mathsf{lower}(#p)"
 latex_notation Des.copies n ps => r"\mathsf{copies}(#n, #ps)"
 latex_notation Des.beside a b => r"#a \parallel #b" prec := 60
+-- A list of programs is written by the project's rules, not as `[a, b]`.
+latex_style lists := literal
+latex_notation Prog.mk n => r"\mathsf{prog}(#n)"
+latex_notation List.cons (α := Prog) h t => r"\{#h; #t\}" prec := 5

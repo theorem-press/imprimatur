@@ -34,6 +34,9 @@ def apply (f : Prog → Nat) : Nat := f (.mk 0)
 /-- A λ whose binder nothing uses: `_`, not `P`. -/
 def ignore : Nat := apply fun _ => 0
 
+/-- Two programs, as a list the notation writes in braces. -/
+def two : List Prog := [.mk 1, .mk 2]
+
 /-- Designs. -/
 inductive Des where
   /-- `n` copies of each program -/

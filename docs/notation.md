@@ -163,7 +163,7 @@ Settings of the renderer, for conventions a paper fixes once:
 | `names` | `italic` (default), `raw` | with `raw`, a binder name is written as it is: it is TeX, so `l_c` sets a subscript |
 | `applied_variables` | `juxtaposed` (default), `call`, `subscript` | a variable applied to arguments: `f\,a\,b`, `f(a)(b)`, or `f_{a, b}` |
 | `pattern_matching` | `code` (default), `cases` | a `match`: Lean's own text, which `check` reports as not validated since the notation does not apply in it, or `\mathsf{case}\ d\ \mathsf{of}\ p \Rightarrow e \mid \dots`. Under either, a λ whose body is a `match` on its own variable with one alternative, `fun p => match p with \| (a, b) => e`, is written with the pattern for its binder, `\lambda (a, b).\, e` |
-| `lists` | `cons` (default), `literal` | a list literal: by the rules for `List.cons`, or `[a,\ b]` |
+| `lists` | `cons` (default), `literal` | a list literal: by the rules for `List.cons`, or `[a,\ b]`; under `literal`, a list whose `List.cons` a rule of the project writes (`List.cons (α := Name × Attr) h t => "#h, #t"`) is still written by that rule |
 | `categories` | `loose` (default), `unique`, `strict` | how strictly the metavariables of `latex_category` are held to their types: see [Metavariables](#metavariables) |
 
 In a pattern (a `case`'s, or an argument on the left of a definition's

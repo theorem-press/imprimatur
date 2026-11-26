@@ -323,6 +323,14 @@ def hasRule (e : Expr) : RenderM Bool := do
     if (← r.tryMatch e).isSome then return true
   return false
 
+/-- Whether a rule of the project (not of a pack) writes `e`. -/
+def hasProjectRule (e : Expr) : RenderM Bool := do
+  let .const head _ := e.getAppFn | return false
+  for r in ← candidates head do
+    if r.origin.startsWith "pack " then continue
+    if (← r.tryMatch e).isSome then return true
+  return false
+
 /-- The hypothesis an instance binder `[C a]` states, if any (DESIGN §7.6):
 the class itself when a notation rule writes it (`[Fintype V]` as "V is
 finite"); otherwise, for a class in `Prop` with one field and nothing else,
@@ -906,8 +914,9 @@ mutual
   partial def renderFormIn (ch : Validate.Chain) (e : Expr) : RenderM Doc := do
     let ctx ← read
     let e := e.consumeMData
-    -- `latex_style lists := literal`: `[a, b]`, not `a :: b :: []`.
-    if ctx.listLiterals then
+    -- `latex_style lists := literal`: `[a, b]`, not `a :: b :: []`, unless
+    -- the project writes this list's cons itself (`{x : a, y : b}`).
+    if ctx.listLiterals && !(← hasProjectRule e) then
       if let some xs := listLiteral? e then
         unless xs.isEmpty do
           let mut parts : Array Doc := #[.tex "["]

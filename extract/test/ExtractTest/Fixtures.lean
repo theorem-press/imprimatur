@@ -258,6 +258,7 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
     let reqs := reqs.push { key := "Cats.Des", views := #["grammar"] }
     let reqs := reqs.push { key := "Cats.int_k", views := #["math", "prose"] }
     let reqs := reqs.push { key := "Cats.ignore", views := #["math"] }
+    let reqs := reqs.push { key := "Cats.two", views := #["math"] }
     let (entries, _) ← exportEntries env dir settings reqs
     return renderBundle entries none
   let viewOf (b k v : String) : String :=
@@ -288,6 +289,9 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   check "extract/categories/several-letters"
     (m == "\\LeanMath{n = k \\implies k + n_{1} = n + n_{1}}") m
   checkEq "extract/categories/several-letters-clean" (problems strict "Cats.nats") #[]
+  -- Under `lists := literal`, a list the project's rule writes is not `[a, b]`.
+  let m := math strict "Cats.two"
+  check "extract/categories/list-rule-over-literal" ((m.splitOn "\\{\\mathsf{prog}(1); ").length > 1) m
   -- A binder nothing uses is `_`, not its category's letter.
   let m := math strict "Cats.ignore"
   check "extract/categories/unused-binder" ((m.splitOn "\\lambda \\_.").length > 1) m

@@ -21,7 +21,10 @@ All notable changes to imprimatur are recorded here. Versions follow
   (`plans trials : ℕ`) are numbered in the order they are bound, `n₁` and
   `n₂`, where they were an error to be fixed by renaming the Lean. A
   structure's field named in a later field's type keeps its name under
-  `strict`, where it was written as its type's letter.
+  `strict`, where it was written as its type's letter. Under `latex_style
+  lists := literal`, a list whose `List.cons` the project's own rule writes
+  (`List.cons (α := Name × Attr) h t => "#h, #t"`) is written by that rule,
+  not as `[a, b]`, so a template can set such a list in braces of its own.
 - Reading a rendering back, a λ where a function type is expected takes
   the type's domain for its binder and has its body fit to the codomain, so
   a coercion the notation hides in the body is found: `λ r.\,r` for
