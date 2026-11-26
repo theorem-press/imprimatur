@@ -37,6 +37,9 @@ def ignore : Nat := apply fun _ => 0
 /-- Two programs, as a list the notation writes in braces. -/
 def two : List Prog := [.mk 1, .mk 2]
 
+/-- One program, as a list the notation writes as its element. -/
+def one : List Prog := [.mk 1]
+
 /-- Designs. -/
 inductive Des where
   /-- `n` copies of each program -/

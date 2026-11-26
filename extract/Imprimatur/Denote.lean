@@ -246,10 +246,27 @@ mutual
         -- The coercion's result is `d` first, so that its argument is fit
         -- knowing what it must be (`some (c, v, i)` against an `Option` of
         -- a product with `v` coerced inside).
-        let f ← fillImplicits (← mkConstWithFreshMVarLevels c.pat.head)
-        if let .forallE _ _ b _ := ← whnf (← inferType f) then
-          if !b.hasLooseBVars then discard <| isDefEq b d
-        let a' ← applyArgs f [a] (coerced := true) (depth := depth - 1)
+        let bare := match c.pat with
+          | .app _ #[.var _] | .constrained (.app _ #[.var _]) _ => true
+          | _ => false
+        let a' ← if bare then do
+            let f ← fillImplicits (← mkConstWithFreshMVarLevels c.pat.head)
+            if let .forallE _ _ b _ := ← whnf (← inferType f) then
+              if !b.hasLooseBVars then discard <| isDefEq b d
+            applyArgs f [a] (coerced := true) (depth := depth - 1)
+          else do
+            -- A coercion whose pattern has fixed parts (`List.cons h List.nil`
+            -- written `#h`, a one-element list as its element): the head
+            -- applied to `a` and to the fixed parts, which must be constants.
+            let strip : Pat → Pat := fun | .constrained q _ => q | q => q
+            let .app _ pargs := strip c.pat | throwError "a coercion that is not an application"
+            let args ← pargs.toList.mapM fun q => match strip q with
+              | .var _ => pure a
+              | .lit e => pure e
+              | .app k #[] => do fillImplicits (← mkConstWithFreshMVarLevels k)
+              | _ => throwError "a coercion with a part that is not a constant"
+            let f ← fillImplicits (← mkConstWithFreshMVarLevels c.pat.head)
+            applyArgs f args (coerced := true) (depth := depth - 1)
         if ← isDefEq (← inferType a') d then
           -- The coercion's instances must exist: `Int.cast` into `ℕ` does not.
           synthPendingInsts

@@ -23,3 +23,4 @@ latex_notation Des.beside a b => r"#a \parallel #b" prec := 60
 latex_style lists := literal
 latex_notation Prog.mk n => r"\mathsf{prog}(#n)"
 latex_notation List.cons (α := Prog) h t => r"\{#h; #t\}" prec := 5
+latex_notation List.cons (α := Prog) h List.nil => "#h"

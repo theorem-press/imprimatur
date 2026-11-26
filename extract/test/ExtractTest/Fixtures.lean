@@ -259,6 +259,7 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
     let reqs := reqs.push { key := "Cats.int_k", views := #["math", "prose"] }
     let reqs := reqs.push { key := "Cats.ignore", views := #["math"] }
     let reqs := reqs.push { key := "Cats.two", views := #["math"] }
+    let reqs := reqs.push { key := "Cats.one", views := #["math"] }
     let (entries, _) ← exportEntries env dir settings reqs
     return renderBundle entries none
   let viewOf (b k v : String) : String :=
@@ -292,6 +293,12 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   -- Under `lists := literal`, a list the project's rule writes is not `[a, b]`.
   let m := math strict "Cats.two"
   check "extract/categories/list-rule-over-literal" ((m.splitOn "\\{\\mathsf{prog}(1); ").length > 1) m
+  -- A one-element list written as its element (`List.cons h List.nil => "#h"`)
+  -- reads back through that rule, a coercion whose pattern has a fixed part.
+  checkEq "extract/categories/list-rule-reads" (problems strict "Cats.two") #[]
+  let m := math strict "Cats.one"
+  check "extract/categories/singleton-as-element" (m == "\\LeanMath{\\LeanMathConst{one} \\mathrel{:=} \\mathsf{prog}(1)}") m
+  checkEq "extract/categories/singleton-reads" (problems strict "Cats.one") #[]
   -- A binder nothing uses is `_`, not its category's letter.
   let m := math strict "Cats.ignore"
   check "extract/categories/unused-binder" ((m.splitOn "\\lambda \\_.").length > 1) m
