@@ -312,7 +312,9 @@ trusted.
 - **`loose`** (the default). A letter may stand for several types, one
   `latex_category` each: `P` for the paper's core programs and for the
   development's representation of them. A variable printed with a category's
-  letter but of another type is a warning, as above.
+  letter but of another type is a warning, as above, unless the block itself
+  declares the variable with its type (`Let α ∈ ℝ` in prose, `∀ α : ℝ` in a
+  formula): a reader sees the declaration before the letter.
 - **`unique`**. A letter stands for one type: two `latex_category`s with the
   same letter, for types that are not the same after unfolding, are an error
   wherever a variable is written with it. So is a variable printed with a

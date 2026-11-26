@@ -370,7 +370,10 @@ of its sentence, each rendered, and which part each plays. The layout,
 def gatherProse (c : ConstantInfo) : RenderM (Layout.Prose (List Char)) := do
   unless c matches .thmInfo _ | .axiomInfo _ do
     return .define ((← mathDoc c).render 100000).toList
-  statementParts c.type fun vars hyps concl => withConventions hyps fun hyps => do
+  statementParts c.type fun vars hyps concl => withConventions hyps fun hyps =>
+   -- The sentence states each variable's type (`Let α ∈ ℝ`), so a variable
+   -- may bear another category's letter in it (`Render.validate`).
+   withReader (fun c => { c with declared := c.declared ++ vars.map (·.2.1.fvarId!) }) do
     -- Variables, grouped by type. Each is rendered as a variable, so a
     -- metavariable convention (`\val`) applies to it here too; and a
     -- variable a convention names is bound in the predicate its hidden

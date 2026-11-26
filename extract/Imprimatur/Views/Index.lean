@@ -106,7 +106,9 @@ ranges over, in the order the document first shows them. Categories that
 share a metavariable are listed together. -/
 def conventionsView : RenderM String := do
   let ev ← indexEvents.get
-  let mut rows : Array (Nat × String × Name × String × Nat) := #[]
+  -- A row: its order, its metavariables, the type's name and TeX, where it
+  -- is shown, and its declaration index.
+  let mut rows : Array (Nat × String × Name × String × String × Nat) := #[]
   for ((ty, tex), i) in (projectCategories (← getEnv)).zipIdx do
     let shown := ev.filterMap fun | .shows k n => if n == ty then some k else none | _ => none
     let seen := ev.filterMap fun | .category k t => if t == ty then some k else none | _ => none
@@ -115,25 +117,28 @@ def conventionsView : RenderM String := do
     let some (order, key) ← (do
         if let some f ← firstOf shown then return some f
         firstOf seen) | continue
-    -- A category's metavariables (`latex_category Name => "x" "y"`) share a row.
-    if let some j := rows.findIdx? (·.2.2.1 == ty) then
-      let (o, t, _, w, k) := rows[j]!
-      rows := rows.set! j (o, s!"{t}, {tex}", ty, w, k)
+    let tyTeX ← typeTeX ty tex
+    -- A category's metavariables (`latex_category Name => "x" "y"`) share a
+    -- row: those of one type, `List Name` apart from `List Attr`.
+    if let some j := rows.findIdx? fun r => r.2.2.1 == ty && r.2.2.2.1 == tyTeX then
+      let (o, t, n, tt, w, k) := rows[j]!
+      rows := rows.set! j (o, s!"{t}, {tex}", n, tt, w, k)
     else
-      rows := rows.push (order, tex, ty, ← whereTeX key, i)
+      rows := rows.push (order, tex, ty, tyTeX, ← whereTeX key, i)
   -- A metavariable's rows together, where it first appears; rows shown in
   -- the same block in the order the notation module declares them.
   let lt (a b : Nat × Nat) : Bool := a.1 < b.1 || (a.1 == b.1 && a.2 < b.2)
+  let idx (r : Nat × String × Name × String × String × Nat) : Nat := r.2.2.2.2.2
   let groupKey (tex : String) : Nat × Nat :=
-    (rows.filter (·.2.1 == tex)).foldl (fun a r => if lt (r.1, r.2.2.2.2) a then (r.1, r.2.2.2.2) else a)
+    (rows.filter (·.2.1 == tex)).foldl (fun a r => if lt (r.1, idx r) a then (r.1, idx r) else a)
       (rows.size.succ * 1000, 0)
   let sorted := rows.qsort fun a b =>
     let ga := groupKey a.2.1; let gb := groupKey b.2.1
-    lt ga gb || (ga == gb && lt (a.1, a.2.2.2.2) (b.1, b.2.2.2.2))
+    lt ga gb || (ga == gb && lt (a.1, idx a) (b.1, idx b))
   let mut out := "\\begin{longtable}{@{}l@{\\quad}l@{\\quad}p{.4\\linewidth}@{\\quad}l@{}}\n"
   out := out ++ "\\textit{Variable} & \\textit{Type} & & \\textit{Shown in}\\\\\n\\hline\\endhead\n"
-  for (_, tex, ty, wh, _) in sorted do
-    out := out ++ s!"${tex}$ & ${← typeTeX ty tex}$ & \\leanslot\{{ty}}\{{← docSentence ty}} & {wh}\\\\\n"
+  for (_, tex, ty, tyTeX, wh, _) in sorted do
+    out := out ++ s!"${tex}$ & ${tyTeX}$ & \\leanslot\{{ty}}\{{← docSentence ty}} & {wh}\\\\\n"
   -- Each metavariable convention the document uses (DESIGN §7.6): its
   -- metavariable stands for a variable of the predicate whose premise it
   -- hides, which is shown where the predicate is displayed, else where the

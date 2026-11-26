@@ -1406,7 +1406,9 @@ constructors; the `def` view reads as the equation lemmas.
 5. **categories keep their letters:** a grammar category's metavariable
    (`latex_category T => "e"`) stands for `T` wherever it appears, as in BNF,
    where `e ::= e₁\;e₂` says the arguments are expressions. A variable of
-   another type must not print as it, with or without subscripts and primes.
+   another type must not print as it, with or without subscripts and primes,
+   unless the block declares the variable with its type (`Let α ∈ ℝ`,
+   `∀ α : ℝ`), which a reader sees before the letter.
    A letter may stand for several types, as a paper's programs and a
    development's representation of them, declared by one `latex_category`
    each; types are compared after unfolding reducible definitions. Under

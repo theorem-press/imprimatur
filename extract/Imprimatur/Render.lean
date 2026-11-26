@@ -119,6 +119,10 @@ structure Ctx where
   its variables' types only by their letters: under `latex_style categories
   := strict`, each variable's type must have a metavariable. -/
   production : Bool := false
+  /-- The variables whose types the block itself states (`Let α ∈ ℝ` in
+  prose, `∀ α : ℝ` in a formula): a reader sees the declaration before the
+  letter, so it may bear another category's letter there. -/
+  declared : Array FVarId := #[]
   /-- The view being rendered (`math`, `rules`, …), for the timing log. -/
   view : String := ""
   /-- The project's root, for source locations. -/
@@ -814,6 +818,8 @@ def validate (e : Expr) (d : Doc) (atoms : Array Atom)
   let cats := projectCategories (← getEnv)
   for a in atoms do
     if a.fvar.isNone || a.sort == "*" || Validate.isTyVar a.sort || a.sort.startsWith "'" then continue
+    -- A variable the block declares with its type may bear any letter there.
+    if (← read).declared.contains a.fvar.get! then continue
     -- A letter may stand for several types (the paper's programs, and a
     -- development's representation of them); a type is compared by its head.
     let tys := (cats.filter (·.2 == metavarBase a.tex)).map (·.1)
@@ -1220,7 +1226,9 @@ mutual
           let s ← render dom.appFn!.appArg!
           return .node 0 #[.tex s!"\\forall {v} \\in ", .child 50 s, .tex ",\\ ", .brk, .child 0 (← render rest)]
       let ty ← render t
-      return .node 0 #[.tex s!"\\forall {v} : ", .child 1 ty, .tex ",\\ ", .brk, .child 0 (← render body)]
+      -- The binder states the variable's type, so the letter check passes it over.
+      let body ← withReader (fun c => { c with declared := c.declared.push x.fvarId! }) (render body)
+      return .node 0 #[.tex s!"\\forall {v} : ", .child 1 ty, .tex ",\\ ", .brk, .child 0 body]
 
   /-- A `match` as a case analysis: `\mathsf{case}\ d\ \mathsf{of}\ p_1
   \Rightarrow e_1 \mid \dots`, a branch for each equation of the matcher,

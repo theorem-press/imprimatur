@@ -9,7 +9,10 @@ All notable changes to imprimatur are recorded here. Versions follow
   r"\vec{P}"` is the category of lists of programs, and a `List Nat` is no
   category's. It takes several metavariables, `latex_category Name => "x"
   "y" "v" "w"`, all ranging over the type and listed together in the table
-  of conventions; under `strict` a variable named by one keeps its name.
+  of conventions; under `strict` a variable named by one keeps its name. A
+  variable that bears a category's letter with another type is no longer
+  reported where the block declares it with its type (`Let α ∈ ℝ` in
+  prose, `∀ α : ℝ` in a formula).
   Under `latex_style categories := strict`, a production of a
   grammar with a variable whose type has no metavariable is an
   `error[category]`, since a production shows no types: `design(plans,

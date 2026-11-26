@@ -256,6 +256,7 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
     let reqs := #["Cats.lower_eq", "Cats.symm", "Cats.symm'", "Cats.lists", "Cats.nats"].map fun k =>
       { key := k, views := #["math"] }
     let reqs := reqs.push { key := "Cats.Des", views := #["grammar"] }
+    let reqs := reqs.push { key := "Cats.int_k", views := #["math", "prose"] }
     let (entries, _) ← exportEntries env dir settings reqs
     return renderBundle entries none
   let viewOf (b k v : String) : String :=
@@ -286,6 +287,12 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   check "extract/categories/several-letters"
     (m == "\\LeanMath{n = k \\implies k + n_{1} = n + n_{1}}") m
   checkEq "extract/categories/several-letters-clean" (problems strict "Cats.nats") #[]
+  -- `k : Int` bears `Nat`'s letter: an error where it is free (`math`), none
+  -- where the sentence declares it, `Let k ∈ ℤ` (`prose`).
+  check "extract/categories/declared-free"
+    ((problemsOf strict "Cats.int_k" "math").any (·.startsWith "category: the variable k prints as $k$, which stands for Nat"))
+    (toString (problemsOf strict "Cats.int_k" "math"))
+  checkEq "extract/categories/declared-stated" (problemsOf strict "Cats.int_k" "prose") #[]
   -- A category at arguments: `ps : List Prog` is $\vec{P}$, and `ns : List
   -- Nat`, which no category covers, keeps its name.
   let m := math strict "Cats.lists"

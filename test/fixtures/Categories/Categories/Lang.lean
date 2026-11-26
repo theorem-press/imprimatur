@@ -39,6 +39,10 @@ inductive Des where
 `m`, which is written with the category's own letter, numbered apart from `n`. -/
 theorem nats (n k m : Nat) (h : n = k) : k + m = n + m := by rw [h]
 
+/-- An integer named `k`, a metavariable of `Nat` in `Strict`: allowed where
+the statement declares it (`Let k ∈ ℤ`), not where it is free. -/
+theorem int_k (k : Int) (h : 0 ≤ k) : 0 ≤ k := h
+
 /-- A list of programs, which a category may be declared for, and a list of
 numbers, which none is. -/
 theorem lists (ps : List Prog) (ns : List Nat) (h : ps.length = ns.length) :
