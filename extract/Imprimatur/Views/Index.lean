@@ -107,8 +107,16 @@ share a metavariable are listed together. -/
 def conventionsView : RenderM String := do
   let ev ← indexEvents.get
   -- A row: its order, its metavariables, the type's name and TeX, where it
-  -- is shown, and its declaration index.
+  -- is shown, and its declaration index; and each row's slot.
+  let mut slots : Array ((Name × String) × String) := #[]
   let mut rows : Array (Nat × String × Name × String × String × Nat) := #[]
+  -- A row's slot: the type's name, and, for a category at arguments (`List
+  -- Name` apart from `List Attr`), its metavariable's letters after an `@`.
+  let types := projectCategoryTypes (← getEnv)
+  let slotId (ty : Name) (tex : String) : String :=
+    if types.any fun (c, m, _) => c == ty && m == tex then
+      s!"{ty}@{String.ofList (tex.toList.filter Char.isAlphanum)}"
+    else ty.toString
   for ((ty, tex), i) in (projectCategories (← getEnv)).zipIdx do
     let shown := ev.filterMap fun | .shows k n => if n == ty then some k else none | _ => none
     let seen := ev.filterMap fun | .category k t => if t == ty then some k else none | _ => none
@@ -125,6 +133,7 @@ def conventionsView : RenderM String := do
       rows := rows.set! j (o, s!"{t}, {tex}", n, tt, w, k)
     else
       rows := rows.push (order, tex, ty, tyTeX, ← whereTeX key, i)
+    slots := slots.push ((ty, tyTeX), slotId ty tex)
   -- A metavariable's rows together, where it first appears; rows shown in
   -- the same block in the order the notation module declares them.
   let lt (a b : Nat × Nat) : Bool := a.1 < b.1 || (a.1 == b.1 && a.2 < b.2)
@@ -138,7 +147,8 @@ def conventionsView : RenderM String := do
   let mut out := "\\begin{longtable}{@{}l@{\\quad}l@{\\quad}p{.4\\linewidth}@{\\quad}l@{}}\n"
   out := out ++ "\\textit{Variable} & \\textit{Type} & & \\textit{Shown in}\\\\\n\\hline\\endhead\n"
   for (_, tex, ty, tyTeX, wh, _) in sorted do
-    out := out ++ s!"${tex}$ & ${tyTeX}$ & \\leanslot\{{ty}}\{{← docSentence ty}} & {wh}\\\\\n"
+    let slot := ((slots.find? (·.1 == (ty, tyTeX))).map (·.2)).getD ty.toString
+    out := out ++ s!"${tex}$ & ${tyTeX}$ & \\leanslot\{{slot}}\{{← docSentence ty}} & {wh}\\\\\n"
   -- Each metavariable convention the document uses (DESIGN §7.6): its
   -- metavariable stands for a variable of the predicate whose premise it
   -- hides, which is shown where the predicate is displayed, else where the

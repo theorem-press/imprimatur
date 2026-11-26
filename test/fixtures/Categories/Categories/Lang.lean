@@ -28,6 +28,12 @@ theorem symm (a b : Prog) (h : a = b) : b = a := h.symm
 /-- Two programs named `a₁` and `b₁`: both written `P₁`. -/
 theorem symm' (a₁ b₁ : Prog) (h : a₁ = b₁) : b₁ = a₁ := h.symm
 
+/-- A function of a program, applied to one. -/
+def apply (f : Prog → Nat) : Nat := f (.mk 0)
+
+/-- A λ whose binder nothing uses: `_`, not `P`. -/
+def ignore : Nat := apply fun _ => 0
+
 /-- Designs. -/
 inductive Des where
   /-- `n` copies of each program -/

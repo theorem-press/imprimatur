@@ -271,7 +271,8 @@ variables in scope of one category with no decorations of their own
 (`plans trials : ℕ`) are numbered in the order they are bound ($n_{1}$,
 $n_{2}$), as BNF numbers them; their Lean names are the development's. -/
 def varNameT (n : Name) (ty : Expr) : RenderM String := do
-  if (← categoriesStyle) == "strict" then
+  -- A binder nothing uses is `_`, whatever its type.
+  if (← categoriesStyle) == "strict" && n != `_ then
     let ms ← categoryLetters ty
     if let some m := ms[0]? then
       let deco := nameDecorations n

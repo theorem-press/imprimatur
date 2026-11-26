@@ -255,10 +255,13 @@ view notes what it displays). Each table is a `longtable`, which
 `imprimatur.sty` loads.
 
 - **`conventions`**: for each `latex_category` whose type the document shows
-  or whose metavariable it uses, the metavariable, the type (applied to its
-  parameters, or to the arguments of `latex_category T A … => "m"`), a
-  description, and the first block that shows the type, with its page when
-  the block has a label. Rows are in document order, those that share a
+  or whose metavariable it uses, the metavariable (a category's several
+  together), the type (applied to its parameters, or to the arguments of
+  `latex_category T A … => "m"`), a description, and the first block that
+  shows the type, with its page when the block has a label. The description
+  is a slot named after the type, or, for a category at arguments, after the
+  type and the metavariable's letters (`List@overlinev`), so that `List
+  Name` and `List Attr` are described apart. Rows are in document order, those that share a
   metavariable together. Translation validation already checks that a
   variable printed as a category's metavariable has that category's type, so
   the table states a property `check` verifies. Then, for each

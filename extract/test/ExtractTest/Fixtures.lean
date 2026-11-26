@@ -257,6 +257,7 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
       { key := k, views := #["math"] }
     let reqs := reqs.push { key := "Cats.Des", views := #["grammar"] }
     let reqs := reqs.push { key := "Cats.int_k", views := #["math", "prose"] }
+    let reqs := reqs.push { key := "Cats.ignore", views := #["math"] }
     let (entries, _) ← exportEntries env dir settings reqs
     return renderBundle entries none
   let viewOf (b k v : String) : String :=
@@ -287,6 +288,9 @@ unsafe def categoriesTest : TestM Unit := group "categories" do
   check "extract/categories/several-letters"
     (m == "\\LeanMath{n = k \\implies k + n_{1} = n + n_{1}}") m
   checkEq "extract/categories/several-letters-clean" (problems strict "Cats.nats") #[]
+  -- A binder nothing uses is `_`, not its category's letter.
+  let m := math strict "Cats.ignore"
+  check "extract/categories/unused-binder" ((m.splitOn "\\lambda \\_.").length > 1) m
   -- `k : Int` bears `Nat`'s letter: an error where it is free (`math`), none
   -- where the sentence declares it, `Let k ∈ ℤ` (`prose`).
   check "extract/categories/declared-free"
